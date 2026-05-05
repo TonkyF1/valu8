@@ -1,0 +1,1 @@
+DROP POLICY "Public can view vehicle photos" ON storage.objects;
