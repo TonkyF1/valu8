@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      valuations: {
+        Row: {
+          condition_score: number | null
+          created_at: string
+          id: string
+          make: string
+          mileage: number
+          model: string
+          mot_expiry: string | null
+          photo_urls: Json
+          private_value: number | null
+          registration: string | null
+          report: Json
+          service_notes: string | null
+          user_id: string
+          year: number
+        }
+        Insert: {
+          condition_score?: number | null
+          created_at?: string
+          id?: string
+          make: string
+          mileage: number
+          model: string
+          mot_expiry?: string | null
+          photo_urls?: Json
+          private_value?: number | null
+          registration?: string | null
+          report?: Json
+          service_notes?: string | null
+          user_id: string
+          year: number
+        }
+        Update: {
+          condition_score?: number | null
+          created_at?: string
+          id?: string
+          make?: string
+          mileage?: number
+          model?: string
+          mot_expiry?: string | null
+          photo_urls?: Json
+          private_value?: number | null
+          registration?: string | null
+          report?: Json
+          service_notes?: string | null
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
