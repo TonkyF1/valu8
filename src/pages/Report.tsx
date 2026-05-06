@@ -105,17 +105,17 @@ export default function Report() {
 
         {/* Photo gallery */}
         {v.photo_urls.length > 0 && (
-          <section className="premium-card p-2 sm:p-3 mb-6 animate-fade-in-up">
-            <div className="aspect-[16/9] rounded-lg overflow-hidden bg-muted">
+          <section className="premium-card p-2 mb-4 animate-fade-in-up">
+            <div className="aspect-[16/9] rounded-md overflow-hidden bg-muted">
               <img src={v.photo_urls[activePhoto]} alt={`${v.make} ${v.model}`} className="w-full h-full object-cover" />
             </div>
             {v.photo_urls.length > 1 && (
-              <div className="grid grid-cols-6 gap-1.5 mt-2">
+              <div className="grid grid-cols-6 gap-1 mt-1.5">
                 {v.photo_urls.map((u, i) => (
                   <button key={u} onClick={() => setActivePhoto(i)}
                     className={cn(
-                      "aspect-[4/3] rounded-md overflow-hidden border-2 transition-all",
-                      activePhoto === i ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
+                      "aspect-[4/3] rounded overflow-hidden border-2 transition-all",
+                      activePhoto === i ? "border-primary" : "border-transparent opacity-50 hover:opacity-100"
                     )}>
                     <img src={u} alt="" className="w-full h-full object-cover" />
                   </button>
@@ -125,37 +125,40 @@ export default function Report() {
           </section>
         )}
 
-        {/* Values + Score */}
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
-          <div className="lg:col-span-3 space-y-3">
-            <ValueCard
-              label="Trade-in"
-              tag="Quick Sale"
-              value={r.values.dealerTradeIn}
-              description="What a dealer would pay you today. Fastest, lowest hassle, lowest return."
-            />
-            <ValueCard
-              label="Private Sale"
-              tag="Best Return"
-              value={r.values.privateSale}
-              description="The sweet spot for selling yourself — strong return for a few weeks of effort."
-              highlight
-            />
-            <ValueCard
-              label="Dealer Retail"
-              tag="Forecourt"
-              value={r.values.dealerRetail}
-              description="What you'd typically pay buying the same car from a dealer's forecourt."
-            />
+        {/* Hero: Private Sale headline + Condition + small tiers */}
+        <section className="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-4">
+          {/* Headline private sale price */}
+          <div className="lg:col-span-3 premium-card p-5 sm:p-6 relative overflow-hidden border-primary/40 shadow-glow">
+            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[9px] uppercase tracking-[0.2em] font-bold bg-gradient-primary text-primary-foreground px-2 py-0.5 rounded-full">Best Return</span>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Private Sale</span>
+            </div>
+            <div className="text-4xl sm:text-5xl font-bold tabular-nums text-gradient-primary leading-none">
+              £{r.values.privateSale.toLocaleString()}
+            </div>
+            <div className="text-xs text-muted-foreground tabular-nums mt-1.5">
+              Range £{(Math.round(r.values.privateSale * 0.96 / 50) * 50).toLocaleString()} – £{(Math.round(r.values.privateSale * 1.04 / 50) * 50).toLocaleString()}
+            </div>
+            <p className="text-xs sm:text-sm text-foreground/75 leading-relaxed mt-3 max-w-md">
+              The sweet spot if you sell yourself — strong return for a few weeks of effort.
+            </p>
+            <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-border/60">
+              <MiniTier label="Trade-in" tag="Quick" value={r.values.dealerTradeIn} />
+              <MiniTier label="Retail" tag="Forecourt" value={r.values.dealerRetail} />
+            </div>
           </div>
+
+          {/* Condition score */}
           <div className="lg:col-span-2 premium-card p-5 flex flex-col items-center justify-center text-center">
             <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">Condition Score</div>
-            <ConditionGauge score={r.conditionScore} label={r.conditionLabel} size={150} />
-            <p className="text-xs text-muted-foreground mt-4 max-w-[220px] leading-relaxed">
-              Based on photos, mileage and history. Higher scores command stronger asking prices.
+            <ConditionGauge score={r.conditionScore} label={r.conditionLabel} size={140} />
+            <p className="text-[11px] text-muted-foreground mt-3 max-w-[220px] leading-relaxed">
+              Based on photos, mileage and history.
             </p>
           </div>
         </section>
+
 
         {/* Honest analysis — condensed */}
         <Section icon={<Sparkles className="h-4 w-4" />} title="Honest Analysis">
