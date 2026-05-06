@@ -86,6 +86,7 @@ export default function NewValuation() {
         body: {
           make: parsed.data.make,
           model: parsed.data.model,
+          variant: parsed.data.variant || undefined,
           year: parsed.data.year,
           mileage: parsed.data.mileage,
           registration: parsed.data.registration || undefined,
