@@ -285,21 +285,31 @@ export default function Report() {
   );
 }
 
-function ValueCard({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
+function ValueCard({ label, tag, value, description, highlight }: { label: string; tag: string; value: number; description: string; highlight?: boolean }) {
+  const range: [number, number] = [Math.round(value * 0.96 / 50) * 50, Math.round(value * 1.04 / 50) * 50];
   return (
     <div className={cn(
-      "premium-card p-5 flex flex-col justify-between relative overflow-hidden min-h-[110px]",
+      "premium-card p-4 sm:p-5 relative overflow-hidden",
       highlight && "border-primary/40 shadow-glow"
     )}>
-      {highlight && (
-        <span className="absolute top-2.5 right-2.5 text-[9px] uppercase tracking-wider font-bold bg-gradient-primary text-primary-foreground px-2 py-0.5 rounded-full">
-          Best
-        </span>
-      )}
-      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
-      <div className={cn("text-2xl md:text-3xl font-bold tabular-nums mt-2", highlight && "text-gradient-primary")}>
-        £{value.toLocaleString()}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+            <span className={cn(
+              "text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full",
+              highlight ? "bg-gradient-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground border border-border"
+            )}>{tag}</span>
+          </div>
+          <div className={cn("text-2xl md:text-3xl font-bold tabular-nums mt-1.5", highlight && "text-gradient-primary")}>
+            £{value.toLocaleString()}
+          </div>
+          <div className="text-[11px] text-muted-foreground tabular-nums mt-0.5">
+            Range £{range[0].toLocaleString()} – £{range[1].toLocaleString()}
+          </div>
+        </div>
       </div>
+      <p className="text-xs text-foreground/70 leading-relaxed mt-2.5">{description}</p>
     </div>
   );
 }
