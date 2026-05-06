@@ -16,14 +16,17 @@ interface AnalyseRequest {
   photoUrls: string[];
 }
 
-const PREMIUM = ["BMW","Mercedes-Benz","Audi","Porsche","Land Rover","Jaguar","Tesla","Lexus","Volvo","MINI","Bentley","Aston Martin","Maserati","Ferrari","Lamborghini","Rolls-Royce","McLaren","Polestar","Genesis"];
-const ECONOMY = ["Dacia","SEAT","Škoda","Skoda","Fiat","Citroën","Citroen","Vauxhall","Peugeot","Renault","Suzuki","MG","Kia","Hyundai"];
+const EXOTIC = ["Ferrari","Lamborghini","McLaren","Pagani","Bugatti","Koenigsegg","Rimac","Aston Martin","Bentley","Rolls-Royce","Maybach","Maserati","Pininfarina","Zenvo","Singer","Gordon Murray"];
+const PREMIUM = ["BMW","Mercedes-Benz","Mercedes-AMG","Audi","Porsche","Land Rover","Jaguar","Tesla","Lexus","Volvo","MINI","Polestar","Genesis","Alpine","Lotus","Morgan","TVR","Lucid","Rivian"];
+const ECONOMY = ["Dacia","SEAT","Škoda","Skoda","Fiat","Citroën","Citroen","Vauxhall","Peugeot","Renault","Suzuki","MG","Kia","Hyundai","Daihatsu","Perodua","Proton","Lada","Tata","BYD","Leapmotor","VinFast","XPeng"];
 
 function baseValue(make: string, year: number) {
   const age = Math.max(0, 2026 - year);
   let base = 18000;
-  if (PREMIUM.includes(make)) base = 32000;
+  if (EXOTIC.includes(make)) base = 120000;
+  else if (PREMIUM.includes(make)) base = 32000;
   else if (ECONOMY.includes(make)) base = 13000;
+  if (age >= 30) return Math.round(base * Math.max(0.35, Math.pow(0.97, age - 30) * 0.55));
   return Math.round(base * Math.max(0.15, Math.pow(0.86, age)));
 }
 
