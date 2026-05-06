@@ -1,0 +1,270 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { Header, TestModeBanner } from "@/components/Layout";
+import { Footer } from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
+import { toast } from "sonner";
+import { ArrowLeft, RefreshCw, Save, Crown, X } from "lucide-react";
+
+export default function EditValuation() {
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const { isPremium, loading: pLoading, setPremium } = useProfile();
+  const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [row, setRow] = useState<any>(null);
+
+  const [mileage, setMileage] = useState("");
+  const [registration, setRegistration] = useState("");
+  const [motExpiry, setMotExpiry] = useState("");
+  const [serviceNotes, setServiceNotes] = useState("");
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
+  const [newPhotos, setNewPhotos] = useState<PhotoFile[]>([]);
+
+  useEffect(() => { document.title = "Edit valuation — Valu8"; }, []);
+
+  useEffect(() => {
+    if (!user || !id) return;
+    (async () => {
+      const { data, error } = await supabase.from("valuations").select("*").eq("id", id).maybeSingle();
+      if (error || !data) { toast.error("Valuation not found"); navigate("/dashboard"); return; }
+      setRow(data);
+      setMileage(String(data.mileage ?? ""));
+      setRegistration(data.registration ?? "");
+      setMotExpiry(data.mot_expiry ?? "");
+      setServiceNotes(data.service_notes ?? "");
+      setExistingPhotos(Array.isArray(data.photo_urls) ? (data.photo_urls as unknown as string[]) : []);
+      setLoading(false);
+    })();
+  }, [id, user, navigate]);
+
+  async function uploadNewPhotos(): Promise<string[]> {
+    if (!user) return [];
+    const urls: string[] = [];
+    for (const p of newPhotos) {
+      const ext = p.file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("vehicle-photos").upload(path, p.file, {
+        contentType: p.file.type, upsert: false,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from("vehicle-photos").getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }
+    return urls;
+  }
+
+  async function saveOnly() {
+    if (!row) return;
+    setBusy(true);
+    try {
+      const newUrls = await uploadNewPhotos();
+      const allPhotos = [...existingPhotos, ...newUrls];
+      const { error } = await supabase.from("valuations").update({
+        mileage: Number(mileage) || row.mileage,
+        registration: registration || null,
+        mot_expiry: motExpiry || null,
+        service_notes: serviceNotes || null,
+        photo_urls: allPhotos,
+      }).eq("id", row.id);
+      if (error) throw error;
+      toast.success("Changes saved");
+      navigate(`/valuation/${row.id}`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save");
+    } finally { setBusy(false); }
+  }
+
+  async function regenerate() {
+    if (!row || !user) return;
+    setRegenerating(true);
+    try {
+      const newUrls = await uploadNewPhotos();
+      const allPhotos = [...existingPhotos, ...newUrls];
+
+      // Save originals as a snapshot the first time we regenerate
+      const previousVersions = Array.isArray(row.report?.previousVersions) ? row.report.previousVersions : [];
+      const snapshot = {
+        savedAt: new Date().toISOString(),
+        mileage: row.mileage,
+        registration: row.registration,
+        motExpiry: row.mot_expiry,
+        serviceNotes: row.service_notes,
+        photoUrls: row.photo_urls,
+        report: { ...row.report, previousVersions: undefined },
+      };
+
+      const { data: aiData, error: aiErr } = await supabase.functions.invoke("analyse-vehicle", {
+        body: {
+          make: row.make,
+          model: row.model.split(" · ")[0],
+          variant: row.model.includes(" · ") ? row.model.split(" · ")[1] : undefined,
+          year: row.year,
+          mileage: Number(mileage) || row.mileage,
+          registration: registration || undefined,
+          motExpiry: motExpiry || undefined,
+          serviceNotes: serviceNotes || undefined,
+          photoUrls: allPhotos,
+        },
+      });
+      if (aiErr) throw aiErr;
+      const report = (aiData as any)?.report;
+      if (!report) throw new Error("AI did not return a report");
+
+      const updatedReport = { ...report, previousVersions: [snapshot, ...previousVersions].slice(0, 10) };
+
+      const { error } = await supabase.from("valuations").update({
+        mileage: Number(mileage) || row.mileage,
+        registration: registration || null,
+        mot_expiry: motExpiry || null,
+        service_notes: serviceNotes || null,
+        photo_urls: allPhotos,
+        condition_score: report.conditionScore,
+        private_value: report.values.privateSale,
+        report: updatedReport,
+      }).eq("id", row.id);
+      if (error) throw error;
+
+      toast.success("Report regenerated — original kept in history");
+      navigate(`/valuation/${row.id}`);
+    } catch (e: any) {
+      toast.error(e.message || "Regeneration failed");
+    } finally { setRegenerating(false); }
+  }
+
+  if (loading || pLoading) {
+    return (
+      <div className="min-h-screen grid place-items-center">
+        <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isPremium) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <TestModeBanner />
+        <Header />
+        <main className="flex-1 container py-16 max-w-2xl">
+          <div className="premium-card p-10 text-center">
+            <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 grid place-items-center mb-4">
+              <Crown className="h-6 w-6 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold">Editing is a Premium feature</h1>
+            <p className="text-muted-foreground mt-3 max-w-md mx-auto">
+              Premium subscribers can update any saved valuation — change mileage, refresh photos, add new service history, then regenerate the report. The original is always kept.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
+              <Button variant="hero" size="lg" onClick={() => setPremium(true, "monthly")}>
+                <Crown className="h-4 w-4" /> Activate Premium (test)
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link to="/dashboard">Back to dashboard</Link>
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-6">In production this would route to Stripe checkout. Test mode toggles instantly.</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <TestModeBanner />
+      <Header />
+      <main className="flex-1 container py-8 md:py-12 max-w-4xl">
+        <Link to={`/valuation/${row.id}`} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4">
+          <ArrowLeft className="h-4 w-4" /> Back to report
+        </Link>
+
+        <div className="flex items-end justify-between gap-4 mb-6 flex-wrap">
+          <div>
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary mb-2">
+              <Crown className="h-3 w-3" /> Premium edit mode
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight">Edit valuation</h1>
+            <p className="text-muted-foreground mt-1">{row.year} {row.make} {row.model}</p>
+          </div>
+        </div>
+
+        <div className="premium-card p-6 sm:p-8 space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label htmlFor="mileage">Mileage</Label>
+              <Input id="mileage" type="number" inputMode="numeric" value={mileage} onChange={(e) => setMileage(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reg">UK Registration</Label>
+              <Input id="reg" value={registration} onChange={(e) => setRegistration(e.target.value.toUpperCase())} maxLength={10} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mot">MOT expiry</Label>
+              <Input id="mot" type="date" value={motExpiry} onChange={(e) => setMotExpiry(e.target.value)} />
+            </div>
+            <div className="sm:col-span-2 space-y-2">
+              <Label htmlFor="notes">Service history & spec notes</Label>
+              <Textarea id="notes" rows={4} maxLength={500} value={serviceNotes} onChange={(e) => setServiceNotes(e.target.value)}
+                placeholder="Add new service, options, modifications, recent receipts…" />
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold mb-3">Existing photos</h3>
+            {existingPhotos.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No photos on this valuation yet.</p>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {existingPhotos.map((url, i) => (
+                  <div key={url} className="relative group aspect-[4/3] rounded-lg overflow-hidden border border-border">
+                    <img src={url} alt={`Photo ${i+1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setExistingPhotos(p => p.filter(u => u !== url))}
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/90 border border-border grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                      aria-label="Remove photo"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold mb-3">Add new photos</h3>
+            <PhotoUploader photos={newPhotos} onChange={setNewPhotos} />
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-border">
+            <p className="text-xs text-muted-foreground max-w-sm">
+              Saving keeps the current report. Regenerating creates a fresh AI report and keeps the original in history.
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" onClick={saveOnly} disabled={busy || regenerating}>
+                <Save className="h-4 w-4" /> {busy ? "Saving…" : "Save changes"}
+              </Button>
+              <Button variant="hero" onClick={regenerate} disabled={busy || regenerating}>
+                <RefreshCw className={`h-4 w-4 ${regenerating ? "animate-spin" : ""}`} />
+                {regenerating ? "Regenerating…" : "Regenerate report"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}

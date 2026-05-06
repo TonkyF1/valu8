@@ -11,8 +11,9 @@ import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
 import {
   Share2, Download, Bookmark, Check, ShieldCheck, AlertTriangle, ArrowLeft,
-  Sparkles, MapPin, FileText, Tag, Star, TrendingUp,
+  Sparkles, MapPin, FileText, Tag, Star, TrendingUp, Pencil,
 } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ interface Valuation {
 
 export default function Report() {
   const { id } = useParams();
+  const { isPremium } = useProfile();
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
@@ -84,6 +86,9 @@ export default function Report() {
             <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> All valuations</Link>
           </Button>
           <div className="flex items-center gap-2">
+            <Button asChild variant={isPremium ? "premium" : "ghost"} size="sm" title={isPremium ? "Edit valuation" : "Premium feature"}>
+              <Link to={`/valuation/${v.id}/edit`}><Pencil className="h-4 w-4" />Edit</Link>
+            </Button>
             <Button variant="ghost" size="sm" onClick={share}><Share2 className="h-4 w-4" />Share</Button>
             <Button variant="ghost" size="sm" onClick={() => { downloadValuationPdf(v, r); toast.success("PDF downloaded"); }}><Download className="h-4 w-4" />PDF</Button>
             <Button variant="premium" size="sm" onClick={() => toast.success("Already saved to My Valuations")}><Bookmark className="h-4 w-4" />Saved</Button>

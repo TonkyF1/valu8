@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/useProfile";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, Car, TrendingUp, Activity } from "lucide-react";
+import { Plus, Eye, Car, TrendingUp, Activity, Pencil, Crown } from "lucide-react";
 import { format } from "date-fns";
 
 interface Row {
@@ -22,6 +23,7 @@ interface Row {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { isPremium, setPremium } = useProfile();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,9 +55,24 @@ export default function Dashboard() {
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">My Valuations</h1>
             <p className="text-muted-foreground mt-2">Every report you've generated, all in one place.</p>
           </div>
-          <Button asChild variant="hero" size="lg">
-            <Link to="/valuation/new"><Plus className="h-4 w-4" /> New valuation</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPremium(!isPremium, isPremium ? "free" : "monthly")}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                isPremium
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+              title="Toggle Premium (test mode)"
+            >
+              <Crown className="h-3.5 w-3.5" />
+              {isPremium ? "Premium active" : "Activate Premium"}
+            </button>
+            <Button asChild variant="hero" size="lg">
+              <Link to="/valuation/new"><Plus className="h-4 w-4" /> New valuation</Link>
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
@@ -84,30 +101,42 @@ export default function Dashboard() {
             {rows.map(r => {
               const cover = Array.isArray(r.photo_urls) ? r.photo_urls[0] : null;
               return (
-                <Link key={r.id} to={`/valuation/${r.id}`} className="premium-card p-4 sm:p-5 flex items-center gap-4 hover:border-primary/40 transition-colors group">
-                  <div className="h-16 w-20 sm:h-20 sm:w-28 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                    {cover ? (
-                      <img src={cover} alt={`${r.make} ${r.model}`} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full grid place-items-center text-muted-foreground"><Car className="h-5 w-5" /></div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      <h3 className="font-semibold truncate">{r.year} {r.make} {r.model}</h3>
-                      <span className="text-xs text-muted-foreground">{r.mileage.toLocaleString()} mi</span>
+                <div key={r.id} className="premium-card p-4 sm:p-5 flex items-center gap-4 hover:border-primary/40 transition-colors group">
+                  <Link to={`/valuation/${r.id}`} className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="h-16 w-20 sm:h-20 sm:w-28 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+                      {cover ? (
+                        <img src={cover} alt={`${r.make} ${r.model}`} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full grid place-items-center text-muted-foreground"><Car className="h-5 w-5" /></div>
+                      )}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">{format(new Date(r.created_at), "d MMM yyyy")}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <h3 className="font-semibold truncate">{r.year} {r.make} {r.model}</h3>
+                        <span className="text-xs text-muted-foreground">{r.mileage.toLocaleString()} mi</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">{format(new Date(r.created_at), "d MMM yyyy")}</div>
+                    </div>
+                    <div className="text-right hidden sm:block">
+                      <div className="text-xs text-muted-foreground">Private sale</div>
+                      <div className="font-semibold text-gradient-primary text-lg">£{(r.private_value || 0).toLocaleString()}</div>
+                    </div>
+                  </Link>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button asChild variant="ghost" size="sm" title={isPremium ? "Edit valuation" : "Premium feature"}>
+                      <Link to={`/valuation/${r.id}/edit`}>
+                        {isPremium ? <Pencil className="h-4 w-4" /> : <Crown className="h-4 w-4 text-primary" />}
+                        <span className="hidden sm:inline">Edit</span>
+                      </Link>
+                    </Button>
+                    <Button asChild variant="ghost" size="sm">
+                      <Link to={`/valuation/${r.id}`}>
+                        <Eye className="h-4 w-4" />
+                        <span className="hidden sm:inline">View</span>
+                      </Link>
+                    </Button>
                   </div>
-                  <div className="text-right hidden sm:block">
-                    <div className="text-xs text-muted-foreground">Private sale</div>
-                    <div className="font-semibold text-gradient-primary text-lg">£{(r.private_value || 0).toLocaleString()}</div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="opacity-60 group-hover:opacity-100">
-                    <Eye className="h-4 w-4" />
-                    <span className="hidden sm:inline">View</span>
-                  </Button>
-                </Link>
+                </div>
               );
             })}
           </div>
