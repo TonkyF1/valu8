@@ -243,6 +243,19 @@ export default function Report() {
           </ol>
         </Section>
 
+        <AdvertCreator
+          valuationId={v.id}
+          vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, registration: v.registration, mot_expiry: v.mot_expiry }}
+          report={{
+            recommendations: { listingPrice: r.recommendations.listingPrice, highlights: r.recommendations.highlights },
+            conditionScore: r.conditionScore,
+            conditionLabel: r.conditionLabel,
+            honestAnalysis: r.honestAnalysis,
+            strengths: r.strengths,
+          }}
+          initialAdvert={(r as any).advert ?? null}
+        />
+
         <footer className="mt-10 pt-8 border-t border-border text-xs text-muted-foreground space-y-2">
           <p><strong className="text-foreground/80">Data sources:</strong> UK retail and trade pricing benchmarks, DVLA-style MOT/HPI summaries, Valu8 condition modelling.</p>
           <p><strong className="text-foreground/80">Disclaimer:</strong> Valuations are AI-generated estimates for guidance only and do not constitute financial advice or a guaranteed sale price. Always verify HPI and MOT data through official sources before transacting.</p>
