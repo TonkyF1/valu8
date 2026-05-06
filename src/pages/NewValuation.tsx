@@ -163,7 +163,7 @@ export default function NewValuation() {
                     <SelectContent>
                       <div className="p-2 sticky top-0 bg-popover z-10">
                         <Input
-                          placeholder="Search 50+ manufacturers"
+                          placeholder="Search 130+ manufacturers"
                           value={makeQuery}
                           onChange={(e) => setMakeQuery(e.target.value)}
                           onKeyDown={(e) => e.stopPropagation()}
