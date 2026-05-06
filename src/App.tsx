@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Analysing from "./pages/Analysing";
 import Report from "./pages/Report";
+import EditValuation from "./pages/EditValuation";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Disclaimers from "./pages/Disclaimers";
