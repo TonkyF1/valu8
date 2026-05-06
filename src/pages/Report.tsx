@@ -77,8 +77,8 @@ export default function Report() {
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main className="flex-1 container py-8 md:py-10 max-w-6xl">
-        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+      <main className="flex-1 container py-6 md:py-8 max-w-5xl">
+        <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           <Button asChild variant="ghost" size="sm">
             <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> All valuations</Link>
           </Button>
