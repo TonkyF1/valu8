@@ -5,6 +5,7 @@ import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { ConditionGauge } from "@/components/ConditionGauge";
+import { AdvertCreator } from "@/components/AdvertCreator";
 import type { ValuationReport } from "@/lib/valuation";
 import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
