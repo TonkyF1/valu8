@@ -22,6 +22,7 @@ import { Sparkles, ArrowRight, ShieldCheck, Zap, TrendingUp } from "lucide-react
 const formSchema = z.object({
   make: z.string().min(1, "Select a make"),
   model: z.string().trim().min(1, "Enter a model").max(60),
+  variant: z.string().trim().max(80).optional().or(z.literal("")),
   year: z.coerce.number().int().min(1995).max(2026),
   mileage: z.coerce.number().int().min(0).max(500000),
   registration: z.string().trim().max(10).optional().or(z.literal("")),
