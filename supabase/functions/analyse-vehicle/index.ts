@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
         type: "text",
         text:
 `Vehicle:
-- ${body.year} ${body.make} ${body.model}
+- ${body.year} ${body.make} ${body.model}${body.variant ? ` — ${body.variant}` : ""}
 - Mileage: ${body.mileage.toLocaleString()} miles
 - Registration: ${body.registration || "not provided"}
 - MOT expiry: ${body.motExpiry || "not provided"}
