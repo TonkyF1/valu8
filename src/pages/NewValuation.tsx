@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { CAR_MAKES, YEARS } from "@/lib/cars";
 import { getModelsForMake } from "@/lib/models";
-import { getVariantsForMake } from "@/lib/variants";
+import { getVariantsFor } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
@@ -53,7 +53,7 @@ export default function NewValuation() {
   const filteredMakes = CAR_MAKES.filter(m => m.toLowerCase().includes(makeQuery.toLowerCase()));
   const availableModels = getModelsForMake(make);
   const filteredModels = availableModels.filter(m => m.toLowerCase().includes(modelQuery.toLowerCase()));
-  const availableVariants = getVariantsForMake(make);
+  const availableVariants = getVariantsFor(make, model);
   const filteredVariants = availableVariants.filter(v => v.toLowerCase().includes(variantQuery.toLowerCase()));
 
   async function submit(e: React.FormEvent) {
@@ -158,7 +158,7 @@ export default function NewValuation() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-6">
                 <div className="space-y-2">
                   <Label>Make</Label>
-                  <Select value={make} onValueChange={(v) => { setMake(v); setModel(""); setModelQuery(""); }}>
+                  <Select value={make} onValueChange={(v) => { setMake(v); setModel(""); setModelQuery(""); setVariant(""); setVariantQuery(""); }}>
                     <SelectTrigger><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
                     <SelectContent>
                       <div className="p-2 sticky top-0 bg-popover z-10">
@@ -183,7 +183,7 @@ export default function NewValuation() {
                 <div className="space-y-2">
                   <Label>Model</Label>
                   {availableModels.length > 0 ? (
-                    <Select value={model} onValueChange={setModel}>
+                    <Select value={model} onValueChange={(v) => { setModel(v); setVariant(""); setVariantQuery(""); }}>
                       <SelectTrigger><SelectValue placeholder={make ? "Select model" : "Pick a make first"} /></SelectTrigger>
                       <SelectContent>
                         <div className="p-2 sticky top-0 bg-popover z-10">
@@ -210,45 +210,55 @@ export default function NewValuation() {
 
                 <div className="sm:col-span-2 space-y-2">
                   <Label>Variant / Engine / Trim <span className="text-muted-foreground font-normal">(optional but recommended)</span></Label>
-                  <Select value={variant} onValueChange={setVariant}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={make ? "e.g. 1.5 dCi, GT Line, M Sport…" : "Pick a make first"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div className="p-2 sticky top-0 bg-popover z-10">
-                        <Input
-                          placeholder="Search or type your own"
-                          value={variantQuery}
-                          onChange={(e) => setVariantQuery(e.target.value)}
-                          onKeyDown={(e) => e.stopPropagation()}
-                          className="h-9"
-                        />
+                  {availableVariants.length > 0 ? (
+                    <>
+                      <Select value={variant} onValueChange={setVariant}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={`Choose a ${model || make} variant…`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <div className="p-2 sticky top-0 bg-popover z-10">
+                            <Input
+                              placeholder="Search or type your own"
+                              value={variantQuery}
+                              onChange={(e) => setVariantQuery(e.target.value)}
+                              onKeyDown={(e) => e.stopPropagation()}
+                              className="h-9"
+                            />
+                          </div>
+                          {filteredVariants.map((v) => (
+                            <SelectItem key={v} value={v}>{v}</SelectItem>
+                          ))}
+                          {variantQuery.trim() && !filteredVariants.some(v => v.toLowerCase() === variantQuery.trim().toLowerCase()) && (
+                            <SelectItem value={variantQuery.trim()}>Use "{variantQuery.trim()}"</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {availableVariants.slice(0, 6).map((v) => (
+                          <button
+                            key={v}
+                            type="button"
+                            onClick={() => setVariant(v)}
+                            className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                              variant === v
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                            }`}
+                          >
+                            {v}
+                          </button>
+                        ))}
                       </div>
-                      {filteredVariants.map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
-                      {variantQuery.trim() && !filteredVariants.some(v => v.toLowerCase() === variantQuery.trim().toLowerCase()) && (
-                        <SelectItem value={variantQuery.trim()}>Use "{variantQuery.trim()}"</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {make && availableVariants.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {availableVariants.slice(0, 6).map((v) => (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => setVariant(v)}
-                          className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
-                            variant === v
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                          }`}
-                        >
-                          {v}
-                        </button>
-                      ))}
-                    </div>
+                    </>
+                  ) : (
+                    <Input
+                      placeholder={make ? "e.g. RS 200 Mk3, 3.0 V6 Twin Turbo, Classic Spec…" : "Pick a make first"}
+                      value={variant}
+                      onChange={(e) => setVariant(e.target.value)}
+                      disabled={!make}
+                      maxLength={80}
+                    />
                   )}
                 </div>
 
