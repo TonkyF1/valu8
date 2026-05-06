@@ -7,6 +7,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 interface AnalyseRequest {
   make: string;
   model: string;
+  variant?: string;
   year: number;
   mileage: number;
   registration?: string;
