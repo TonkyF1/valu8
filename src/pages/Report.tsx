@@ -273,11 +273,11 @@ function ValueCard({ label, value, highlight }: { label: string; value: number; 
 
 function Section({ icon, title, right, children }: { icon: React.ReactNode; title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="premium-card p-6 sm:p-8 mb-6 animate-fade-in-up">
-      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+    <section className="premium-card p-5 sm:p-6 mb-4 animate-fade-in-up">
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="h-7 w-7 rounded-lg bg-primary/15 text-primary grid place-items-center">{icon}</span>
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <h2 className="text-base font-semibold">{title}</h2>
         </div>
         {right}
       </div>
