@@ -12,7 +12,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { CAR_MAKES, YEARS } from "@/lib/cars";
+import { getModelsForMake } from "@/lib/models";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
+import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
 import { Sparkles, ArrowRight, ShieldCheck, Zap, TrendingUp } from "lucide-react";
 
