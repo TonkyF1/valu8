@@ -259,6 +259,7 @@ export default function NewValuation() {
           </form>
         </section>
       </main>
+      <Footer />
     </div>
   );
 }
