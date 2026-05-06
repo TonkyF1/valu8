@@ -10,6 +10,9 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Analysing from "./pages/Analysing";
 import Report from "./pages/Report";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Disclaimers from "./pages/Disclaimers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
