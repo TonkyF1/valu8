@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header, TestModeBanner } from "@/components/Layout";
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { ConditionGauge } from "@/components/ConditionGauge";
 import type { ValuationReport } from "@/lib/valuation";
+import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
 import {
   Share2, Download, Bookmark, Check, ShieldCheck, AlertTriangle, ArrowLeft,
@@ -82,7 +84,7 @@ export default function Report() {
           </Button>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={share}><Share2 className="h-4 w-4" />Share</Button>
-            <Button variant="ghost" size="sm" onClick={() => toast("PDF export coming soon")}><Download className="h-4 w-4" />PDF</Button>
+            <Button variant="ghost" size="sm" onClick={() => { downloadValuationPdf(v, r); toast.success("PDF downloaded"); }}><Download className="h-4 w-4" />PDF</Button>
             <Button variant="premium" size="sm" onClick={() => toast.success("Already saved to My Valuations")}><Bookmark className="h-4 w-4" />Saved</Button>
           </div>
         </div>
@@ -245,6 +247,7 @@ export default function Report() {
           <p><strong className="text-foreground/80">Disclaimer:</strong> Valuations are AI-generated estimates for guidance only and do not constitute financial advice or a guaranteed sale price. Always verify HPI and MOT data through official sources before transacting.</p>
         </footer>
       </main>
+      <Footer />
     </div>
   );
 }

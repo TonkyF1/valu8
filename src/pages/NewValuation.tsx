@@ -12,7 +12,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { CAR_MAKES, YEARS } from "@/lib/cars";
+import { getModelsForMake } from "@/lib/models";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
+import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
 import { Sparkles, ArrowRight, ShieldCheck, Zap, TrendingUp } from "lucide-react";
 
@@ -33,6 +35,7 @@ export default function NewValuation() {
   const [make, setMake] = useState("");
   const [makeQuery, setMakeQuery] = useState("");
   const [model, setModel] = useState("");
+  const [modelQuery, setModelQuery] = useState("");
   const [year, setYear] = useState<string>("");
   const [mileage, setMileage] = useState("");
   const [registration, setRegistration] = useState("");
@@ -44,6 +47,8 @@ export default function NewValuation() {
   useEffect(() => { document.title = "New valuation — Valu8"; }, []);
 
   const filteredMakes = CAR_MAKES.filter(m => m.toLowerCase().includes(makeQuery.toLowerCase()));
+  const availableModels = getModelsForMake(make);
+  const filteredModels = availableModels.filter(m => m.toLowerCase().includes(modelQuery.toLowerCase()));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -146,7 +151,7 @@ export default function NewValuation() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-6">
                 <div className="space-y-2">
                   <Label>Make</Label>
-                  <Select value={make} onValueChange={setMake}>
+                  <Select value={make} onValueChange={(v) => { setMake(v); setModel(""); setModelQuery(""); }}>
                     <SelectTrigger><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
                     <SelectContent>
                       <div className="p-2 sticky top-0 bg-popover z-10">
@@ -169,8 +174,31 @@ export default function NewValuation() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="model">Model</Label>
-                  <Input id="model" placeholder="e.g. 3 Series, Golf GTI" value={model} onChange={(e) => setModel(e.target.value)} />
+                  <Label>Model</Label>
+                  {availableModels.length > 0 ? (
+                    <Select value={model} onValueChange={setModel}>
+                      <SelectTrigger><SelectValue placeholder={make ? "Select model" : "Pick a make first"} /></SelectTrigger>
+                      <SelectContent>
+                        <div className="p-2 sticky top-0 bg-popover z-10">
+                          <Input
+                            placeholder={`Search ${make} models`}
+                            value={modelQuery}
+                            onChange={(e) => setModelQuery(e.target.value)}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            className="h-9"
+                          />
+                        </div>
+                        {filteredModels.map((m) => (
+                          <SelectItem key={m} value={m}>{m}</SelectItem>
+                        ))}
+                        {filteredModels.length === 0 && modelQuery && (
+                          <SelectItem value={modelQuery.trim()}>Use "{modelQuery.trim()}"</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input placeholder={make ? "e.g. 3 Series" : "Pick a make first"} value={model} onChange={(e) => setModel(e.target.value)} disabled={!make} />
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -231,6 +259,7 @@ export default function NewValuation() {
           </form>
         </section>
       </main>
+      <Footer />
     </div>
   );
 }
