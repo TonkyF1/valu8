@@ -60,7 +60,7 @@ export default function NewValuation() {
     e.preventDefault();
     if (!user) return navigate("/auth");
 
-    const parsed = formSchema.safeParse({ make, model, year, mileage, registration, motExpiry, serviceNotes });
+    const parsed = formSchema.safeParse({ make, model, variant, year, mileage, registration, motExpiry, serviceNotes });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
       return;
