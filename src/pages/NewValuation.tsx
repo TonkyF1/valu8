@@ -183,7 +183,7 @@ export default function NewValuation() {
                 <div className="space-y-2">
                   <Label>Model</Label>
                   {availableModels.length > 0 ? (
-                    <Select value={model} onValueChange={setModel}>
+                    <Select value={model} onValueChange={(v) => { setModel(v); setVariant(""); setVariantQuery(""); }}>
                       <SelectTrigger><SelectValue placeholder={make ? "Select model" : "Pick a make first"} /></SelectTrigger>
                       <SelectContent>
                         <div className="p-2 sticky top-0 bg-popover z-10">
