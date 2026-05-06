@@ -16,14 +16,17 @@ interface AnalyseRequest {
   photoUrls: string[];
 }
 
-const PREMIUM = ["BMW","Mercedes-Benz","Audi","Porsche","Land Rover","Jaguar","Tesla","Lexus","Volvo","MINI","Bentley","Aston Martin","Maserati","Ferrari","Lamborghini","Rolls-Royce","McLaren","Polestar","Genesis"];
-const ECONOMY = ["Dacia","SEAT","Škoda","Skoda","Fiat","Citroën","Citroen","Vauxhall","Peugeot","Renault","Suzuki","MG","Kia","Hyundai"];
+const EXOTIC = ["Ferrari","Lamborghini","McLaren","Pagani","Bugatti","Koenigsegg","Rimac","Aston Martin","Bentley","Rolls-Royce","Maybach","Maserati","Pininfarina","Zenvo","Singer","Gordon Murray"];
+const PREMIUM = ["BMW","Mercedes-Benz","Mercedes-AMG","Audi","Porsche","Land Rover","Jaguar","Tesla","Lexus","Volvo","MINI","Polestar","Genesis","Alpine","Lotus","Morgan","TVR","Lucid","Rivian"];
+const ECONOMY = ["Dacia","SEAT","Škoda","Skoda","Fiat","Citroën","Citroen","Vauxhall","Peugeot","Renault","Suzuki","MG","Kia","Hyundai","Daihatsu","Perodua","Proton","Lada","Tata","BYD","Leapmotor","VinFast","XPeng"];
 
 function baseValue(make: string, year: number) {
   const age = Math.max(0, 2026 - year);
   let base = 18000;
-  if (PREMIUM.includes(make)) base = 32000;
+  if (EXOTIC.includes(make)) base = 120000;
+  else if (PREMIUM.includes(make)) base = 32000;
   else if (ECONOMY.includes(make)) base = 13000;
+  if (age >= 30) return Math.round(base * Math.max(0.35, Math.pow(0.97, age - 30) * 0.55));
   return Math.round(base * Math.max(0.15, Math.pow(0.86, age)));
 }
 
@@ -71,8 +74,14 @@ function hash(s: string) {
 
 const SYSTEM_PROMPT = `You are Valu8's senior UK car valuation analyst. You assess vehicles for PRIVATE SELLERS, not dealers. You are honest, specific, and unsentimental — buyers want trust, not marketing fluff.
 
+You value EVERY type of car: modern mainstream, premium, EVs, JDM imports, American muscle, low-volume British sports cars, supercars and hypercars (Ferrari, Lamborghini, McLaren, Pagani, Bugatti, Koenigsegg), AND classics/heritage vehicles from the 1950s onwards (Jaguar E-Type, classic Mini, MGB, Triumph TR, Porsche 911 air-cooled, Ford Escort Cosworth, Lancia Delta Integrale, etc.). Use your deep market knowledge:
+- For classics: condition tier matters far more than mileage. Originality, matching numbers, provenance, restoration quality drive value. Concours examples can be multiples of "average" cars.
+- For modern exotics/limited editions: spec, options, delivery mileage and provenance dominate.
+- For mainstream cars: mileage, service history and visible condition are king.
+- Always reflect current 2026 UK private-sale market reality.
+
 You will receive vehicle details and 0-6 photos. Your job:
-1. Score the visible/inferred CONDITION 1.0-10.0 (be honest — most cars are 6.5-8.5).
+1. Score the visible/inferred CONDITION 1.0-10.0 (be honest — most cars are 6.5-8.5; classics judged on a restoration-quality basis).
 2. Identify concrete strengths and watch points based on photos and data.
 3. Provide market positioning, an honest analysis paragraph, and actionable seller recommendations.
 

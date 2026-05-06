@@ -23,7 +23,7 @@ const formSchema = z.object({
   make: z.string().min(1, "Select a make"),
   model: z.string().trim().min(1, "Enter a model").max(60),
   variant: z.string().trim().max(80).optional().or(z.literal("")),
-  year: z.coerce.number().int().min(1995).max(2026),
+  year: z.coerce.number().int().min(1950).max(2026),
   mileage: z.coerce.number().int().min(0).max(500000),
   registration: z.string().trim().max(10).optional().or(z.literal("")),
   motExpiry: z.string().optional().or(z.literal("")),
@@ -163,7 +163,7 @@ export default function NewValuation() {
                     <SelectContent>
                       <div className="p-2 sticky top-0 bg-popover z-10">
                         <Input
-                          placeholder="Search 50+ manufacturers"
+                          placeholder="Search 130+ manufacturers"
                           value={makeQuery}
                           onChange={(e) => setMakeQuery(e.target.value)}
                           onKeyDown={(e) => e.stopPropagation()}
