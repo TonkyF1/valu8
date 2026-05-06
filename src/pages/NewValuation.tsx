@@ -158,7 +158,7 @@ export default function NewValuation() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-6">
                 <div className="space-y-2">
                   <Label>Make</Label>
-                  <Select value={make} onValueChange={(v) => { setMake(v); setModel(""); setModelQuery(""); }}>
+                  <Select value={make} onValueChange={(v) => { setMake(v); setModel(""); setModelQuery(""); setVariant(""); setVariantQuery(""); }}>
                     <SelectTrigger><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
                     <SelectContent>
                       <div className="p-2 sticky top-0 bg-popover z-10">
