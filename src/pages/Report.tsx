@@ -125,16 +125,35 @@ export default function Report() {
           </section>
         )}
 
-        {/* Score + Values */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <div className="premium-card p-6 flex flex-col items-center justify-center text-center">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">Condition</div>
-            <ConditionGauge score={r.conditionScore} label={r.conditionLabel} />
+        {/* Values + Score */}
+        <section className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
+          <div className="lg:col-span-3 space-y-3">
+            <ValueCard
+              label="Trade-in"
+              tag="Quick Sale"
+              value={r.values.dealerTradeIn}
+              description="What a dealer would pay you today. Fastest, lowest hassle, lowest return."
+            />
+            <ValueCard
+              label="Private Sale"
+              tag="Best Return"
+              value={r.values.privateSale}
+              description="The sweet spot for selling yourself — strong return for a few weeks of effort."
+              highlight
+            />
+            <ValueCard
+              label="Dealer Retail"
+              tag="Forecourt"
+              value={r.values.dealerRetail}
+              description="What you'd typically pay buying the same car from a dealer's forecourt."
+            />
           </div>
-          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <ValueCard label="Trade-in" value={r.values.dealerTradeIn} />
-            <ValueCard label="Private Sale" value={r.values.privateSale} highlight />
-            <ValueCard label="Retail" value={r.values.dealerRetail} />
+          <div className="lg:col-span-2 premium-card p-5 flex flex-col items-center justify-center text-center">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">Condition Score</div>
+            <ConditionGauge score={r.conditionScore} label={r.conditionLabel} size={150} />
+            <p className="text-xs text-muted-foreground mt-4 max-w-[220px] leading-relaxed">
+              Based on photos, mileage and history. Higher scores command stronger asking prices.
+            </p>
           </div>
         </section>
 
