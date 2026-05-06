@@ -247,6 +247,7 @@ export default function Report() {
           <p><strong className="text-foreground/80">Disclaimer:</strong> Valuations are AI-generated estimates for guidance only and do not constitute financial advice or a guaranteed sale price. Always verify HPI and MOT data through official sources before transacting.</p>
         </footer>
       </main>
+      <Footer />
     </div>
   );
 }
