@@ -153,28 +153,28 @@ export default function Report() {
         </Section>
 
         {/* Strengths + watch points */}
-        <section className="grid md:grid-cols-2 gap-4 mb-6">
-          <div className="premium-card p-6">
-            <div className="flex items-center gap-2 mb-4">
+        <section className="grid md:grid-cols-2 gap-3 mb-4">
+          <div className="premium-card p-5">
+            <div className="flex items-center gap-2 mb-3">
               <span className="h-7 w-7 rounded-lg bg-primary/15 text-primary grid place-items-center"><Star className="h-3.5 w-3.5" /></span>
-              <h2 className="text-lg font-semibold">Strengths</h2>
+              <h2 className="text-base font-semibold">Strengths</h2>
             </div>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {r.strengths.map(s => (
-                <li key={s} className="flex gap-3 text-sm leading-relaxed">
+                <li key={s} className="flex gap-2.5 text-sm leading-snug">
                   <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> {s}
                 </li>
               ))}
             </ul>
           </div>
-          <div className="premium-card p-6">
-            <div className="flex items-center gap-2 mb-4">
+          <div className="premium-card p-5">
+            <div className="flex items-center gap-2 mb-3">
               <span className="h-7 w-7 rounded-lg bg-amber-500/15 text-amber-400 grid place-items-center"><AlertTriangle className="h-3.5 w-3.5" /></span>
-              <h2 className="text-lg font-semibold">Watch Points</h2>
+              <h2 className="text-base font-semibold">Watch Points</h2>
             </div>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {r.watchPoints.map(s => (
-                <li key={s} className="flex gap-3 text-sm leading-relaxed">
+                <li key={s} className="flex gap-2.5 text-sm leading-snug">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" /> {s}
                 </li>
               ))}
