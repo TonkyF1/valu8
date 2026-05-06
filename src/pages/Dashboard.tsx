@@ -23,6 +23,7 @@ interface Row {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { isPremium, setPremium } = useProfile();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
