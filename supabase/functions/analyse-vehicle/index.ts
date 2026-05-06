@@ -212,20 +212,21 @@ Assess condition from photos and data. Be honest and specific. Call the valu8_re
       recommendations: { whereToSell: string[]; highlights: string[]; documents: string[] };
     };
 
-    // ----- Pricing engine (deterministic, AI-condition-aware) -----
+    // ----- Pricing engine: trust the AI's market-aware private-sale value, derive tiers from it -----
     const score = Math.max(1, Math.min(10, ai.conditionScore));
-    const expectedMileage = (2026 - body.year) * 8500;
-    const mileageRatio = body.mileage / Math.max(expectedMileage, 1);
-    const base = baseValue(body.make, body.year);
-    const conditionMult = 0.7 + (score / 10) * 0.55;
-    const mileageMult = Math.max(0.55, Math.min(1.15, 1 - (mileageRatio - 1) * 0.18));
-    const fair = base * conditionMult * mileageMult;
+    const aiPrivate = Math.max(500, Number(ai.privateSaleValue) || 0);
+    // Fallback if AI returns suspicious value
+    const fallback = baseValue(body.make, body.year);
+    const fair = aiPrivate > fallback * 0.2 ? aiPrivate : fallback;
+    // Round granularity scales with magnitude
+    const grain = fair >= 500000 ? 5000 : fair >= 100000 ? 1000 : fair >= 20000 ? 250 : 50;
+    const roundG = (n: number) => Math.round(n / grain) * grain;
     const values = {
-      dealerTradeIn: roundTo50(fair * 0.82),
-      privateSale: roundTo50(fair),
-      dealerRetail: roundTo50(fair * 1.16),
+      dealerTradeIn: roundG(fair * 0.82),
+      privateSale: roundG(fair),
+      dealerRetail: roundG(fair * 1.16),
     };
-    const listingPrice = roundTo50(values.privateSale * 1.04);
+    const listingPrice = roundG(values.privateSale * 1.04);
 
     // MOT + HPI (simulated, swap with real APIs later)
     const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
