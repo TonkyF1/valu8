@@ -104,17 +104,17 @@ export default function Report() {
 
         {/* Photo gallery */}
         {v.photo_urls.length > 0 && (
-          <section className="premium-card p-3 sm:p-5 mb-8 animate-fade-in-up">
-            <div className="aspect-[16/9] rounded-xl overflow-hidden bg-muted">
+          <section className="premium-card p-2 sm:p-3 mb-6 animate-fade-in-up">
+            <div className="aspect-[16/9] rounded-lg overflow-hidden bg-muted">
               <img src={v.photo_urls[activePhoto]} alt={`${v.make} ${v.model}`} className="w-full h-full object-cover" />
             </div>
             {v.photo_urls.length > 1 && (
-              <div className="grid grid-cols-6 gap-2 mt-3">
+              <div className="grid grid-cols-6 gap-1.5 mt-2">
                 {v.photo_urls.map((u, i) => (
                   <button key={u} onClick={() => setActivePhoto(i)}
                     className={cn(
                       "aspect-[4/3] rounded-md overflow-hidden border-2 transition-all",
-                      activePhoto === i ? "border-primary" : "border-transparent opacity-70 hover:opacity-100"
+                      activePhoto === i ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
                     )}>
                     <img src={u} alt="" className="w-full h-full object-cover" />
                   </button>
@@ -125,31 +125,31 @@ export default function Report() {
         )}
 
         {/* Score + Values */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="premium-card p-8 flex flex-col items-center justify-center text-center">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-4">Condition Score</div>
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="premium-card p-6 flex flex-col items-center justify-center text-center">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">Condition</div>
             <ConditionGauge score={r.conditionScore} label={r.conditionLabel} />
           </div>
-          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <ValueCard label="Dealer Trade-in" value={r.values.dealerTradeIn} />
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <ValueCard label="Trade-in" value={r.values.dealerTradeIn} />
             <ValueCard label="Private Sale" value={r.values.privateSale} highlight />
-            <ValueCard label="Dealer Retail" value={r.values.dealerRetail} />
+            <ValueCard label="Retail" value={r.values.dealerRetail} />
           </div>
         </section>
 
-        {/* Honest analysis */}
+        {/* Honest analysis — condensed */}
         <Section icon={<Sparkles className="h-4 w-4" />} title="Honest Analysis">
-          <p className="text-base leading-relaxed text-foreground/90">{r.honestAnalysis}</p>
+          <p className="text-sm leading-relaxed text-foreground/85">{r.honestAnalysis}</p>
           {r.photoObservations && (
-            <div className="mt-5 pt-5 border-t border-border/60">
-              <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-2">From your photos</div>
-              <p className="text-sm leading-relaxed text-muted-foreground">{r.photoObservations}</p>
+            <div className="mt-4 pt-4 border-t border-border/60">
+              <div className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1.5">From your photos</div>
+              <p className="text-xs leading-relaxed text-muted-foreground">{r.photoObservations}</p>
             </div>
           )}
         </Section>
 
         <Section icon={<TrendingUp className="h-4 w-4" />} title="Market Positioning">
-          <p className="text-base leading-relaxed text-foreground/90">{r.marketPositioning}</p>
+          <p className="text-sm leading-relaxed text-foreground/85">{r.marketPositioning}</p>
         </Section>
 
         {/* Strengths + watch points */}
