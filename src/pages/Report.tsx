@@ -288,31 +288,14 @@ export default function Report() {
   );
 }
 
-function ValueCard({ label, tag, value, description, highlight }: { label: string; tag: string; value: number; description: string; highlight?: boolean }) {
-  const range: [number, number] = [Math.round(value * 0.96 / 50) * 50, Math.round(value * 1.04 / 50) * 50];
+function MiniTier({ label, tag, value }: { label: string; tag: string; value: number }) {
   return (
-    <div className={cn(
-      "premium-card p-4 sm:p-5 relative overflow-hidden",
-      highlight && "border-primary/40 shadow-glow"
-    )}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
-            <span className={cn(
-              "text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full",
-              highlight ? "bg-gradient-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground border border-border"
-            )}>{tag}</span>
-          </div>
-          <div className={cn("text-2xl md:text-3xl font-bold tabular-nums mt-1.5", highlight && "text-gradient-primary")}>
-            £{value.toLocaleString()}
-          </div>
-          <div className="text-[11px] text-muted-foreground tabular-nums mt-0.5">
-            Range £{range[0].toLocaleString()} – £{range[1].toLocaleString()}
-          </div>
-        </div>
+    <div className="rounded-lg bg-muted/30 border border-border/60 px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">{label}</span>
+        <span className="text-[9px] uppercase tracking-wider text-muted-foreground/80">{tag}</span>
       </div>
-      <p className="text-xs text-foreground/70 leading-relaxed mt-2.5">{description}</p>
+      <div className="text-lg font-semibold tabular-nums mt-0.5">£{value.toLocaleString()}</div>
     </div>
   );
 }
