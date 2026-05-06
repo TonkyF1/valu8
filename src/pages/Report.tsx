@@ -255,16 +255,16 @@ export default function Report() {
 function ValueCard({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
   return (
     <div className={cn(
-      "premium-card p-6 flex flex-col justify-between relative overflow-hidden",
+      "premium-card p-5 flex flex-col justify-between relative overflow-hidden min-h-[110px]",
       highlight && "border-primary/40 shadow-glow"
     )}>
       {highlight && (
-        <span className="absolute top-3 right-3 text-[10px] uppercase tracking-wider font-bold bg-gradient-primary text-primary-foreground px-2 py-0.5 rounded-full">
-          Best Return
+        <span className="absolute top-2.5 right-2.5 text-[9px] uppercase tracking-wider font-bold bg-gradient-primary text-primary-foreground px-2 py-0.5 rounded-full">
+          Best
         </span>
       )}
-      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={cn("text-3xl md:text-4xl font-bold tabular-nums mt-3", highlight && "text-gradient-primary")}>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+      <div className={cn("text-2xl md:text-3xl font-bold tabular-nums mt-2", highlight && "text-gradient-primary")}>
         £{value.toLocaleString()}
       </div>
     </div>
