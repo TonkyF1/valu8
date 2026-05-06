@@ -19,6 +19,7 @@ export interface ValuationReport {
   values: { dealerTradeIn: number; privateSale: number; dealerRetail: number };
   honestAnalysis: string;
   marketPositioning: string;
+  photoObservations?: string;
   strengths: string[];
   watchPoints: string[];
   recommendations: { listingPrice: number; whereToSell: string[]; highlights: string[]; documents: string[] };
