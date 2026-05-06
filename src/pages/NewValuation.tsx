@@ -208,6 +208,50 @@ export default function NewValuation() {
                   )}
                 </div>
 
+                <div className="sm:col-span-2 space-y-2">
+                  <Label>Variant / Engine / Trim <span className="text-muted-foreground font-normal">(optional but recommended)</span></Label>
+                  <Select value={variant} onValueChange={setVariant}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={make ? "e.g. 1.5 dCi, GT Line, M Sport…" : "Pick a make first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <div className="p-2 sticky top-0 bg-popover z-10">
+                        <Input
+                          placeholder="Search or type your own"
+                          value={variantQuery}
+                          onChange={(e) => setVariantQuery(e.target.value)}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          className="h-9"
+                        />
+                      </div>
+                      {filteredVariants.map((v) => (
+                        <SelectItem key={v} value={v}>{v}</SelectItem>
+                      ))}
+                      {variantQuery.trim() && !filteredVariants.some(v => v.toLowerCase() === variantQuery.trim().toLowerCase()) && (
+                        <SelectItem value={variantQuery.trim()}>Use "{variantQuery.trim()}"</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {make && availableVariants.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {availableVariants.slice(0, 6).map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setVariant(v)}
+                          className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                            variant === v
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                          }`}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <Label>Year</Label>
                   <Select value={year} onValueChange={setYear}>
