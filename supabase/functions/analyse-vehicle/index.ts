@@ -204,6 +204,7 @@ Assess condition from photos and data. Be honest and specific. Call the valu8_re
     const ai = JSON.parse(toolCall.function.arguments) as {
       conditionScore: number;
       conditionLabel: string;
+      privateSaleValue: number;
       honestAnalysis: string;
       marketPositioning: string;
       strengths: string[];
