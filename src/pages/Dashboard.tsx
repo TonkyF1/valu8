@@ -101,30 +101,42 @@ export default function Dashboard() {
             {rows.map(r => {
               const cover = Array.isArray(r.photo_urls) ? r.photo_urls[0] : null;
               return (
-                <Link key={r.id} to={`/valuation/${r.id}`} className="premium-card p-4 sm:p-5 flex items-center gap-4 hover:border-primary/40 transition-colors group">
-                  <div className="h-16 w-20 sm:h-20 sm:w-28 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                    {cover ? (
-                      <img src={cover} alt={`${r.make} ${r.model}`} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full grid place-items-center text-muted-foreground"><Car className="h-5 w-5" /></div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      <h3 className="font-semibold truncate">{r.year} {r.make} {r.model}</h3>
-                      <span className="text-xs text-muted-foreground">{r.mileage.toLocaleString()} mi</span>
+                <div key={r.id} className="premium-card p-4 sm:p-5 flex items-center gap-4 hover:border-primary/40 transition-colors group">
+                  <Link to={`/valuation/${r.id}`} className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="h-16 w-20 sm:h-20 sm:w-28 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+                      {cover ? (
+                        <img src={cover} alt={`${r.make} ${r.model}`} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full grid place-items-center text-muted-foreground"><Car className="h-5 w-5" /></div>
+                      )}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">{format(new Date(r.created_at), "d MMM yyyy")}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <h3 className="font-semibold truncate">{r.year} {r.make} {r.model}</h3>
+                        <span className="text-xs text-muted-foreground">{r.mileage.toLocaleString()} mi</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">{format(new Date(r.created_at), "d MMM yyyy")}</div>
+                    </div>
+                    <div className="text-right hidden sm:block">
+                      <div className="text-xs text-muted-foreground">Private sale</div>
+                      <div className="font-semibold text-gradient-primary text-lg">£{(r.private_value || 0).toLocaleString()}</div>
+                    </div>
+                  </Link>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button asChild variant="ghost" size="sm" title={isPremium ? "Edit valuation" : "Premium feature"}>
+                      <Link to={`/valuation/${r.id}/edit`}>
+                        {isPremium ? <Pencil className="h-4 w-4" /> : <Crown className="h-4 w-4 text-primary" />}
+                        <span className="hidden sm:inline">Edit</span>
+                      </Link>
+                    </Button>
+                    <Button asChild variant="ghost" size="sm">
+                      <Link to={`/valuation/${r.id}`}>
+                        <Eye className="h-4 w-4" />
+                        <span className="hidden sm:inline">View</span>
+                      </Link>
+                    </Button>
                   </div>
-                  <div className="text-right hidden sm:block">
-                    <div className="text-xs text-muted-foreground">Private sale</div>
-                    <div className="font-semibold text-gradient-primary text-lg">£{(r.private_value || 0).toLocaleString()}</div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="opacity-60 group-hover:opacity-100">
-                    <Eye className="h-4 w-4" />
-                    <span className="hidden sm:inline">View</span>
-                  </Button>
-                </Link>
+                </div>
               );
             })}
           </div>
