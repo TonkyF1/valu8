@@ -35,6 +35,7 @@ export default function NewValuation() {
   const [make, setMake] = useState("");
   const [makeQuery, setMakeQuery] = useState("");
   const [model, setModel] = useState("");
+  const [modelQuery, setModelQuery] = useState("");
   const [year, setYear] = useState<string>("");
   const [mileage, setMileage] = useState("");
   const [registration, setRegistration] = useState("");
@@ -46,6 +47,8 @@ export default function NewValuation() {
   useEffect(() => { document.title = "New valuation — Valu8"; }, []);
 
   const filteredMakes = CAR_MAKES.filter(m => m.toLowerCase().includes(makeQuery.toLowerCase()));
+  const availableModels = getModelsForMake(make);
+  const filteredModels = availableModels.filter(m => m.toLowerCase().includes(modelQuery.toLowerCase()));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
