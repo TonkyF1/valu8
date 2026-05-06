@@ -11,8 +11,9 @@ import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
 import {
   Share2, Download, Bookmark, Check, ShieldCheck, AlertTriangle, ArrowLeft,
-  Sparkles, MapPin, FileText, Tag, Star, TrendingUp,
+  Sparkles, MapPin, FileText, Tag, Star, TrendingUp, Pencil,
 } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
