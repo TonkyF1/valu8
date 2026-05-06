@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { CAR_MAKES, YEARS } from "@/lib/cars";
 import { getModelsForMake } from "@/lib/models";
-import { getVariantsForMake } from "@/lib/variants";
+import { getVariantsFor } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
