@@ -102,7 +102,7 @@ export default function NewValuation() {
       const { data, error } = await supabase.from("valuations").insert({
         user_id: user.id,
         make: parsed.data.make,
-        model: parsed.data.model,
+        model: parsed.data.variant ? `${parsed.data.model} · ${parsed.data.variant}` : parsed.data.model,
         year: parsed.data.year,
         mileage: parsed.data.mileage,
         registration: parsed.data.registration || null,
