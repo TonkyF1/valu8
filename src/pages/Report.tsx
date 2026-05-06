@@ -77,8 +77,8 @@ export default function Report() {
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main className="flex-1 container py-8 md:py-10 max-w-6xl">
-        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+      <main className="flex-1 container py-6 md:py-8 max-w-5xl">
+        <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           <Button asChild variant="ghost" size="sm">
             <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> All valuations</Link>
           </Button>
@@ -90,31 +90,31 @@ export default function Report() {
         </div>
 
         {/* Title */}
-        <div className="mb-8 animate-fade-in-up">
-          <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Valuation Report</div>
-          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-gradient">
+        <div className="mb-6 animate-fade-in-up">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold mb-1.5">Valuation Report</div>
+          <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-gradient">
             {v.year} {v.make} {v.model}
           </h1>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground">
             <span>{v.mileage.toLocaleString()} miles</span>
             {v.registration && <><span>•</span><span className="font-mono uppercase">{v.registration}</span></>}
-            <span>•</span><span>Generated {format(new Date(v.created_at), "d MMM yyyy")}</span>
+            <span>•</span><span>{format(new Date(v.created_at), "d MMM yyyy")}</span>
           </div>
         </div>
 
         {/* Photo gallery */}
         {v.photo_urls.length > 0 && (
-          <section className="premium-card p-3 sm:p-5 mb-8 animate-fade-in-up">
-            <div className="aspect-[16/9] rounded-xl overflow-hidden bg-muted">
+          <section className="premium-card p-2 sm:p-3 mb-6 animate-fade-in-up">
+            <div className="aspect-[16/9] rounded-lg overflow-hidden bg-muted">
               <img src={v.photo_urls[activePhoto]} alt={`${v.make} ${v.model}`} className="w-full h-full object-cover" />
             </div>
             {v.photo_urls.length > 1 && (
-              <div className="grid grid-cols-6 gap-2 mt-3">
+              <div className="grid grid-cols-6 gap-1.5 mt-2">
                 {v.photo_urls.map((u, i) => (
                   <button key={u} onClick={() => setActivePhoto(i)}
                     className={cn(
                       "aspect-[4/3] rounded-md overflow-hidden border-2 transition-all",
-                      activePhoto === i ? "border-primary" : "border-transparent opacity-70 hover:opacity-100"
+                      activePhoto === i ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
                     )}>
                     <img src={u} alt="" className="w-full h-full object-cover" />
                   </button>
@@ -125,56 +125,56 @@ export default function Report() {
         )}
 
         {/* Score + Values */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="premium-card p-8 flex flex-col items-center justify-center text-center">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-4">Condition Score</div>
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="premium-card p-6 flex flex-col items-center justify-center text-center">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">Condition</div>
             <ConditionGauge score={r.conditionScore} label={r.conditionLabel} />
           </div>
-          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <ValueCard label="Dealer Trade-in" value={r.values.dealerTradeIn} />
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <ValueCard label="Trade-in" value={r.values.dealerTradeIn} />
             <ValueCard label="Private Sale" value={r.values.privateSale} highlight />
-            <ValueCard label="Dealer Retail" value={r.values.dealerRetail} />
+            <ValueCard label="Retail" value={r.values.dealerRetail} />
           </div>
         </section>
 
-        {/* Honest analysis */}
+        {/* Honest analysis — condensed */}
         <Section icon={<Sparkles className="h-4 w-4" />} title="Honest Analysis">
-          <p className="text-base leading-relaxed text-foreground/90">{r.honestAnalysis}</p>
+          <p className="text-sm leading-relaxed text-foreground/85">{r.honestAnalysis}</p>
           {r.photoObservations && (
-            <div className="mt-5 pt-5 border-t border-border/60">
-              <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-2">From your photos</div>
-              <p className="text-sm leading-relaxed text-muted-foreground">{r.photoObservations}</p>
+            <div className="mt-4 pt-4 border-t border-border/60">
+              <div className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1.5">From your photos</div>
+              <p className="text-xs leading-relaxed text-muted-foreground">{r.photoObservations}</p>
             </div>
           )}
         </Section>
 
         <Section icon={<TrendingUp className="h-4 w-4" />} title="Market Positioning">
-          <p className="text-base leading-relaxed text-foreground/90">{r.marketPositioning}</p>
+          <p className="text-sm leading-relaxed text-foreground/85">{r.marketPositioning}</p>
         </Section>
 
         {/* Strengths + watch points */}
-        <section className="grid md:grid-cols-2 gap-4 mb-6">
-          <div className="premium-card p-6">
-            <div className="flex items-center gap-2 mb-4">
+        <section className="grid md:grid-cols-2 gap-3 mb-4">
+          <div className="premium-card p-5">
+            <div className="flex items-center gap-2 mb-3">
               <span className="h-7 w-7 rounded-lg bg-primary/15 text-primary grid place-items-center"><Star className="h-3.5 w-3.5" /></span>
-              <h2 className="text-lg font-semibold">Strengths</h2>
+              <h2 className="text-base font-semibold">Strengths</h2>
             </div>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {r.strengths.map(s => (
-                <li key={s} className="flex gap-3 text-sm leading-relaxed">
+                <li key={s} className="flex gap-2.5 text-sm leading-snug">
                   <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> {s}
                 </li>
               ))}
             </ul>
           </div>
-          <div className="premium-card p-6">
-            <div className="flex items-center gap-2 mb-4">
+          <div className="premium-card p-5">
+            <div className="flex items-center gap-2 mb-3">
               <span className="h-7 w-7 rounded-lg bg-amber-500/15 text-amber-400 grid place-items-center"><AlertTriangle className="h-3.5 w-3.5" /></span>
-              <h2 className="text-lg font-semibold">Watch Points</h2>
+              <h2 className="text-base font-semibold">Watch Points</h2>
             </div>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {r.watchPoints.map(s => (
-                <li key={s} className="flex gap-3 text-sm leading-relaxed">
+                <li key={s} className="flex gap-2.5 text-sm leading-snug">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" /> {s}
                 </li>
               ))}
@@ -255,16 +255,16 @@ export default function Report() {
 function ValueCard({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
   return (
     <div className={cn(
-      "premium-card p-6 flex flex-col justify-between relative overflow-hidden",
+      "premium-card p-5 flex flex-col justify-between relative overflow-hidden min-h-[110px]",
       highlight && "border-primary/40 shadow-glow"
     )}>
       {highlight && (
-        <span className="absolute top-3 right-3 text-[10px] uppercase tracking-wider font-bold bg-gradient-primary text-primary-foreground px-2 py-0.5 rounded-full">
-          Best Return
+        <span className="absolute top-2.5 right-2.5 text-[9px] uppercase tracking-wider font-bold bg-gradient-primary text-primary-foreground px-2 py-0.5 rounded-full">
+          Best
         </span>
       )}
-      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={cn("text-3xl md:text-4xl font-bold tabular-nums mt-3", highlight && "text-gradient-primary")}>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+      <div className={cn("text-2xl md:text-3xl font-bold tabular-nums mt-2", highlight && "text-gradient-primary")}>
         £{value.toLocaleString()}
       </div>
     </div>
@@ -273,11 +273,11 @@ function ValueCard({ label, value, highlight }: { label: string; value: number; 
 
 function Section({ icon, title, right, children }: { icon: React.ReactNode; title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="premium-card p-6 sm:p-8 mb-6 animate-fade-in-up">
-      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+    <section className="premium-card p-5 sm:p-6 mb-4 animate-fade-in-up">
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="h-7 w-7 rounded-lg bg-primary/15 text-primary grid place-items-center">{icon}</span>
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <h2 className="text-base font-semibold">{title}</h2>
         </div>
         {right}
       </div>
