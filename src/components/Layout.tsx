@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Gauge, LayoutDashboard, LogOut, Plus } from "lucide-react";
+import { LayoutDashboard, LogOut, Plus } from "lucide-react";
+import valu8Logo from "@/assets/valu8-logo.png";
 
 export function TestModeBanner() {
   return (
@@ -24,11 +25,12 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border/60">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="relative h-8 w-8 rounded-xl bg-gradient-primary grid place-items-center shadow-glow group-hover:scale-105 transition-transform">
-            <Gauge className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
-          </div>
-          <span className="font-display font-bold text-lg tracking-tight">Valu8</span>
+        <Link to="/" className="flex items-center group" aria-label="Valu8 home">
+          <img
+            src={valu8Logo}
+            alt="Valu8"
+            className="h-9 sm:h-10 w-auto object-contain transition-transform group-hover:scale-[1.03]"
+          />
         </Link>
 
         <nav className="flex items-center gap-2">
