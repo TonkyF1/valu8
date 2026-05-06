@@ -138,6 +138,12 @@ export default function Report() {
         {/* Honest analysis */}
         <Section icon={<Sparkles className="h-4 w-4" />} title="Honest Analysis">
           <p className="text-base leading-relaxed text-foreground/90">{r.honestAnalysis}</p>
+          {r.photoObservations && (
+            <div className="mt-5 pt-5 border-t border-border/60">
+              <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-2">From your photos</div>
+              <p className="text-sm leading-relaxed text-muted-foreground">{r.photoObservations}</p>
+            </div>
+          )}
         </Section>
 
         <Section icon={<TrendingUp className="h-4 w-4" />} title="Market Positioning">
