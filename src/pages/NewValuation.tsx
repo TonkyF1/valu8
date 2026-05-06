@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/select";
 import { CAR_MAKES, YEARS } from "@/lib/cars";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
-import { generateValuation } from "@/lib/valuation";
 import { toast } from "sonner";
 import { Sparkles, ArrowRight, ShieldCheck, Zap, TrendingUp } from "lucide-react";
 
@@ -71,16 +70,22 @@ export default function NewValuation() {
         photoUrls.push(data.publicUrl);
       }
 
-      const report = generateValuation({
-        make: parsed.data.make,
-        model: parsed.data.model,
-        year: parsed.data.year,
-        mileage: parsed.data.mileage,
-        registration: parsed.data.registration || undefined,
-        motExpiry: parsed.data.motExpiry || undefined,
-        serviceNotes: parsed.data.serviceNotes || undefined,
-        photoCount: photos.length,
+      // Call AI analysis edge function
+      const { data: aiData, error: aiErr } = await supabase.functions.invoke("analyse-vehicle", {
+        body: {
+          make: parsed.data.make,
+          model: parsed.data.model,
+          year: parsed.data.year,
+          mileage: parsed.data.mileage,
+          registration: parsed.data.registration || undefined,
+          motExpiry: parsed.data.motExpiry || undefined,
+          serviceNotes: parsed.data.serviceNotes || undefined,
+          photoUrls,
+        },
       });
+      if (aiErr) throw aiErr;
+      const report = (aiData as any)?.report;
+      if (!report) throw new Error("AI did not return a report");
 
       const { data, error } = await supabase.from("valuations").insert({
         user_id: user.id,
