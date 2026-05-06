@@ -53,7 +53,7 @@ export default function NewValuation() {
   const filteredMakes = CAR_MAKES.filter(m => m.toLowerCase().includes(makeQuery.toLowerCase()));
   const availableModels = getModelsForMake(make);
   const filteredModels = availableModels.filter(m => m.toLowerCase().includes(modelQuery.toLowerCase()));
-  const availableVariants = getVariantsForMake(make);
+  const availableVariants = getVariantsFor(make, model);
   const filteredVariants = availableVariants.filter(v => v.toLowerCase().includes(variantQuery.toLowerCase()));
 
   async function submit(e: React.FormEvent) {
