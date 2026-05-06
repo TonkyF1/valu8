@@ -1,12 +1,23 @@
+// Comprehensive list of car manufacturers — mainstream, luxury, performance,
+// classic/heritage, American, JDM, Korean, European specialists, EV-only and more.
 export const CAR_MAKES = [
-  "Abarth","Alfa Romeo","Aston Martin","Audi","Bentley","BMW","Chevrolet","Chrysler",
-  "Citroën","Cupra","Dacia","DS Automobiles","Ferrari","Fiat","Ford","Genesis",
-  "Honda","Hyundai","Infiniti","Jaguar","Jeep","Kia","Lamborghini","Land Rover",
-  "Lexus","Lotus","Maserati","Mazda","McLaren","Mercedes-Benz","MG","MINI",
-  "Mitsubishi","Nissan","Peugeot","Polestar","Porsche","Renault","Rolls-Royce",
-  "SEAT","Škoda","Smart","SsangYong","Subaru","Suzuki","Tesla","Toyota",
-  "Vauxhall","Volkswagen","Volvo",
-] as const;
+  "AC","Abarth","Acura","Alfa Romeo","Alpine","Ariel","Aston Martin","Audi","Austin",
+  "Austin-Healey","BAC","BAIC","Bentley","BMW","Borgward","Bristol","BYD","Bugatti","Buick",
+  "BYD","Cadillac","Caterham","Chevrolet","Chrysler","Citroën","Cupra","Dacia","Daewoo",
+  "Daihatsu","Datsun","De Tomaso","DeLorean","Dodge","DS Automobiles","Eagle","Ferrari","Fiat",
+  "Fisker","Ford","GAC","GMC","Genesis","Ginetta","Gordon Murray","Great Wall","Haval",
+  "Hennessey","Hillman","Hispano-Suiza","Honda","Hongqi","Hummer","Hyundai","Infiniti",
+  "Isuzu","Iveco","Jaguar","Jeep","Jensen","Karma","Kia","Koenigsegg","KTM","Lada",
+  "Lamborghini","Lancia","Land Rover","Leapmotor","LEVC","Lexus","Lincoln","Lotus","Lucid",
+  "Lynk & Co","Marcos","Maserati","Maybach","Mazda","McLaren","Mercedes-AMG","Mercedes-Benz",
+  "Mercury","MG","Mini (Classic)","MINI","Mitsubishi","Morgan","Morris","Nio","Nissan",
+  "Noble","Oldsmobile","Opel","Pagani","Panoz","Perodua","Peugeot","Pininfarina","Plymouth",
+  "Polestar","Pontiac","Porsche","Proton","RAM","Reliant","Renault","Rimac","Riley","Rivian",
+  "Roewe","Rolls-Royce","Rover","Saab","Saturn","Scion","SEAT","Singer","Škoda","Smart","Spyker",
+  "SsangYong","Subaru","Sunbeam","Suzuki","Talbot","Tata","Tesla","Toyota","Trabant","Triumph",
+  "TVR","Vauxhall","VinFast","Volkswagen","Volvo","Wartburg","Westfield","Wiesmann","Wolseley",
+  "XPeng","Yugo","Zenvo","Zotye",
+].sort((a, b) => a.localeCompare(b)) as unknown as readonly string[];
 
 export const PHOTO_SLOTS = [
   { key: "front", label: "Front 3/4 angle", hint: "Stand at the front-left corner" },
@@ -19,4 +30,5 @@ export const PHOTO_SLOTS = [
 
 export type PhotoSlotKey = typeof PHOTO_SLOTS[number]["key"];
 
-export const YEARS = Array.from({ length: 2026 - 1995 + 1 }, (_, i) => 2026 - i);
+// 1950 → 2026 to support classics and heritage vehicles
+export const YEARS = Array.from({ length: 2026 - 1950 + 1 }, (_, i) => 2026 - i);
