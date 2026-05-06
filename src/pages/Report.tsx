@@ -90,15 +90,15 @@ export default function Report() {
         </div>
 
         {/* Title */}
-        <div className="mb-8 animate-fade-in-up">
-          <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Valuation Report</div>
-          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-gradient">
+        <div className="mb-6 animate-fade-in-up">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold mb-1.5">Valuation Report</div>
+          <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-gradient">
             {v.year} {v.make} {v.model}
           </h1>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground">
             <span>{v.mileage.toLocaleString()} miles</span>
             {v.registration && <><span>•</span><span className="font-mono uppercase">{v.registration}</span></>}
-            <span>•</span><span>Generated {format(new Date(v.created_at), "d MMM yyyy")}</span>
+            <span>•</span><span>{format(new Date(v.created_at), "d MMM yyyy")}</span>
           </div>
         </div>
 
