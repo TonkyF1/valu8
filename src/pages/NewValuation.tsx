@@ -151,7 +151,7 @@ export default function NewValuation() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-6">
                 <div className="space-y-2">
                   <Label>Make</Label>
-                  <Select value={make} onValueChange={setMake}>
+                  <Select value={make} onValueChange={(v) => { setMake(v); setModel(""); setModelQuery(""); }}>
                     <SelectTrigger><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
                     <SelectContent>
                       <div className="p-2 sticky top-0 bg-popover z-10">
@@ -174,8 +174,31 @@ export default function NewValuation() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="model">Model</Label>
-                  <Input id="model" placeholder="e.g. 3 Series, Golf GTI" value={model} onChange={(e) => setModel(e.target.value)} />
+                  <Label>Model</Label>
+                  {availableModels.length > 0 ? (
+                    <Select value={model} onValueChange={setModel}>
+                      <SelectTrigger><SelectValue placeholder={make ? "Select model" : "Pick a make first"} /></SelectTrigger>
+                      <SelectContent>
+                        <div className="p-2 sticky top-0 bg-popover z-10">
+                          <Input
+                            placeholder={`Search ${make} models`}
+                            value={modelQuery}
+                            onChange={(e) => setModelQuery(e.target.value)}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            className="h-9"
+                          />
+                        </div>
+                        {filteredModels.map((m) => (
+                          <SelectItem key={m} value={m}>{m}</SelectItem>
+                        ))}
+                        {filteredModels.length === 0 && modelQuery && (
+                          <SelectItem value={modelQuery.trim()}>Use "{modelQuery.trim()}"</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input placeholder={make ? "e.g. 3 Series" : "Pick a make first"} value={model} onChange={(e) => setModel(e.target.value)} disabled={!make} />
+                  )}
                 </div>
 
                 <div className="space-y-2">
