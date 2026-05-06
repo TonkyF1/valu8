@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { CAR_MAKES, YEARS } from "@/lib/cars";
 import { getModelsForMake } from "@/lib/models";
+import { getVariantsForMake } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ import { Sparkles, ArrowRight, ShieldCheck, Zap, TrendingUp } from "lucide-react
 const formSchema = z.object({
   make: z.string().min(1, "Select a make"),
   model: z.string().trim().min(1, "Enter a model").max(60),
+  variant: z.string().trim().max(80).optional().or(z.literal("")),
   year: z.coerce.number().int().min(1995).max(2026),
   mileage: z.coerce.number().int().min(0).max(500000),
   registration: z.string().trim().max(10).optional().or(z.literal("")),
@@ -36,6 +38,8 @@ export default function NewValuation() {
   const [makeQuery, setMakeQuery] = useState("");
   const [model, setModel] = useState("");
   const [modelQuery, setModelQuery] = useState("");
+  const [variant, setVariant] = useState("");
+  const [variantQuery, setVariantQuery] = useState("");
   const [year, setYear] = useState<string>("");
   const [mileage, setMileage] = useState("");
   const [registration, setRegistration] = useState("");
@@ -49,12 +53,14 @@ export default function NewValuation() {
   const filteredMakes = CAR_MAKES.filter(m => m.toLowerCase().includes(makeQuery.toLowerCase()));
   const availableModels = getModelsForMake(make);
   const filteredModels = availableModels.filter(m => m.toLowerCase().includes(modelQuery.toLowerCase()));
+  const availableVariants = getVariantsForMake(make);
+  const filteredVariants = availableVariants.filter(v => v.toLowerCase().includes(variantQuery.toLowerCase()));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return navigate("/auth");
 
-    const parsed = formSchema.safeParse({ make, model, year, mileage, registration, motExpiry, serviceNotes });
+    const parsed = formSchema.safeParse({ make, model, variant, year, mileage, registration, motExpiry, serviceNotes });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
       return;
@@ -80,6 +86,7 @@ export default function NewValuation() {
         body: {
           make: parsed.data.make,
           model: parsed.data.model,
+          variant: parsed.data.variant || undefined,
           year: parsed.data.year,
           mileage: parsed.data.mileage,
           registration: parsed.data.registration || undefined,
@@ -95,7 +102,7 @@ export default function NewValuation() {
       const { data, error } = await supabase.from("valuations").insert({
         user_id: user.id,
         make: parsed.data.make,
-        model: parsed.data.model,
+        model: parsed.data.variant ? `${parsed.data.model} · ${parsed.data.variant}` : parsed.data.model,
         year: parsed.data.year,
         mileage: parsed.data.mileage,
         registration: parsed.data.registration || null,
@@ -198,6 +205,50 @@ export default function NewValuation() {
                     </Select>
                   ) : (
                     <Input placeholder={make ? "e.g. 3 Series" : "Pick a make first"} value={model} onChange={(e) => setModel(e.target.value)} disabled={!make} />
+                  )}
+                </div>
+
+                <div className="sm:col-span-2 space-y-2">
+                  <Label>Variant / Engine / Trim <span className="text-muted-foreground font-normal">(optional but recommended)</span></Label>
+                  <Select value={variant} onValueChange={setVariant}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={make ? "e.g. 1.5 dCi, GT Line, M Sport…" : "Pick a make first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <div className="p-2 sticky top-0 bg-popover z-10">
+                        <Input
+                          placeholder="Search or type your own"
+                          value={variantQuery}
+                          onChange={(e) => setVariantQuery(e.target.value)}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          className="h-9"
+                        />
+                      </div>
+                      {filteredVariants.map((v) => (
+                        <SelectItem key={v} value={v}>{v}</SelectItem>
+                      ))}
+                      {variantQuery.trim() && !filteredVariants.some(v => v.toLowerCase() === variantQuery.trim().toLowerCase()) && (
+                        <SelectItem value={variantQuery.trim()}>Use "{variantQuery.trim()}"</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {make && availableVariants.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {availableVariants.slice(0, 6).map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setVariant(v)}
+                          className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                            variant === v
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                          }`}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
 

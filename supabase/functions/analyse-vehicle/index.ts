@@ -7,6 +7,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 interface AnalyseRequest {
   make: string;
   model: string;
+  variant?: string;
   year: number;
   mileage: number;
   registration?: string;
@@ -132,7 +133,7 @@ Deno.serve(async (req) => {
         type: "text",
         text:
 `Vehicle:
-- ${body.year} ${body.make} ${body.model}
+- ${body.year} ${body.make} ${body.model}${body.variant ? ` — ${body.variant}` : ""}
 - Mileage: ${body.mileage.toLocaleString()} miles
 - Registration: ${body.registration || "not provided"}
 - MOT expiry: ${body.motExpiry || "not provided"}

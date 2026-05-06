@@ -1,8 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { PHOTO_SLOTS, PhotoSlotKey } from "@/lib/cars";
 import { cn } from "@/lib/utils";
-import { Camera, X, Check, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Camera, X, Check, ImagePlus, RefreshCw } from "lucide-react";
 
 export interface PhotoFile { key: PhotoSlotKey; file: File; preview: string; }
 
@@ -11,46 +10,65 @@ interface Props {
   onChange: (next: PhotoFile[]) => void;
 }
 
-export function PhotoUploader({ photos, onChange }: Props) {
-  const [activeKey, setActiveKey] = useState<PhotoSlotKey | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+type PickMode = "camera" | "gallery";
 
-  const trigger = (key: PhotoSlotKey) => {
-    setActiveKey(key);
-    inputRef.current?.click();
+export function PhotoUploader({ photos, onChange }: Props) {
+  const [pending, setPending] = useState<{ key: PhotoSlotKey; mode: PickMode } | null>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+
+  const trigger = (key: PhotoSlotKey, mode: PickMode) => {
+    setPending({ key, mode });
+    // Defer click so the "capture" attr (set via ref change) is honoured by the OS
+    setTimeout(() => {
+      (mode === "camera" ? cameraRef : galleryRef).current?.click();
+    }, 0);
   };
 
-  const handleFile = (file: File) => {
-    if (!activeKey) return;
+  const handleFile = (file: File, key: PhotoSlotKey) => {
     if (!file.type.startsWith("image/")) return;
     const preview = URL.createObjectURL(file);
-    const next = photos.filter(p => p.key !== activeKey);
-    next.push({ key: activeKey, file, preview });
+    const next = photos.filter(p => p.key !== key);
+    next.push({ key, file, preview });
     onChange(next);
   };
 
   const onDrop = useCallback((key: PhotoSlotKey, e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    setActiveKey(key);
-    setTimeout(() => handleFile(file), 0);
-  }, [photos, activeKey]);
+    if (file) handleFile(file, key);
+  }, [photos]);
 
-  const remove = (key: PhotoSlotKey) => {
-    onChange(photos.filter(p => p.key !== key));
-  };
+  const remove = (key: PhotoSlotKey) => onChange(photos.filter(p => p.key !== key));
 
   return (
     <div>
       <input
-        ref={inputRef}
+        ref={cameraRef}
         type="file"
         accept="image/*"
         capture="environment"
         className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f && pending) handleFile(f, pending.key);
+          e.target.value = "";
+          setPending(null);
+        }}
       />
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f && pending) handleFile(f, pending.key);
+          e.target.value = "";
+          setPending(null);
+        }}
+      />
+
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {PHOTO_SLOTS.map((slot, i) => {
           const photo = photos.find(p => p.key === slot.key);
@@ -70,12 +88,20 @@ export function PhotoUploader({ photos, onChange }: Props) {
                   <button
                     type="button"
                     onClick={() => remove(slot.key)}
-                    className="absolute top-2 right-2 h-7 w-7 rounded-full bg-background/90 backdrop-blur grid place-items-center text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                    className="absolute top-2 right-2 h-7 w-7 rounded-full bg-background/90 backdrop-blur grid place-items-center text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors z-10"
                     aria-label="Remove photo"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2.5">
+                  <button
+                    type="button"
+                    onClick={() => trigger(slot.key, "gallery")}
+                    className="absolute top-2 left-2 h-7 px-2 rounded-full bg-background/90 backdrop-blur grid place-items-center text-[10px] font-medium text-foreground hover:bg-primary hover:text-primary-foreground transition-colors z-10 inline-flex gap-1"
+                    aria-label="Replace photo"
+                  >
+                    <RefreshCw className="h-3 w-3" /> Replace
+                  </button>
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 to-transparent p-2.5">
                     <div className="flex items-center gap-1.5 text-[11px] font-medium text-white">
                       <Check className="h-3 w-3 text-primary" />
                       {slot.label}
@@ -83,19 +109,26 @@ export function PhotoUploader({ photos, onChange }: Props) {
                   </div>
                 </>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => trigger(slot.key)}
-                  className="absolute inset-0 flex flex-col items-center justify-center text-center p-3 gap-2"
-                >
-                  <div className="h-9 w-9 rounded-full bg-background border border-border grid place-items-center text-muted-foreground group-hover:text-primary group-hover:border-primary/40 transition-colors">
-                    <Camera className="h-4 w-4" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3 gap-2">
+                  <div className="text-xs font-medium text-foreground/90 leading-tight">{i + 1}. {slot.label}</div>
+                  <div className="text-[10px] text-muted-foreground leading-snug px-1">{slot.hint}</div>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => trigger(slot.key, "camera")}
+                      className="h-8 px-2.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-[11px] font-medium inline-flex items-center gap-1 hover:bg-primary hover:text-primary-foreground transition-colors"
+                    >
+                      <Camera className="h-3 w-3" /> Camera
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => trigger(slot.key, "gallery")}
+                      className="h-8 px-2.5 rounded-full bg-background border border-border text-foreground text-[11px] font-medium inline-flex items-center gap-1 hover:border-primary/40 hover:text-primary transition-colors"
+                    >
+                      <ImagePlus className="h-3 w-3" /> Upload
+                    </button>
                   </div>
-                  <div>
-                    <div className="text-xs font-medium text-foreground/90 leading-tight">{i + 1}. {slot.label}</div>
-                    <div className="text-[10px] text-muted-foreground mt-1 leading-snug">{slot.hint}</div>
-                  </div>
-                </button>
+                </div>
               )}
             </div>
           );
@@ -106,9 +139,7 @@ export function PhotoUploader({ photos, onChange }: Props) {
         <span>
           <span className="font-semibold text-foreground">{photos.length}</span> / {PHOTO_SLOTS.length} photos added
         </span>
-        <Button type="button" variant="ghost" size="sm" onClick={() => inputRef.current?.click()} className="text-xs">
-          <Upload className="h-3 w-3" /> or drag &amp; drop into a slot
-        </Button>
+        <span className="hidden sm:inline">Tap a slot to take a photo or upload from your device.</span>
       </div>
     </div>
   );
