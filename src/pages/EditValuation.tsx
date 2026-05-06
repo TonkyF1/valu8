@@ -43,7 +43,7 @@ export default function EditValuation() {
       setRegistration(data.registration ?? "");
       setMotExpiry(data.mot_expiry ?? "");
       setServiceNotes(data.service_notes ?? "");
-      setExistingPhotos(Array.isArray(data.photo_urls) ? data.photo_urls : []);
+      setExistingPhotos(Array.isArray(data.photo_urls) ? (data.photo_urls as unknown as string[]) : []);
       setLoading(false);
     })();
   }, [id, user, navigate]);
