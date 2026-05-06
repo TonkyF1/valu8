@@ -5,6 +5,7 @@ import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { ConditionGauge } from "@/components/ConditionGauge";
+import { AdvertCreator } from "@/components/AdvertCreator";
 import type { ValuationReport } from "@/lib/valuation";
 import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
@@ -241,6 +242,19 @@ export default function Report() {
             {r.motHistory.length === 0 && <li className="ml-6 text-sm text-muted-foreground">No prior MOT records (vehicle under 3 years old).</li>}
           </ol>
         </Section>
+
+        <AdvertCreator
+          valuationId={v.id}
+          vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, registration: v.registration, mot_expiry: v.mot_expiry }}
+          report={{
+            recommendations: { listingPrice: r.recommendations.listingPrice, highlights: r.recommendations.highlights },
+            conditionScore: r.conditionScore,
+            conditionLabel: r.conditionLabel,
+            honestAnalysis: r.honestAnalysis,
+            strengths: r.strengths,
+          }}
+          initialAdvert={(r as any).advert ?? null}
+        />
 
         <footer className="mt-10 pt-8 border-t border-border text-xs text-muted-foreground space-y-2">
           <p><strong className="text-foreground/80">Data sources:</strong> UK retail and trade pricing benchmarks, DVLA-style MOT/HPI summaries, Valu8 condition modelling.</p>
