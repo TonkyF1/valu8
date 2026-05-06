@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header, TestModeBanner } from "@/components/Layout";
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Plus, Eye, Car, TrendingUp, Activity } from "lucide-react";
 import { format } from "date-fns";
