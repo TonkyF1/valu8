@@ -55,9 +55,24 @@ export default function Dashboard() {
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">My Valuations</h1>
             <p className="text-muted-foreground mt-2">Every report you've generated, all in one place.</p>
           </div>
-          <Button asChild variant="hero" size="lg">
-            <Link to="/valuation/new"><Plus className="h-4 w-4" /> New valuation</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPremium(!isPremium, isPremium ? "free" : "monthly")}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                isPremium
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+              title="Toggle Premium (test mode)"
+            >
+              <Crown className="h-3.5 w-3.5" />
+              {isPremium ? "Premium active" : "Activate Premium"}
+            </button>
+            <Button asChild variant="hero" size="lg">
+              <Link to="/valuation/new"><Plus className="h-4 w-4" /> New valuation</Link>
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
