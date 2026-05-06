@@ -84,7 +84,7 @@ export default function Report() {
           </Button>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={share}><Share2 className="h-4 w-4" />Share</Button>
-            <Button variant="ghost" size="sm" onClick={() => toast("PDF export coming soon")}><Download className="h-4 w-4" />PDF</Button>
+            <Button variant="ghost" size="sm" onClick={() => { downloadValuationPdf(v, r); toast.success("PDF downloaded"); }}><Download className="h-4 w-4" />PDF</Button>
             <Button variant="premium" size="sm" onClick={() => toast.success("Already saved to My Valuations")}><Bookmark className="h-4 w-4" />Saved</Button>
           </div>
         </div>
