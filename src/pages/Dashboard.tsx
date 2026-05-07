@@ -19,6 +19,7 @@ interface Row {
   private_value: number | null;
   created_at: string;
   photo_urls: any;
+  report: any;
 }
 
 export default function Dashboard() {
