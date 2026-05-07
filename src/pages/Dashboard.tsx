@@ -294,7 +294,7 @@ export default function Dashboard() {
                     </Link>
 
                     {/* Actions */}
-                    <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                    <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1">
                       <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg" title={isPremium ? "Edit" : "Premium feature"}>
                         <Link to={`/valuation/${r.id}/edit`} onClick={(e) => e.stopPropagation()}>
                           {isPremium ? <Pencil className="h-3.5 w-3.5" /> : <Crown className="h-3.5 w-3.5 text-primary" />}
