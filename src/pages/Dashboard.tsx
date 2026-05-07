@@ -33,7 +33,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     supabase.from("valuations")
-      .select("id,make,model,year,mileage,condition_score,private_value,created_at,photo_urls")
+      .select("id,make,model,year,mileage,condition_score,private_value,created_at,photo_urls,report")
       .order("created_at", { ascending: false })
       .then(({ data }) => { setRows((data as Row[]) || []); setLoading(false); });
   }, [user]);
