@@ -285,7 +285,7 @@ export default function Dashboard() {
                       </div>
 
                       {/* Price */}
-                      <div className="text-right flex flex-col justify-center pr-12 sm:pr-14 flex-shrink-0">
+                      <div className="text-right flex flex-col justify-center flex-shrink-0">
                         <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Private sale</div>
                         <div className="font-bold text-gradient-primary text-lg sm:text-2xl tabular-nums leading-tight mt-0.5">
                           £{(r.private_value || 0).toLocaleString()}
