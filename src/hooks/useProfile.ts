@@ -5,6 +5,9 @@ import { useAuth } from "@/contexts/AuthContext";
 export interface Profile {
   is_premium: boolean;
   plan: string;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
 }
 
 export function useProfile() {
@@ -18,11 +21,11 @@ export function useProfile() {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("is_premium, plan")
+        .select("is_premium, plan, full_name, username, avatar_url")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      setProfile(data ?? { is_premium: false, plan: "free" });
+      setProfile(data ?? { is_premium: false, plan: "free", full_name: null, username: null, avatar_url: null });
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -31,8 +34,17 @@ export function useProfile() {
   async function setPremium(is_premium: boolean, plan: string = is_premium ? "monthly" : "free") {
     if (!user) return;
     await supabase.from("profiles").upsert({ user_id: user.id, is_premium, plan }, { onConflict: "user_id" });
-    setProfile({ is_premium, plan });
+    setProfile((p) => ({ ...(p ?? { full_name: null, username: null, avatar_url: null }), is_premium, plan }));
   }
 
-  return { profile, loading, isPremium: !!profile?.is_premium, setPremium };
+  async function updateProfile(updates: { full_name?: string | null; username?: string | null; avatar_url?: string | null }) {
+    if (!user) throw new Error("Not signed in");
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ user_id: user.id, ...updates }, { onConflict: "user_id" });
+    if (error) throw error;
+    setProfile((p) => ({ ...(p ?? { is_premium: false, plan: "free", full_name: null, username: null, avatar_url: null }), ...updates }));
+  }
+
+  return { profile, loading, isPremium: !!profile?.is_premium, setPremium, updateProfile };
 }
