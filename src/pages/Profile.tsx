@@ -7,17 +7,32 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
-import { Crown, LogOut, Mail, KeyRound, CreditCard, ShieldCheck, Sparkles, ArrowLeft } from "lucide-react";
+import { Crown, LogOut, Mail, KeyRound, CreditCard, ShieldCheck, Sparkles, ArrowLeft, User as UserIcon, Upload, Trash2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
-  const { isPremium, setPremium, profile } = useProfile();
+  const { isPremium, setPremium, profile, updateProfile } = useProfile();
   const navigate = useNavigate();
   const [newPw, setNewPw] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
   useEffect(() => { document.title = "Profile — Valu8"; }, []);
+
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name ?? "");
+      setUsername(profile.username ?? "");
+      setAvatarUrl(profile.avatar_url ?? null);
+    }
+  }, [profile]);
 
   async function changePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -29,6 +44,48 @@ export default function Profile() {
     setNewPw("");
     toast.success("Password updated");
   }
+
+  async function onAvatarSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) return toast.error("Please select an image");
+    if (file.size > 5 * 1024 * 1024) return toast.error("Image must be under 5 MB");
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { contentType: file.type, upsert: true });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      setAvatarUrl(data.publicUrl);
+      toast.success("Photo uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally { setUploading(false); }
+  }
+
+  async function saveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (username && !/^[a-z0-9_]{3,20}$/i.test(username)) {
+      return toast.error("Username must be 3–20 letters, numbers or underscores");
+    }
+    setSavingProfile(true);
+    try {
+      await updateProfile({
+        full_name: fullName.trim() || null,
+        username: username.trim() || null,
+        avatar_url: avatarUrl,
+      });
+      toast.success("Profile saved");
+    } catch (err: any) {
+      const msg = err?.message?.includes("profiles_username_unique") || err?.code === "23505"
+        ? "That username is already taken"
+        : err?.message || "Failed to save";
+      toast.error(msg);
+    } finally { setSavingProfile(false); }
+  }
+
 
   return (
     <div className="min-h-screen flex flex-col">
