@@ -235,7 +235,7 @@ export default function Dashboard() {
                     key={r.id}
                     className="group relative premium-card hover:border-primary/50 hover:shadow-glow hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
                   >
-                    <Link to={`/valuation/${r.id}`} className="flex items-stretch gap-4 p-3 sm:p-4">
+                    <Link to={`/valuation/${r.id}`} className="flex items-stretch gap-4 p-3 sm:p-4 pr-20 sm:pr-24">
                       {/* Thumbnail */}
                       <div className="relative h-20 w-20 sm:h-24 sm:w-32 rounded-xl bg-muted overflow-hidden flex-shrink-0 ring-1 ring-border/60 shadow-soft">
                         {cover ? (
@@ -285,7 +285,7 @@ export default function Dashboard() {
                       </div>
 
                       {/* Price */}
-                      <div className="text-right flex flex-col justify-center pr-12 sm:pr-14 flex-shrink-0">
+                      <div className="text-right flex flex-col justify-center flex-shrink-0">
                         <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Private sale</div>
                         <div className="font-bold text-gradient-primary text-lg sm:text-2xl tabular-nums leading-tight mt-0.5">
                           £{(r.private_value || 0).toLocaleString()}
@@ -294,7 +294,7 @@ export default function Dashboard() {
                     </Link>
 
                     {/* Actions */}
-                    <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                    <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1">
                       <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg" title={isPremium ? "Edit" : "Premium feature"}>
                         <Link to={`/valuation/${r.id}/edit`} onClick={(e) => e.stopPropagation()}>
                           {isPremium ? <Pencil className="h-3.5 w-3.5" /> : <Crown className="h-3.5 w-3.5 text-primary" />}
