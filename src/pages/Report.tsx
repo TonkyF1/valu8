@@ -178,27 +178,27 @@ export default function Report() {
         </section>
 
 
-        {/* Honest analysis — condensed */}
-        <Section icon={<Sparkles className="h-4 w-4" />} title="Honest Analysis">
+        {/* Honest analysis — no card chrome, lighter weight */}
+        <Section title="Honest Analysis">
           <p className="text-sm leading-relaxed text-foreground/85">{r.honestAnalysis}</p>
           {r.photoObservations && (
             <div className="mt-4 pt-4 border-t border-border/60">
-              <div className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1.5">From your photos</div>
+              <div className="text-[10px] uppercase tracking-[0.16em] text-primary font-medium mb-1.5">From your photos</div>
               <p className="text-xs leading-relaxed text-muted-foreground">{r.photoObservations}</p>
             </div>
           )}
         </Section>
 
-        <Section icon={<TrendingUp className="h-4 w-4" />} title="Market Positioning">
+        <Section title="Market Positioning">
           <p className="text-sm leading-relaxed text-foreground/85">{r.marketPositioning}</p>
         </Section>
 
-        {/* Strengths + watch points */}
-        <section className="grid md:grid-cols-2 gap-3 mb-4">
-          <div className="premium-card p-5">
+        {/* Strengths + watch points — quieter borderless cards */}
+        <section className="grid md:grid-cols-2 gap-3 mb-6">
+          <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
             <div className="flex items-center gap-2 mb-3">
-              <span className="h-7 w-7 rounded-lg bg-primary/15 text-primary grid place-items-center"><Star className="h-3.5 w-3.5" /></span>
-              <h2 className="text-base font-semibold">Strengths</h2>
+              <Star className="h-3.5 w-3.5 text-primary" />
+              <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Strengths</h2>
             </div>
             <ul className="space-y-2">
               {r.strengths.map(s => (
@@ -208,10 +208,10 @@ export default function Report() {
               ))}
             </ul>
           </div>
-          <div className="premium-card p-5">
+          <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
             <div className="flex items-center gap-2 mb-3">
-              <span className="h-7 w-7 rounded-lg bg-amber-500/15 text-amber-400 grid place-items-center"><AlertTriangle className="h-3.5 w-3.5" /></span>
-              <h2 className="text-base font-semibold">Watch Points</h2>
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+              <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Watch Points</h2>
             </div>
             <ul className="space-y-2">
               {r.watchPoints.map(s => (
@@ -224,25 +224,27 @@ export default function Report() {
         </section>
 
         {/* Recommendations */}
-        <Section icon={<Tag className="h-4 w-4" />} title="Seller Recommendations">
+        <Section title="Seller Recommendations">
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Recommended listing price</div>
-              <div className="text-4xl font-bold text-gradient-primary">£{r.recommendations.listingPrice.toLocaleString()}</div>
+              <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground mb-2">Recommended listing price</div>
+              <div className="text-4xl font-semibold text-gradient-primary tabular-nums">
+                <CountUp value={r.recommendations.listingPrice} prefix="£" />
+              </div>
               <p className="text-xs text-muted-foreground mt-2">Sweet spot for fast enquiries with negotiation room.</p>
             </div>
             <div>
-              <RecBlock icon={<MapPin className="h-3.5 w-3.5" />} title="Where to sell" items={r.recommendations.whereToSell} />
+              <RecBlock title="Where to sell" items={r.recommendations.whereToSell} />
             </div>
-            <RecBlock icon={<Sparkles className="h-3.5 w-3.5" />} title="What to highlight" items={r.recommendations.highlights} />
-            <RecBlock icon={<FileText className="h-3.5 w-3.5" />} title="Documents to prepare" items={r.recommendations.documents} />
+            <RecBlock title="What to highlight" items={r.recommendations.highlights} />
+            <RecBlock title="Documents to prepare" items={r.recommendations.documents} />
           </div>
         </Section>
 
         {/* HPI */}
-        <Section icon={<ShieldCheck className="h-4 w-4" />} title="HPI Check Summary" right={
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 border border-primary/30 rounded-full px-2.5 py-1">
-            <ShieldCheck className="h-3 w-3" /> {r.hpi.status}
+        <Section title="HPI Check Summary" right={
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted/40 border border-border/60 rounded-full px-2.5 py-1">
+            <ShieldCheck className="h-3 w-3 text-primary" /> {r.hpi.status} <span className="opacity-60">· Sample</span>
           </span>
         }>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -256,7 +258,7 @@ export default function Report() {
         </Section>
 
         {/* MOT history */}
-        <Section icon={<FileText className="h-4 w-4" />} title="MOT History">
+        <Section title="MOT History">
           <ol className="relative border-l border-border ml-2">
             {r.motHistory.map((m, i) => (
               <li key={i} className="ml-6 pb-5 last:pb-0">
@@ -271,7 +273,7 @@ export default function Report() {
                   </div>
                   <div className="text-xs text-muted-foreground tabular-nums">
                     <span className={cn(
-                      "font-semibold mr-2",
+                      "font-medium mr-2",
                       m.result === "Pass" ? "text-primary" : m.result === "Advisory" ? "text-amber-400" : "text-destructive"
                     )}>{m.result}</span>
                     {m.mileage.toLocaleString()} mi
@@ -306,39 +308,43 @@ export default function Report() {
   );
 }
 
-function MiniTier({ label, tag, value }: { label: string; tag: string; value: number }) {
-  return (
-    <div className="rounded-lg bg-muted/30 border border-border/60 px-3 py-2.5">
+function MiniTier({ label, tag, tip, value }: { label: string; tag: string; tip?: string; value: number }) {
+  const inner = (
+    <div className="rounded-lg bg-muted/30 border border-border/50 px-3 py-2.5 transition-colors hover:border-border">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">{label}</span>
-        <span className="text-[9px] uppercase tracking-wider text-muted-foreground/80">{tag}</span>
+        <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
+        <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70">{tag}</span>
       </div>
-      <div className="text-lg font-semibold tabular-nums mt-0.5">£{value.toLocaleString()}</div>
+      <div className="text-lg font-medium tabular-nums mt-0.5">£{value.toLocaleString()}</div>
     </div>
+  );
+  if (!tip) return inner;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild><div className="cursor-help">{inner}</div></TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[220px] text-xs leading-relaxed">{tip}</TooltipContent>
+    </Tooltip>
   );
 }
 
-function Section({ icon, title, right, children }: { icon: React.ReactNode; title: string; right?: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="premium-card p-5 sm:p-6 mb-4 animate-fade-in-up">
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="h-7 w-7 rounded-lg bg-primary/15 text-primary grid place-items-center">{icon}</span>
-          <h2 className="text-base font-semibold">{title}</h2>
-        </div>
+    <section className="mb-6 animate-fade-in-up">
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">{title}</h2>
         {right}
       </div>
-      {children}
+      <div className="rounded-2xl border border-border/50 bg-card/50 p-5 sm:p-6">
+        {children}
+      </div>
     </section>
   );
 }
 
-function RecBlock({ icon, title, items }: { icon: React.ReactNode; title: string; items: string[] }) {
+function RecBlock({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
-      <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground mb-3">
-        <span className="text-primary">{icon}</span>{title}
-      </div>
+      <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3 font-medium">{title}</div>
       <ul className="space-y-2">
         {items.map(i => (
           <li key={i} className="flex gap-2 text-sm">
