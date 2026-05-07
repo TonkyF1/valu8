@@ -6,12 +6,10 @@ import { Logo } from "@/components/Logo";
 
 export function TestModeBanner() {
   return (
-    <div className="w-full bg-gradient-primary text-primary-foreground text-[11px] sm:text-xs font-medium tracking-wide py-2 px-4 text-center">
-      <span className="font-bold">TEST MODE</span>
-      <span className="opacity-80 mx-2">•</span> Full Report Unlocked
-      <span className="opacity-80 mx-2">•</span> AI-powered valuations
-      <span className="opacity-80 mx-2 hidden sm:inline">•</span>
-      <span className="hidden sm:inline">Not financial advice</span>
+    <div className="w-full h-6 flex items-center justify-center bg-muted/40 border-b border-border/60 text-muted-foreground text-[10.5px] tracking-[0.12em] uppercase">
+      <span className="font-medium text-foreground/70">Test mode</span>
+      <span className="mx-2 opacity-40">·</span>
+      <span>Guidance only, not financial advice</span>
     </div>
   );
 }

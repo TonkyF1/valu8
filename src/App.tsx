@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ConfirmProvider } from "@/components/ConfirmDialog";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NewValuation from "./pages/NewValuation";
@@ -22,6 +23,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <ConfirmProvider>
       <Toaster />
       <Sonner theme="dark" />
       <BrowserRouter>
@@ -42,6 +44,7 @@ const App = () => (
           </Routes>
         </AuthProvider>
       </BrowserRouter>
+      </ConfirmProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
