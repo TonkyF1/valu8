@@ -28,12 +28,25 @@ export default function EditValuation() {
   const [regenerating, setRegenerating] = useState(false);
   const [row, setRow] = useState<any>(null);
 
+  const [make, setMake] = useState("");
+  const [makeQuery, setMakeQuery] = useState("");
+  const [model, setModel] = useState("");
+  const [modelQuery, setModelQuery] = useState("");
+  const [variant, setVariant] = useState("");
+  const [variantQuery, setVariantQuery] = useState("");
+  const [year, setYear] = useState<string>("");
   const [mileage, setMileage] = useState("");
   const [registration, setRegistration] = useState("");
   const [motExpiry, setMotExpiry] = useState("");
   const [serviceNotes, setServiceNotes] = useState("");
   const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
   const [newPhotos, setNewPhotos] = useState<PhotoFile[]>([]);
+
+  const filteredMakes = CAR_MAKES.filter(m => m.toLowerCase().includes(makeQuery.toLowerCase()));
+  const availableModels = getModelsForMake(make);
+  const filteredModels = availableModels.filter(m => m.toLowerCase().includes(modelQuery.toLowerCase()));
+  const availableVariants = getVariantsFor(make, model);
+  const filteredVariants = availableVariants.filter(v => v.toLowerCase().includes(variantQuery.toLowerCase()));
 
   useEffect(() => { document.title = "Edit valuation — Valu8"; }, []);
 
