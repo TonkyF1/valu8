@@ -105,6 +105,12 @@ export default function Report() {
             <span>{v.mileage.toLocaleString()} miles</span>
             {v.registration && <><span>•</span><span className="font-mono uppercase">{v.registration}</span></>}
             <span>•</span><span>{format(new Date(v.created_at), "d MMM yyyy")}</span>
+            {(r as any).edited && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                <Pencil className="h-2.5 w-2.5" /> Edited
+                {(r as any).lastEditedAt && <span className="text-primary/70 normal-case font-normal">· {format(new Date((r as any).lastEditedAt), "d MMM")}</span>}
+              </span>
+            )}
           </div>
         </div>
 
