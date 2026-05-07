@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CAR_MAKES, YEARS } from "@/lib/cars";
+import { getModelsForMake } from "@/lib/models";
+import { getVariantsFor } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { toast } from "sonner";
 import { ArrowLeft, RefreshCw, Save, Crown, X } from "lucide-react";
@@ -24,12 +28,25 @@ export default function EditValuation() {
   const [regenerating, setRegenerating] = useState(false);
   const [row, setRow] = useState<any>(null);
 
+  const [make, setMake] = useState("");
+  const [makeQuery, setMakeQuery] = useState("");
+  const [model, setModel] = useState("");
+  const [modelQuery, setModelQuery] = useState("");
+  const [variant, setVariant] = useState("");
+  const [variantQuery, setVariantQuery] = useState("");
+  const [year, setYear] = useState<string>("");
   const [mileage, setMileage] = useState("");
   const [registration, setRegistration] = useState("");
   const [motExpiry, setMotExpiry] = useState("");
   const [serviceNotes, setServiceNotes] = useState("");
   const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
   const [newPhotos, setNewPhotos] = useState<PhotoFile[]>([]);
+
+  const filteredMakes = CAR_MAKES.filter(m => m.toLowerCase().includes(makeQuery.toLowerCase()));
+  const availableModels = getModelsForMake(make);
+  const filteredModels = availableModels.filter(m => m.toLowerCase().includes(modelQuery.toLowerCase()));
+  const availableVariants = getVariantsFor(make, model);
+  const filteredVariants = availableVariants.filter(v => v.toLowerCase().includes(variantQuery.toLowerCase()));
 
   useEffect(() => { document.title = "Edit valuation — Valu8"; }, []);
 
@@ -39,6 +56,12 @@ export default function EditValuation() {
       const { data, error } = await supabase.from("valuations").select("*").eq("id", id).maybeSingle();
       if (error || !data) { toast.error("Valuation not found"); navigate("/dashboard"); return; }
       setRow(data);
+      setMake(data.make ?? "");
+      const rawModel = String(data.model ?? "");
+      const [baseModel, ...rest] = rawModel.split(" · ");
+      setModel(baseModel ?? "");
+      setVariant(rest.join(" · "));
+      setYear(String(data.year ?? ""));
       setMileage(String(data.mileage ?? ""));
       setRegistration(data.registration ?? "");
       setMotExpiry(data.mot_expiry ?? "");
@@ -64,18 +87,25 @@ export default function EditValuation() {
     return urls;
   }
 
+  const composedModel = variant.trim() ? `${model} · ${variant.trim()}` : model;
+
   async function saveOnly() {
     if (!row) return;
     setBusy(true);
     try {
       const newUrls = await uploadNewPhotos();
       const allPhotos = [...existingPhotos, ...newUrls];
+      const updatedReport = { ...(row.report || {}), edited: true, lastEditedAt: new Date().toISOString() };
       const { error } = await supabase.from("valuations").update({
+        make: make || row.make,
+        model: composedModel || row.model,
+        year: Number(year) || row.year,
         mileage: Number(mileage) || row.mileage,
         registration: registration || null,
         mot_expiry: motExpiry || null,
         service_notes: serviceNotes || null,
         photo_urls: allPhotos,
+        report: updatedReport,
       }).eq("id", row.id);
       if (error) throw error;
       toast.success("Changes saved");
@@ -92,10 +122,12 @@ export default function EditValuation() {
       const newUrls = await uploadNewPhotos();
       const allPhotos = [...existingPhotos, ...newUrls];
 
-      // Save originals as a snapshot the first time we regenerate
       const previousVersions = Array.isArray(row.report?.previousVersions) ? row.report.previousVersions : [];
       const snapshot = {
         savedAt: new Date().toISOString(),
+        make: row.make,
+        model: row.model,
+        year: row.year,
         mileage: row.mileage,
         registration: row.registration,
         motExpiry: row.mot_expiry,
@@ -106,10 +138,10 @@ export default function EditValuation() {
 
       const { data: aiData, error: aiErr } = await supabase.functions.invoke("analyse-vehicle", {
         body: {
-          make: row.make,
-          model: row.model.split(" · ")[0],
-          variant: row.model.includes(" · ") ? row.model.split(" · ")[1] : undefined,
-          year: row.year,
+          make: make || row.make,
+          model: model || row.model.split(" · ")[0],
+          variant: variant.trim() || undefined,
+          year: Number(year) || row.year,
           mileage: Number(mileage) || row.mileage,
           registration: registration || undefined,
           motExpiry: motExpiry || undefined,
@@ -121,9 +153,17 @@ export default function EditValuation() {
       const report = (aiData as any)?.report;
       if (!report) throw new Error("AI did not return a report");
 
-      const updatedReport = { ...report, previousVersions: [snapshot, ...previousVersions].slice(0, 10) };
+      const updatedReport = {
+        ...report,
+        edited: true,
+        lastEditedAt: new Date().toISOString(),
+        previousVersions: [snapshot, ...previousVersions].slice(0, 10),
+      };
 
       const { error } = await supabase.from("valuations").update({
+        make: make || row.make,
+        model: composedModel || row.model,
+        year: Number(year) || row.year,
         mileage: Number(mileage) || row.mileage,
         registration: registration || null,
         mot_expiry: motExpiry || null,
@@ -201,6 +241,66 @@ export default function EditValuation() {
 
         <div className="premium-card p-6 sm:p-8 space-y-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label>Make</Label>
+              <Select value={make} onValueChange={(v) => { setMake(v); setModel(""); setVariant(""); }}>
+                <SelectTrigger><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
+                <SelectContent>
+                  <div className="p-2 sticky top-0 bg-popover z-10">
+                    <Input placeholder="Search makes" value={makeQuery} onChange={(e) => setMakeQuery(e.target.value)} onKeyDown={(e) => e.stopPropagation()} className="h-9" />
+                  </div>
+                  {filteredMakes.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Model</Label>
+              {availableModels.length > 0 ? (
+                <Select value={model} onValueChange={(v) => { setModel(v); setVariant(""); }}>
+                  <SelectTrigger><SelectValue placeholder={make ? "Select model" : "Pick a make first"} /></SelectTrigger>
+                  <SelectContent>
+                    <div className="p-2 sticky top-0 bg-popover z-10">
+                      <Input placeholder={`Search ${make} models`} value={modelQuery} onChange={(e) => setModelQuery(e.target.value)} onKeyDown={(e) => e.stopPropagation()} className="h-9" />
+                    </div>
+                    {filteredModels.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    {filteredModels.length === 0 && modelQuery && (
+                      <SelectItem value={modelQuery.trim()}>Use "{modelQuery.trim()}"</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input value={model} onChange={(e) => setModel(e.target.value)} disabled={!make} />
+              )}
+            </div>
+            <div className="sm:col-span-2 space-y-2">
+              <Label>Variant / Engine / Trim <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              {availableVariants.length > 0 ? (
+                <Select value={variant} onValueChange={setVariant}>
+                  <SelectTrigger><SelectValue placeholder="Choose a variant…" /></SelectTrigger>
+                  <SelectContent>
+                    <div className="p-2 sticky top-0 bg-popover z-10">
+                      <Input placeholder="Search or type your own" value={variantQuery} onChange={(e) => setVariantQuery(e.target.value)} onKeyDown={(e) => e.stopPropagation()} className="h-9" />
+                    </div>
+                    {filteredVariants.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                    {variantQuery.trim() && !filteredVariants.some(v => v.toLowerCase() === variantQuery.trim().toLowerCase()) && (
+                      <SelectItem value={variantQuery.trim()}>Use "{variantQuery.trim()}"</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input value={variant} onChange={(e) => setVariant(e.target.value)} disabled={!make} maxLength={80}
+                  placeholder="e.g. RS 200 Mk3, 3.0 V6 Twin Turbo…" />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Year</Label>
+              <Select value={year} onValueChange={setYear}>
+                <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
+                <SelectContent>
+                  {YEARS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="mileage">Mileage</Label>
               <Input id="mileage" type="number" inputMode="numeric" value={mileage} onChange={(e) => setMileage(e.target.value)} />
