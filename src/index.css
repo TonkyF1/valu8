@@ -100,6 +100,14 @@
       radial-gradient(ellipse 60% 50% at 100% 0%, hsl(176 100% 42% / 0.04), transparent);
   }
 
+  input[type="date"] {
+    appearance: none;
+    -webkit-appearance: none;
+    min-height: 2.5rem;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
   h1, h2, h3, h4 {
     @apply tracking-tight;
     font-feature-settings: "ss01";
