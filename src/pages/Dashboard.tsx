@@ -33,6 +33,8 @@ export default function Dashboard() {
   const { isPremium, setPremium } = useProfile();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("newest");
 
   useEffect(() => { document.title = "Dashboard — Valu8"; }, []);
 
