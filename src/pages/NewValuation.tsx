@@ -167,7 +167,7 @@ export default function NewValuation() {
                 <div className="space-y-2">
                   <Label>Make</Label>
                   <Select value={make} onValueChange={(v) => { setMake(v); setModel(""); setModelQuery(""); setVariant(""); setVariantQuery(""); }}>
-                    <SelectTrigger><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
+                    <SelectTrigger className="h-10"><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
                     <SelectContent>
                       <div className="p-2 sticky top-0 bg-popover z-10">
                         <Input
@@ -175,7 +175,7 @@ export default function NewValuation() {
                           value={makeQuery}
                           onChange={(e) => setMakeQuery(e.target.value)}
                           onKeyDown={(e) => e.stopPropagation()}
-                          className="h-9"
+                          className="h-10"
                         />
                       </div>
                       {filteredMakes.map((m) => (
@@ -192,7 +192,7 @@ export default function NewValuation() {
                   <Label>Model</Label>
                   {availableModels.length > 0 ? (
                     <Select value={model} onValueChange={(v) => { setModel(v); setVariant(""); setVariantQuery(""); }}>
-                      <SelectTrigger><SelectValue placeholder={make ? "Select model" : "Pick a make first"} /></SelectTrigger>
+                      <SelectTrigger className="h-10"><SelectValue placeholder={make ? "Select model" : "Pick a make first"} /></SelectTrigger>
                       <SelectContent>
                         <div className="p-2 sticky top-0 bg-popover z-10">
                           <Input
@@ -200,7 +200,7 @@ export default function NewValuation() {
                             value={modelQuery}
                             onChange={(e) => setModelQuery(e.target.value)}
                             onKeyDown={(e) => e.stopPropagation()}
-                            className="h-9"
+                            className="h-10"
                           />
                         </div>
                         {filteredModels.map((m) => (
@@ -212,7 +212,7 @@ export default function NewValuation() {
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Input placeholder={make ? "e.g. 3 Series" : "Pick a make first"} value={model} onChange={(e) => setModel(e.target.value)} disabled={!make} />
+                    <Input className="h-10" placeholder={make ? "e.g. 3 Series" : "Pick a make first"} value={model} onChange={(e) => setModel(e.target.value)} disabled={!make} />
                   )}
                 </div>
 
@@ -221,7 +221,7 @@ export default function NewValuation() {
                   {availableVariants.length > 0 ? (
                     <>
                       <Select value={variant} onValueChange={setVariant}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-10">
                           <SelectValue placeholder={`Choose a ${model || make} variant…`} />
                         </SelectTrigger>
                         <SelectContent>
@@ -231,7 +231,7 @@ export default function NewValuation() {
                               value={variantQuery}
                               onChange={(e) => setVariantQuery(e.target.value)}
                               onKeyDown={(e) => e.stopPropagation()}
-                              className="h-9"
+                              className="h-10"
                             />
                           </div>
                           {filteredVariants.map((v) => (
@@ -261,6 +261,7 @@ export default function NewValuation() {
                     </>
                   ) : (
                     <Input
+                      className="h-10"
                       placeholder={make ? "e.g. RS 200 Mk3, 3.0 V6 Twin Turbo, Classic Spec…" : "Pick a make first"}
                       value={variant}
                       onChange={(e) => setVariant(e.target.value)}
@@ -273,7 +274,7 @@ export default function NewValuation() {
                 <div className="space-y-2">
                   <Label>Year</Label>
                   <Select value={year} onValueChange={setYear}>
-                    <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
+                    <SelectTrigger className="h-10"><SelectValue placeholder="Select year" /></SelectTrigger>
                     <SelectContent>
                       {YEARS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
                     </SelectContent>
@@ -282,17 +283,17 @@ export default function NewValuation() {
 
                 <div className="space-y-2">
                   <Label htmlFor="mileage">Mileage</Label>
-                  <Input id="mileage" type="number" inputMode="numeric" placeholder="e.g. 64,500" value={mileage} onChange={(e) => setMileage(e.target.value)} />
+                  <Input id="mileage" className="h-10" type="number" inputMode="numeric" placeholder="e.g. 64,500" value={mileage} onChange={(e) => setMileage(e.target.value)} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="reg">UK Registration</Label>
-                  <Input id="reg" placeholder="AB12 CDE" value={registration} onChange={(e) => setRegistration(e.target.value.toUpperCase())} maxLength={10} />
+                  <Input id="reg" className="h-10" placeholder="AB12 CDE" value={registration} onChange={(e) => setRegistration(e.target.value.toUpperCase())} maxLength={10} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="mot">MOT expiry</Label>
-                  <Input id="mot" type="date" value={motExpiry} onChange={(e) => setMotExpiry(e.target.value)} />
+                  <Input id="mot" className="h-10" type="date" value={motExpiry} onChange={(e) => setMotExpiry(e.target.value)} />
                 </div>
 
                 <div className="sm:col-span-2 space-y-2">
