@@ -191,14 +191,13 @@ export default function Dashboard() {
           if (rows.length === 0) {
             return (
               <div className="premium-card relative overflow-hidden p-10 sm:p-14 text-center">
-                <div className="absolute inset-0 hero-glow pointer-events-none" />
                 <div className="relative">
-                  <div className="mx-auto h-20 w-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 grid place-items-center mb-6 ring-1 ring-primary/30 shadow-glow">
-                    <Sparkles className="h-9 w-9 text-primary" />
+                  <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/10 grid place-items-center mb-6 ring-1 ring-primary/20">
+                    <Sparkles className="h-7 w-7 text-primary" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold tracking-tight">No valuations yet</h3>
+                  <h3 className="text-xl sm:text-2xl font-semibold tracking-tight">No valuations yet</h3>
                   <p className="text-muted-foreground mt-2 text-sm max-w-sm mx-auto">
-                    Get your first AI-powered, photo-aware valuation in under a minute.
+                    Get your first photo aware valuation in under a minute.
                   </p>
                   <Button asChild variant="hero" size="lg" className="mt-7">
                     <Link to="/valuation/new"><Plus className="h-4 w-4" /> Start your first valuation</Link>
@@ -242,7 +241,7 @@ export default function Dashboard() {
                 return (
                   <div
                     key={r.id}
-                    className="group relative premium-card hover:border-primary/50 hover:shadow-glow hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
+                    className="group relative premium-card hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
                   >
                     <Link to={`/valuation/${r.id}`} className="flex items-stretch gap-4 p-3 sm:p-4 pr-20 sm:pr-24">
                       {/* Thumbnail */}
