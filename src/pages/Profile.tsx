@@ -114,6 +114,59 @@ export default function Profile() {
           <div className="rounded-lg bg-muted/30 px-4 py-3 text-sm font-medium break-all">{user?.email}</div>
         </section>
 
+        {/* Profile editing */}
+        <section className="premium-card p-6 mb-4">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><UserIcon className="h-5 w-5" /></span>
+            <div>
+              <h2 className="font-semibold">Your profile</h2>
+              <p className="text-xs text-muted-foreground">Personalise how you appear in Valu8.</p>
+            </div>
+          </div>
+
+          <form onSubmit={saveProfile} className="space-y-5">
+            <div className="flex items-center gap-4">
+              <div className="relative h-16 w-16 rounded-full overflow-hidden bg-muted/40 border border-border grid place-items-center shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+                ) : (
+                  <UserIcon className="h-7 w-7 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <label className="inline-flex">
+                  <input type="file" accept="image/*" className="hidden" onChange={onAvatarSelected} disabled={uploading} />
+                  <Button type="button" variant="premium" size="sm" disabled={uploading} asChild>
+                    <span className="cursor-pointer"><Upload className="h-4 w-4" /> {uploading ? "Uploading…" : avatarUrl ? "Replace photo" : "Upload photo"}</span>
+                  </Button>
+                </label>
+                {avatarUrl && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setAvatarUrl(null)}>
+                    <Trash2 className="h-4 w-4" /> Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full name <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Input id="fullName" className="h-10" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Alex Morgan" maxLength={60} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="username">Username <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Input id="username" className="h-10" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder="alex_morgan" maxLength={20} />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button type="submit" variant="hero" disabled={savingProfile}>
+                {savingProfile ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
+          </form>
+        </section>
+
         {/* Subscription */}
         <section className="premium-card p-6 mb-4 relative overflow-hidden">
           <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
