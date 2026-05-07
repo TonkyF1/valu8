@@ -6,9 +6,13 @@ import { useProfile } from "@/hooks/useProfile";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, Car, TrendingUp, Activity, Pencil, Crown, ArrowUpRight, Trash2 } from "lucide-react";
+import { Plus, Eye, Car, TrendingUp, Activity, Pencil, Crown, ArrowUpRight, Trash2, Search, ArrowUpDown, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { useMemo } from "react";
+
+type SortKey = "newest" | "oldest" | "highest" | "lowest";
 
 interface Row {
   id: string;
