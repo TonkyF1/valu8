@@ -414,13 +414,15 @@ Assess condition from photos and data. Be honest and specific. Call the valu8_re
       aiPrivateValue: aiPrivate > fallback * 0.25 ? aiPrivate : fallback,
     });
 
-    const fair = Math.max(market.center, fallback * 0.9);
+    // Trust the AI/market-derived center. Don't floor with the generic fallback —
+    // that was inflating cheap/old/high-mileage cars beyond reality.
+    const fair = market.center;
     const values = {
-      dealerTradeIn: roundToGrain(fair * (market.enthusiast ? 0.84 : 0.82)),
+      dealerTradeIn: roundToGrain(fair * 0.80),
       privateSale: roundToGrain(fair),
-      dealerRetail: roundToGrain(fair * (market.enthusiast ? 1.18 : 1.16)),
+      dealerRetail: roundToGrain(fair * 1.15),
     };
-    const listingPrice = roundToGrain(Math.min(market.high, values.privateSale * (market.enthusiast ? 1.06 : 1.04)));
+    const listingPrice = roundToGrain(Math.min(market.high, values.privateSale * 1.03));
 
     // MOT + HPI (simulated, swap with real APIs later)
     const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
