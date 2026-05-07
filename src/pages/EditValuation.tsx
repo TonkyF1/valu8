@@ -56,6 +56,12 @@ export default function EditValuation() {
       const { data, error } = await supabase.from("valuations").select("*").eq("id", id).maybeSingle();
       if (error || !data) { toast.error("Valuation not found"); navigate("/dashboard"); return; }
       setRow(data);
+      setMake(data.make ?? "");
+      const rawModel = String(data.model ?? "");
+      const [baseModel, ...rest] = rawModel.split(" · ");
+      setModel(baseModel ?? "");
+      setVariant(rest.join(" · "));
+      setYear(String(data.year ?? ""));
       setMileage(String(data.mileage ?? ""));
       setRegistration(data.registration ?? "");
       setMotExpiry(data.mot_expiry ?? "");
