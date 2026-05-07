@@ -7,17 +7,32 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
-import { Crown, LogOut, Mail, KeyRound, CreditCard, ShieldCheck, Sparkles, ArrowLeft } from "lucide-react";
+import { Crown, LogOut, Mail, KeyRound, CreditCard, ShieldCheck, Sparkles, ArrowLeft, User as UserIcon, Upload, Trash2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
-  const { isPremium, setPremium, profile } = useProfile();
+  const { isPremium, setPremium, profile, updateProfile } = useProfile();
   const navigate = useNavigate();
   const [newPw, setNewPw] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
   useEffect(() => { document.title = "Profile — Valu8"; }, []);
+
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name ?? "");
+      setUsername(profile.username ?? "");
+      setAvatarUrl(profile.avatar_url ?? null);
+    }
+  }, [profile]);
 
   async function changePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -29,6 +44,48 @@ export default function Profile() {
     setNewPw("");
     toast.success("Password updated");
   }
+
+  async function onAvatarSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) return toast.error("Please select an image");
+    if (file.size > 5 * 1024 * 1024) return toast.error("Image must be under 5 MB");
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { contentType: file.type, upsert: true });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      setAvatarUrl(data.publicUrl);
+      toast.success("Photo uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally { setUploading(false); }
+  }
+
+  async function saveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (username && !/^[a-z0-9_]{3,20}$/i.test(username)) {
+      return toast.error("Username must be 3–20 letters, numbers or underscores");
+    }
+    setSavingProfile(true);
+    try {
+      await updateProfile({
+        full_name: fullName.trim() || null,
+        username: username.trim() || null,
+        avatar_url: avatarUrl,
+      });
+      toast.success("Profile saved");
+    } catch (err: any) {
+      const msg = err?.message?.includes("profiles_username_unique") || err?.code === "23505"
+        ? "That username is already taken"
+        : err?.message || "Failed to save";
+      toast.error(msg);
+    } finally { setSavingProfile(false); }
+  }
+
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -55,6 +112,59 @@ export default function Profile() {
             </div>
           </div>
           <div className="rounded-lg bg-muted/30 px-4 py-3 text-sm font-medium break-all">{user?.email}</div>
+        </section>
+
+        {/* Profile editing */}
+        <section className="premium-card p-6 mb-4">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><UserIcon className="h-5 w-5" /></span>
+            <div>
+              <h2 className="font-semibold">Your profile</h2>
+              <p className="text-xs text-muted-foreground">Personalise how you appear in Valu8.</p>
+            </div>
+          </div>
+
+          <form onSubmit={saveProfile} className="space-y-5">
+            <div className="flex items-center gap-4">
+              <div className="relative h-16 w-16 rounded-full overflow-hidden bg-muted/40 border border-border grid place-items-center shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+                ) : (
+                  <UserIcon className="h-7 w-7 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <label className="inline-flex">
+                  <input type="file" accept="image/*" className="hidden" onChange={onAvatarSelected} disabled={uploading} />
+                  <Button type="button" variant="premium" size="sm" disabled={uploading} asChild>
+                    <span className="cursor-pointer"><Upload className="h-4 w-4" /> {uploading ? "Uploading…" : avatarUrl ? "Replace photo" : "Upload photo"}</span>
+                  </Button>
+                </label>
+                {avatarUrl && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setAvatarUrl(null)}>
+                    <Trash2 className="h-4 w-4" /> Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full name <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Input id="fullName" className="h-10" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Alex Morgan" maxLength={60} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="username">Username <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Input id="username" className="h-10" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder="alex_morgan" maxLength={20} />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button type="submit" variant="hero" disabled={savingProfile}>
+                {savingProfile ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
+          </form>
         </section>
 
         {/* Subscription */}
