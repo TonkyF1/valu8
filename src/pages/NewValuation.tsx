@@ -17,7 +17,7 @@ import { getVariantsFor } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
-import { Sparkles, ArrowRight, ShieldCheck, Zap, TrendingUp } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const formSchema = z.object({
   make: z.string().min(1, "Select a make"),
