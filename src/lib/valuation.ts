@@ -17,6 +17,9 @@ export interface ValuationReport {
   conditionScore: number;
   conditionLabel: string;
   values: { dealerTradeIn: number; privateSale: number; dealerRetail: number };
+  valueRange?: { privateSaleLow: number; privateSaleHigh: number };
+  valueReasoning?: string;
+  marketConfidence?: "High" | "Medium" | "Low";
   honestAnalysis: string;
   marketPositioning: string;
   photoObservations?: string;
@@ -76,6 +79,8 @@ export function generateValuation(input: ValuationInput): ValuationReport {
   const dealerTradeIn = Math.round(fair * 0.82 / 50) * 50;
   const privateSale = Math.round(fair / 50) * 50;
   const dealerRetail = Math.round(fair * 1.16 / 50) * 50;
+  const privateSaleLow = Math.round((privateSale * 0.95) / 50) * 50;
+  const privateSaleHigh = Math.round((privateSale * 1.08) / 50) * 50;
 
   const strengthsPool = [
     "Photos suggest well-kept paintwork with no obvious panel damage",
@@ -127,6 +132,11 @@ export function generateValuation(input: ValuationInput): ValuationReport {
     conditionScore: score,
     conditionLabel,
     values: { dealerTradeIn, privateSale, dealerRetail },
+    valueRange: { privateSaleLow, privateSaleHigh },
+    valueReasoning:
+      `This range reflects ${mileageRatio < 0.95 ? "below-average mileage" : mileageRatio > 1.1 ? "higher mileage for age" : "age-appropriate mileage"}, ` +
+      `${score >= 8 ? "strong visible condition" : "typical used-market condition"}, and the strength of private-buyer demand for this type of car.`,
+    marketConfidence: input.photoCount >= 5 ? "High" : input.photoCount >= 3 ? "Medium" : "Low",
     honestAnalysis,
     marketPositioning,
     strengths: pick(strengthsPool, 4),

@@ -68,6 +68,17 @@ export function downloadValuationPdf(v: VehicleInfo, r: ValuationReport) {
   });
   y += 90;
 
+  if (r.valueRange || r.valueReasoning) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...MUTED);
+    const low = r.valueRange?.privateSaleLow ?? r.values.privateSale;
+    const high = r.valueRange?.privateSaleHigh ?? r.values.privateSale;
+    doc.text(`PRIVATE SALE RANGE  £${low.toLocaleString()} – £${high.toLocaleString()}${r.marketConfidence ? `  •  ${r.marketConfidence.toUpperCase()} CONFIDENCE` : ""}`, margin, y - 8);
+    if (r.valueReasoning) {
+      y = wrappedText(doc, r.valueReasoning, margin, y + 8, pageW - margin * 2, 9, 12, MUTED);
+      y += 6;
+    }
+  }
+
   // Honest analysis
   y = section(doc, "HONEST ANALYSIS", y, margin, pageW);
   y = wrappedText(doc, r.honestAnalysis, margin, y, pageW - margin * 2, 11, 14);

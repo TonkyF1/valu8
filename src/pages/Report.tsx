@@ -138,16 +138,22 @@ export default function Report() {
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[9px] uppercase tracking-[0.2em] font-bold bg-gradient-primary text-primary-foreground px-2 py-0.5 rounded-full">Best Return</span>
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Private Sale</span>
+              {r.marketConfidence && <span className="text-[9px] uppercase tracking-[0.18em] text-primary/90 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">{r.marketConfidence} confidence</span>}
             </div>
             <div className="text-4xl sm:text-5xl font-bold tabular-nums text-gradient-primary leading-none">
               £{r.values.privateSale.toLocaleString()}
             </div>
             <div className="text-xs text-muted-foreground tabular-nums mt-1.5">
-              Range £{(Math.round(r.values.privateSale * 0.96 / 50) * 50).toLocaleString()} – £{(Math.round(r.values.privateSale * 1.04 / 50) * 50).toLocaleString()}
+              Range £{(r.valueRange?.privateSaleLow ?? r.values.privateSale).toLocaleString()} – £{(r.valueRange?.privateSaleHigh ?? r.values.privateSale).toLocaleString()}
             </div>
             <p className="text-xs sm:text-sm text-foreground/75 leading-relaxed mt-3 max-w-md">
               The sweet spot if you sell yourself — strong return for a few weeks of effort.
             </p>
+            {r.valueReasoning && (
+              <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed mt-3 max-w-xl">
+                {r.valueReasoning}
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-border/60">
               <MiniTier label="Trade-in" tag="Quick" value={r.values.dealerTradeIn} />
               <MiniTier label="Retail" tag="Forecourt" value={r.values.dealerRetail} />
