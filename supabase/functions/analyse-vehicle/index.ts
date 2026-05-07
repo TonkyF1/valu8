@@ -126,40 +126,49 @@ function computeMarketRange(params: {
     return days >= 0 && days <= 90;
   })();
 
-  let center = Math.max(aiPrivateValue, 500);
+  // Trust the AI's private-sale figure as the primary anchor. Apply a small
+  // conservative bias so we don't over-promise — private sales typically
+  // achieve 3-7% below dealer asking screenshots that AIs often anchor to.
+  let center = Math.max(aiPrivateValue, 500) * 0.97;
   let rangeSpread = 0.08;
   let confidence: ConfidenceLevel = photoCount >= 5 ? "High" : photoCount >= 3 ? "Medium" : "Low";
 
   if (exoticAnchor) {
+    // Keep within the anchor band but lean toward the lower-mid for private sale realism.
     const anchorMid = (exoticAnchor.low + exoticAnchor.high) / 2;
-    center = Math.max(center, anchorMid * 0.92);
+    const anchorLowerMid = exoticAnchor.low + (anchorMid - exoticAnchor.low) * 0.6;
+    if (center > exoticAnchor.high * 1.05) center = exoticAnchor.high;
+    if (center < exoticAnchor.low * 0.85) center = anchorLowerMid;
     rangeSpread = 0.12;
     confidence = photoCount >= 4 ? "High" : "Medium";
   }
 
-  if (enthusiast && conditionScore >= 7.8 && mileageRatio <= 1.05) {
-    center *= 1.06;
-  }
-  if (hasStrongHistory) center *= 1.03;
-  if (needsWork) center *= 0.93;
-  if (mileageRatio <= 0.8) center *= enthusiast ? 1.07 : 1.04;
-  else if (mileageRatio >= 1.2) center *= mileageRatio >= 1.45 ? 0.85 : 0.92;
-  if (motSoon) center *= 0.985;
-  if (conditionScore >= 8.6) center *= 1.04;
-  else if (conditionScore <= 6.4) center *= 0.93;
+  // Condition / history / mileage adjustments — conservative, symmetric.
+  if (hasStrongHistory) center *= 1.02;
+  if (needsWork) center *= 0.90;
+  if (mileageRatio <= 0.7) center *= enthusiast ? 1.05 : 1.03;
+  else if (mileageRatio <= 0.9) center *= 1.01;
+  else if (mileageRatio >= 1.5) center *= 0.82;
+  else if (mileageRatio >= 1.25) center *= 0.90;
+  else if (mileageRatio >= 1.1) center *= 0.96;
+  if (motSoon) center *= 0.98;
+  if (conditionScore >= 8.8) center *= 1.02;
+  else if (conditionScore <= 6.5) center *= 0.92;
+  else if (conditionScore <= 5.5) center *= 0.82;
 
-  if (enthusiast) rangeSpread += 0.015;
-  if (photoCount < 4) rangeSpread += 0.02;
+  if (enthusiast) rangeSpread += 0.01;
+  if (photoCount < 4) rangeSpread += 0.025;
   if (needsWork) rangeSpread += 0.02;
-  if (hasStrongHistory) rangeSpread -= 0.01;
+  if (hasStrongHistory) rangeSpread -= 0.005;
   rangeSpread = clamp(rangeSpread, 0.06, 0.16);
 
   let low = center * (1 - rangeSpread);
-  let high = center * (1 + rangeSpread + (enthusiast ? 0.02 : 0));
+  let high = center * (1 + rangeSpread);
 
   if (exoticAnchor) {
-    low = Math.max(low, exoticAnchor.low * 0.96);
-    high = Math.max(high, exoticAnchor.high * 0.98);
+    // Soft-clamp to the anchor band — don't let estimates blow past it.
+    low = clamp(low, exoticAnchor.low * 0.85, exoticAnchor.high);
+    high = clamp(high, low * 1.04, exoticAnchor.high * 1.05);
   }
 
   const roundedCenter = roundToGrain(center);
@@ -227,46 +236,52 @@ function hash(s: string) {
   return Math.abs(h);
 }
 
-const SYSTEM_PROMPT = `You are Valu8's senior UK car valuation analyst with deep, current knowledge of the UK & European private-sale market in 2026. You assess vehicles for PRIVATE SELLERS, not dealers. You are honest, specific, and unsentimental.
+const SYSTEM_PROMPT = `You are an expert UK private seller car valuer in 2026 with deep, current knowledge of real market prices from AutoTrader, PistonHeads, Facebook Marketplace, Gumtree, Car & Classic, Collecting Cars, RM Sotheby's and Bonhams. You assess vehicles for PRIVATE SELLERS, not dealers.
 
-You are an expert UK used car valuer with deep knowledge of current 2026 market prices, enthusiast demand, and private sale realities. Be accurate, slightly optimistic for clean cars, and always explain your reasoning.
+CORE PRINCIPLES — READ CAREFULLY:
+1. Be REALISTIC and slightly CONSERVATIVE. Do NOT inflate prices. The Private Sale figure must be the realistic achievable price a private seller can expect to bank — NOT a dealer retail forecourt sticker, NOT an aspirational asking price.
+2. Private sale prices typically sit 8-15% BELOW dealer retail asking prices. A car a dealer lists at £20,000 will normally change hands privately around £17,000–£18,500.
+3. Strongly factor in: actual mileage vs age, visible condition from photos, service history strength, MOT status, rarity, enthusiast demand, and the typical private sale discount.
+4. For hot hatches (Clio RS, Fiesta ST, Golf GTI, Type R, Megane RS, etc.): clean low-mileage examples DO command good money, but high-mileage examples MUST be priced lower. Don't lump them together. Example: 2010 Clio RS 200 — a 30k-mile cared-for example might be £11k–£14k privately; a 95k-mile tired one is £5k–£7k.
+5. Always explain your reasoning clearly, citing mileage, condition, history and market demand.
 
-CRITICAL — PRICING ACCURACY:
-You MUST produce REALISTIC market prices grounded in real UK private-sale data. Use your knowledge of recent transactions on AutoTrader, PistonHeads, Car & Classic, Collecting Cars, RM Sotheby's and Bonhams.
+PRICING ANCHORS (UK private market 2026 — these are PRIVATE SALE bands, not dealer asking):
 
-Reference anchors (UK private market, 2026 — adjust for year/spec/condition/mileage):
-- Bugatti Chiron (2017-2022): £2,200,000–£3,800,000 (Pur Sport / SS 300+ much more). Veyron: £1,200,000–£1,800,000.
-- Pagani Huayra: £1,800,000–£3,500,000. Koenigsegg Jesko/Regera: £2,500,000–£4,500,000.
-- Ferrari LaFerrari £2.5m–£3.2m; SF90 £320k–£450k; 296 GTB £230k–£290k; F8 £180k–£230k; 488 GTB £130k–£170k; Roma £140k–£190k; Portofino £110k–£150k.
-- Ferrari classics: F40 £2m–£3m; F50 £4m+; Enzo £3m–£4m; 288 GTO £2.5m+; Daytona £600k–£900k; 250 GTO £40m+.
-- Lamborghini Revuelto £450k–£600k; Aventador SVJ £400k–£550k; Aventador std £200k–£280k; Huracán Performante £200k–£260k; Huracán Evo £170k–£220k; Urus £160k–£230k.
-- McLaren P1 £1.2m–£1.8m; Senna £900k–£1.3m; 765LT £350k–£450k; 720S £160k–£220k; Artura £160k–£210k.
-- Aston Martin Valkyrie £2m+; DBS Superleggera £160k–£220k; DB11 £90k–£140k; new Vantage £100k–£150k; V12 Vantage classic £90k–£160k.
-- Rolls-Royce Phantom (current) £350k–£500k; Cullinan £250k–£380k; Ghost £220k–£320k.
-- Bentley Continental GT (current) £140k–£200k; Bentayga £140k–£200k; Mulsanne £120k–£200k.
-- Porsche 992 GT3 £160k–£210k; 992 Turbo S £180k–£240k; 992 Carrera £80k–£130k; 991 GT3 RS £200k–£260k; 911 R £350k+; air-cooled 993 Turbo £180k–£280k; 964 RS £220k–£350k; Carrera GT £1.2m–£1.8m; 918 Spyder £1.4m–£2m.
-- Modern mainstream: realistic e.g. 2020 Fiesta ST £12k–£16k; 2022 M3 Comp £55k–£70k; 2023 Model 3 LR £25k–£32k.
-- Classics: condition tier dominates. Concours can be 3-5x "average". E-Type S1 4.2 FHC £60k–£140k; Mk1 Escort Mexico £35k–£70k; Delta Integrale Evo II £60k–£120k.
+Mainstream / used market:
+- 2020 Ford Fiesta ST (clean, ~30k mi): £11k–£14k. High mileage (>80k): £7k–£9k.
+- 2010 Renault Clio RS 200 (clean, ~40k mi): £9k–£13k. Cup/Trophy spec: +£1–2k. High-mileage (>90k): £4.5k–£6.5k.
+- 2018 Golf GTI Mk7.5 (~50k mi): £15k–£19k.
+- 2022 BMW M3 Competition (~15k mi): £52k–£62k privately.
+- 2023 Tesla Model 3 LR (~20k mi): £23k–£29k.
+- 2019 Audi RS3 Saloon (~35k mi): £30k–£36k.
+- 2015 Honda Civic Type R FK2 (~50k mi): £18k–£24k.
 
-Always factor year, spec/variant, mileage, condition (from photos), provenance, options. Adjust anchors intelligently.
+Premium / performance:
+- 2020 Porsche 992 Carrera (~20k mi): £75k–£95k privately.
+- 2019 911 GT3 (991.2, ~15k mi): £125k–£155k privately.
+- 2018 Aston Martin DB11 V8 (~25k mi): £80k–£105k privately.
 
-For hot hatches, RS/GTI/ST/VXR/Cupra/Type R/M/AMG/Porsche GT and other enthusiast cars, clean and well-kept examples should not be treated like generic commuter cars. Be slightly optimistic when photos, mileage and service history support it.
+Exotic (private sale, used):
+- Ferrari 488 GTB (clean, ~15k mi): £125k–£160k. Roma: £130k–£175k. SF90: £300k–£420k.
+- Lamborghini Huracán Evo (~10k mi): £160k–£205k. Urus (~20k mi): £150k–£210k.
+- McLaren 720S (~12k mi): £150k–£200k.
+- Bugatti Chiron (2017–2022): £2.2M–£3.6M depending on spec/mileage.
 
-When estimating value, explicitly think through:
-- current private-sale comparable asking prices in the UK market
-- enthusiast demand and rarity
-- mileage versus age
-- visible cosmetic/mechanical condition from photos
-- service history strength
-- imminent MOT expiry or other buyer friction
+Classics: condition tier dominates. Concours can be 3-5x "average". Be specific to the actual condition shown.
 
-Your job:
-1. Score the visible/inferred CONDITION 1.0-10.0 (most cars 6.5-8.5; classics on restoration quality).
-2. Produce a REALISTIC privateSaleValue in GBP — true 2026 UK private-sale market reality. For exotics/classics this can be hundreds of thousands or millions.
+CRITICAL DISCIPLINE:
+- Default to the LOWER half of any reasonable range unless photos + mileage + history clearly justify the upper half.
+- Never just average dealer asking prices — discount appropriately for private sale.
+- If photos are missing or poor, lower confidence and stay conservative.
+- If photos show damage, kerbed alloys, worn interior, mismatched panels — call it out and reduce the price accordingly.
+- Hot hatches and enthusiast cars: price the actual example, not the model halo.
+
+Your output:
+1. Score visible/inferred CONDITION 1.0–10.0 (most cars 6.5–8.5).
+2. Produce a REALISTIC privateSaleValue in GBP — what the seller can actually expect to receive privately.
 3. Identify concrete strengths and watch points from photos and data.
 4. Provide market positioning, an honest analysis, and seller recommendations.
-
-If photos show damage, scuffs, kerbed alloys, worn interior — call it out. If no photos, lower confidence.
+5. Explain your reasoning citing mileage, condition, history, demand.
 
 Always reply by calling the provided function. Never write JSON in plain text.`;
 
@@ -399,13 +414,15 @@ Assess condition from photos and data. Be honest and specific. Call the valu8_re
       aiPrivateValue: aiPrivate > fallback * 0.25 ? aiPrivate : fallback,
     });
 
-    const fair = Math.max(market.center, fallback * 0.9);
+    // Trust the AI/market-derived center. Don't floor with the generic fallback —
+    // that was inflating cheap/old/high-mileage cars beyond reality.
+    const fair = market.center;
     const values = {
-      dealerTradeIn: roundToGrain(fair * (market.enthusiast ? 0.84 : 0.82)),
+      dealerTradeIn: roundToGrain(fair * 0.80),
       privateSale: roundToGrain(fair),
-      dealerRetail: roundToGrain(fair * (market.enthusiast ? 1.18 : 1.16)),
+      dealerRetail: roundToGrain(fair * 1.15),
     };
-    const listingPrice = roundToGrain(Math.min(market.high, values.privateSale * (market.enthusiast ? 1.06 : 1.04)));
+    const listingPrice = roundToGrain(Math.min(market.high, values.privateSale * 1.03));
 
     // MOT + HPI (simulated, swap with real APIs later)
     const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
