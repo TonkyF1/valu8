@@ -1,8 +1,8 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { LayoutDashboard, LogOut, Plus } from "lucide-react";
-import valu8Logo from "@/assets/valu8-logo.png";
+import { LayoutDashboard, LogOut, Plus, UserCircle2 } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 export function TestModeBanner() {
   return (
@@ -26,14 +26,10 @@ export function Header() {
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border/60">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center group" aria-label="Valu8 home">
-          <img
-            src={valu8Logo}
-            alt="Valu8"
-            className="h-9 sm:h-10 w-auto object-contain transition-transform group-hover:scale-[1.03]"
-          />
+          <Logo className="transition-transform group-hover:scale-[1.02]" />
         </Link>
 
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-1.5">
           {user ? (
             <>
               {!onDash && (
@@ -43,6 +39,9 @@ export function Header() {
               )}
               <Button variant="hero" size="sm" onClick={() => navigate("/valuation/new")}>
                 <Plus className="h-4 w-4" /> New valuation
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => navigate("/profile")} aria-label="Profile">
+                <UserCircle2 className="h-5 w-5" />
               </Button>
               <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
                 <LogOut className="h-4 w-4" />
