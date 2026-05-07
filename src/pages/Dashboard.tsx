@@ -235,7 +235,7 @@ export default function Dashboard() {
                     key={r.id}
                     className="group relative premium-card hover:border-primary/50 hover:shadow-glow hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
                   >
-                    <Link to={`/valuation/${r.id}`} className="flex items-stretch gap-4 p-3 sm:p-4">
+                    <Link to={`/valuation/${r.id}`} className="flex items-stretch gap-4 p-3 sm:p-4 pr-20 sm:pr-24">
                       {/* Thumbnail */}
                       <div className="relative h-20 w-20 sm:h-24 sm:w-32 rounded-xl bg-muted overflow-hidden flex-shrink-0 ring-1 ring-border/60 shadow-soft">
                         {cover ? (
