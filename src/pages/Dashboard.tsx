@@ -115,6 +115,11 @@ export default function Dashboard() {
                       <div className="flex items-baseline gap-2 flex-wrap">
                         <h3 className="font-semibold truncate">{r.year} {r.make} {r.model}</h3>
                         <span className="text-xs text-muted-foreground">{r.mileage.toLocaleString()} mi</span>
+                        {r.report?.edited && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider">
+                            <Pencil className="h-2.5 w-2.5" /> Edited
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">{format(new Date(r.created_at), "d MMM yyyy")}</div>
                     </div>
