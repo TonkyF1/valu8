@@ -178,10 +178,10 @@ export default function Report() {
           </div>
 
           {/* Condition score */}
-          <div className="lg:col-span-2 premium-card p-5 flex flex-col items-center justify-center text-center">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">Condition Score</div>
-            <ConditionGauge score={r.conditionScore} label={r.conditionLabel} size={140} />
-            <p className="text-[11px] text-muted-foreground mt-3 max-w-[220px] leading-relaxed">
+          <div className="lg:col-span-2 premium-card py-6 px-5 flex flex-col items-center justify-center text-center">
+            <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-4">Condition Score</div>
+            <ConditionGauge score={r.conditionScore} label={r.conditionLabel} size={100} />
+            <p className="text-[11px] text-muted-foreground mt-4 max-w-[200px] leading-relaxed">
               Based on photos, mileage and history.
             </p>
           </div>
