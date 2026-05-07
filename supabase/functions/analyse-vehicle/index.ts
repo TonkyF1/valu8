@@ -126,40 +126,49 @@ function computeMarketRange(params: {
     return days >= 0 && days <= 90;
   })();
 
-  let center = Math.max(aiPrivateValue, 500);
+  // Trust the AI's private-sale figure as the primary anchor. Apply a small
+  // conservative bias so we don't over-promise — private sales typically
+  // achieve 3-7% below dealer asking screenshots that AIs often anchor to.
+  let center = Math.max(aiPrivateValue, 500) * 0.97;
   let rangeSpread = 0.08;
   let confidence: ConfidenceLevel = photoCount >= 5 ? "High" : photoCount >= 3 ? "Medium" : "Low";
 
   if (exoticAnchor) {
+    // Keep within the anchor band but lean toward the lower-mid for private sale realism.
     const anchorMid = (exoticAnchor.low + exoticAnchor.high) / 2;
-    center = Math.max(center, anchorMid * 0.92);
+    const anchorLowerMid = exoticAnchor.low + (anchorMid - exoticAnchor.low) * 0.6;
+    if (center > exoticAnchor.high * 1.05) center = exoticAnchor.high;
+    if (center < exoticAnchor.low * 0.85) center = anchorLowerMid;
     rangeSpread = 0.12;
     confidence = photoCount >= 4 ? "High" : "Medium";
   }
 
-  if (enthusiast && conditionScore >= 7.8 && mileageRatio <= 1.05) {
-    center *= 1.06;
-  }
-  if (hasStrongHistory) center *= 1.03;
-  if (needsWork) center *= 0.93;
-  if (mileageRatio <= 0.8) center *= enthusiast ? 1.07 : 1.04;
-  else if (mileageRatio >= 1.2) center *= mileageRatio >= 1.45 ? 0.85 : 0.92;
-  if (motSoon) center *= 0.985;
-  if (conditionScore >= 8.6) center *= 1.04;
-  else if (conditionScore <= 6.4) center *= 0.93;
+  // Condition / history / mileage adjustments — conservative, symmetric.
+  if (hasStrongHistory) center *= 1.02;
+  if (needsWork) center *= 0.90;
+  if (mileageRatio <= 0.7) center *= enthusiast ? 1.05 : 1.03;
+  else if (mileageRatio <= 0.9) center *= 1.01;
+  else if (mileageRatio >= 1.5) center *= 0.82;
+  else if (mileageRatio >= 1.25) center *= 0.90;
+  else if (mileageRatio >= 1.1) center *= 0.96;
+  if (motSoon) center *= 0.98;
+  if (conditionScore >= 8.8) center *= 1.02;
+  else if (conditionScore <= 6.5) center *= 0.92;
+  else if (conditionScore <= 5.5) center *= 0.82;
 
-  if (enthusiast) rangeSpread += 0.015;
-  if (photoCount < 4) rangeSpread += 0.02;
+  if (enthusiast) rangeSpread += 0.01;
+  if (photoCount < 4) rangeSpread += 0.025;
   if (needsWork) rangeSpread += 0.02;
-  if (hasStrongHistory) rangeSpread -= 0.01;
+  if (hasStrongHistory) rangeSpread -= 0.005;
   rangeSpread = clamp(rangeSpread, 0.06, 0.16);
 
   let low = center * (1 - rangeSpread);
-  let high = center * (1 + rangeSpread + (enthusiast ? 0.02 : 0));
+  let high = center * (1 + rangeSpread);
 
   if (exoticAnchor) {
-    low = Math.max(low, exoticAnchor.low * 0.96);
-    high = Math.max(high, exoticAnchor.high * 0.98);
+    // Soft-clamp to the anchor band — don't let estimates blow past it.
+    low = clamp(low, exoticAnchor.low * 0.85, exoticAnchor.high);
+    high = clamp(high, low * 1.04, exoticAnchor.high * 1.05);
   }
 
   const roundedCenter = roundToGrain(center);
