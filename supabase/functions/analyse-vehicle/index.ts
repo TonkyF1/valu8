@@ -16,6 +16,53 @@ interface AnalyseRequest {
   photoUrls: string[];
 }
 
+type ConfidenceLevel = "High" | "Medium" | "Low";
+
+const ENTHUSIAST_KEYWORDS = [
+  "rs", "renaultsport", "renault sport", "gti", "gti clubsport", "st", "vrs", "v-rs", "vxr", "opc", "cupra", "type r", "type-r",
+  "m", "m sport", "m3", "m4", "m5", "amg", "gt3", "gt3 rs", "gt4", "turbo s", "nismo", "evo", "integrale", "cooper s",
+  "john cooper works", "jcw", "quadrifoglio", "abarth", "trophy", "williams", "cs", "csl", "clubsport", "superleggera", "performante", "svj", "lt"
+];
+
+const EXOTIC_MODEL_ANCHORS: Array<{ make: string; match: RegExp; low: number; high: number }> = [
+  { make: "Bugatti", match: /chiron|pur sport|super sport|ss 300/i, low: 2200000, high: 4200000 },
+  { make: "Bugatti", match: /veyron/i, low: 1200000, high: 1800000 },
+  { make: "Ferrari", match: /laferrari/i, low: 2500000, high: 3200000 },
+  { make: "Ferrari", match: /sf90/i, low: 320000, high: 450000 },
+  { make: "Ferrari", match: /296\s?(gtb|gts)?/i, low: 230000, high: 290000 },
+  { make: "Ferrari", match: /f8/i, low: 180000, high: 230000 },
+  { make: "Ferrari", match: /488/i, low: 130000, high: 170000 },
+  { make: "Ferrari", match: /roma/i, low: 140000, high: 190000 },
+  { make: "Ferrari", match: /portofino/i, low: 110000, high: 150000 },
+  { make: "Lamborghini", match: /revuelto/i, low: 450000, high: 600000 },
+  { make: "Lamborghini", match: /aventador\s?svj/i, low: 400000, high: 550000 },
+  { make: "Lamborghini", match: /aventador/i, low: 200000, high: 280000 },
+  { make: "Lamborghini", match: /hurac[aá]n\s?performante/i, low: 200000, high: 260000 },
+  { make: "Lamborghini", match: /hurac[aá]n\s?evo/i, low: 170000, high: 220000 },
+  { make: "Lamborghini", match: /urus/i, low: 160000, high: 230000 },
+  { make: "McLaren", match: /p1/i, low: 1200000, high: 1800000 },
+  { make: "McLaren", match: /senna/i, low: 900000, high: 1300000 },
+  { make: "McLaren", match: /765lt/i, low: 350000, high: 450000 },
+  { make: "McLaren", match: /720s/i, low: 160000, high: 220000 },
+  { make: "McLaren", match: /artura/i, low: 160000, high: 210000 },
+  { make: "Porsche", match: /911\s?r$/i, low: 350000, high: 500000 },
+  { make: "Porsche", match: /carrera\s?gt/i, low: 1200000, high: 1800000 },
+  { make: "Porsche", match: /918/i, low: 1400000, high: 2000000 },
+  { make: "Porsche", match: /992.*gt3/i, low: 160000, high: 210000 },
+  { make: "Porsche", match: /992.*turbo\s?s/i, low: 180000, high: 240000 },
+  { make: "Porsche", match: /991.*gt3\s?rs/i, low: 200000, high: 260000 },
+  { make: "Porsche", match: /993.*turbo/i, low: 180000, high: 280000 },
+  { make: "Aston Martin", match: /valkyrie/i, low: 2000000, high: 3000000 },
+  { make: "Aston Martin", match: /dbs\s?superleggera/i, low: 160000, high: 220000 },
+  { make: "Aston Martin", match: /db11/i, low: 90000, high: 140000 },
+  { make: "Rolls-Royce", match: /phantom/i, low: 350000, high: 500000 },
+  { make: "Rolls-Royce", match: /cullinan/i, low: 250000, high: 380000 },
+  { make: "Rolls-Royce", match: /ghost/i, low: 220000, high: 320000 },
+  { make: "Bentley", match: /continental\s?gt/i, low: 140000, high: 200000 },
+  { make: "Bentley", match: /bentayga/i, low: 140000, high: 200000 },
+  { make: "Bentley", match: /mulsanne/i, low: 120000, high: 200000 },
+];
+
 const EXOTIC = ["Ferrari","Lamborghini","McLaren","Pagani","Bugatti","Koenigsegg","Rimac","Aston Martin","Bentley","Rolls-Royce","Maybach","Maserati","Pininfarina","Zenvo","Singer","Gordon Murray"];
 const PREMIUM = ["BMW","Mercedes-Benz","Mercedes-AMG","Audi","Porsche","Land Rover","Jaguar","Tesla","Lexus","Volvo","MINI","Polestar","Genesis","Alpine","Lotus","Morgan","TVR","Lucid","Rivian"];
 const ECONOMY = ["Dacia","SEAT","Škoda","Skoda","Fiat","Citroën","Citroen","Vauxhall","Peugeot","Renault","Suzuki","MG","Kia","Hyundai","Daihatsu","Perodua","Proton","Lada","Tata","BYD","Leapmotor","VinFast","XPeng"];
@@ -31,6 +78,114 @@ function baseValue(make: string, year: number) {
 }
 
 function roundTo50(n: number) { return Math.round(n / 50) * 50; }
+
+function roundToGrain(n: number) {
+  const grain = n >= 1000000 ? 25000 : n >= 500000 ? 10000 : n >= 100000 ? 5000 : n >= 30000 ? 500 : 50;
+  return Math.round(n / grain) * grain;
+}
+
+function clamp(num: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, num));
+}
+
+function isEnthusiastCar(make: string, model: string, variant?: string) {
+  const hay = `${make} ${model} ${variant ?? ""}`.toLowerCase();
+  return ENTHUSIAST_KEYWORDS.some((keyword) => hay.includes(keyword));
+}
+
+function getExoticAnchor(make: string, model: string, variant?: string) {
+  const hay = `${model} ${variant ?? ""}`;
+  return EXOTIC_MODEL_ANCHORS.find((entry) => entry.make === make && entry.match.test(hay));
+}
+
+function computeMarketRange(params: {
+  make: string;
+  model: string;
+  variant?: string;
+  year: number;
+  mileage: number;
+  motExpiry?: string;
+  serviceNotes?: string;
+  photoCount: number;
+  conditionScore: number;
+  aiPrivateValue: number;
+}) {
+  const { make, model, variant, year, mileage, motExpiry, serviceNotes, photoCount, conditionScore, aiPrivateValue } = params;
+  const age = Math.max(0, 2026 - year);
+  const expectedMileage = age <= 0 ? 3000 : age * 8000;
+  const mileageRatio = mileage / Math.max(expectedMileage, 1);
+  const serviceText = `${serviceNotes ?? ""}`.toLowerCase();
+  const hasStrongHistory = /(full service|fsh|main dealer|specialist|major service|timing belt|timing chain|clutch|ceramic|recent service|full history)/i.test(serviceText);
+  const needsWork = /(needs|due|overdue|warning light|smoke|fault|damage|dent|scuff|scratch|leak|issue)/i.test(serviceText);
+  const enthusiast = isEnthusiastCar(make, model, variant);
+  const exoticAnchor = getExoticAnchor(make, model, variant);
+  const motSoon = !!motExpiry && (() => {
+    const expiry = new Date(motExpiry);
+    if (Number.isNaN(expiry.getTime())) return false;
+    const days = (expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    return days >= 0 && days <= 90;
+  })();
+
+  let center = Math.max(aiPrivateValue, 500);
+  let rangeSpread = 0.08;
+  let confidence: ConfidenceLevel = photoCount >= 5 ? "High" : photoCount >= 3 ? "Medium" : "Low";
+
+  if (exoticAnchor) {
+    const anchorMid = (exoticAnchor.low + exoticAnchor.high) / 2;
+    center = Math.max(center, anchorMid * 0.92);
+    rangeSpread = 0.12;
+    confidence = photoCount >= 4 ? "High" : "Medium";
+  }
+
+  if (enthusiast && conditionScore >= 7.8 && mileageRatio <= 1.05) {
+    center *= 1.06;
+  }
+  if (hasStrongHistory) center *= 1.03;
+  if (needsWork) center *= 0.93;
+  if (mileageRatio <= 0.8) center *= enthusiast ? 1.07 : 1.04;
+  else if (mileageRatio >= 1.2) center *= mileageRatio >= 1.45 ? 0.85 : 0.92;
+  if (motSoon) center *= 0.985;
+  if (conditionScore >= 8.6) center *= 1.04;
+  else if (conditionScore <= 6.4) center *= 0.93;
+
+  if (enthusiast) rangeSpread += 0.015;
+  if (photoCount < 4) rangeSpread += 0.02;
+  if (needsWork) rangeSpread += 0.02;
+  if (hasStrongHistory) rangeSpread -= 0.01;
+  rangeSpread = clamp(rangeSpread, 0.06, 0.16);
+
+  let low = center * (1 - rangeSpread);
+  let high = center * (1 + rangeSpread + (enthusiast ? 0.02 : 0));
+
+  if (exoticAnchor) {
+    low = Math.max(low, exoticAnchor.low * 0.96);
+    high = Math.max(high, exoticAnchor.high * 0.98);
+  }
+
+  const roundedCenter = roundToGrain(center);
+  const roundedLow = roundToGrain(Math.min(low, roundedCenter));
+  const roundedHigh = roundToGrain(Math.max(high, roundedCenter));
+
+  const reasons = [
+    mileageRatio <= 0.9 ? "lower-than-typical mileage for age" : mileageRatio >= 1.15 ? "above-average mileage for age" : "age-appropriate mileage",
+    conditionScore >= 8 ? "strong visible condition" : conditionScore <= 6.4 ? "condition deductions" : "solid used-market condition",
+    hasStrongHistory ? "good service history support" : "limited history evidence",
+  ];
+  if (enthusiast) reasons.push("healthy enthusiast demand for this spec");
+  if (motSoon) reasons.push("an MOT date that may slightly temper offers");
+  if (exoticAnchor) reasons.push("rare-market pricing anchored to current exotic transaction levels");
+
+  const reasoning = `The range reflects ${reasons.join(", ")}. ${enthusiast && conditionScore >= 7.8 ? "Clean enthusiast examples can outperform book pricing in private sale." : ""}`.trim();
+
+  return {
+    center: roundedCenter,
+    low: roundedLow,
+    high: roundedHigh,
+    confidence,
+    reasoning,
+    enthusiast,
+  };
+}
 
 // Realistic simulated MOT history. TODO: swap with DVSA MOT History API
 // (https://documentation.history.mot.api.gov.uk/) once credentials are added.
@@ -74,6 +229,8 @@ function hash(s: string) {
 
 const SYSTEM_PROMPT = `You are Valu8's senior UK car valuation analyst with deep, current knowledge of the UK & European private-sale market in 2026. You assess vehicles for PRIVATE SELLERS, not dealers. You are honest, specific, and unsentimental.
 
+You are an expert UK used car valuer with deep knowledge of current 2026 market prices, enthusiast demand, and private sale realities. Be accurate, slightly optimistic for clean cars, and always explain your reasoning.
+
 CRITICAL — PRICING ACCURACY:
 You MUST produce REALISTIC market prices grounded in real UK private-sale data. Use your knowledge of recent transactions on AutoTrader, PistonHeads, Car & Classic, Collecting Cars, RM Sotheby's and Bonhams.
 
@@ -92,6 +249,16 @@ Reference anchors (UK private market, 2026 — adjust for year/spec/condition/mi
 - Classics: condition tier dominates. Concours can be 3-5x "average". E-Type S1 4.2 FHC £60k–£140k; Mk1 Escort Mexico £35k–£70k; Delta Integrale Evo II £60k–£120k.
 
 Always factor year, spec/variant, mileage, condition (from photos), provenance, options. Adjust anchors intelligently.
+
+For hot hatches, RS/GTI/ST/VXR/Cupra/Type R/M/AMG/Porsche GT and other enthusiast cars, clean and well-kept examples should not be treated like generic commuter cars. Be slightly optimistic when photos, mileage and service history support it.
+
+When estimating value, explicitly think through:
+- current private-sale comparable asking prices in the UK market
+- enthusiast demand and rarity
+- mileage versus age
+- visible cosmetic/mechanical condition from photos
+- service history strength
+- imminent MOT expiry or other buyer friction
 
 Your job:
 1. Score the visible/inferred CONDITION 1.0-10.0 (most cars 6.5-8.5; classics on restoration quality).
@@ -116,6 +283,7 @@ const TOOL = {
         privateSaleValue: { type: "number", description: "Realistic UK private-sale price in GBP. For exotics/classics may be hundreds of thousands or millions." },
         honestAnalysis: { type: "string", description: "2-4 sentences. Honest, specific to this car." },
         marketPositioning: { type: "string", description: "1-2 sentences on UK private market position." },
+        valueReasoning: { type: "string", description: "Short explanation of why this car sits at this valuation level, referencing mileage, condition, history, rarity/spec or demand." },
         strengths: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
         watchPoints: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 5 },
         photoObservations: { type: "string", description: "Brief observations on what photos show. Empty if no photos." },
@@ -130,7 +298,7 @@ const TOOL = {
           additionalProperties: false,
         },
       },
-      required: ["conditionScore", "conditionLabel", "privateSaleValue", "honestAnalysis", "marketPositioning", "strengths", "watchPoints", "photoObservations", "recommendations"],
+      required: ["conditionScore", "conditionLabel", "privateSaleValue", "honestAnalysis", "marketPositioning", "valueReasoning", "strengths", "watchPoints", "photoObservations", "recommendations"],
       additionalProperties: false,
     },
   },
@@ -207,27 +375,37 @@ Assess condition from photos and data. Be honest and specific. Call the valu8_re
       privateSaleValue: number;
       honestAnalysis: string;
       marketPositioning: string;
+      valueReasoning: string;
       strengths: string[];
       watchPoints: string[];
       photoObservations: string;
       recommendations: { whereToSell: string[]; highlights: string[]; documents: string[] };
     };
 
-    // ----- Pricing engine: trust the AI's market-aware private-sale value, derive tiers from it -----
+    // ----- Pricing engine: blend AI value with deterministic market-shaping logic, then derive tiers -----
     const score = Math.max(1, Math.min(10, ai.conditionScore));
     const aiPrivate = Math.max(500, Number(ai.privateSaleValue) || 0);
-    // Fallback if AI returns suspicious value
     const fallback = baseValue(body.make, body.year);
-    const fair = aiPrivate > fallback * 0.2 ? aiPrivate : fallback;
-    // Round granularity scales with magnitude
-    const grain = fair >= 500000 ? 5000 : fair >= 100000 ? 1000 : fair >= 20000 ? 250 : 50;
-    const roundG = (n: number) => Math.round(n / grain) * grain;
+    const market = computeMarketRange({
+      make: body.make,
+      model: body.model,
+      variant: body.variant,
+      year: body.year,
+      mileage: body.mileage,
+      motExpiry: body.motExpiry,
+      serviceNotes: body.serviceNotes,
+      photoCount: photoUrls.length,
+      conditionScore: score,
+      aiPrivateValue: aiPrivate > fallback * 0.25 ? aiPrivate : fallback,
+    });
+
+    const fair = Math.max(market.center, fallback * 0.9);
     const values = {
-      dealerTradeIn: roundG(fair * 0.82),
-      privateSale: roundG(fair),
-      dealerRetail: roundG(fair * 1.16),
+      dealerTradeIn: roundToGrain(fair * (market.enthusiast ? 0.84 : 0.82)),
+      privateSale: roundToGrain(fair),
+      dealerRetail: roundToGrain(fair * (market.enthusiast ? 1.18 : 1.16)),
     };
-    const listingPrice = roundG(values.privateSale * 1.04);
+    const listingPrice = roundToGrain(Math.min(market.high, values.privateSale * (market.enthusiast ? 1.06 : 1.04)));
 
     // MOT + HPI (simulated, swap with real APIs later)
     const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
@@ -237,6 +415,9 @@ Assess condition from photos and data. Be honest and specific. Call the valu8_re
       conditionScore: Math.round(score * 10) / 10,
       conditionLabel: ai.conditionLabel,
       values,
+      valueRange: { privateSaleLow: market.low, privateSaleHigh: market.high },
+      valueReasoning: `${ai.valueReasoning} ${market.reasoning}`.trim(),
+      marketConfidence: market.confidence,
       honestAnalysis: ai.honestAnalysis,
       marketPositioning: ai.marketPositioning,
       photoObservations: ai.photoObservations,
