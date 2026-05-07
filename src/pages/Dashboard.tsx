@@ -6,10 +6,12 @@ import { useProfile } from "@/hooks/useProfile";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, Car, TrendingUp, Activity, Pencil, Crown, ArrowUpRight, Trash2, Search, ArrowUpDown, Sparkles } from "lucide-react";
+import { Plus, Eye, Car, TrendingUp, Activity, Pencil, Crown, Trash2, Search, ArrowUpDown, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 
 type SortKey = "newest" | "oldest" | "highest" | "lowest";
@@ -30,7 +32,8 @@ interface Row {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { isPremium, setPremium } = useProfile();
+  const { isPremium } = useProfile();
+  const confirm = useConfirm();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -47,7 +50,13 @@ export default function Dashboard() {
   }, [user]);
 
   async function remove(id: string) {
-    if (!confirm("Delete this valuation? This cannot be undone.")) return;
+    const ok = await confirm({
+      title: "Delete this valuation?",
+      description: "This cannot be undone. The report and any photos linked to it will be removed from your account.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     const { error } = await supabase.from("valuations").delete().eq("id", id);
     if (error) return toast.error(error.message);
     setRows(rs => rs.filter(r => r.id !== id));
@@ -86,45 +95,44 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Primary CTA + premium toggle */}
+        {/* Primary CTA + premium status */}
         <section className="grid md:grid-cols-3 gap-3 mb-10">
           <Link
             to="/valuation/new"
-            className="md:col-span-2 group relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-7 transition-all hover:border-primary/70 hover:shadow-glow"
+            className="md:col-span-2 group relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-7 transition-all hover:border-primary/60"
           >
-            <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-primary/15 blur-3xl pointer-events-none transition-opacity group-hover:opacity-150" />
             <div className="relative flex items-center justify-between gap-6">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.22em] text-primary font-semibold mb-2">Start now</div>
-                <h2 className="text-xl sm:text-2xl font-bold tracking-tight">New Valuation</h2>
+                <div className="text-[10px] uppercase tracking-[0.22em] text-primary font-medium mb-2">Start now</div>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">New Valuation</h2>
                 <p className="text-sm text-muted-foreground mt-1.5 max-w-sm">
-                  60 seconds. Photo-aware. Built around real 2026 UK private-sale prices.
+                  60 seconds. Photo aware. Built around real 2026 UK private sale prices.
                 </p>
               </div>
-              <span className="hidden sm:grid h-12 w-12 rounded-2xl bg-primary text-primary-foreground place-items-center shadow-glow flex-shrink-0 group-hover:scale-110 transition-transform">
+              <span className="hidden sm:grid h-12 w-12 rounded-2xl bg-primary text-primary-foreground place-items-center flex-shrink-0 group-hover:scale-105 transition-transform">
                 <Plus className="h-6 w-6" />
               </span>
             </div>
           </Link>
 
-          <button
-            type="button"
-            onClick={() => setPremium(!isPremium, isPremium ? "free" : "monthly")}
-            className={`group relative overflow-hidden rounded-2xl border p-5 text-left transition-all ${
-              isPremium
-                ? "border-primary/40 bg-primary/5 hover:border-primary/70"
-                : "border-border bg-card hover:border-primary/40"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <Crown className={`h-5 w-5 ${isPremium ? "text-primary" : "text-muted-foreground"}`} />
-              <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <div className={`relative overflow-hidden rounded-2xl border p-5 ${
+            isPremium ? "border-primary/40 bg-primary/5" : "border-border bg-card"
+          }`}>
+            <div className="flex items-center gap-2 mb-2">
+              <Crown className={`h-4 w-4 ${isPremium ? "text-primary" : "text-muted-foreground"}`} />
+              <span className="text-sm font-medium">{isPremium ? "Premium" : "Free plan"}</span>
             </div>
-            <div className="text-sm font-semibold">{isPremium ? "Premium active" : "Activate Premium"}</div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {isPremium ? "Unlimited edits & exports" : "Edit, regenerate, and unlock adverts"}
-            </div>
-          </button>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {isPremium
+                ? "Edit reports, export PDFs and create adverts."
+                : "Upgrade to edit reports, export PDFs and create adverts."}
+            </p>
+            {!isPremium && (
+              <Button asChild variant="link" size="sm" className="px-0 mt-2 h-auto text-primary">
+                <Link to="/profile">Upgrade →</Link>
+              </Button>
+            )}
+          </div>
         </section>
 
         {/* Stats */}
@@ -155,19 +163,20 @@ export default function Dashboard() {
                 className="pl-10 h-11 bg-card/60 border-border/70 rounded-xl"
               />
             </div>
-            <div className="relative">
-              <ArrowUpDown className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value as SortKey)}
-                className="h-11 pl-9 pr-8 bg-card/60 border border-border/70 rounded-xl text-sm font-medium appearance-none cursor-pointer hover:border-primary/40 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="highest">Highest value</option>
-                <option value="lowest">Lowest value</option>
-              </select>
-            </div>
+            <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+              <SelectTrigger className="h-11 w-[180px] bg-card/60 border-border/70 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  <SelectValue />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest first</SelectItem>
+                <SelectItem value="oldest">Oldest first</SelectItem>
+                <SelectItem value="highest">Highest value</SelectItem>
+                <SelectItem value="lowest">Lowest value</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )}
 
