@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
-import valu8Logo from "@/assets/valu8-logo.png";
+import { Logo } from "@/components/Logo";
 
 export function Footer() {
   return (
     <footer className="border-t border-border/60 mt-20">
       <div className="container py-10 grid gap-8 md:grid-cols-3 items-start">
         <div>
-          <img src={valu8Logo} alt="Valu8" className="h-8 w-auto" />
+          <Logo size="sm" />
           <p className="text-xs text-muted-foreground mt-3 max-w-xs">
             Premium AI car valuations, built for UK private sellers. Test mode — all features free.
           </p>
