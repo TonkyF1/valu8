@@ -134,111 +134,191 @@ export default function Dashboard() {
           <StatCard icon={<Activity className="h-3.5 w-3.5" />} label="Avg condition" value={total ? `${avgCondition}/10` : "—"} />
         </section>
 
-        {/* List */}
-        <div className="flex items-end justify-between mb-4">
+        {/* List header with search + sort */}
+        <div className="flex items-end justify-between mb-4 gap-3">
           <div>
             <h2 className="text-lg font-semibold tracking-tight">My Valuations</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">{total} {total === 1 ? "report" : "reports"}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {total} {total === 1 ? "report" : "reports"}
+            </p>
           </div>
         </div>
 
-        {loading ? (
-          <div className="grid gap-2.5">
-            {[0, 1, 2].map(i => <div key={i} className="h-[88px] rounded-2xl shimmer" />)}
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="premium-card p-14 text-center">
-            <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 grid place-items-center mb-5">
-              <Car className="h-6 w-6 text-primary" />
+        {!loading && rows.length > 0 && (
+          <div className="flex flex-col sm:flex-row gap-2.5 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search your saved valuations..."
+                className="pl-10 h-11 bg-card/60 border-border/70 rounded-xl"
+              />
             </div>
-            <h3 className="text-lg font-semibold">No valuations yet</h3>
-            <p className="text-muted-foreground mt-1.5 text-sm max-w-sm mx-auto">
-              Get your first AI-powered valuation in under a minute.
-            </p>
-            <Button asChild variant="hero" size="lg" className="mt-6">
-              <Link to="/valuation/new"><Plus className="h-4 w-4" /> Start a valuation</Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="grid gap-2.5">
-            {rows.map(r => {
-              const cover = Array.isArray(r.photo_urls) ? r.photo_urls[0] : null;
-              return (
-                <div
-                  key={r.id}
-                  className="group relative rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:shadow-soft transition-all overflow-hidden"
-                >
-                  <Link to={`/valuation/${r.id}`} className="flex items-center gap-4 p-3 sm:p-4">
-                    {/* Thumbnail */}
-                    <div className="h-16 w-16 sm:h-[72px] sm:w-[88px] rounded-xl bg-muted overflow-hidden flex-shrink-0 ring-1 ring-border/60">
-                      {cover ? (
-                        <img src={cover} alt={`${r.make} ${r.model}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                      ) : (
-                        <div className="w-full h-full grid place-items-center text-muted-foreground/60">
-                          <Car className="h-5 w-5" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Body */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2 flex-wrap">
-                        <h3 className="font-semibold text-[15px] truncate leading-tight">
-                          {r.year} {r.make} {r.model}
-                        </h3>
-                        {r.report?.edited && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-1.5 py-px text-[9px] font-semibold uppercase tracking-wider">
-                            <Pencil className="h-2.5 w-2.5" /> Edited
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-x-2 gap-y-0.5 mt-1 text-[11px] text-muted-foreground flex-wrap">
-                        <span className="tabular-nums">{r.mileage.toLocaleString()} mi</span>
-                        {r.registration && (
-                          <>
-                            <span className="opacity-40">•</span>
-                            <span className="font-mono uppercase">{r.registration}</span>
-                          </>
-                        )}
-                        {r.condition_score != null && (
-                          <>
-                            <span className="opacity-40">•</span>
-                            <span>Condition <span className="text-foreground/80 tabular-nums">{Number(r.condition_score).toFixed(1)}</span></span>
-                          </>
-                        )}
-                        <span className="opacity-40">•</span>
-                        <span>{format(new Date(r.created_at), "d MMM yyyy")}</span>
-                      </div>
-                    </div>
-
-                    {/* Price */}
-                    <div className="text-right hidden xs:block sm:block flex-shrink-0">
-                      <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Private</div>
-                      <div className="font-bold text-gradient-primary text-lg sm:text-xl tabular-nums leading-tight">
-                        £{(r.private_value || 0).toLocaleString()}
-                      </div>
-                    </div>
-                  </Link>
-
-                  {/* Actions */}
-                  <div className="absolute top-2 right-2 sm:static sm:absolute sm:right-3 sm:top-1/2 sm:-translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity bg-card/80 backdrop-blur rounded-full border border-border/60 sm:border-0 sm:bg-transparent sm:backdrop-blur-0">
-                    <Button asChild variant="ghost" size="icon" title={isPremium ? "Edit" : "Premium feature"}>
-                      <Link to={`/valuation/${r.id}/edit`}>
-                        {isPremium ? <Pencil className="h-4 w-4" /> : <Crown className="h-4 w-4 text-primary" />}
-                      </Link>
-                    </Button>
-                    <Button asChild variant="ghost" size="icon" title="View report">
-                      <Link to={`/valuation/${r.id}`}><Eye className="h-4 w-4" /></Link>
-                    </Button>
-                    <Button variant="ghost" size="icon" title="Delete" onClick={() => remove(r.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive/80" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+            <div className="relative">
+              <ArrowUpDown className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortKey)}
+                className="h-11 pl-9 pr-8 bg-card/60 border border-border/70 rounded-xl text-sm font-medium appearance-none cursor-pointer hover:border-primary/40 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="highest">Highest value</option>
+                <option value="lowest">Lowest value</option>
+              </select>
+            </div>
           </div>
         )}
+
+        {(() => {
+          if (loading) {
+            return (
+              <div className="grid gap-3">
+                {[0, 1, 2].map(i => <div key={i} className="h-[120px] rounded-2xl shimmer" />)}
+              </div>
+            );
+          }
+          if (rows.length === 0) {
+            return (
+              <div className="premium-card relative overflow-hidden p-10 sm:p-14 text-center">
+                <div className="absolute inset-0 hero-glow pointer-events-none" />
+                <div className="relative">
+                  <div className="mx-auto h-20 w-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 grid place-items-center mb-6 ring-1 ring-primary/30 shadow-glow">
+                    <Sparkles className="h-9 w-9 text-primary" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold tracking-tight">No valuations yet</h3>
+                  <p className="text-muted-foreground mt-2 text-sm max-w-sm mx-auto">
+                    Get your first AI-powered, photo-aware valuation in under a minute.
+                  </p>
+                  <Button asChild variant="hero" size="lg" className="mt-7">
+                    <Link to="/valuation/new"><Plus className="h-4 w-4" /> Start your first valuation</Link>
+                  </Button>
+                </div>
+              </div>
+            );
+          }
+
+          const q = query.trim().toLowerCase();
+          let list = rows.filter(r =>
+            !q ||
+            `${r.year} ${r.make} ${r.model} ${r.registration || ""}`.toLowerCase().includes(q)
+          );
+          list = [...list].sort((a, b) => {
+            switch (sort) {
+              case "oldest": return +new Date(a.created_at) - +new Date(b.created_at);
+              case "highest": return (b.private_value || 0) - (a.private_value || 0);
+              case "lowest": return (a.private_value || 0) - (b.private_value || 0);
+              default: return +new Date(b.created_at) - +new Date(a.created_at);
+            }
+          });
+
+          if (list.length === 0) {
+            return (
+              <div className="premium-card p-10 text-center">
+                <div className="mx-auto h-12 w-12 rounded-2xl bg-muted grid place-items-center mb-4">
+                  <Search className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold">No matches</h3>
+                <p className="text-muted-foreground mt-1 text-sm">Try a different search term.</p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="grid gap-3">
+              {list.map((r) => {
+                const cover = Array.isArray(r.photo_urls) ? r.photo_urls[0] : null;
+                const variant = (r as any).report?.variant || (r as any).variant;
+                return (
+                  <div
+                    key={r.id}
+                    className="group relative premium-card hover:border-primary/50 hover:shadow-glow hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
+                  >
+                    <Link to={`/valuation/${r.id}`} className="flex items-stretch gap-4 p-3 sm:p-4">
+                      {/* Thumbnail */}
+                      <div className="relative h-20 w-20 sm:h-24 sm:w-32 rounded-xl bg-muted overflow-hidden flex-shrink-0 ring-1 ring-border/60 shadow-soft">
+                        {cover ? (
+                          <img
+                            src={cover}
+                            alt={`${r.year} ${r.make} ${r.model}`}
+                            loading="lazy"
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="w-full h-full grid place-items-center text-muted-foreground/60 bg-gradient-to-br from-muted to-background">
+                            <Car className="h-6 w-6" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Body */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-center min-h-[80px]">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-[15px] sm:text-base truncate leading-tight tracking-tight">
+                            {r.year} {r.make} {r.model}
+                            {variant && <span className="text-muted-foreground font-medium"> · {variant}</span>}
+                          </h3>
+                          {r.report?.edited && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em]">
+                              <Pencil className="h-2.5 w-2.5" /> Edited
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-x-2.5 gap-y-1 mt-1.5 text-[11.5px] text-muted-foreground flex-wrap">
+                          <span className="tabular-nums">{r.mileage.toLocaleString()} mi</span>
+                          {r.registration && (
+                            <>
+                              <span className="opacity-30">•</span>
+                              <span className="font-mono uppercase text-foreground/70">{r.registration}</span>
+                            </>
+                          )}
+                          <span className="opacity-30">•</span>
+                          <span>{format(new Date(r.created_at), "d MMM yyyy")}</span>
+                          {r.condition_score != null && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-semibold tabular-nums ml-0.5">
+                              <Activity className="h-2.5 w-2.5" />
+                              {Number(r.condition_score).toFixed(1)}/10
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Price */}
+                      <div className="text-right flex flex-col justify-center pr-12 sm:pr-14 flex-shrink-0">
+                        <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Private sale</div>
+                        <div className="font-bold text-gradient-primary text-lg sm:text-2xl tabular-nums leading-tight mt-0.5">
+                          £{(r.private_value || 0).toLocaleString()}
+                        </div>
+                      </div>
+                    </Link>
+
+                    {/* Actions */}
+                    <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                      <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg" title={isPremium ? "Edit" : "Premium feature"}>
+                        <Link to={`/valuation/${r.id}/edit`} onClick={(e) => e.stopPropagation()}>
+                          {isPremium ? <Pencil className="h-3.5 w-3.5" /> : <Crown className="h-3.5 w-3.5 text-primary" />}
+                        </Link>
+                      </Button>
+                      <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg hidden sm:inline-flex" title="View report">
+                        <Link to={`/valuation/${r.id}`} onClick={(e) => e.stopPropagation()}><Eye className="h-3.5 w-3.5" /></Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                        title="Delete"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); remove(r.id); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive/80" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </main>
       <Footer />
     </div>
