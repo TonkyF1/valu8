@@ -242,6 +242,66 @@ export default function EditValuation() {
         <div className="premium-card p-6 sm:p-8 space-y-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-2">
+              <Label>Make</Label>
+              <Select value={make} onValueChange={(v) => { setMake(v); setModel(""); setVariant(""); }}>
+                <SelectTrigger><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
+                <SelectContent>
+                  <div className="p-2 sticky top-0 bg-popover z-10">
+                    <Input placeholder="Search makes" value={makeQuery} onChange={(e) => setMakeQuery(e.target.value)} onKeyDown={(e) => e.stopPropagation()} className="h-9" />
+                  </div>
+                  {filteredMakes.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Model</Label>
+              {availableModels.length > 0 ? (
+                <Select value={model} onValueChange={(v) => { setModel(v); setVariant(""); }}>
+                  <SelectTrigger><SelectValue placeholder={make ? "Select model" : "Pick a make first"} /></SelectTrigger>
+                  <SelectContent>
+                    <div className="p-2 sticky top-0 bg-popover z-10">
+                      <Input placeholder={`Search ${make} models`} value={modelQuery} onChange={(e) => setModelQuery(e.target.value)} onKeyDown={(e) => e.stopPropagation()} className="h-9" />
+                    </div>
+                    {filteredModels.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    {filteredModels.length === 0 && modelQuery && (
+                      <SelectItem value={modelQuery.trim()}>Use "{modelQuery.trim()}"</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input value={model} onChange={(e) => setModel(e.target.value)} disabled={!make} />
+              )}
+            </div>
+            <div className="sm:col-span-2 space-y-2">
+              <Label>Variant / Engine / Trim <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              {availableVariants.length > 0 ? (
+                <Select value={variant} onValueChange={setVariant}>
+                  <SelectTrigger><SelectValue placeholder="Choose a variant…" /></SelectTrigger>
+                  <SelectContent>
+                    <div className="p-2 sticky top-0 bg-popover z-10">
+                      <Input placeholder="Search or type your own" value={variantQuery} onChange={(e) => setVariantQuery(e.target.value)} onKeyDown={(e) => e.stopPropagation()} className="h-9" />
+                    </div>
+                    {filteredVariants.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                    {variantQuery.trim() && !filteredVariants.some(v => v.toLowerCase() === variantQuery.trim().toLowerCase()) && (
+                      <SelectItem value={variantQuery.trim()}>Use "{variantQuery.trim()}"</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input value={variant} onChange={(e) => setVariant(e.target.value)} disabled={!make} maxLength={80}
+                  placeholder="e.g. RS 200 Mk3, 3.0 V6 Twin Turbo…" />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Year</Label>
+              <Select value={year} onValueChange={setYear}>
+                <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
+                <SelectContent>
+                  {YEARS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="mileage">Mileage</Label>
               <Input id="mileage" type="number" inputMode="numeric" value={mileage} onChange={(e) => setMileage(e.target.value)} />
             </div>
