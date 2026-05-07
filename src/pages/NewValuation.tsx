@@ -297,16 +297,7 @@ export default function NewValuation() {
             </div>
 
             <div>
-              <div className="flex items-end justify-between flex-wrap gap-2">
-                <div>
-                  <h2 className="text-xl font-semibold">Photos</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Six quick shots = a sharper valuation. You can submit with fewer.</p>
-                </div>
-                <span className="text-xs text-primary font-medium">Recommended for best results</span>
-              </div>
-              <div className="mt-6">
-                <PhotoUploader photos={photos} onChange={setPhotos} />
-              </div>
+              <PhotoUploader photos={photos} onChange={setPhotos} />
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-border">
