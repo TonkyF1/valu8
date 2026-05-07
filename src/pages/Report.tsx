@@ -16,6 +16,8 @@ import {
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CountUp } from "@/components/CountUp";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Valuation {
   id: string; make: string; model: string; year: number; mileage: number;
@@ -137,19 +139,18 @@ export default function Report() {
         )}
 
         {/* Hero: Private Sale headline + Condition + small tiers */}
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-4">
+        <section className="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-6">
           {/* Headline private sale price */}
-          <div className="lg:col-span-3 premium-card p-5 sm:p-6 relative overflow-hidden border-primary/40 shadow-glow">
-            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+          <div className="lg:col-span-3 premium-card p-5 sm:p-6 relative overflow-hidden border-primary/30">
+            <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.06] blur-3xl pointer-events-none" />
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[9px] uppercase tracking-[0.2em] font-bold bg-gradient-primary text-primary-foreground px-2 py-0.5 rounded-full">Best Return</span>
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Private Sale</span>
-              {r.marketConfidence && <span className="text-[9px] uppercase tracking-[0.18em] text-primary/90 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">{r.marketConfidence} confidence</span>}
+              {r.marketConfidence && <span className="text-[9px] uppercase tracking-[0.16em] text-primary/90 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">{r.marketConfidence} confidence</span>}
             </div>
-            <div className="text-4xl sm:text-5xl font-bold tabular-nums text-gradient-primary leading-none">
-              £{r.values.privateSale.toLocaleString()}
+            <div className="text-4xl sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-none">
+              <CountUp value={r.values.privateSale} prefix="£" />
             </div>
-            <div className="text-xs text-muted-foreground tabular-nums mt-1.5">
+            <div className="text-xs text-muted-foreground tabular-nums mt-2">
               Range £{(r.valueRange?.privateSaleLow ?? r.values.privateSale).toLocaleString()} – £{(r.valueRange?.privateSaleHigh ?? r.values.privateSale).toLocaleString()}
             </div>
             <p className="text-xs sm:text-sm text-foreground/75 leading-relaxed mt-3 max-w-md">
@@ -160,15 +161,15 @@ export default function Report() {
                 {r.valueReasoning}
               </p>
             )}
-            <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-border/60">
-              <MiniTier label="Trade-in" tag="Quick" value={r.values.dealerTradeIn} />
-              <MiniTier label="Retail" tag="Forecourt" value={r.values.dealerRetail} />
+            <div className="grid grid-cols-2 gap-2 mt-5 pt-5 border-t border-border/60">
+              <MiniTier label="Trade-in" tag="Quick" tip="What a dealer pays you today. Fastest, lowest." value={r.values.dealerTradeIn} />
+              <MiniTier label="Retail" tag="Forecourt" tip="What a dealer would resell it for. Includes their margin." value={r.values.dealerRetail} />
             </div>
           </div>
 
           {/* Condition score */}
           <div className="lg:col-span-2 premium-card p-5 flex flex-col items-center justify-center text-center">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3">Condition Score</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">Condition Score</div>
             <ConditionGauge score={r.conditionScore} label={r.conditionLabel} size={140} />
             <p className="text-[11px] text-muted-foreground mt-3 max-w-[220px] leading-relaxed">
               Based on photos, mileage and history.
