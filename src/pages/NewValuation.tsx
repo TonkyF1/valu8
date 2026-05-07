@@ -17,7 +17,7 @@ import { getVariantsFor } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
-import { Sparkles, ArrowRight, ShieldCheck, Zap, TrendingUp } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const formSchema = z.object({
   make: z.string().min(1, "Select a make"),
@@ -128,22 +128,30 @@ export default function NewValuation() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative overflow-hidden hero-glow">
-          <div className="container py-16 md:py-24 text-center max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-6 animate-fade-in-up">
-              <Sparkles className="h-3 w-3" /> AI-powered • Built for UK private sellers
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-gradient leading-[1.05] animate-fade-in-up">
-              Instant AI Car Valuation<br/>
-              <span className="text-gradient-primary">for Private Sellers</span>
-            </h1>
-            <p className="text-base md:text-lg text-muted-foreground mt-6 max-w-xl mx-auto animate-fade-in-up">
-              Honest market value. Condition-aware. Built around the price you'll actually achieve in a private sale — not a forecourt trade-in.
+        <section className="relative overflow-hidden">
+          <div className="container pt-20 pb-16 md:pt-32 md:pb-24 text-center max-w-3xl">
+            <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-10 animate-fade-in-up">
+              Trusted by thousands of UK private sellers
             </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground animate-fade-in-up">
-              <span className="inline-flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-primary" /> 60-second analysis</span>
-              <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-primary" /> HPI &amp; MOT summary</span>
-              <span className="inline-flex items-center gap-1.5"><TrendingUp className="h-3.5 w-3.5 text-primary" /> Three-tier value range</span>
+            <h1 className="text-4xl md:text-6xl font-semibold tracking-tight text-gradient leading-[1.08] animate-fade-in-up">
+              Know your car's true worth<br className="hidden sm:block" /> before you sell
+            </h1>
+            <p className="text-base md:text-lg text-muted-foreground mt-8 max-w-xl mx-auto leading-relaxed animate-fade-in-up">
+              Honest valuations built on live UK market data. No inflated dealer prices, no guesswork. Just the realistic figure you can expect in a private sale.
+            </p>
+            <div className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-sm text-muted-foreground/80 animate-fade-in-up">
+              <span className="flex items-center gap-2.5">
+                <span className="h-[5px] w-[5px] rounded-full bg-primary/60" />
+                Full condition assessment
+              </span>
+              <span className="flex items-center gap-2.5">
+                <span className="h-[5px] w-[5px] rounded-full bg-primary/60" />
+                MOT & market summary
+              </span>
+              <span className="flex items-center gap-2.5">
+                <span className="h-[5px] w-[5px] rounded-full bg-primary/60" />
+                Realistic private sale price
+              </span>
             </div>
           </div>
         </section>
