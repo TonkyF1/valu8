@@ -87,18 +87,25 @@ export default function EditValuation() {
     return urls;
   }
 
+  const composedModel = variant.trim() ? `${model} · ${variant.trim()}` : model;
+
   async function saveOnly() {
     if (!row) return;
     setBusy(true);
     try {
       const newUrls = await uploadNewPhotos();
       const allPhotos = [...existingPhotos, ...newUrls];
+      const updatedReport = { ...(row.report || {}), edited: true, lastEditedAt: new Date().toISOString() };
       const { error } = await supabase.from("valuations").update({
+        make: make || row.make,
+        model: composedModel || row.model,
+        year: Number(year) || row.year,
         mileage: Number(mileage) || row.mileage,
         registration: registration || null,
         mot_expiry: motExpiry || null,
         service_notes: serviceNotes || null,
         photo_urls: allPhotos,
+        report: updatedReport,
       }).eq("id", row.id);
       if (error) throw error;
       toast.success("Changes saved");
@@ -115,10 +122,12 @@ export default function EditValuation() {
       const newUrls = await uploadNewPhotos();
       const allPhotos = [...existingPhotos, ...newUrls];
 
-      // Save originals as a snapshot the first time we regenerate
       const previousVersions = Array.isArray(row.report?.previousVersions) ? row.report.previousVersions : [];
       const snapshot = {
         savedAt: new Date().toISOString(),
+        make: row.make,
+        model: row.model,
+        year: row.year,
         mileage: row.mileage,
         registration: row.registration,
         motExpiry: row.mot_expiry,
@@ -129,10 +138,10 @@ export default function EditValuation() {
 
       const { data: aiData, error: aiErr } = await supabase.functions.invoke("analyse-vehicle", {
         body: {
-          make: row.make,
-          model: row.model.split(" · ")[0],
-          variant: row.model.includes(" · ") ? row.model.split(" · ")[1] : undefined,
-          year: row.year,
+          make: make || row.make,
+          model: model || row.model.split(" · ")[0],
+          variant: variant.trim() || undefined,
+          year: Number(year) || row.year,
           mileage: Number(mileage) || row.mileage,
           registration: registration || undefined,
           motExpiry: motExpiry || undefined,
@@ -144,9 +153,17 @@ export default function EditValuation() {
       const report = (aiData as any)?.report;
       if (!report) throw new Error("AI did not return a report");
 
-      const updatedReport = { ...report, previousVersions: [snapshot, ...previousVersions].slice(0, 10) };
+      const updatedReport = {
+        ...report,
+        edited: true,
+        lastEditedAt: new Date().toISOString(),
+        previousVersions: [snapshot, ...previousVersions].slice(0, 10),
+      };
 
       const { error } = await supabase.from("valuations").update({
+        make: make || row.make,
+        model: composedModel || row.model,
+        year: Number(year) || row.year,
         mileage: Number(mileage) || row.mileage,
         registration: registration || null,
         mot_expiry: motExpiry || null,
