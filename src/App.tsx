@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Analysing from "./pages/Analysing";
 import Report from "./pages/Report";
 import EditValuation from "./pages/EditValuation";
+import Profile from "./pages/Profile";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Disclaimers from "./pages/Disclaimers";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/valuation/:id/analysing" element={<ProtectedRoute><Analysing /></ProtectedRoute>} />
             <Route path="/valuation/:id" element={<ProtectedRoute><Report /></ProtectedRoute>} />
             <Route path="/valuation/:id/edit" element={<ProtectedRoute><EditValuation /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/disclaimers" element={<Disclaimers />} />
