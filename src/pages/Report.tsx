@@ -88,11 +88,21 @@ export default function Report() {
             <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> All valuations</Link>
           </Button>
           <div className="flex items-center gap-2">
-            <Button asChild variant={isPremium ? "premium" : "ghost"} size="sm" title={isPremium ? "Edit valuation" : "Premium feature"}>
-              <Link to={`/valuation/${v.id}/edit`}><Pencil className="h-4 w-4" />Edit</Link>
-            </Button>
+            {isPremium ? (
+              <Button asChild variant="ghost" size="sm" title="Edit valuation">
+                <Link to={`/valuation/${v.id}/edit`}><Pencil className="h-4 w-4" />Edit</Link>
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => toast.info("Editing reports is a Premium feature")} title="Premium feature">
+                <Pencil className="h-4 w-4" />Edit
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={share}><Share2 className="h-4 w-4" />Share</Button>
-            <Button variant="ghost" size="sm" onClick={() => { downloadValuationPdf(v, r); toast.success("PDF downloaded"); }}><Download className="h-4 w-4" />PDF</Button>
+            {isPremium ? (
+              <Button variant="ghost" size="sm" onClick={() => { downloadValuationPdf(v, r); toast.success("PDF downloaded"); }}><Download className="h-4 w-4" />PDF</Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => toast.info("PDF export is a Premium feature")}><Download className="h-4 w-4" />PDF</Button>
+            )}
             <Button variant="premium" size="sm" onClick={() => toast.success("Already saved to My Valuations")}><Bookmark className="h-4 w-4" />Saved</Button>
           </div>
         </div>
