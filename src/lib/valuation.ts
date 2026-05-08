@@ -12,7 +12,16 @@ export interface ValuationInput {
   photoCount: number;
 }
 
-export interface MotEntry { date: string; result: "Pass" | "Advisory" | "Fail"; note: string; mileage: number; }
+export interface MotEntry {
+  date: string;
+  result: "Pass" | "Advisory" | "Fail";
+  note: string;
+  mileage: number;
+  expiryDate?: string;
+  advisories?: string[];
+  failures?: string[];
+  source?: "dvsa" | "simulated";
+}
 export interface ValuationReport {
   conditionScore: number;
   conditionLabel: string;
@@ -28,6 +37,8 @@ export interface ValuationReport {
   recommendations: { listingPrice: number; whereToSell: string[]; highlights: string[]; documents: string[] };
   hpi: { status: "All Clear" | "Needs Review"; checks: { label: string; ok: boolean }[] };
   motHistory: MotEntry[];
+  motSource?: "dvsa" | "simulated";
+  motNotice?: string;
   generatedAt: string;
 }
 

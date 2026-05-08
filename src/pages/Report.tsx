@@ -268,7 +268,19 @@ export default function Report() {
         </Section>
 
         {/* MOT history */}
-        <Section title="MOT History">
+        <Section title="MOT History" right={
+          <span className={cn(
+            "inline-flex items-center gap-1.5 text-[11px] font-medium rounded-full px-2.5 py-1 border",
+            r.motSource === "dvsa"
+              ? "text-primary bg-primary/5 border-primary/30"
+              : "text-muted-foreground bg-muted/40 border-border/60"
+          )}>
+            {r.motSource === "dvsa" ? "Live DVSA data" : "Sample data"}
+          </span>
+        }>
+          {r.motNotice && r.motSource !== "dvsa" && (
+            <p className="text-xs text-muted-foreground mb-3">{r.motNotice}</p>
+          )}
           <ol className="relative border-l border-border ml-2">
             {r.motHistory.map((m, i) => (
               <li key={i} className="ml-6 pb-5 last:pb-0">
@@ -279,16 +291,39 @@ export default function Report() {
                 <div className="flex items-baseline justify-between flex-wrap gap-2">
                   <div>
                     <div className="font-medium text-sm">{format(new Date(m.date), "d MMMM yyyy")}</div>
-                    <div className="text-xs text-muted-foreground">{m.note}</div>
+                    {m.expiryDate && m.result !== "Fail" && (
+                      <div className="text-[11px] text-muted-foreground">Expires {format(new Date(m.expiryDate), "d MMM yyyy")}</div>
+                    )}
                   </div>
                   <div className="text-xs text-muted-foreground tabular-nums">
                     <span className={cn(
                       "font-medium mr-2",
                       m.result === "Pass" ? "text-primary" : m.result === "Advisory" ? "text-amber-400" : "text-destructive"
                     )}>{m.result}</span>
-                    {m.mileage.toLocaleString()} mi
+                    {m.mileage > 0 && <>{m.mileage.toLocaleString()} mi</>}
                   </div>
                 </div>
+                {(m.failures?.length ?? 0) > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {m.failures!.map((f, k) => (
+                      <li key={k} className="text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded-md px-2.5 py-1.5">
+                        <span className="font-medium">Failure:</span> {f}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {(m.advisories?.length ?? 0) > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {m.advisories!.map((a, k) => (
+                      <li key={k} className="text-xs text-amber-700 dark:text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-md px-2.5 py-1.5">
+                        <span className="font-medium">Advisory:</span> {a}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {(!m.advisories || m.advisories.length === 0) && (!m.failures || m.failures.length === 0) && m.note && (
+                  <div className="text-xs text-muted-foreground mt-1">{m.note}</div>
+                )}
               </li>
             ))}
             {r.motHistory.length === 0 && <li className="ml-6 text-sm text-muted-foreground">No prior MOT records (vehicle under 3 years old).</li>}
