@@ -166,6 +166,7 @@ export default function NewValuation() {
         },
       });
       if (aiErr) throw aiErr;
+      if ((aiData as any)?.error) throw new Error((aiData as any).error);
       const report = (aiData as any)?.report;
       if (!report) throw new Error("AI did not return a report");
 

@@ -479,13 +479,17 @@ Assess condition from photos and data. Be honest and specific. Call the valu8_re
     if (!aiResp.ok) {
       const txt = await aiResp.text();
       console.error("AI gateway error:", aiResp.status, txt);
-      if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded — please try again shortly." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Add credits in Lovable workspace settings." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      return new Response(JSON.stringify({ error: "AI analysis failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const message = aiResp.status === 429
+        ? "AI service is busy right now — please try again in a moment."
+        : aiResp.status === 402
+          ? "AI credits exhausted. Please top up Lovable AI credits in workspace settings to generate new valuations."
+          : "AI analysis is temporarily unavailable. Please try again shortly.";
+      // Return 200 with a fallback flag so the client can show a friendly toast
+      // instead of a runtime/blank-screen error.
+      return new Response(
+        JSON.stringify({ error: message, fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const aiData = await aiResp.json();
