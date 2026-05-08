@@ -162,9 +162,14 @@ Return ONLY a JSON object: { "listings": Listing[] }.`;
     if (!aiResp.ok) {
       const t = await aiResp.text();
       console.error("AI error", aiResp.status, t);
-      if (aiResp.status === 429) return json({ error: "Rate limited, try again shortly" }, 429);
-      if (aiResp.status === 402) return json({ error: "AI credits exhausted" }, 402);
-      return json({ error: "AI request failed" }, 500);
+      // Degrade gracefully so the client doesn't crash — return empty listings + a soft error flag.
+      const reason =
+        aiResp.status === 402
+          ? "AI credits exhausted"
+          : aiResp.status === 429
+          ? "Rate limited, try again shortly"
+          : "AI request failed";
+      return json({ listings: [], error: reason, fallback: true });
     }
 
     const aiJson = await aiResp.json();
