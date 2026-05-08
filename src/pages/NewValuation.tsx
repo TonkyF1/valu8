@@ -12,7 +12,10 @@ import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { UploadProgressModal, type UploadPhase } from "@/components/UploadProgressModal";
 import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
-import { ArrowRight, Search, Loader2, CheckCircle2, Pencil, AlertCircle, Car } from "lucide-react";
+import {
+  ArrowRight, Search, Loader2, CheckCircle2, Pencil, AlertCircle, Car,
+  ShieldCheck, Sparkles,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LookupResult {
