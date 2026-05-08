@@ -111,22 +111,40 @@ export default function Report() {
             <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> All valuations</Link>
           </Button>
           <div className="flex items-center gap-2">
-            {isPremium ? (
-              <Button asChild variant="ghost" size="sm" title="Edit valuation">
-                <Link to={`/valuation/${v.id}/edit`}><Pencil className="h-4 w-4" />Edit</Link>
-              </Button>
-            ) : (
-              <Button variant="ghost" size="sm" onClick={() => toast.info("Editing reports is a Premium feature")} title="Premium feature">
-                <Pencil className="h-4 w-4" />Edit
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={share}><Share2 className="h-4 w-4" />Share</Button>
-            {isPremium ? (
-              <Button variant="ghost" size="sm" onClick={() => { downloadValuationPdf(v, r); toast.success("PDF downloaded"); }}><Download className="h-4 w-4" />PDF</Button>
-            ) : (
-              <Button variant="ghost" size="sm" onClick={() => toast.info("PDF export is a Premium feature")}><Download className="h-4 w-4" />PDF</Button>
-            )}
-            <Button variant="premium" size="sm" onClick={() => toast.success("Already saved to My Valuations")}><Bookmark className="h-4 w-4" />Saved</Button>
+            <Button
+              variant="premium"
+              size="sm"
+              onClick={() => {
+                if (!isPremium) return toast.info("PDF export is a Premium feature");
+                downloadValuationPdf(v, r);
+                toast.success("PDF downloaded");
+              }}
+            >
+              <Download className="h-4 w-4" /> PDF
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="More actions">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (isPremium) navigate(`/valuation/${v.id}/edit`);
+                    else toast.info("Editing reports is a Premium feature");
+                  }}
+                >
+                  <Pencil className="h-4 w-4" /> Edit valuation
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={share}>
+                  <Share2 className="h-4 w-4" /> Share link
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled className="opacity-70">
+                  <Bookmark className="h-4 w-4" /> Saved
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
