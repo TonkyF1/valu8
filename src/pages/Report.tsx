@@ -308,8 +308,8 @@ export default function Report() {
                     {(m.failures?.length ?? 0) > 0 && (
                       <ul className="mt-1.5 space-y-0.5">
                         {m.failures!.map((f, k) => (
-                          <li key={k} className="text-xs text-destructive/90 leading-snug">
-                            <span className="font-medium">Fail:</span> {f}
+                          <li key={k} className="text-xs text-foreground/85 leading-snug">
+                            <span className="font-semibold uppercase tracking-wider text-destructive mr-1.5">Fail</span>{f}
                           </li>
                         ))}
                       </ul>
@@ -317,8 +317,8 @@ export default function Report() {
                     {(m.advisories?.length ?? 0) > 0 && (
                       <ul className="mt-1.5 space-y-0.5">
                         {m.advisories!.map((a, k) => (
-                          <li key={k} className="text-xs text-amber-400/90 leading-snug">
-                            <span className="font-medium">Advisory:</span> {a}
+                          <li key={k} className="text-xs text-foreground/85 leading-snug">
+                            <span className="font-semibold uppercase tracking-wider text-amber-400 mr-1.5">Advisory</span>{a}
                           </li>
                         ))}
                       </ul>
