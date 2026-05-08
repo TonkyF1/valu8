@@ -167,55 +167,14 @@ export default function Profile() {
           </form>
         </section>
 
-        {/* Subscription */}
-        <section className="premium-card p-6 mb-4 relative overflow-hidden">
-          <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><Crown className="h-5 w-5" /></span>
-              <div>
-                <h2 className="font-semibold">Subscription</h2>
-                <p className="text-xs text-muted-foreground capitalize">{profile?.plan ?? "free"} plan</p>
-              </div>
-            </div>
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${isPremium ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
-              <Sparkles className="h-3 w-3" />{isPremium ? "Premium" : "Free"}
-            </span>
-          </div>
-
-          {isPremium ? (
-            <div className="space-y-3">
-              <p className="text-sm text-foreground/80">You have unlimited valuations, full editing, and priority AI accuracy.</p>
-              <div className="flex gap-2 flex-wrap">
-                <Button variant="ghost" size="sm" onClick={() => toast.info("Billing portal coming soon")}>
-                  <CreditCard className="h-4 w-4" /> Manage billing
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setPremium(false, "free")}>
-                  Cancel subscription
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <ul className="space-y-2 text-sm text-foreground/85">
-                <li className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary mt-0.5" /> Unlimited valuations & PDF exports</li>
-                <li className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary mt-0.5" /> Edit & regenerate any saved report</li>
-                <li className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary mt-0.5" /> AI-generated adverts for AutoTrader, Facebook & Gumtree</li>
-              </ul>
-              <div className="flex gap-2 flex-wrap">
-                <Button variant="hero" size="lg" onClick={() => setPremium(true, "monthly")}>
-                  <Crown className="h-4 w-4" /> Activate Premium · £9.99/mo
-                </Button>
-                <Button variant="ghost" size="lg" onClick={() => setPremium(true, "annual")}>
-                  Annual · £79/yr
-                </Button>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Billing */}
-        <BillingSection isPremium={isPremium} plan={profile?.plan ?? "free"} onUpgrade={() => setPremium(true, "monthly")} onCancel={() => setPremium(false, "free")} />
+        {/* Subscription & Billing */}
+        <SubscriptionBilling
+          isPremium={isPremium}
+          plan={profile?.plan ?? "free"}
+          email={user?.email ?? ""}
+          onUpgrade={(p) => setPremium(true, p)}
+          onCancel={() => setPremium(false, "free")}
+        />
 
         {/* Password */}
         <section className="premium-card p-6 mb-4">
@@ -258,8 +217,64 @@ export default function Profile() {
   );
 }
 
-function BillingSection({ isPremium, plan, onUpgrade, onCancel }: { isPremium: boolean; plan: string; onUpgrade: () => void; onCancel: () => void }) {
-  // Mock billing data — replace with real Stripe data when payments are enabled
+function downloadInvoicePdf(inv: { id: string; date: Date; amount: number; status: string }, plan: string, email: string) {
+  // Lazy import to keep initial bundle small
+  import("jspdf").then(({ default: jsPDF }) => {
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 48;
+    const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+    // Header band
+    doc.setFillColor(17, 17, 17);
+    doc.rect(0, 0, pageW, 90, "F");
+    doc.setTextColor(0, 212, 200);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+    doc.text("VALU8 — INVOICE", margin, 38);
+    doc.setTextColor(255, 255, 255); doc.setFontSize(20);
+    doc.text(inv.id, margin, 64);
+
+    let y = 130;
+    doc.setTextColor(60, 60, 70); doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    doc.text("Billed to", margin, y);
+    doc.text("Date", pageW - margin - 160, y);
+    doc.text("Status", pageW - margin - 60, y);
+
+    y += 16;
+    doc.setTextColor(20, 20, 25); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+    doc.text(email || "—", margin, y);
+    doc.text(fmt(inv.date), pageW - margin - 160, y);
+    doc.text(inv.status, pageW - margin - 60, y);
+
+    // Line items
+    y += 50;
+    doc.setDrawColor(220, 220, 225); doc.line(margin, y, pageW - margin, y); y += 22;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(120, 120, 130);
+    doc.text("DESCRIPTION", margin, y);
+    doc.text("AMOUNT", pageW - margin, y, { align: "right" });
+    y += 18;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(20, 20, 25);
+    const desc = `Valu8 Premium — ${plan === "annual" ? "Annual" : "Monthly"} subscription`;
+    doc.text(desc, margin, y);
+    doc.text(`£${inv.amount.toFixed(2)}`, pageW - margin, y, { align: "right" });
+    y += 24;
+    doc.setDrawColor(220, 220, 225); doc.line(margin, y, pageW - margin, y); y += 28;
+
+    // Total
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+    doc.text("Total", margin, y);
+    doc.setTextColor(0, 170, 160);
+    doc.text(`£${inv.amount.toFixed(2)} GBP`, pageW - margin, y, { align: "right" });
+
+    // Footer
+    doc.setTextColor(140, 140, 150); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.text("Thank you for using Valu8. This is a system-generated invoice.", margin, 780);
+
+    doc.save(`${inv.id}.pdf`);
+  });
+}
+
+function SubscriptionBilling({ isPremium, plan, email, onUpgrade, onCancel }: { isPremium: boolean; plan: string; email: string; onUpgrade: (plan: "monthly" | "annual") => void; onCancel: () => void }) {
   const today = new Date();
   const nextBilling = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
   const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -273,61 +288,78 @@ function BillingSection({ isPremium, plan, onUpgrade, onCancel }: { isPremium: b
     : [];
 
   return (
-    <section className="premium-card p-6 mb-4">
-      <div className="flex items-center gap-3 mb-5">
-        <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><Receipt className="h-5 w-5" /></span>
-        <div>
-          <h2 className="font-semibold">Billing</h2>
-          <p className="text-xs text-muted-foreground">Plan, payment method and invoice history.</p>
+    <section className="premium-card p-6 mb-4 relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+        <div className="flex items-center gap-3">
+          <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><Crown className="h-5 w-5" /></span>
+          <div>
+            <h2 className="font-semibold">Subscription & Billing</h2>
+            <p className="text-xs text-muted-foreground">Plan, payment and invoices.</p>
+          </div>
         </div>
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${isPremium ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+          <Sparkles className="h-3 w-3" />{isPremium ? "Premium" : "Free"}
+        </span>
       </div>
 
       {!isPremium ? (
-        <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 text-center">
-          <p className="text-sm text-muted-foreground">You're on the <span className="text-foreground font-medium">Free plan</span>. Upgrade to unlock invoices, billing history and Premium features.</p>
-          <Button variant="hero" size="sm" className="mt-4" onClick={onUpgrade}>
-            <Crown className="h-4 w-4" /> Upgrade to Premium
-          </Button>
+        <div className="space-y-4">
+          <ul className="grid sm:grid-cols-3 gap-2 text-sm text-foreground/85">
+            <li className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" /> Unlimited valuations & PDFs</li>
+            <li className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" /> Edit & regenerate reports</li>
+            <li className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" /> AI-generated adverts</li>
+          </ul>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="hero" size="lg" onClick={() => onUpgrade("monthly")}>
+              <Crown className="h-4 w-4" /> Premium · £9.99/mo
+            </Button>
+            <Button variant="ghost" size="lg" onClick={() => onUpgrade("annual")}>
+              Annual · £79/yr
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="space-y-5">
           {/* Top row: plan + next billing + payment method */}
           <div className="grid sm:grid-cols-3 gap-3">
             <div className="rounded-xl bg-muted/30 border border-border/60 p-4">
-              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1">Current plan</div>
-              <div className="text-base font-semibold capitalize flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-primary" /> {plan === "annual" ? "Annual" : "Monthly"} Premium
+              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1">Plan</div>
+              <div className="text-base font-semibold flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-primary" /> {plan === "annual" ? "Annual" : "Monthly"}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5 tabular-nums">£{plan === "annual" ? "79.00 / yr" : "9.99 / mo"}</div>
             </div>
             <div className="rounded-xl bg-muted/30 border border-border/60 p-4">
               <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1 flex items-center gap-1.5"><Calendar className="h-3 w-3" /> Next billing</div>
               <div className="text-base font-semibold">{fmt(nextBilling)}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Auto-renew on</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Auto-renew</div>
             </div>
             <div className="rounded-xl bg-muted/30 border border-border/60 p-4">
-              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1 flex items-center gap-1.5"><CreditCard className="h-3 w-3" /> Payment method</div>
+              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1 flex items-center gap-1.5"><CreditCard className="h-3 w-3" /> Payment</div>
               <div className="text-base font-semibold tabular-nums">Visa •••• 4242</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Expires 09/28</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Exp. 09/28</div>
             </div>
           </div>
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-2">
-            <Button variant="premium" size="sm" onClick={() => toast.info("Stripe billing portal coming soon")}>
+            <Button variant="premium" size="sm" onClick={() => toast.info("Billing portal coming soon")}>
               <CreditCard className="h-4 w-4" /> Manage subscription
             </Button>
             <Button variant="ghost" size="sm" onClick={() => toast.info("Update payment method coming soon")}>
               Update card
             </Button>
             <Button variant="ghost" size="sm" onClick={onCancel}>
-              Cancel subscription
+              Cancel
             </Button>
           </div>
 
           {/* Invoice history */}
           <div>
-            <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-medium mb-2.5">Invoice history</div>
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-medium mb-2.5">
+              <Receipt className="h-3.5 w-3.5" /> Invoice history
+            </div>
             <div className="rounded-xl border border-border/60 overflow-hidden divide-y divide-border/60">
               {invoices.map((inv) => (
                 <div key={inv.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/20 transition-colors">
@@ -338,13 +370,15 @@ function BillingSection({ isPremium, plan, onUpgrade, onCancel }: { isPremium: b
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <span className="text-sm tabular-nums font-medium">£{inv.amount.toFixed(2)}</span>
                     <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{inv.status}</span>
-                    <button
-                      onClick={() => toast.info("Invoice download coming soon")}
-                      className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-                      aria-label="Download invoice"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => downloadInvoicePdf(inv, plan, email)}
+                      aria-label={`Download ${inv.id} as PDF`}
                     >
-                      <Download className="h-3.5 w-3.5" />
-                    </button>
+                      <Download className="h-3.5 w-3.5" /> PDF
+                    </Button>
                   </div>
                 </div>
               ))}
