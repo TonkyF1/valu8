@@ -31,6 +31,7 @@ export default function Report() {
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
+  const [showAllMot, setShowAllMot] = useState(false);
 
   useEffect(() => {
     if (!id) return;
