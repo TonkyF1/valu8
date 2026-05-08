@@ -111,7 +111,7 @@ export function SimilarCars({ make, model, variant, year, mileage }: Props) {
               href={l.url || "#"}
               target={l.url ? "_blank" : undefined}
               rel="noopener noreferrer"
-              className="group flex-shrink-0 snap-start w-[70%] sm:w-[calc((100%-1.5rem)/3)] rounded-2xl border border-border/50 bg-card/50 overflow-hidden hover:border-primary/40 hover:bg-card transition-all flex flex-col"
+              className="group flex-shrink-0 snap-start w-[calc((100%-1rem)/3)] sm:w-[calc((100%-1.5rem)/3)] rounded-2xl border border-border/50 bg-card/50 overflow-hidden hover:border-primary/40 hover:bg-card transition-all flex flex-col"
             >
               <div className="aspect-[16/10] overflow-hidden relative bg-gradient-to-br from-muted/60 via-card to-muted/30">
                 {l.imageUrl ? (
