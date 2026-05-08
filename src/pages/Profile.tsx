@@ -167,55 +167,14 @@ export default function Profile() {
           </form>
         </section>
 
-        {/* Subscription */}
-        <section className="premium-card p-6 mb-4 relative overflow-hidden">
-          <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><Crown className="h-5 w-5" /></span>
-              <div>
-                <h2 className="font-semibold">Subscription</h2>
-                <p className="text-xs text-muted-foreground capitalize">{profile?.plan ?? "free"} plan</p>
-              </div>
-            </div>
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${isPremium ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
-              <Sparkles className="h-3 w-3" />{isPremium ? "Premium" : "Free"}
-            </span>
-          </div>
-
-          {isPremium ? (
-            <div className="space-y-3">
-              <p className="text-sm text-foreground/80">You have unlimited valuations, full editing, and priority AI accuracy.</p>
-              <div className="flex gap-2 flex-wrap">
-                <Button variant="ghost" size="sm" onClick={() => toast.info("Billing portal coming soon")}>
-                  <CreditCard className="h-4 w-4" /> Manage billing
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setPremium(false, "free")}>
-                  Cancel subscription
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <ul className="space-y-2 text-sm text-foreground/85">
-                <li className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary mt-0.5" /> Unlimited valuations & PDF exports</li>
-                <li className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary mt-0.5" /> Edit & regenerate any saved report</li>
-                <li className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary mt-0.5" /> AI-generated adverts for AutoTrader, Facebook & Gumtree</li>
-              </ul>
-              <div className="flex gap-2 flex-wrap">
-                <Button variant="hero" size="lg" onClick={() => setPremium(true, "monthly")}>
-                  <Crown className="h-4 w-4" /> Activate Premium · £9.99/mo
-                </Button>
-                <Button variant="ghost" size="lg" onClick={() => setPremium(true, "annual")}>
-                  Annual · £79/yr
-                </Button>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Billing */}
-        <BillingSection isPremium={isPremium} plan={profile?.plan ?? "free"} onUpgrade={() => setPremium(true, "monthly")} onCancel={() => setPremium(false, "free")} />
+        {/* Subscription & Billing */}
+        <SubscriptionBilling
+          isPremium={isPremium}
+          plan={profile?.plan ?? "free"}
+          email={user?.email ?? ""}
+          onUpgrade={(p) => setPremium(true, p)}
+          onCancel={() => setPremium(false, "free")}
+        />
 
         {/* Password */}
         <section className="premium-card p-6 mb-4">
