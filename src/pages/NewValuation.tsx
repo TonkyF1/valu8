@@ -15,6 +15,7 @@ import { CAR_MAKES, YEARS } from "@/lib/cars";
 import { getModelsForMake } from "@/lib/models";
 import { getVariantsFor } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
+import { UploadProgressModal, type UploadPhase } from "@/components/UploadProgressModal";
 import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
 import { ArrowRight } from "lucide-react";
@@ -47,6 +48,8 @@ export default function NewValuation() {
   const [serviceNotes, setServiceNotes] = useState("");
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState<UploadPhase>("uploading");
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => { document.title = "New valuation — Valu8"; }, []);
 
@@ -67,10 +70,14 @@ export default function NewValuation() {
     }
 
     setBusy(true);
+    setPhase("uploading");
+    setUploadProgress(photos.length === 0 ? 100 : 0);
     try {
-      // Upload photos
+      // Upload photos with real progress
       const photoUrls: string[] = [];
-      for (const p of photos) {
+      const total = photos.length;
+      for (let i = 0; i < total; i++) {
+        const p = photos[i];
         const ext = p.file.name.split(".").pop() || "jpg";
         const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
         const { error } = await supabase.storage.from("vehicle-photos").upload(path, p.file, {
@@ -79,8 +86,10 @@ export default function NewValuation() {
         if (error) throw error;
         const { data } = supabase.storage.from("vehicle-photos").getPublicUrl(path);
         photoUrls.push(data.publicUrl);
+        setUploadProgress(Math.round(((i + 1) / total) * 100));
       }
 
+      setPhase("analysing");
       // Call AI analysis edge function
       const { data: aiData, error: aiErr } = await supabase.functions.invoke("analyse-vehicle", {
         body: {
@@ -99,6 +108,7 @@ export default function NewValuation() {
       const report = (aiData as any)?.report;
       if (!report) throw new Error("AI did not return a report");
 
+      setPhase("generating");
       const { data, error } = await supabase.from("valuations").insert({
         user_id: user.id,
         make: parsed.data.make,
@@ -115,10 +125,13 @@ export default function NewValuation() {
       }).select("id").single();
       if (error) throw error;
 
-      navigate(`/valuation/${data.id}/analysing`);
+      setPhase("done");
+      // brief flourish then jump straight to report
+      setTimeout(() => navigate(`/valuation/${data.id}`), 600);
     } catch (err: any) {
       toast.error(err.message || "Failed to create valuation");
-    } finally { setBusy(false); }
+      setBusy(false);
+    }
   }
 
   return (
@@ -321,6 +334,7 @@ export default function NewValuation() {
         </section>
       </main>
       <Footer />
+      <UploadProgressModal open={busy} phase={phase} uploadProgress={uploadProgress} />
     </div>
   );
 }
