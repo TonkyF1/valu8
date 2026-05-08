@@ -37,6 +37,8 @@ export interface ValuationReport {
   recommendations: { listingPrice: number; whereToSell: string[]; highlights: string[]; documents: string[] };
   hpi: { status: "All Clear" | "Needs Review"; checks: { label: string; ok: boolean }[] };
   motHistory: MotEntry[];
+  motSource?: "dvsa" | "simulated";
+  motNotice?: string;
   generatedAt: string;
 }
 
