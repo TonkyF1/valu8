@@ -66,9 +66,16 @@ export default function NewValuation() {
 
     const parsed = formSchema.safeParse({ make, model, variant, year, mileage, registration, motExpiry, serviceNotes });
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = String(issue.path[0] ?? "");
+        if (key && !fieldErrors[key]) fieldErrors[key] = issue.message;
+      }
+      setErrors(fieldErrors);
+      toast.error("Please fix the highlighted fields");
       return;
     }
+    setErrors({});
 
     setBusy(true);
     setPhase("uploading");
