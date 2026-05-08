@@ -389,4 +389,3 @@ function SubscriptionBilling({ isPremium, plan, email, onUpgrade, onCancel }: { 
     </section>
   );
 }
-}
