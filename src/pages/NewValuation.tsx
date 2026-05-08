@@ -14,7 +14,7 @@ import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
 import {
   ArrowRight, Search, Loader2, CheckCircle2, Pencil, AlertCircle, Car,
-  ShieldCheck, Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
