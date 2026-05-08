@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { ConditionGauge } from "@/components/ConditionGauge";
 import { AdvertCreator } from "@/components/AdvertCreator";
+import { SimilarCars } from "@/components/SimilarCars";
 import type { ValuationReport } from "@/lib/valuation";
 import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
@@ -347,6 +348,14 @@ export default function Report() {
             </>
           )}
         </Section>
+
+        <SimilarCars
+          make={v.make}
+          model={v.model.split(" · ")[0]}
+          variant={v.model.includes(" · ") ? v.model.split(" · ")[1] : undefined}
+          year={v.year}
+          mileage={v.mileage}
+        />
 
         <AdvertCreator
           valuationId={v.id}

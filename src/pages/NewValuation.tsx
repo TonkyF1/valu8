@@ -334,6 +334,7 @@ export default function NewValuation() {
         </section>
       </main>
       <Footer />
+      <UploadProgressModal open={busy} phase={phase} uploadProgress={uploadProgress} />
     </div>
   );
 }
