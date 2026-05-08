@@ -30,14 +30,19 @@ export function Header() {
         <nav className="flex items-center gap-1.5">
           {user ? (
             <>
-              {!onDash && (
-                <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="hidden sm:inline-flex">
-                  <LayoutDashboard className="h-4 w-4" /> Dashboard
-                </Button>
-              )}
               <Button variant="hero" size="sm" onClick={() => navigate("/valuation/new")}>
                 <Plus className="h-4 w-4" /> New valuation
               </Button>
+              {!onDash && (
+                <>
+                  <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="hidden sm:inline-flex">
+                    <LayoutDashboard className="h-4 w-4" /> Dashboard
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} aria-label="Dashboard" className="sm:hidden">
+                    <LayoutDashboard className="h-5 w-5" />
+                  </Button>
+                </>
+              )}
               <Button variant="ghost" size="icon" onClick={() => navigate("/profile")} aria-label="Profile">
                 <UserCircle2 className="h-5 w-5" />
               </Button>
