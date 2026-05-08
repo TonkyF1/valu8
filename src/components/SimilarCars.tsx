@@ -119,9 +119,16 @@ export function SimilarCars({ make, model, variant, year, mileage }: Props) {
                     src={l.imageUrl}
                     alt={`${l.year} ${l.make} ${l.model}`}
                     loading="lazy"
+                    data-fallback-url={l.imageFallbackUrl || ""}
                     className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
                     onError={(e) => {
                       const img = e.currentTarget;
+                      const fb = img.getAttribute("data-fallback-url");
+                      if (fb && img.src !== fb) {
+                        img.removeAttribute("data-fallback-url");
+                        img.src = fb;
+                        return;
+                      }
                       img.style.display = "none";
                       img.parentElement?.querySelector("[data-fallback]")?.classList.remove("hidden");
                     }}
