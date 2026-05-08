@@ -92,35 +92,32 @@ export default function Profile() {
       <TestModeBanner />
       <Header />
       <main className="flex-1 container max-w-3xl py-8 md:py-12">
-        <Button asChild variant="ghost" size="sm" className="mb-4">
-          <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> Dashboard</Link>
-        </Button>
-
-        <div className="mb-8 animate-fade-in-up">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold mb-1.5">Account</div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gradient">Profile & Settings</h1>
-          <p className="text-muted-foreground mt-2 text-sm">Manage your account, subscription and security.</p>
+        <div className="flex items-start justify-between gap-4 mb-8 animate-fade-in-up">
+          <div>
+            <Button asChild variant="ghost" size="sm" className="mb-4 -ml-3">
+              <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> Dashboard</Link>
+            </Button>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold mb-1.5">Account</div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gradient">Profile & Settings</h1>
+            <p className="text-muted-foreground mt-2 text-sm">Manage your account, subscription and security.</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => { await signOut(); navigate("/"); }}
+            className="text-muted-foreground hover:text-foreground mt-1 shrink-0"
+          >
+            <LogOut className="h-4 w-4" /> Sign out
+          </Button>
         </div>
 
-        {/* Account */}
-        <section className="premium-card p-6 mb-4">
-          <div className="flex items-center gap-3 mb-5">
-            <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><Mail className="h-5 w-5" /></span>
-            <div>
-              <h2 className="font-semibold">Account</h2>
-              <p className="text-xs text-muted-foreground">Signed in as</p>
-            </div>
-          </div>
-          <div className="rounded-lg bg-muted/30 px-4 py-3 text-sm font-medium break-all">{user?.email}</div>
-        </section>
-
-        {/* Profile editing */}
-        <section className="premium-card p-6 mb-4">
-          <div className="flex items-center gap-3 mb-5">
+        {/* Profile */}
+        <section className="premium-card p-6 sm:p-7 mb-4">
+          <div className="flex items-center gap-3 mb-6">
             <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><UserIcon className="h-5 w-5" /></span>
             <div>
-              <h2 className="font-semibold">Your profile</h2>
-              <p className="text-xs text-muted-foreground">Personalise how you appear in Valu8.</p>
+              <h2 className="font-semibold">Profile</h2>
+              <p className="text-xs text-muted-foreground">How you appear in Valu8.</p>
             </div>
           </div>
 
@@ -137,7 +134,7 @@ export default function Profile() {
                 <label className="inline-flex">
                   <input type="file" accept="image/*" className="hidden" onChange={onAvatarSelected} disabled={uploading} />
                   <Button type="button" variant="premium" size="sm" disabled={uploading} asChild>
-                    <span className="cursor-pointer"><Upload className="h-4 w-4" /> {uploading ? "Uploading…" : avatarUrl ? "Replace photo" : "Upload photo"}</span>
+                    <span className="cursor-pointer"><Upload className="h-4 w-4" /> {uploading ? "Uploading…" : avatarUrl ? "Replace" : "Upload photo"}</span>
                   </Button>
                 </label>
                 {avatarUrl && (
@@ -150,16 +147,38 @@ export default function Profile() {
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full name <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Label htmlFor="fullName">Full name</Label>
                 <Input id="fullName" className="h-10" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Alex Morgan" maxLength={60} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="username">Username <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Label htmlFor="username">Username</Label>
                 <Input id="username" className="h-10" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder="alex_morgan" maxLength={20} />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Email</Label>
+                <div className="h-10 rounded-md bg-muted/30 border border-border/60 px-3 flex items-center text-sm break-all text-muted-foreground">
+                  <Mail className="h-4 w-4 mr-2 shrink-0" /> {user?.email}
+                </div>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="newPw">New password <span className="text-muted-foreground font-normal">· min 8 characters</span></Label>
+                <div className="flex gap-2 flex-wrap">
+                  <Input
+                    id="newPw"
+                    type="password"
+                    value={newPw}
+                    onChange={(e) => setNewPw(e.target.value)}
+                    placeholder="Leave blank to keep current"
+                    className="flex-1 min-w-[220px] h-10"
+                  />
+                  <Button type="button" variant="ghost" onClick={(e) => changePassword(e as any)} disabled={saving || newPw.length === 0}>
+                    <KeyRound className="h-4 w-4" /> {saving ? "Saving…" : "Update password"}
+                  </Button>
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end pt-1">
               <Button type="submit" variant="hero" disabled={savingProfile}>
                 {savingProfile ? "Saving…" : "Save changes"}
               </Button>
@@ -175,42 +194,6 @@ export default function Profile() {
           onUpgrade={(p) => setPremium(true, p)}
           onCancel={() => setPremium(false, "free")}
         />
-
-        {/* Password */}
-        <section className="premium-card p-6 mb-4">
-          <div className="flex items-center gap-3 mb-5">
-            <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><KeyRound className="h-5 w-5" /></span>
-            <div>
-              <h2 className="font-semibold">Change password</h2>
-              <p className="text-xs text-muted-foreground">Use 8 characters or more.</p>
-            </div>
-          </div>
-          <form onSubmit={changePassword} className="flex gap-2 flex-wrap">
-            <Input
-              type="password"
-              value={newPw}
-              onChange={(e) => setNewPw(e.target.value)}
-              placeholder="New password"
-              className="flex-1 min-w-[220px]"
-            />
-            <Button type="submit" variant="premium" disabled={saving}>
-              {saving ? "Saving…" : "Update password"}
-            </Button>
-          </form>
-        </section>
-
-        {/* Sign out */}
-        <section className="premium-card p-6">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <h2 className="font-semibold">Sign out</h2>
-              <p className="text-xs text-muted-foreground">You'll need to sign in again to access your valuations.</p>
-            </div>
-            <Button variant="ghost" onClick={async () => { await signOut(); navigate("/"); }}>
-              <LogOut className="h-4 w-4" /> Sign out
-            </Button>
-          </div>
-        </section>
       </main>
       <Footer />
     </div>
