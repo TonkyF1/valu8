@@ -143,6 +143,19 @@
     background-size: 200% 100%;
     animation: shimmer 1.6s linear infinite;
   }
+  .scrollbar-subtle::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 2px;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
 }
 
 @keyframes shimmer {
