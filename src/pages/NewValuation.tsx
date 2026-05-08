@@ -228,9 +228,9 @@ export default function NewValuation() {
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleLookup(); } }}
                 className={cn(
                   "h-11 text-center text-lg sm:text-xl font-semibold tracking-[0.18em] uppercase",
-                  "bg-background border border-border/80 focus-visible:border-primary/60 focus-visible:ring-1 focus-visible:ring-primary/30",
-                  "rounded-lg placeholder:text-muted-foreground/40 placeholder:tracking-[0.1em]",
-                  "transition-all duration-200 pr-11",
+                  "bg-yellow-300 text-black border-2 border-yellow-400/80 focus-visible:border-yellow-500 focus-visible:ring-2 focus-visible:ring-yellow-500/30",
+                  "rounded-lg placeholder:text-black/30 placeholder:tracking-[0.1em]",
+                  "transition-all duration-200",
                 )}
               />
             </div>
