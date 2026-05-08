@@ -122,6 +122,9 @@ const MODEL_VARIANTS: Record<string, string[]> = {
   "audi · r8": ["R8 4.2 V8", "R8 5.2 V10", "R8 V10 Plus", "R8 V10 Performance", "R8 GT", "R8 Spyder"],
   "audi · tt": ["1.8 TFSI", "2.0 TFSI", "TTS", "TT RS", "TT RS Iconic Edition"],
 
+  // ---- Audi Q6 e-tron ----
+  "audi · q6 e-tron": ["Q6 e-tron", "Q6 e-tron S", "Q6 e-tron S Line", "Q6 e-tron Sportback", "Q6 e-tron S Sportback", "Q6 e-tron Edition 1", "Q6 e-tron Performance", "Q6 e-tron quattro", "Q6 e-tron SQ6"],
+
   // ---- Mercedes-AMG ----
   "mercedes-amg · c 63": ["C 63 W204", "C 63 Black Series W204", "C 63 S W205", "C 63 S Coupe", "C 63 S Estate", "C 63 S E Performance W206"],
   "mercedes-amg · e 63": ["E 63 W212", "E 63 S W213", "E 63 S Final Edition"],
