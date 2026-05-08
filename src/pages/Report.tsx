@@ -55,7 +55,24 @@ export default function Report() {
     return (
       <div className="min-h-screen flex flex-col">
         <TestModeBanner /><Header />
-        <div className="flex-1 grid place-items-center"><div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" /></div>
+        <main className="flex-1 container py-6 md:py-8 max-w-5xl">
+          <div className="flex items-center justify-between mb-5">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-8 w-24" />
+          </div>
+          <div className="space-y-3 mb-6">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-10 w-2/3" />
+            <Skeleton className="h-3 w-48" />
+          </div>
+          <Skeleton className="aspect-[16/9] w-full rounded-2xl mb-4" />
+          <div className="grid lg:grid-cols-5 gap-3 mb-6">
+            <Skeleton className="lg:col-span-3 h-56 rounded-2xl" />
+            <Skeleton className="lg:col-span-2 h-56 rounded-2xl" />
+          </div>
+          <Skeleton className="h-32 w-full rounded-2xl mb-4" />
+          <Skeleton className="h-32 w-full rounded-2xl" />
+        </main>
       </div>
     );
   }
