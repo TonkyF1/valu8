@@ -50,6 +50,7 @@ export default function NewValuation() {
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<UploadPhase>("uploading");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => { document.title = "New valuation — Valu8"; }, []);
 
