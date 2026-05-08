@@ -288,7 +288,7 @@ export default function Report() {
             <>
               <ol className={cn(
                 "relative border-l border-border ml-2 transition-all",
-                showAllMot && "max-h-[350px] overflow-y-auto pr-2 scrollbar-thin"
+                showAllMot && "max-h-[350px] overflow-y-auto pr-2"
               )}>
                 {(showAllMot ? r.motHistory : r.motHistory.slice(0, 5)).map((m, i) => (
                   <li key={i} className="ml-6 pb-4 last:pb-0">
