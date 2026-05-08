@@ -287,44 +287,37 @@ export default function Report() {
             <p className="text-sm text-muted-foreground">No prior MOT records (vehicle under 3 years old).</p>
           ) : (
             <>
-              <ol className={cn(
-                "relative border-l border-border ml-2 transition-all",
-                showAllMot && "max-h-[350px] overflow-y-auto pr-2 scrollbar-subtle"
-              )}>
-                {(showAllMot ? r.motHistory : r.motHistory.slice(0, 5)).map((m, i) => (
-                  <li key={i} className="ml-6 pb-4 last:pb-0">
-                    <span className={cn(
-                      "absolute -left-[7px] h-3.5 w-3.5 rounded-full border-2 border-background",
-                      m.result === "Pass" ? "bg-primary" : m.result === "Advisory" ? "bg-amber-400" : "bg-destructive"
-                    )} />
-                    <div className="flex items-baseline justify-between flex-wrap gap-2">
-                      <div>
-                        <div className="font-medium text-sm">{format(new Date(m.date), "d MMMM yyyy")}</div>
-                        {m.expiryDate && m.result !== "Fail" && (
-                          <div className="text-[11px] text-muted-foreground">Expires {format(new Date(m.expiryDate), "d MMM yyyy")}</div>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground tabular-nums">
+              <ol className="space-y-3">
+                {(showAllMot ? r.motHistory : r.motHistory.slice(0, 1)).map((m, i) => (
+                  <li key={i} className={cn(i > 0 && "pt-3 border-t border-border/40")}>
+                    <div className="flex items-baseline justify-between flex-wrap gap-x-3 gap-y-1">
+                      <div className="flex items-baseline gap-2.5">
                         <span className={cn(
-                          "font-medium mr-2",
+                          "text-[11px] font-semibold uppercase tracking-wider",
                           m.result === "Pass" ? "text-primary" : m.result === "Advisory" ? "text-amber-400" : "text-destructive"
                         )}>{m.result}</span>
-                        {m.mileage > 0 && <>{m.mileage.toLocaleString()} mi</>}
+                        <span className="font-medium text-sm">{format(new Date(m.date), "d MMM yyyy")}</span>
+                        {m.expiryDate && m.result !== "Fail" && (
+                          <span className="text-[11px] text-muted-foreground">· Expires {format(new Date(m.expiryDate), "d MMM yyyy")}</span>
+                        )}
                       </div>
+                      {m.mileage > 0 && (
+                        <span className="text-xs text-muted-foreground tabular-nums">{m.mileage.toLocaleString()} mi</span>
+                      )}
                     </div>
                     {(m.failures?.length ?? 0) > 0 && (
-                      <ul className="mt-2 space-y-1">
+                      <ul className="mt-1.5 space-y-0.5">
                         {m.failures!.map((f, k) => (
-                          <li key={k} className="text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded-md px-2.5 py-1.5">
-                            <span className="font-medium">Failure:</span> {f}
+                          <li key={k} className="text-xs text-destructive/90 leading-snug">
+                            <span className="font-medium">Fail:</span> {f}
                           </li>
                         ))}
                       </ul>
                     )}
                     {(m.advisories?.length ?? 0) > 0 && (
-                      <ul className="mt-2 space-y-1">
+                      <ul className="mt-1.5 space-y-0.5">
                         {m.advisories!.map((a, k) => (
-                          <li key={k} className="text-xs text-amber-700 dark:text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-md px-2.5 py-1.5">
+                          <li key={k} className="text-xs text-amber-400/90 leading-snug">
                             <span className="font-medium">Advisory:</span> {a}
                           </li>
                         ))}
@@ -336,12 +329,12 @@ export default function Report() {
                   </li>
                 ))}
               </ol>
-              {r.motHistory.length > 5 && (
+              {r.motHistory.length > 1 && (
                 <button
                   onClick={() => setShowAllMot(s => !s)}
                   className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-2 rounded-lg hover:bg-muted/30"
                 >
-                  {showAllMot ? "Show less" : `Show full MOT history (${r.motHistory.length - 5} more)`}
+                  {showAllMot ? "Show less" : `Show full MOT history (${r.motHistory.length - 1} more)`}
                   <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showAllMot && "rotate-180")} />
                 </button>
               )}
