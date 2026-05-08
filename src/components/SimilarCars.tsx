@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Car, Loader2 } from "lucide-react";
+import { Car, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Listing {
   title: string;
@@ -28,6 +28,7 @@ export function SimilarCars({ make, model, variant, year, mileage }: Props) {
   const [listings, setListings] = useState<Listing[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,13 +47,36 @@ export function SimilarCars({ make, model, variant, year, mileage }: Props) {
     };
   }, [make, model, variant, year, mileage]);
 
+  const scroll = (dir: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: "smooth" });
+  };
+
   return (
     <section className="mb-6 animate-fade-in-up">
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">
-          Similar Cars Currently For Sale
+          Similar Cars Currently For Sale on UK Marketplaces
         </h2>
-        <span className="text-[11px] text-muted-foreground/70">UK marketplaces</span>
+        {listings && listings.length > 3 && (
+          <div className="hidden sm:flex items-center gap-1">
+            <button
+              onClick={() => scroll(-1)}
+              className="h-7 w-7 grid place-items-center rounded-full border border-border/60 bg-card/50 text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => scroll(1)}
+              className="h-7 w-7 grid place-items-center rounded-full border border-border/60 bg-card/50 text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {loading && (
@@ -75,14 +99,18 @@ export function SimilarCars({ make, model, variant, year, mileage }: Props) {
       )}
 
       {!loading && listings && listings.length > 0 && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div
+          ref={scrollerRef}
+          className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-subtle pb-2 -mx-4 px-4 sm:mx-0 sm:px-0"
+          style={{ scrollbarWidth: "thin" }}
+        >
           {listings.map((l, i) => (
             <a
               key={i}
               href={l.url || "#"}
               target={l.url ? "_blank" : undefined}
               rel="noopener noreferrer"
-              className="group rounded-2xl border border-border/50 bg-card/50 overflow-hidden hover:border-primary/40 hover:bg-card transition-all flex flex-col"
+              className="group flex-shrink-0 snap-start w-[70%] sm:w-[calc((100%-1.5rem)/3)] rounded-2xl border border-border/50 bg-card/50 overflow-hidden hover:border-primary/40 hover:bg-card transition-all flex flex-col"
             >
               <div className="aspect-[16/10] bg-muted/40 overflow-hidden relative">
                 {l.imageUrl ? (
@@ -96,30 +124,22 @@ export function SimilarCars({ make, model, variant, year, mileage }: Props) {
                   />
                 ) : (
                   <div className="w-full h-full grid place-items-center text-muted-foreground/40">
-                    <Car className="h-10 w-10" />
+                    <Car className="h-8 w-8" />
                   </div>
                 )}
-                <span className="absolute top-2 left-2 text-[10px] uppercase tracking-wider font-medium px-2 py-0.5 rounded-full bg-background/90 backdrop-blur-sm border border-border/60 text-muted-foreground">
+                <span className="absolute top-2 left-2 text-[9px] uppercase tracking-wider font-medium px-2 py-0.5 rounded-full bg-background/85 backdrop-blur-sm border border-border/60 text-muted-foreground">
                   {l.source}
                 </span>
               </div>
-              <div className="p-3.5 flex-1 flex flex-col gap-1.5">
-                <div className="text-sm font-medium leading-snug line-clamp-2">
+              <div className="p-3 flex-1 flex flex-col gap-1">
+                <div className="text-xs font-medium leading-snug line-clamp-2">
                   {l.year} {l.make} {l.model}
-                  {l.variant ? ` ${l.variant}` : ""}
                 </div>
-                <div className="text-xs text-muted-foreground tabular-nums">
-                  {l.mileage.toLocaleString()} miles{l.location ? ` · ${l.location}` : ""}
+                <div className="text-[11px] text-muted-foreground tabular-nums">
+                  {l.mileage.toLocaleString()} miles
                 </div>
-                <div className="flex items-center justify-between mt-auto pt-2">
-                  <span className="text-base font-semibold tabular-nums text-gradient-primary">
-                    £{l.price.toLocaleString()}
-                  </span>
-                  {l.url && (
-                    <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1 group-hover:text-primary transition-colors">
-                      View <ExternalLink className="h-3 w-3" />
-                    </span>
-                  )}
+                <div className="text-base font-semibold tabular-nums text-gradient-primary mt-1">
+                  £{l.price.toLocaleString()}
                 </div>
               </div>
             </a>
@@ -127,7 +147,7 @@ export function SimilarCars({ make, model, variant, year, mileage }: Props) {
         </div>
       )}
       <p className="text-[10px] text-muted-foreground/60 mt-2">
-        Comparable listings generated from current UK market data. Click through to search for live results on each marketplace.
+        Comparable listings based on current UK market data.
       </p>
     </section>
   );
