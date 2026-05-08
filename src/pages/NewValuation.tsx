@@ -8,44 +8,56 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { CAR_MAKES, YEARS } from "@/lib/cars";
-import { getModelsForMake } from "@/lib/models";
-import { getVariantsFor } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { UploadProgressModal, type UploadPhase } from "@/components/UploadProgressModal";
 import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Search, Loader2, CheckCircle2, Pencil, AlertCircle, Car } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const formSchema = z.object({
-  make: z.string().min(1, "Select a make"),
-  model: z.string().trim().min(1, "Enter a model").max(60),
-  variant: z.string().trim().max(80).optional().or(z.literal("")),
+interface LookupResult {
+  registration: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  fuelType?: string;
+  colour?: string;
+  motExpiry?: string;
+  motStatus?: "Valid" | "Expired" | "Unknown";
+  motSummary?: string;
+  lastMileage?: number;
+  recentAdvisories?: string[];
+}
+
+const finalSchema = z.object({
+  make: z.string().min(1),
+  model: z.string().min(1).max(80),
   year: z.coerce.number().int().min(1950).max(2026),
   mileage: z.coerce.number().int().min(0).max(500000),
-  registration: z.string().trim().max(10).optional().or(z.literal("")),
-  motExpiry: z.string().optional().or(z.literal("")),
-  serviceNotes: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
 export default function NewValuation() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Lookup state
+  const [reg, setReg] = useState("");
+  const [looking, setLooking] = useState(false);
+  const [lookup, setLookup] = useState<LookupResult | null>(null);
+  const [editing, setEditing] = useState(false);
+
+  // Editable vehicle fields (populated by lookup, overridable)
   const [make, setMake] = useState("");
-  const [makeQuery, setMakeQuery] = useState("");
   const [model, setModel] = useState("");
-  const [modelQuery, setModelQuery] = useState("");
   const [variant, setVariant] = useState("");
-  const [variantQuery, setVariantQuery] = useState("");
-  const [year, setYear] = useState<string>("");
+  const [year, setYear] = useState("");
+
+  // Manual additions
   const [mileage, setMileage] = useState("");
-  const [registration, setRegistration] = useState("");
-  const [motExpiry, setMotExpiry] = useState("");
   const [serviceNotes, setServiceNotes] = useState("");
+  const [modifications, setModifications] = useState("");
+
+  // Photos + submission
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<UploadPhase>("uploading");
@@ -54,25 +66,58 @@ export default function NewValuation() {
 
   useEffect(() => { document.title = "New valuation — Valu8"; }, []);
 
-  const filteredMakes = CAR_MAKES.filter(m => m.toLowerCase().includes(makeQuery.toLowerCase()));
-  const availableModels = getModelsForMake(make);
-  const filteredModels = availableModels.filter(m => m.toLowerCase().includes(modelQuery.toLowerCase()));
-  const availableVariants = getVariantsFor(make, model);
-  const filteredVariants = availableVariants.filter(v => v.toLowerCase().includes(variantQuery.toLowerCase()));
+  async function handleLookup() {
+    const cleaned = reg.replace(/\s+/g, "").toUpperCase();
+    if (cleaned.length < 2) {
+      toast.error("Enter a valid UK registration");
+      return;
+    }
+    setLooking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("lookup-vehicle", {
+        body: { registration: cleaned },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const result = data as LookupResult;
+      setLookup(result);
+      setMake(result.make ?? "");
+      setModel(result.model ?? "");
+      setYear(result.year ? String(result.year) : "");
+      setVariant("");
+      if (result.lastMileage && !mileage) setMileage(String(result.lastMileage));
+      toast.success("Vehicle found");
+    } catch (err: any) {
+      toast.error(err.message || "Lookup failed — you can enter details manually");
+      // Allow manual entry path
+      setLookup({ registration: cleaned });
+      setEditing(true);
+    } finally {
+      setLooking(false);
+    }
+  }
+
+  function resetLookup() {
+    setLookup(null);
+    setEditing(false);
+    setMake(""); setModel(""); setVariant(""); setYear("");
+    setMileage(""); setServiceNotes(""); setModifications("");
+    setPhotos([]);
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return navigate("/auth");
 
-    const parsed = formSchema.safeParse({ make, model, variant, year, mileage, registration, motExpiry, serviceNotes });
+    const parsed = finalSchema.safeParse({ make, model, year, mileage });
     if (!parsed.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const issue of parsed.error.issues) {
-        const key = String(issue.path[0] ?? "");
-        if (key && !fieldErrors[key]) fieldErrors[key] = issue.message;
+      const fe: Record<string, string> = {};
+      for (const i of parsed.error.issues) {
+        const k = String(i.path[0] ?? "");
+        if (k && !fe[k]) fe[k] = i.message || "Required";
       }
-      setErrors(fieldErrors);
-      toast.error("Please fix the highlighted fields");
+      setErrors(fe);
+      toast.error("Please complete the highlighted fields");
       return;
     }
     setErrors({});
@@ -81,10 +126,8 @@ export default function NewValuation() {
     setPhase("uploading");
     setUploadProgress(photos.length === 0 ? 100 : 0);
     try {
-      // Upload photos with real progress
       const photoUrls: string[] = [];
-      const total = photos.length;
-      for (let i = 0; i < total; i++) {
+      for (let i = 0; i < photos.length; i++) {
         const p = photos[i];
         const ext = p.file.name.split(".").pop() || "jpg";
         const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
@@ -94,21 +137,28 @@ export default function NewValuation() {
         if (error) throw error;
         const { data } = supabase.storage.from("vehicle-photos").getPublicUrl(path);
         photoUrls.push(data.publicUrl);
-        setUploadProgress(Math.round(((i + 1) / total) * 100));
+        setUploadProgress(Math.round(((i + 1) / photos.length) * 100));
       }
 
       setPhase("analysing");
-      // Call AI analysis edge function
+      const combinedNotes = [
+        serviceNotes.trim(),
+        modifications.trim() ? `Modifications / extras: ${modifications.trim()}` : "",
+        lookup?.colour ? `Colour: ${lookup.colour}` : "",
+        lookup?.fuelType ? `Fuel: ${lookup.fuelType}` : "",
+        lookup?.recentAdvisories?.length ? `Recent MOT advisories: ${lookup.recentAdvisories.join("; ")}` : "",
+      ].filter(Boolean).join("\n");
+
       const { data: aiData, error: aiErr } = await supabase.functions.invoke("analyse-vehicle", {
         body: {
           make: parsed.data.make,
           model: parsed.data.model,
-          variant: parsed.data.variant || undefined,
+          variant: variant.trim() || undefined,
           year: parsed.data.year,
           mileage: parsed.data.mileage,
-          registration: parsed.data.registration || undefined,
-          motExpiry: parsed.data.motExpiry || undefined,
-          serviceNotes: parsed.data.serviceNotes || undefined,
+          registration: lookup?.registration || reg.replace(/\s+/g, "").toUpperCase() || undefined,
+          motExpiry: lookup?.motExpiry || undefined,
+          serviceNotes: combinedNotes || undefined,
           photoUrls,
         },
       });
@@ -120,12 +170,12 @@ export default function NewValuation() {
       const { data, error } = await supabase.from("valuations").insert({
         user_id: user.id,
         make: parsed.data.make,
-        model: parsed.data.variant ? `${parsed.data.model} · ${parsed.data.variant}` : parsed.data.model,
+        model: variant.trim() ? `${parsed.data.model} · ${variant.trim()}` : parsed.data.model,
         year: parsed.data.year,
         mileage: parsed.data.mileage,
-        registration: parsed.data.registration || null,
-        mot_expiry: parsed.data.motExpiry || null,
-        service_notes: parsed.data.serviceNotes || null,
+        registration: lookup?.registration || null,
+        mot_expiry: lookup?.motExpiry || null,
+        service_notes: combinedNotes || null,
         photo_urls: photoUrls,
         condition_score: report.conditionScore,
         private_value: report.values.privateSale,
@@ -134,13 +184,14 @@ export default function NewValuation() {
       if (error) throw error;
 
       setPhase("done");
-      // brief flourish then jump straight to report
       setTimeout(() => navigate(`/valuation/${data.id}`), 600);
     } catch (err: any) {
       toast.error(err.message || "Failed to create valuation");
       setBusy(false);
     }
   }
+
+  const showVehicleStep = !!lookup;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -150,203 +201,218 @@ export default function NewValuation() {
       <main className="flex-1">
         {/* Hero */}
         <section className="relative overflow-hidden">
-          <div className="container pt-20 pb-16 md:pt-32 md:pb-24 text-center max-w-3xl">
-            <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-10 animate-fade-in-up">
-              Trusted by thousands of UK private sellers
+          <div className="container pt-16 pb-10 md:pt-24 md:pb-14 text-center max-w-3xl">
+            <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-6 animate-fade-in-up">
+              Instant UK vehicle lookup
             </p>
-            <h1 className="text-4xl md:text-6xl font-semibold tracking-tight text-gradient leading-[1.08] animate-fade-in-up">
-              Know your car's true worth<br className="hidden sm:block" /> before you sell
+            <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-gradient leading-[1.08] animate-fade-in-up">
+              Start with your number plate
             </h1>
-            <p className="text-base md:text-lg text-muted-foreground mt-8 max-w-xl mx-auto leading-relaxed animate-fade-in-up">
-              Honest valuations built on live UK market data. No inflated dealer prices, no guesswork. Just the realistic figure you can expect in a private sale.
+            <p className="text-base text-muted-foreground mt-5 max-w-xl mx-auto leading-relaxed animate-fade-in-up">
+              We'll pull your make, model, year and MOT history in seconds. Add a few details and photos to get a realistic private sale price.
             </p>
-            <div className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-sm text-muted-foreground/80 animate-fade-in-up">
-              <span className="flex items-center gap-2.5">
-                <span className="h-[5px] w-[5px] rounded-full bg-primary/60" />
-                Full condition assessment
-              </span>
-              <span className="flex items-center gap-2.5">
-                <span className="h-[5px] w-[5px] rounded-full bg-primary/60" />
-                MOT & market summary
-              </span>
-              <span className="flex items-center gap-2.5">
-                <span className="h-[5px] w-[5px] rounded-full bg-primary/60" />
-                Realistic private sale price
-              </span>
-            </div>
           </div>
         </section>
 
-        {/* Form */}
-        <section className="container pb-24 max-w-4xl">
-          <form onSubmit={submit} className="premium-card p-6 sm:p-10 space-y-10">
-            <div>
-              <h2 className="text-xl font-semibold">Vehicle details</h2>
-              <p className="text-sm text-muted-foreground mt-1">A few essentials to anchor the valuation.</p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-6">
-                <div className="space-y-2">
-                  <Label>Make</Label>
-                  <Select value={make} onValueChange={(v) => { setMake(v); setModel(""); setModelQuery(""); setVariant(""); setVariantQuery(""); }}>
-                    <SelectTrigger className="h-10"><SelectValue placeholder="Select manufacturer" /></SelectTrigger>
-                    <SelectContent>
-                      <div className="p-2 sticky top-0 bg-popover z-10">
-                        <Input
-                          placeholder="Search 130+ manufacturers"
-                          value={makeQuery}
-                          onChange={(e) => setMakeQuery(e.target.value)}
-                          onKeyDown={(e) => e.stopPropagation()}
-                          className="h-10"
-                        />
-                      </div>
-                      {filteredMakes.map((m) => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
-                      ))}
-                      {filteredMakes.length === 0 && (
-                        <div className="px-3 py-6 text-sm text-muted-foreground text-center">No matches</div>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {errors.make && <p className="text-xs text-destructive">{errors.make}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Model</Label>
-                  {availableModels.length > 0 ? (
-                    <Select value={model} onValueChange={(v) => { setModel(v); setVariant(""); setVariantQuery(""); }}>
-                      <SelectTrigger className="h-10"><SelectValue placeholder={make ? "Select model" : "Pick a make first"} /></SelectTrigger>
-                      <SelectContent>
-                        <div className="p-2 sticky top-0 bg-popover z-10">
-                          <Input
-                            placeholder={`Search ${make} models`}
-                            value={modelQuery}
-                            onChange={(e) => setModelQuery(e.target.value)}
-                            onKeyDown={(e) => e.stopPropagation()}
-                            className="h-10"
-                          />
-                        </div>
-                        {filteredModels.map((m) => (
-                          <SelectItem key={m} value={m}>{m}</SelectItem>
-                        ))}
-                        {filteredModels.length === 0 && modelQuery && (
-                          <SelectItem value={modelQuery.trim()}>Use "{modelQuery.trim()}"</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input className="h-10" placeholder={make ? "e.g. 3 Series" : "Pick a make first"} value={model} onChange={(e) => setModel(e.target.value)} disabled={!make} />
+        {/* Reg input */}
+        <section className="container max-w-2xl pb-10">
+          <div className="premium-card p-5 sm:p-7">
+            <Label htmlFor="reg-main" className="text-xs uppercase tracking-wider text-muted-foreground">
+              UK Registration
+            </Label>
+            <div className="mt-2 flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Input
+                  id="reg-main"
+                  value={reg}
+                  onChange={(e) => setReg(e.target.value.toUpperCase())}
+                  placeholder="AB12 CDE"
+                  maxLength={10}
+                  disabled={looking}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleLookup(); } }}
+                  className={cn(
+                    "h-16 text-center text-2xl sm:text-3xl font-bold tracking-[0.2em] uppercase",
+                    "bg-yellow-300 text-black border-2 border-yellow-400 focus-visible:ring-yellow-500 placeholder:text-black/40",
+                    "rounded-lg shadow-sm",
                   )}
-                  {errors.model && <p className="text-xs text-destructive">{errors.model}</p>}
-                </div>
-
-                <div className="sm:col-span-2 space-y-2">
-                  <Label>Variant / Engine / Trim <span className="text-muted-foreground font-normal">(optional but recommended)</span></Label>
-                  {availableVariants.length > 0 ? (
-                    <>
-                      <Select value={variant} onValueChange={setVariant}>
-                        <SelectTrigger className="h-10">
-                          <SelectValue placeholder={`Choose a ${model || make} variant…`} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <div className="p-2 sticky top-0 bg-popover z-10">
-                            <Input
-                              placeholder="Search or type your own"
-                              value={variantQuery}
-                              onChange={(e) => setVariantQuery(e.target.value)}
-                              onKeyDown={(e) => e.stopPropagation()}
-                              className="h-10"
-                            />
-                          </div>
-                          {filteredVariants.map((v) => (
-                            <SelectItem key={v} value={v}>{v}</SelectItem>
-                          ))}
-                          {variantQuery.trim() && !filteredVariants.some(v => v.toLowerCase() === variantQuery.trim().toLowerCase()) && (
-                            <SelectItem value={variantQuery.trim()}>Use "{variantQuery.trim()}"</SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {availableVariants.slice(0, 6).map((v) => (
-                          <button
-                            key={v}
-                            type="button"
-                            onClick={() => setVariant(v)}
-                            className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
-                              variant === v
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                            }`}
-                          >
-                            {v}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <Input
-                      className="h-10"
-                      placeholder={make ? "e.g. RS 200 Mk3, 3.0 V6 Twin Turbo, Classic Spec…" : "Pick a make first"}
-                      value={variant}
-                      onChange={(e) => setVariant(e.target.value)}
-                      disabled={!make}
-                      maxLength={80}
-                    />
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Year</Label>
-                  <Select value={year} onValueChange={setYear}>
-                    <SelectTrigger className="h-10"><SelectValue placeholder="Select year" /></SelectTrigger>
-                    <SelectContent>
-                      {YEARS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  {errors.year && <p className="text-xs text-destructive">{errors.year}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="mileage">Mileage</Label>
-                  <Input id="mileage" className="h-10" type="number" inputMode="numeric" placeholder="e.g. 64,500" value={mileage} onChange={(e) => setMileage(e.target.value)} aria-invalid={!!errors.mileage} />
-                  {errors.mileage && <p className="text-xs text-destructive">{errors.mileage}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="reg">UK Registration</Label>
-                  <Input id="reg" className="h-10" placeholder="AB12 CDE" value={registration} onChange={(e) => setRegistration(e.target.value.toUpperCase())} maxLength={10} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="mot">MOT expiry</Label>
-                  <Input id="mot" className="h-10" type="date" value={motExpiry} onChange={(e) => setMotExpiry(e.target.value)} />
-                </div>
-
-                <div className="sm:col-span-2 space-y-2">
-                  <Label htmlFor="notes">Service history notes</Label>
-                  <Textarea id="notes" rows={3} maxLength={500}
-                    placeholder="e.g. Full main-dealer service history, cambelt done at 60k, 4 new tyres last summer."
-                    value={serviceNotes} onChange={(e) => setServiceNotes(e.target.value)} />
-                </div>
+                />
               </div>
-            </div>
-
-            <div>
-              <PhotoUploader photos={photos} onChange={setPhotos} />
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-border">
-              <p className="text-xs text-muted-foreground max-w-md">
-                Test mode is free. Your valuation will be saved to your dashboard.
-              </p>
-              <Button type="submit" variant="hero" size="xl" disabled={busy}>
-                {busy ? "Uploading…" : <>Get my valuation <ArrowRight className="h-4 w-4" /></>}
+              <Button
+                type="button"
+                variant="hero"
+                size="xl"
+                onClick={handleLookup}
+                disabled={looking || reg.replace(/\s/g, "").length < 2}
+                className="h-16 sm:w-auto w-full"
+              >
+                {looking ? <><Loader2 className="h-4 w-4 animate-spin" /> Looking up…</> : <><Search className="h-4 w-4" /> Lookup</>}
               </Button>
             </div>
-          </form>
+            <p className="text-[11px] text-muted-foreground mt-3 text-center">
+              Powered by the official DVSA database. Don't have a reg?{" "}
+              <button type="button" className="text-primary hover:underline" onClick={() => { setLookup({ registration: "" }); setEditing(true); }}>
+                Enter manually
+              </button>
+            </p>
+          </div>
         </section>
+
+        {/* Vehicle summary + remaining flow */}
+        {showVehicleStep && (
+          <section className="container pb-24 max-w-3xl space-y-8 animate-fade-in-up">
+            {/* Vehicle summary card */}
+            <div className="premium-card p-6 sm:p-8">
+              <div className="flex items-start justify-between gap-4 mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center">
+                    <Car className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Vehicle found</p>
+                    <h2 className="text-lg font-semibold">
+                      {make || "—"} {model} {variant && <span className="text-muted-foreground font-normal">· {variant}</span>}
+                    </h2>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(v => !v)}>
+                    <Pencil className="h-3.5 w-3.5" /> {editing ? "Done" : "Edit"}
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={resetLookup}>
+                    Change
+                  </Button>
+                </div>
+              </div>
+
+              {!editing ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                  <SummaryItem label="Year" value={year || "—"} />
+                  <SummaryItem label="Fuel" value={lookup?.fuelType || "—"} />
+                  <SummaryItem label="Colour" value={lookup?.colour || "—"} />
+                  <SummaryItem
+                    label="MOT"
+                    value={lookup?.motExpiry ? new Date(lookup.motExpiry).toLocaleDateString("en-GB") : "—"}
+                    statusColor={
+                      lookup?.motStatus === "Valid" ? "text-emerald-500"
+                      : lookup?.motStatus === "Expired" ? "text-destructive"
+                      : undefined
+                    }
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="Make" value={make} onChange={setMake} error={errors.make} placeholder="e.g. BMW" />
+                  <Field label="Model" value={model} onChange={setModel} error={errors.model} placeholder="e.g. 3 Series" />
+                  <Field label="Variant / Trim" value={variant} onChange={setVariant} placeholder="e.g. M Sport 320d" optional />
+                  <Field label="Year" value={year} onChange={setYear} error={errors.year} placeholder="2019" type="number" />
+                </div>
+              )}
+
+              {lookup?.motSummary && !editing && (
+                <div className="mt-5 pt-5 border-t border-border/40 flex items-start gap-2 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                  <span>{lookup.motSummary}</span>
+                </div>
+              )}
+              {lookup?.recentAdvisories && lookup.recentAdvisories.length > 0 && !editing && (
+                <div className="mt-2 flex items-start gap-2 text-xs text-muted-foreground">
+                  <AlertCircle className="h-3.5 w-3.5 text-yellow-500 mt-0.5 shrink-0" />
+                  <span>Latest advisories: {lookup.recentAdvisories.join(" · ")}</span>
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={submit} className="space-y-8">
+              {/* Mileage + extras */}
+              <div className="premium-card p-6 sm:p-8 space-y-6">
+                <div>
+                  <h2 className="text-lg font-semibold">Add the details only you know</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Mileage and history have a big impact on value.</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="mileage">Current mileage</Label>
+                    <Input
+                      id="mileage" type="number" inputMode="numeric"
+                      placeholder="e.g. 64,500" className="h-11"
+                      value={mileage} onChange={(e) => setMileage(e.target.value)}
+                      aria-invalid={!!errors.mileage}
+                    />
+                    {errors.mileage && <p className="text-xs text-destructive">{errors.mileage}</p>}
+                    {lookup?.lastMileage ? (
+                      <p className="text-[11px] text-muted-foreground">
+                        Last MOT recorded {lookup.lastMileage.toLocaleString()} mi
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mods">Modifications / extras <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                    <Input
+                      id="mods" className="h-11"
+                      placeholder="e.g. Pano roof, remap, new tyres"
+                      value={modifications} onChange={(e) => setModifications(e.target.value)}
+                      maxLength={200}
+                    />
+                  </div>
+                  <div className="sm:col-span-2 space-y-2">
+                    <Label htmlFor="notes">Service history notes</Label>
+                    <Textarea
+                      id="notes" rows={3} maxLength={500}
+                      placeholder="e.g. Full main-dealer service history, cambelt at 60k, 4 new tyres last summer."
+                      value={serviceNotes} onChange={(e) => setServiceNotes(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Photos */}
+              <div className="premium-card p-6 sm:p-8">
+                <PhotoUploader photos={photos} onChange={setPhotos} />
+              </div>
+
+              {/* Submit */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
+                <p className="text-xs text-muted-foreground max-w-md">
+                  We'll combine your reg lookup, details and photos to generate a realistic private sale price.
+                </p>
+                <Button type="submit" variant="hero" size="xl" disabled={busy}>
+                  {busy ? "Working…" : <>Get my valuation <ArrowRight className="h-4 w-4" /></>}
+                </Button>
+              </div>
+            </form>
+          </section>
+        )}
       </main>
       <Footer />
       <UploadProgressModal open={busy} phase={phase} uploadProgress={uploadProgress} />
+    </div>
+  );
+}
+
+function SummaryItem({ label, value, statusColor }: { label: string; value: string; statusColor?: string }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+      <p className={cn("text-sm font-medium", statusColor)}>{value}</p>
+    </div>
+  );
+}
+
+function Field({
+  label, value, onChange, error, placeholder, type, optional,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  error?: string; placeholder?: string; type?: string; optional?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}{optional && <span className="text-muted-foreground font-normal"> (optional)</span>}</Label>
+      <Input
+        className="h-11" type={type} value={value} placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)} aria-invalid={!!error}
+      />
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }
