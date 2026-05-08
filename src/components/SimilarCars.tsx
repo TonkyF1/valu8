@@ -13,6 +13,7 @@ interface Listing {
   source: string;
   url?: string;
   imageUrl?: string;
+  imageFallbackUrl?: string;
   location?: string;
 }
 
