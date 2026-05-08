@@ -103,13 +103,17 @@ Return ONLY a JSON object: { "listings": Listing[] }.`;
     const args = toolCall?.function?.arguments ? JSON.parse(toolCall.function.arguments) : null;
     const listings: Listing[] = (args?.listings ?? []).slice(0, 6);
 
-    // Attach a placeholder image (Unsplash search) for each listing
-    const enriched = listings.map((l) => ({
-      ...l,
-      imageUrl:
-        l.imageUrl ||
-        `https://source.unsplash.com/400x300/?${encodeURIComponent(`${l.make} ${l.model} car`)}`,
-    }));
+    // Attach a real photo via loremflickr (Flickr-sourced, tag-matched, no auth needed)
+    const enriched = listings.map((l, idx) => {
+      const tags = [l.make, l.model, "car"]
+        .map((t) => t.toLowerCase().replace(/[^a-z0-9]+/g, ""))
+        .filter(Boolean)
+        .join(",");
+      return {
+        ...l,
+        imageUrl: l.imageUrl || `https://loremflickr.com/640/400/${tags}?lock=${idx + 1}`,
+      };
+    });
 
     return json({ listings: enriched });
   } catch (err) {
