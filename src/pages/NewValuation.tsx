@@ -215,9 +215,9 @@ export default function NewValuation() {
         </section>
 
         {/* Reg input */}
-        <section className="container max-w-md pb-8 relative z-10">
-          <div className="mt-2 flex items-center gap-2">
-            <div className="relative flex-1 group">
+        <section className="container max-w-sm pb-6 relative z-10">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
               <Input
                 id="reg-main"
                 value={reg}
@@ -227,29 +227,29 @@ export default function NewValuation() {
                 disabled={looking}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleLookup(); } }}
                 className={cn(
-                  "h-12 sm:h-14 text-center text-xl sm:text-2xl font-bold tracking-[0.2em] uppercase",
-                  "bg-yellow-300 text-black border-2 border-yellow-400/90 focus-visible:border-yellow-500 focus-visible:ring-2 focus-visible:ring-yellow-500/30",
-                  "rounded-xl shadow-sm placeholder:text-black/30 placeholder:tracking-[0.15em]",
-                  "transition-all duration-300 pr-12",
+                  "h-11 text-center text-lg sm:text-xl font-semibold tracking-[0.18em] uppercase",
+                  "bg-background border border-border/80 focus-visible:border-primary/60 focus-visible:ring-1 focus-visible:ring-primary/30",
+                  "rounded-lg placeholder:text-muted-foreground/40 placeholder:tracking-[0.1em]",
+                  "transition-all duration-200 pr-11",
                 )}
               />
-              <button
-                type="button"
-                onClick={handleLookup}
-                disabled={looking || reg.replace(/\s/g, "").length < 2}
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-black/10 hover:bg-black/20 grid place-items-center transition-colors disabled:opacity-30"
-                aria-label="Lookup registration"
-              >
-                {looking ? (
-                  <Loader2 className="h-4 w-4 text-black/60 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4 text-black/60" />
-                )}
-              </button>
             </div>
+            <button
+              type="button"
+              onClick={handleLookup}
+              disabled={looking || reg.replace(/\s/g, "").length < 2}
+              className="h-11 w-11 shrink-0 rounded-lg bg-primary hover:bg-primary/90 grid place-items-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+              aria-label="Lookup registration"
+            >
+              {looking ? (
+                <Loader2 className="h-4 w-4 text-primary-foreground animate-spin" />
+              ) : (
+                <Search className="h-4 w-4 text-primary-foreground" />
+              )}
+            </button>
           </div>
 
-          <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-muted-foreground/50">
+          <div className="mt-2.5 flex items-center justify-center gap-4 text-[10px] text-muted-foreground/40">
             <span className="flex items-center gap-1">
               <ShieldCheck className="h-3 w-3" />
               Official DVSA database
