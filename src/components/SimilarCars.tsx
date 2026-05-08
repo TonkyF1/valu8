@@ -112,24 +112,20 @@ export function SimilarCars({ make, model, variant, year, mileage }: Props) {
               rel="noopener noreferrer"
               className="group flex-shrink-0 snap-start w-[70%] sm:w-[calc((100%-1.5rem)/3)] rounded-2xl border border-border/50 bg-card/50 overflow-hidden hover:border-primary/40 hover:bg-card transition-all flex flex-col"
             >
-              <div className="aspect-[16/10] bg-muted/40 overflow-hidden relative">
-                {l.imageUrl ? (
-                  <img
-                    src={l.imageUrl}
-                    alt={l.title}
-                    className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full grid place-items-center text-muted-foreground/40">
-                    <Car className="h-8 w-8" />
+              <div className="aspect-[16/10] overflow-hidden relative bg-gradient-to-br from-muted/60 via-card to-muted/30">
+                <div className="absolute inset-0 grid place-items-center text-muted-foreground/30 group-hover:text-muted-foreground/40 group-hover:scale-[1.04] transition-all duration-300">
+                  <Car className="h-14 w-14" strokeWidth={1.25} />
+                </div>
+                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-background/85 to-transparent">
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/80 font-medium truncate">
+                    {l.make} {l.model}
                   </div>
+                </div>
+                {l.url && l.source && (
+                  <span className="absolute top-2 left-2 text-[9px] uppercase tracking-wider font-medium px-2 py-0.5 rounded-full bg-background/85 backdrop-blur-sm border border-border/60 text-muted-foreground">
+                    {l.source}
+                  </span>
                 )}
-                <span className="absolute top-2 left-2 text-[9px] uppercase tracking-wider font-medium px-2 py-0.5 rounded-full bg-background/85 backdrop-blur-sm border border-border/60 text-muted-foreground">
-                  {l.source}
-                </span>
               </div>
               <div className="p-3 flex-1 flex flex-col gap-1">
                 <div className="text-xs font-medium leading-snug line-clamp-2">
