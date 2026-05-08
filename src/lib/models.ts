@@ -11,7 +11,7 @@ export const CAR_MODELS: Record<string, string[]> = {
   "Alpine": ["A110", "A110 S", "A110 GT", "A310", "A610"],
   "Ariel": ["Atom", "Nomad", "Hipercar"],
   "Aston Martin": ["DB7", "DB9", "DB11", "DB12", "Vantage", "V8 Vantage", "V12 Vantage", "Vanquish", "DBS", "DBS Superleggera", "DBX", "DBX 707", "Rapide", "Virage", "Cygnet", "One-77", "Valkyrie", "Valhalla"],
-  "Audi": ["A1", "A2", "A3", "A4", "A4 Allroad", "A5", "A6", "A6 Allroad", "A7", "A8", "Q2", "Q3", "Q4 e-tron", "Q5", "Q5 Sportback", "Q7", "Q8", "Q8 e-tron", "TT", "TTS", "TT RS", "R8", "e-tron", "e-tron GT", "S1", "S3", "S4", "S5", "S6", "S7", "S8", "RS3", "RS4", "RS5", "RS6", "RS7", "RS Q3", "RS Q8", "Coupe Quattro", "80", "100", "200"],
+  "Audi": ["A1", "A2", "A3", "A4", "A4 Allroad", "A5", "A6", "A6 Allroad", "A7", "A8", "Q2", "Q3", "Q4 e-tron", "Q5", "Q5 Sportback", "Q6 e-tron", "Q7", "Q8", "Q8 e-tron", "TT", "TTS", "TT RS", "R8", "e-tron", "e-tron GT", "S1", "S3", "S4", "S5", "S6", "S7", "S8", "RS3", "RS4", "RS5", "RS6", "RS7", "RS Q3", "RS Q8", "Coupe Quattro", "80", "100", "200"],
   "Austin": ["Mini", "Mini Cooper", "Mini Cooper S", "Metro", "Allegro", "Maxi", "Princess", "Montego", "Maestro", "1100", "1300", "Healey 3000"],
   "Austin-Healey": ["Sprite", "100", "3000"],
   "BAC": ["Mono"],
