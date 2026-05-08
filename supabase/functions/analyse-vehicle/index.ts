@@ -534,9 +534,30 @@ Assess condition from photos and data. Be honest and specific. Call the valu8_re
     };
     const listingPrice = roundToGrain(Math.min(market.high, values.privateSale * 1.03));
 
-    // MOT + HPI (simulated, swap with real APIs later)
+    // MOT history — try real DVSA API first, fall back to simulated.
     const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
-    const motHistory = simulateMotHistory(body.year, body.mileage, seed);
+    let motHistory: any[] = [];
+    let motSource: "dvsa" | "simulated" = "simulated";
+    let motNotice: string | undefined;
+    if (body.registration && body.registration.trim().length >= 2) {
+      try {
+        const dvsa = await fetchDvsaMotHistory(body.registration);
+        if (dvsa.entries.length > 0) {
+          motHistory = dvsa.entries;
+          motSource = "dvsa";
+        } else {
+          motNotice = dvsa.error ?? "No MOT records returned by DVSA.";
+          motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
+        }
+      } catch (e) {
+        console.error("DVSA fetch failed", e);
+        motNotice = "MOT service temporarily unavailable — showing illustrative history.";
+        motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
+      }
+    } else {
+      motNotice = "No registration provided — showing illustrative MOT history.";
+      motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
+    }
 
     const report = {
       conditionScore: Math.round(score * 10) / 10,
@@ -563,6 +584,8 @@ Assess condition from photos and data. Be honest and specific. Call the valu8_re
         ],
       },
       motHistory,
+      motSource,
+      motNotice,
       generatedAt: new Date().toISOString(),
     };
 
