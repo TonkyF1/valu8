@@ -103,18 +103,22 @@ Return ONLY a JSON object: { "listings": Listing[] }.`;
     const args = toolCall?.function?.arguments ? JSON.parse(toolCall.function.arguments) : null;
     const listings: Listing[] = (args?.listings ?? []).slice(0, 6);
 
-    // Attach real car photos via Imagin.studio CDN (free demo tier, real make/model renders)
+    // Attach real car photos via Imagin.studio CDN (real make/model/year renders)
+    // Provide a primary (imagin) + fallback (unsplash search) so client can degrade gracefully.
     const enriched = listings.map((l, idx) => {
-      const make = encodeURIComponent(l.make.toLowerCase().replace(/\s+/g, "-"));
-      const modelFamily = encodeURIComponent(
-        l.model.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
-      );
-      const angle = ["01", "23", "05", "21", "29"][idx % 5];
+      const makeSlug = l.make.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+      const modelSlug = l.model.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+      const angle = ["01", "23", "05", "21", "29", "17"][idx % 6];
+      const primary = `https://cdn.imagin.studio/getimage?customer=img&make=${encodeURIComponent(
+        makeSlug
+      )}&modelFamily=${encodeURIComponent(modelSlug)}&modelYear=${l.year}&angle=${angle}&width=800&zoomType=fullscreen&paintId=imaginunique`;
+      const fallback = `https://source.unsplash.com/featured/800x500/?${encodeURIComponent(
+        `${l.make} ${l.model} car`
+      )}`;
       return {
         ...l,
-        imageUrl:
-          l.imageUrl ||
-          `https://cdn.imagin.studio/getimage?customer=img&make=${make}&modelFamily=${modelFamily}&modelYear=${l.year}&angle=${angle}&width=640`,
+        imageUrl: l.imageUrl || primary,
+        imageFallbackUrl: fallback,
       };
     });
 
