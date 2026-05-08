@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
@@ -12,13 +12,17 @@ import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
 import {
   Share2, Download, Bookmark, Check, ShieldCheck, AlertTriangle, ArrowLeft,
-  Star, Pencil, ChevronDown,
+  Star, Pencil, ChevronDown, MoreHorizontal,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CountUp } from "@/components/CountUp";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Valuation {
   id: string; make: string; model: string; year: number; mileage: number;
@@ -28,6 +32,7 @@ interface Valuation {
 
 export default function Report() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { isPremium } = useProfile();
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +56,24 @@ export default function Report() {
     return (
       <div className="min-h-screen flex flex-col">
         <TestModeBanner /><Header />
-        <div className="flex-1 grid place-items-center"><div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" /></div>
+        <main className="flex-1 container py-6 md:py-8 max-w-5xl">
+          <div className="flex items-center justify-between mb-5">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-8 w-24" />
+          </div>
+          <div className="space-y-3 mb-6">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-10 w-2/3" />
+            <Skeleton className="h-3 w-48" />
+          </div>
+          <Skeleton className="aspect-[16/9] w-full rounded-2xl mb-4" />
+          <div className="grid lg:grid-cols-5 gap-3 mb-6">
+            <Skeleton className="lg:col-span-3 h-56 rounded-2xl" />
+            <Skeleton className="lg:col-span-2 h-56 rounded-2xl" />
+          </div>
+          <Skeleton className="h-32 w-full rounded-2xl mb-4" />
+          <Skeleton className="h-32 w-full rounded-2xl" />
+        </main>
       </div>
     );
   }
@@ -90,22 +112,40 @@ export default function Report() {
             <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> All valuations</Link>
           </Button>
           <div className="flex items-center gap-2">
-            {isPremium ? (
-              <Button asChild variant="ghost" size="sm" title="Edit valuation">
-                <Link to={`/valuation/${v.id}/edit`}><Pencil className="h-4 w-4" />Edit</Link>
-              </Button>
-            ) : (
-              <Button variant="ghost" size="sm" onClick={() => toast.info("Editing reports is a Premium feature")} title="Premium feature">
-                <Pencil className="h-4 w-4" />Edit
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={share}><Share2 className="h-4 w-4" />Share</Button>
-            {isPremium ? (
-              <Button variant="ghost" size="sm" onClick={() => { downloadValuationPdf(v, r); toast.success("PDF downloaded"); }}><Download className="h-4 w-4" />PDF</Button>
-            ) : (
-              <Button variant="ghost" size="sm" onClick={() => toast.info("PDF export is a Premium feature")}><Download className="h-4 w-4" />PDF</Button>
-            )}
-            <Button variant="premium" size="sm" onClick={() => toast.success("Already saved to My Valuations")}><Bookmark className="h-4 w-4" />Saved</Button>
+            <Button
+              variant="premium"
+              size="sm"
+              onClick={() => {
+                if (!isPremium) return toast.info("PDF export is a Premium feature");
+                downloadValuationPdf(v, r);
+                toast.success("PDF downloaded");
+              }}
+            >
+              <Download className="h-4 w-4" /> PDF
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="More actions">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (isPremium) navigate(`/valuation/${v.id}/edit`);
+                    else toast.info("Editing reports is a Premium feature");
+                  }}
+                >
+                  <Pencil className="h-4 w-4" /> Edit valuation
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={share}>
+                  <Share2 className="h-4 w-4" /> Share link
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled className="opacity-70">
+                  <Bookmark className="h-4 w-4" /> Saved
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -238,12 +278,12 @@ export default function Report() {
         {/* Recommendations */}
         <Section title="Seller Recommendations">
           <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground mb-2">Recommended listing price</div>
-              <div className="text-4xl font-semibold text-gradient-primary tabular-nums">
-                <CountUp value={r.recommendations.listingPrice} prefix="£" />
+            <div className="rounded-xl bg-muted/20 border border-border/50 p-4">
+              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1.5">Recommended listing price</div>
+              <div className="text-2xl font-medium text-foreground/90 tabular-nums">
+                £{r.recommendations.listingPrice.toLocaleString()}
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Sweet spot for fast enquiries with negotiation room.</p>
+              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">Sweet spot for fast enquiries with negotiation room.</p>
             </div>
             <div>
               <RecBlock title="Where to sell" items={r.recommendations.whereToSell} />

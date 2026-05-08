@@ -50,6 +50,7 @@ export default function NewValuation() {
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<UploadPhase>("uploading");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => { document.title = "New valuation — Valu8"; }, []);
 
@@ -65,9 +66,16 @@ export default function NewValuation() {
 
     const parsed = formSchema.safeParse({ make, model, variant, year, mileage, registration, motExpiry, serviceNotes });
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = String(issue.path[0] ?? "");
+        if (key && !fieldErrors[key]) fieldErrors[key] = issue.message;
+      }
+      setErrors(fieldErrors);
+      toast.error("Please fix the highlighted fields");
       return;
     }
+    setErrors({});
 
     setBusy(true);
     setPhase("uploading");
@@ -199,6 +207,7 @@ export default function NewValuation() {
                       )}
                     </SelectContent>
                   </Select>
+                  {errors.make && <p className="text-xs text-destructive">{errors.make}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -227,6 +236,7 @@ export default function NewValuation() {
                   ) : (
                     <Input className="h-10" placeholder={make ? "e.g. 3 Series" : "Pick a make first"} value={model} onChange={(e) => setModel(e.target.value)} disabled={!make} />
                   )}
+                  {errors.model && <p className="text-xs text-destructive">{errors.model}</p>}
                 </div>
 
                 <div className="sm:col-span-2 space-y-2">
@@ -292,11 +302,13 @@ export default function NewValuation() {
                       {YEARS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {errors.year && <p className="text-xs text-destructive">{errors.year}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="mileage">Mileage</Label>
-                  <Input id="mileage" className="h-10" type="number" inputMode="numeric" placeholder="e.g. 64,500" value={mileage} onChange={(e) => setMileage(e.target.value)} />
+                  <Input id="mileage" className="h-10" type="number" inputMode="numeric" placeholder="e.g. 64,500" value={mileage} onChange={(e) => setMileage(e.target.value)} aria-invalid={!!errors.mileage} />
+                  {errors.mileage && <p className="text-xs text-destructive">{errors.mileage}</p>}
                 </div>
 
                 <div className="space-y-2">
