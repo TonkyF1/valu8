@@ -14,7 +14,7 @@ import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
 import {
   ArrowRight, Search, Loader2, CheckCircle2, Pencil, AlertCircle, Car,
-  ShieldCheck, Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -204,80 +204,63 @@ export default function NewValuation() {
       <main className="flex-1">
         {/* Hero */}
         <section className="relative overflow-hidden">
-          <div className="container pt-20 pb-8 md:pt-28 md:pb-12 text-center max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 mb-8 animate-fade-in-up">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-primary">
-                Instant UK vehicle lookup
-              </span>
-            </div>
-            <h1 className="text-[2.6rem] md:text-[3.4rem] font-semibold tracking-tight text-gradient leading-[1.05] animate-fade-in-up">
+          <div className="container pt-16 pb-6 md:pt-20 md:pb-8 text-center max-w-2xl">
+            <h1 className="text-3xl md:text-[2.5rem] font-semibold tracking-tight text-gradient leading-[1.08] animate-fade-in-up">
               Know exactly what your car is worth
             </h1>
-            <p className="text-base text-muted-foreground mt-5 max-w-lg mx-auto leading-relaxed animate-fade-in-up">
-              Enter your registration plate and we'll pull the details instantly. Add photos for the most accurate result.
+            <p className="text-sm text-muted-foreground/80 mt-3 max-w-md mx-auto leading-relaxed animate-fade-in-up">
+              Enter your registration and we'll pull the details instantly.
             </p>
           </div>
-
-          {/* Ambient glow behind search */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-32 md:top-40 w-[600px] h-[300px] bg-primary/[0.07] blur-[100px] rounded-full pointer-events-none" />
         </section>
 
         {/* Reg input */}
-        <section className="container max-w-xl pb-10 relative z-10">
-          <div className="premium-card p-6 sm:p-8 shadow-elevated">
-            <Label htmlFor="reg-main" className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground font-medium">
-              UK Registration Plate
-            </Label>
-            <div className="mt-3 flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1 group">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 group-focus-within:text-primary/70 transition-colors">
-                  <Search className="h-5 w-5" />
-                </div>
-                <Input
-                  id="reg-main"
-                  value={reg}
-                  onChange={(e) => setReg(e.target.value.toUpperCase())}
-                  placeholder="AB12 CDE"
-                  maxLength={10}
-                  disabled={looking}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleLookup(); } }}
-                  className={cn(
-                    "h-[4.5rem] pl-12 pr-4 text-left text-2xl sm:text-[2rem] font-bold tracking-[0.18em] uppercase",
-                    "bg-yellow-300/90 text-black border-2 border-yellow-400/80 focus-visible:border-yellow-500 focus-visible:ring-2 focus-visible:ring-yellow-500/40",
-                    "rounded-xl shadow-inner placeholder:text-black/30 placeholder:tracking-[0.1em]",
-                    "transition-all duration-300",
-                  )}
-                />
-              </div>
-              <Button
-                type="button"
-                variant="hero"
-                size="xl"
-                onClick={handleLookup}
-                disabled={looking || reg.replace(/\s/g, "").length < 2}
-                className="h-[4.5rem] sm:w-auto w-full rounded-xl text-base font-semibold"
-              >
-                {looking ? (
-                  <><Loader2 className="h-5 w-5 animate-spin" /> Looking up…</>
-                ) : (
-                  <><Search className="h-5 w-5" /> Lookup</>
+        <section className="container max-w-md pb-8 relative z-10">
+          <div className="mt-2 flex items-center gap-2">
+            <div className="relative flex-1 group">
+              <Input
+                id="reg-main"
+                value={reg}
+                onChange={(e) => setReg(e.target.value.toUpperCase())}
+                placeholder="AB12 CDE"
+                maxLength={10}
+                disabled={looking}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleLookup(); } }}
+                className={cn(
+                  "h-12 sm:h-14 text-center text-xl sm:text-2xl font-bold tracking-[0.2em] uppercase",
+                  "bg-yellow-300 text-black border-2 border-yellow-400/90 focus-visible:border-yellow-500 focus-visible:ring-2 focus-visible:ring-yellow-500/30",
+                  "rounded-xl shadow-sm placeholder:text-black/30 placeholder:tracking-[0.15em]",
+                  "transition-all duration-300 pr-12",
                 )}
-              </Button>
-            </div>
-            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground/70">
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-primary/60" />
-                <span>Powered by the official DVSA database</span>
-              </div>
+              />
               <button
                 type="button"
-                className="text-primary/80 hover:text-primary transition-colors hover:underline underline-offset-2"
-                onClick={() => { setLookup({ registration: "" }); setEditing(true); }}
+                onClick={handleLookup}
+                disabled={looking || reg.replace(/\s/g, "").length < 2}
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-black/10 hover:bg-black/20 grid place-items-center transition-colors disabled:opacity-30"
+                aria-label="Lookup registration"
               >
-                Enter manually instead
+                {looking ? (
+                  <Loader2 className="h-4 w-4 text-black/60 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4 text-black/60" />
+                )}
               </button>
             </div>
+          </div>
+
+          <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-muted-foreground/50">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="h-3 w-3" />
+              Official DVSA database
+            </span>
+            <button
+              type="button"
+              className="hover:text-primary/70 transition-colors hover:underline underline-offset-2"
+              onClick={() => { setLookup({ registration: "" }); setEditing(true); }}
+            >
+              Enter manually
+            </button>
           </div>
         </section>
 
