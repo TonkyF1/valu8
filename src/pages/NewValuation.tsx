@@ -302,11 +302,13 @@ export default function NewValuation() {
                       {YEARS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {errors.year && <p className="text-xs text-destructive">{errors.year}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="mileage">Mileage</Label>
-                  <Input id="mileage" className="h-10" type="number" inputMode="numeric" placeholder="e.g. 64,500" value={mileage} onChange={(e) => setMileage(e.target.value)} />
+                  <Input id="mileage" className="h-10" type="number" inputMode="numeric" placeholder="e.g. 64,500" value={mileage} onChange={(e) => setMileage(e.target.value)} aria-invalid={!!errors.mileage} />
+                  {errors.mileage && <p className="text-xs text-destructive">{errors.mileage}</p>}
                 </div>
 
                 <div className="space-y-2">
