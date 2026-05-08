@@ -196,8 +196,118 @@ function computeMarketRange(params: {
   };
 }
 
-// Realistic simulated MOT history. TODO: swap with DVSA MOT History API
-// (https://documentation.history.mot.api.gov.uk/) once credentials are added.
+// ----- DVSA MOT History API integration -----
+type MotEntryOut = {
+  date: string;
+  result: "Pass" | "Fail" | "Advisory";
+  note: string;
+  mileage: number;
+  expiryDate?: string;
+  advisories?: string[];
+  failures?: string[];
+  source?: "dvsa" | "simulated";
+};
+
+let cachedDvsaToken: { token: string; expiresAt: number } | null = null;
+
+async function getDvsaAccessToken(): Promise<string> {
+  if (cachedDvsaToken && cachedDvsaToken.expiresAt > Date.now() + 30_000) {
+    return cachedDvsaToken.token;
+  }
+  const clientId = Deno.env.get("DVSA_MOT_CLIENT_ID");
+  const clientSecret = Deno.env.get("DVSA_MOT_CLIENT_SECRET");
+  const tokenUrl = Deno.env.get("DVSA_MOT_TOKEN_URL");
+  if (!clientId || !clientSecret || !tokenUrl) {
+    throw new Error("DVSA MOT credentials not configured");
+  }
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: "https://tapi.dvsa.gov.uk/.default",
+  });
+  const resp = await fetch(tokenUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`DVSA token error ${resp.status}: ${t.slice(0, 200)}`);
+  }
+  const json = await resp.json();
+  const token = json.access_token as string;
+  const expiresIn = (json.expires_in as number) ?? 3000;
+  cachedDvsaToken = { token, expiresAt: Date.now() + expiresIn * 1000 };
+  return token;
+}
+
+async function fetchDvsaMotHistory(registration: string): Promise<{ entries: MotEntryOut[]; vehicle?: { make?: string; model?: string }; error?: string }> {
+  const apiKey = Deno.env.get("DVSA_MOT_API_KEY");
+  if (!apiKey) return { entries: [], error: "DVSA_MOT_API_KEY not configured" };
+  const reg = registration.replace(/\s+/g, "").toUpperCase();
+  if (!reg) return { entries: [], error: "Invalid registration" };
+
+  let token: string;
+  try { token = await getDvsaAccessToken(); }
+  catch (e) { return { entries: [], error: (e as Error).message }; }
+
+  const resp = await fetch(`https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(reg)}`, {
+    headers: { Authorization: `Bearer ${token}`, "x-api-key": apiKey, Accept: "application/json+v6" },
+  });
+
+  if (resp.status === 404) return { entries: [], error: "No MOT history found for this registration" };
+  if (resp.status === 400) return { entries: [], error: "Invalid registration format" };
+  if (!resp.ok) {
+    const t = await resp.text();
+    console.error("DVSA MOT error", resp.status, t.slice(0, 300));
+    return { entries: [], error: "MOT service temporarily unavailable" };
+  }
+
+  const data = await resp.json();
+  const tests: any[] = Array.isArray(data?.motTests) ? data.motTests : [];
+  const entries: MotEntryOut[] = tests
+    .map((t: any): MotEntryOut => {
+      const defects: any[] = Array.isArray(t?.defects) ? t.defects : [];
+      const advisories = defects
+        .filter(d => /advisory|minor/i.test(String(d?.type ?? "")))
+        .map(d => String(d?.text ?? "").trim()).filter(Boolean);
+      const failures = defects
+        .filter(d => /(fail|major|dangerous)/i.test(String(d?.type ?? "")))
+        .map(d => String(d?.text ?? "").trim()).filter(Boolean);
+      const passed = String(t?.testResult ?? "").toUpperCase() === "PASSED";
+      const result: MotEntryOut["result"] = passed
+        ? (advisories.length > 0 ? "Advisory" : "Pass")
+        : "Fail";
+      const note = !passed
+        ? (failures[0] ?? "Failed test")
+        : advisories.length > 0
+          ? (advisories[0])
+          : "No advisories — clean test";
+      const mileage = Number(t?.odometerValue ?? 0) || 0;
+      const dateRaw = String(t?.completedDate ?? "");
+      const date = dateRaw ? dateRaw.slice(0, 10) : "";
+      return {
+        date,
+        result,
+        note,
+        mileage,
+        expiryDate: t?.expiryDate ? String(t.expiryDate).slice(0, 10) : undefined,
+        advisories,
+        failures,
+        source: "dvsa",
+      };
+    })
+    .filter(e => e.date)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  return {
+    entries,
+    vehicle: { make: data?.make, model: data?.model },
+  };
+}
+
+// Fallback: realistic simulated MOT history (used when no reg or API unavailable).
 function simulateMotHistory(year: number, currentMileage: number, seed: number) {
   const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
   const ageYears = Math.max(0, 2026 - year);
