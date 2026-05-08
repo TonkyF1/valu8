@@ -38,9 +38,6 @@ export default function Report() {
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
   const [showAllMot, setShowAllMot] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [activePhoto, setActivePhoto] = useState(0);
-  const [showAllMot, setShowAllMot] = useState(false);
 
   useEffect(() => {
     if (!id) return;
