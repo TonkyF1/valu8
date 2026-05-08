@@ -113,13 +113,24 @@ export function SimilarCars({ make, model, variant, year, mileage }: Props) {
               className="group flex-shrink-0 snap-start w-[70%] sm:w-[calc((100%-1.5rem)/3)] rounded-2xl border border-border/50 bg-card/50 overflow-hidden hover:border-primary/40 hover:bg-card transition-all flex flex-col"
             >
               <div className="aspect-[16/10] overflow-hidden relative bg-gradient-to-br from-muted/60 via-card to-muted/30">
-                <div className="absolute inset-0 grid place-items-center text-muted-foreground/30 group-hover:text-muted-foreground/40 group-hover:scale-[1.04] transition-all duration-300">
+                {l.imageUrl ? (
+                  <img
+                    src={l.imageUrl}
+                    alt={`${l.year} ${l.make} ${l.model}`}
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                    onError={(e) => {
+                      const img = e.currentTarget;
+                      img.style.display = "none";
+                      img.parentElement?.querySelector("[data-fallback]")?.classList.remove("hidden");
+                    }}
+                  />
+                ) : null}
+                <div
+                  data-fallback
+                  className={`absolute inset-0 grid place-items-center text-muted-foreground/30 ${l.imageUrl ? "hidden" : ""}`}
+                >
                   <Car className="h-14 w-14" strokeWidth={1.25} />
-                </div>
-                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-background/85 to-transparent">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/80 font-medium truncate">
-                    {l.make} {l.model}
-                  </div>
                 </div>
                 {l.url && l.source && (
                   <span className="absolute top-2 left-2 text-[9px] uppercase tracking-wider font-medium px-2 py-0.5 rounded-full bg-background/85 backdrop-blur-sm border border-border/60 text-muted-foreground">

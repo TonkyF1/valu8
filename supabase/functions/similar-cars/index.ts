@@ -103,15 +103,18 @@ Return ONLY a JSON object: { "listings": Listing[] }.`;
     const args = toolCall?.function?.arguments ? JSON.parse(toolCall.function.arguments) : null;
     const listings: Listing[] = (args?.listings ?? []).slice(0, 6);
 
-    // Attach a real photo via loremflickr (Flickr-sourced, tag-matched, no auth needed)
+    // Attach real car photos via Imagin.studio CDN (free demo tier, real make/model renders)
     const enriched = listings.map((l, idx) => {
-      const tags = [l.make, l.model, "car"]
-        .map((t) => t.toLowerCase().replace(/[^a-z0-9]+/g, ""))
-        .filter(Boolean)
-        .join(",");
+      const make = encodeURIComponent(l.make.toLowerCase().replace(/\s+/g, "-"));
+      const modelFamily = encodeURIComponent(
+        l.model.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
+      );
+      const angle = ["01", "23", "05", "21", "29"][idx % 5];
       return {
         ...l,
-        imageUrl: l.imageUrl || `https://loremflickr.com/640/400/${tags}?lock=${idx + 1}`,
+        imageUrl:
+          l.imageUrl ||
+          `https://cdn.imagin.studio/getimage?customer=img&make=${make}&modelFamily=${modelFamily}&modelYear=${l.year}&angle=${angle}&width=640`,
       };
     });
 
