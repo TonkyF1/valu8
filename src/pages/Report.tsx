@@ -278,12 +278,12 @@ export default function Report() {
         {/* Recommendations */}
         <Section title="Seller Recommendations">
           <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground mb-2">Recommended listing price</div>
-              <div className="text-4xl font-semibold text-gradient-primary tabular-nums">
-                <CountUp value={r.recommendations.listingPrice} prefix="£" />
+            <div className="rounded-xl bg-muted/20 border border-border/50 p-4">
+              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1.5">Recommended listing price</div>
+              <div className="text-2xl font-medium text-foreground/90 tabular-nums">
+                £{r.recommendations.listingPrice.toLocaleString()}
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Sweet spot for fast enquiries with negotiation room.</p>
+              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">Sweet spot for fast enquiries with negotiation room.</p>
             </div>
             <div>
               <RecBlock title="Where to sell" items={r.recommendations.whereToSell} />
