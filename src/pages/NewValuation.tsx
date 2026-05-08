@@ -236,6 +236,7 @@ export default function NewValuation() {
                   ) : (
                     <Input className="h-10" placeholder={make ? "e.g. 3 Series" : "Pick a make first"} value={model} onChange={(e) => setModel(e.target.value)} disabled={!make} />
                   )}
+                  {errors.model && <p className="text-xs text-destructive">{errors.model}</p>}
                 </div>
 
                 <div className="sm:col-span-2 space-y-2">
