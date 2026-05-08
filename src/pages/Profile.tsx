@@ -214,6 +214,9 @@ export default function Profile() {
           )}
         </section>
 
+        {/* Billing */}
+        <BillingSection isPremium={isPremium} plan={profile?.plan ?? "free"} onUpgrade={() => setPremium(true, "monthly")} onCancel={() => setPremium(false, "free")} />
+
         {/* Password */}
         <section className="premium-card p-6 mb-4">
           <div className="flex items-center gap-3 mb-5">
