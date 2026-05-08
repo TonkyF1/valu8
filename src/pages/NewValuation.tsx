@@ -207,6 +207,7 @@ export default function NewValuation() {
                       )}
                     </SelectContent>
                   </Select>
+                  {errors.make && <p className="text-xs text-destructive">{errors.make}</p>}
                 </div>
 
                 <div className="space-y-2">
