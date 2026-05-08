@@ -32,8 +32,12 @@ interface Valuation {
 
 export default function Report() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { isPremium } = useProfile();
   const [v, setV] = useState<Valuation | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activePhoto, setActivePhoto] = useState(0);
+  const [showAllMot, setShowAllMot] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
   const [showAllMot, setShowAllMot] = useState(false);
