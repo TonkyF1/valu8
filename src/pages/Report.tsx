@@ -12,13 +12,17 @@ import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
 import {
   Share2, Download, Bookmark, Check, ShieldCheck, AlertTriangle, ArrowLeft,
-  Star, Pencil, ChevronDown,
+  Star, Pencil, ChevronDown, MoreHorizontal,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CountUp } from "@/components/CountUp";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Valuation {
   id: string; make: string; model: string; year: number; mileage: number;
