@@ -5,14 +5,72 @@ interface LookupResponse {
   registration: string;
   make?: string;
   model?: string;
+  variant?: string;
   year?: number;
   fuelType?: string;
+  transmission?: string;
+  engineCapacity?: number;
+  bodyStyle?: string;
+  doors?: number;
   colour?: string;
+  vin?: string;
+  co2Emissions?: number;
   motExpiry?: string;
   motStatus?: "Valid" | "Expired" | "Unknown";
   motSummary?: string;
   lastMileage?: number;
   recentAdvisories?: string[];
+  estimatedValue?: number;
+  source?: string;
+}
+
+async function fetchVdg(reg: string) {
+  const key = Deno.env.get("VEHICLE_DATA_GLOBAL_API_KEY");
+  if (!key) return null;
+  try {
+    const url = `https://uk.api.vehicledataglobal.com/r2/lookup?packagename=VehicleDetails&apikey=${encodeURIComponent(key)}&vrm=${encodeURIComponent(reg)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      console.error("VDG error", resp.status, (await resp.text()).slice(0, 200));
+      return null;
+    }
+    const json = await resp.json();
+    const status = json?.ResponseInformation?.StatusCode ?? json?.StatusCode;
+    if (status && String(status).toLowerCase() !== "success" && status !== 0) {
+      console.error("VDG status", status, json?.ResponseInformation?.StatusMessage);
+    }
+    const r = json?.Results ?? json?.results ?? {};
+    const vd = r?.VehicleDetails ?? r?.vehicleDetails ?? {};
+    const ident = vd?.VehicleIdentification ?? vd?.vehicleIdentification ?? {};
+    const reg2 = vd?.VehicleRegistration ?? vd?.vehicleRegistration ?? {};
+    const tech = vd?.TechnicalDetails ?? vd?.technicalDetails ?? {};
+    const dims = tech?.Dimensions ?? {};
+    const general = tech?.General ?? {};
+    const powertrain = tech?.Powertrain ?? {};
+    const engine = powertrain?.Engine ?? {};
+    const trans = powertrain?.Transmission ?? {};
+
+    const yearStr = ident?.YearOfManufacture ?? reg2?.YearOfManufacture;
+    const year = yearStr ? Number(String(yearStr).slice(0, 4)) : undefined;
+
+    return {
+      make: ident?.DvlaMake ?? ident?.Make,
+      model: ident?.DvlaModel ?? ident?.Model,
+      variant: ident?.ModelVariant ?? ident?.Derivative,
+      year: Number.isFinite(year) ? year : undefined,
+      fuelType: ident?.DvlaFuelType ?? ident?.FuelType ?? engine?.FuelType,
+      transmission: trans?.TransmissionType ?? ident?.Transmission,
+      engineCapacity: Number(engine?.EngineCapacityCc ?? engine?.CapacityCc) || undefined,
+      bodyStyle: general?.BodyStyle ?? ident?.BodyStyle,
+      doors: Number(dims?.NumberOfDoors ?? general?.NumberOfDoors) || undefined,
+      colour: reg2?.Colour ?? ident?.Colour,
+      vin: ident?.Vin ?? reg2?.Vin,
+      co2Emissions: Number(general?.Co2Emissions ?? engine?.Co2) || undefined,
+    };
+  } catch (e) {
+    console.error("VDG fetch failed", e);
+    return null;
+  }
 }
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
