@@ -248,22 +248,61 @@ export default function Report() {
                 {r.valueReasoning}
               </p>
             )}
-            {r.priceAdjustments && r.priceAdjustments.length > 0 && (
+            {(r.marketBaseline || (r.priceAdjustments && r.priceAdjustments.length > 0)) && (
               <div className="mt-4 pt-4 border-t border-border/40">
-                <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-2">Price adjustments applied</div>
-                <ul className="space-y-1">
-                  {r.priceAdjustments.map((a, i) => (
-                    <li key={i} className="flex items-center justify-between text-[11px] sm:text-xs">
-                      <span className="text-foreground/80">{a.label}</span>
-                      <span className={cn(
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">How we calculated this</div>
+                  {r.marketBaseline && (
+                    <span className="text-[9px] uppercase tracking-[0.14em] text-primary/90 bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded">
+                      Hybrid · MarketCheck + AI
+                    </span>
+                  )}
+                </div>
+
+                {r.marketBaseline && (
+                  <div className="grid grid-cols-3 gap-2 mb-3 text-[11px] sm:text-xs">
+                    <div className="rounded-md bg-muted/30 border border-border/40 p-2">
+                      <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground mb-1">Market base</div>
+                      <div className="tabular-nums font-medium">£{r.marketBaseline.basePrivateSale.toLocaleString()}</div>
+                      <div className="text-[10px] text-muted-foreground/80 mt-0.5">{r.marketBaseline.sampleSize} live listings</div>
+                    </div>
+                    <div className="rounded-md bg-muted/30 border border-border/40 p-2">
+                      <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground mb-1">AI net adj.</div>
+                      <div className={cn(
                         "tabular-nums font-medium",
-                        a.impactPct < 0 ? "text-destructive/90" : "text-primary"
+                        r.marketBaseline.netAdjustmentPct < 0 ? "text-destructive/90" : r.marketBaseline.netAdjustmentPct > 0 ? "text-primary" : "text-foreground/80",
                       )}>
-                        {a.impactPct > 0 ? "+" : ""}{a.impactPct}%
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                        {r.marketBaseline.netAdjustmentPct > 0 ? "+" : ""}{r.marketBaseline.netAdjustmentPct}%
+                      </div>
+                      <div className="text-[10px] text-muted-foreground/80 mt-0.5">condition · history · MOT</div>
+                    </div>
+                    <div className="rounded-md bg-primary/[0.06] border border-primary/20 p-2">
+                      <div className="text-[9px] uppercase tracking-[0.14em] text-primary/80 mb-1">Final</div>
+                      <div className="tabular-nums font-medium text-primary">£{r.values.privateSale.toLocaleString()}</div>
+                      <div className="text-[10px] text-muted-foreground/80 mt-0.5">private sale</div>
+                    </div>
+                  </div>
+                )}
+
+                {r.priceAdjustments && r.priceAdjustments.length > 0 && (
+                  <ul className="space-y-1">
+                    {r.priceAdjustments.map((a, i) => (
+                      <li key={i} className="flex items-center justify-between text-[11px] sm:text-xs">
+                        <span className="text-foreground/80">{a.label}</span>
+                        <span className={cn(
+                          "tabular-nums font-medium",
+                          a.impactPct < 0 ? "text-destructive/90" : a.impactPct > 0 ? "text-primary" : "text-muted-foreground",
+                        )}>
+                          {a.impactPct > 0 ? "+" : ""}{a.impactPct}%
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <p className="text-[10px] text-muted-foreground/80 leading-relaxed mt-3">
+                  We start from the live MarketCheck UK median for comparable listings, then the AI applies adjustments based on your photos, mileage, MOT history and service notes to land on a realistic private-sale figure.
+                </p>
               </div>
             )}
             <div className="grid grid-cols-2 gap-2 mt-5 pt-5 border-t border-border/60">
