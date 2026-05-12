@@ -23,6 +23,9 @@ export default function Profile() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [linkingGoogle, setLinkingGoogle] = useState(false);
+
+  const hasGoogle = user?.identities?.some((i) => i.provider === "google");
 
   useEffect(() => { document.title = "Profile — Valu8"; }, []);
 
