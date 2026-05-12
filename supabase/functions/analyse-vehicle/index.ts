@@ -1032,6 +1032,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       marketSampleSize: mc?.count,
       priceAdjustments: adjustments,
       marketBaseline,
+      comparableListings: valuationUnavailable ? [] : exampleListings,
+      marketAnchor: valuationUnavailable ? undefined : (anchorMedian > 0 ? Math.round(anchorMedian) : undefined),
       rareCarWarning,
       valuationUnavailable,
       honestAnalysis: valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis,
