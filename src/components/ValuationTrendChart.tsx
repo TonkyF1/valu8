@@ -38,16 +38,16 @@ function generateLifetimeData(currentValue: number, registrationYear: number): P
 }
 
 export function ValuationTrendChart({ currentValue, registrationYear, make, model }: Props) {
-  const fallback = useMemo(
-    () => generateLifetimeData(currentValue, registrationYear),
-    [currentValue, registrationYear]
-  );
-  const [data, setData] = useState<Point[]>(fallback);
-  const [source, setSource] = useState<"marketcheck" | "estimate">("estimate");
+  const [data, setData] = useState<Point[] | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    if (!make || !model) return;
+    if (!make || !model) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     supabase.functions
       .invoke("historical-valuation", {
         body: { make, model: model.split(" · ")[0], year: registrationYear, currentValue },
@@ -55,16 +55,36 @@ export function ValuationTrendChart({ currentValue, registrationYear, make, mode
       .then(({ data: resp }) => {
         if (cancelled) return;
         const series = (resp as any)?.series as Point[] | null;
-        if (series && series.length > 1) {
+        const source = (resp as any)?.source as string | undefined;
+        if (series && series.length > 1 && source === "marketcheck") {
           setData(series);
-          setSource("marketcheck");
+        } else {
+          setData(null);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
   }, [make, model, registrationYear, currentValue]);
+
+  if (loading) {
+    return (
+      <div className="mt-3">
+        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-1">
+          Valuation Trend (Lifetime)
+        </div>
+        <div className="h-[72px] w-full rounded-md bg-muted/20 animate-pulse" />
+      </div>
+    );
+  }
+
+  if (!data) return null;
 
   const tickInterval = data.length > 8 ? Math.ceil(data.length / 6) - 1 : 0;
 
@@ -74,11 +94,9 @@ export function ValuationTrendChart({ currentValue, registrationYear, make, mode
         <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
           Valuation Trend (Lifetime)
         </div>
-        {source === "marketcheck" && (
-          <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground/60">
-            MarketCheck UK
-          </div>
-        )}
+        <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground/60">
+          MarketCheck UK
+        </div>
       </div>
       <div className="h-[72px] w-full">
         <ResponsiveContainer width="100%" height="100%">
