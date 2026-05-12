@@ -706,7 +706,19 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const noHistory = /(no history|no service|missing history|no records)/i.test(serviceText);
     const needsWork = /(needs|due|overdue|warning light|smoke|fault|damage|dent|scuff|scratch|leak|issue|rust|corrosion)/i.test(serviceText);
 
-    if (mc && mc.median > 0) {
+    const ultraRare = isUltraRare(body.make, body.model, body.variant);
+    const exoticAnchor = getExoticAnchor(body.make, body.model, body.variant);
+    let rareCarWarning: string | undefined;
+
+    // Decide whether MarketCheck data is actually usable. For ultra-rare cars
+    // the public UK active-listings feed is almost always too thin/noisy to
+    // trust as a price anchor, so we deliberately ignore it unless we have a
+    // very strong sample.
+    const mcUsable = !!mc && mc.median > 0 && (
+      ultraRare ? mc.count >= 30 : true
+    );
+
+    if (mcUsable && mc) {
       let mult = 1.0;
 
       // --- Mileage tiering (absolute miles, not just ratio) ---
@@ -736,35 +748,51 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
 
       mult = clamp(mult, 0.45, 1.18);
 
-      const dealerRetail = roundToGrain(mc.median * mult);
+      let dealerRetail = roundToGrain(mc.median * mult);
+
+      // Sanity floor for ultra-rare cars: never publish a number below ~70% of
+      // the lower exotic anchor, even if MarketCheck noise suggests otherwise.
+      if (ultraRare && exoticAnchor && dealerRetail < exoticAnchor.low * 0.7) {
+        dealerRetail = roundToGrain(exoticAnchor.low * 0.85);
+        adjustments.push({ label: "Adjusted toward known exotic floor (sparse market data)", impactPct: 0 });
+      }
+
       const privateSale = roundToGrain(dealerRetail * 0.90);
       const dealerTradeIn = roundToGrain(dealerRetail * 0.76);
 
-      // Range — wider when there are negatives (more uncertainty)
+      // Range — wider when there are negatives or when the car is rare
       const negativeCount = adjustments.filter((a) => a.impactPct < 0).length;
-      const spread = negativeCount >= 3 ? 0.14 : negativeCount >= 1 ? 0.10 : 0.07;
+      let spread = negativeCount >= 3 ? 0.14 : negativeCount >= 1 ? 0.10 : 0.07;
+      if (ultraRare) spread = Math.max(spread, 0.20);
       rangeLow = roundToGrain(privateSale * (1 - spread));
       rangeHigh = roundToGrain(privateSale * (1 + spread * 0.7));
 
-      // --- Confidence reasoning ---
-      const sampleQuality = mc.count >= 30 ? "strong" : mc.count >= 12 ? "moderate" : "limited";
+      // --- Confidence reasoning (much stricter) ---
       const isOutlierMileage = body.mileage >= 100000 || (mc.avgMiles && Math.abs(body.mileage - mc.avgMiles) > 30000);
       const photoQuality = photoUrls.length >= 5 ? "strong" : photoUrls.length >= 3 ? "moderate" : "limited";
 
-      if (mc.count >= 25 && !isOutlierMileage && photoUrls.length >= 4 && negativeCount <= 1) {
+      if (ultraRare) {
+        // Ultra-rare cars NEVER get High confidence, regardless of sample.
+        confidence = mc.count >= 100 ? "Low" : "Very Low";
+        confidenceReason = `Ultra-rare model — even with ${mc.count} live listing${mc.count === 1 ? "" : "s"}, the UK market is too thin and variable for a confident figure. Treat this as an indicative guide only.`;
+        rareCarWarning = "Limited market data available for this model. Valuation should be treated as a rough guide only — for an accurate figure, consult a marque specialist or auction house.";
+      } else if (mc.count >= 500 && !isOutlierMileage && photoUrls.length >= 4 && negativeCount <= 1) {
         confidence = "High";
         confidenceReason = `Backed by ${mc.count} closely comparable live UK listings, with similar mileage and ${photoQuality} photo evidence. Few negative signals.`;
-      } else if (mc.count >= 8 && !isOutlierMileage && negativeCount <= 3) {
+      } else if (mc.count >= 50 && !isOutlierMileage && negativeCount <= 3) {
         confidence = "Medium";
-        confidenceReason = `${sampleQuality.charAt(0).toUpperCase()+sampleQuality.slice(1)} comparable sales (${mc.count} listings), ${photoQuality} photo evidence${isOutlierMileage ? ", and mileage outside the typical band" : ""}. Some negatives applied.`;
-      } else {
+        confidenceReason = `${mc.count} comparable live UK listings on file, ${photoQuality} photo evidence${isOutlierMileage ? ", mileage outside the typical band" : ""}. Some negatives applied.`;
+      } else if (mc.count >= 10) {
         confidence = "Low";
         const reasons: string[] = [];
-        if (mc.count < 8) reasons.push(`only ${mc.count} comparable live listing${mc.count === 1 ? "" : "s"}`);
-        if (isOutlierMileage) reasons.push("mileage well outside the typical band for this model");
+        reasons.push(`only ${mc.count} comparable live listings (need 50+ for medium, 500+ for high)`);
+        if (isOutlierMileage) reasons.push("mileage well outside the typical band");
         if (photoUrls.length < 3) reasons.push("limited photo evidence");
-        if (negativeCount >= 4) reasons.push("several negative condition/history signals");
-        confidenceReason = `Lower confidence: ${reasons.join(", ") || "limited data"}.`;
+        if (negativeCount >= 4) reasons.push("multiple negative condition/history signals");
+        confidenceReason = `Lower confidence: ${reasons.join(", ")}.`;
+      } else {
+        confidence = "Very Low";
+        confidenceReason = `Very low confidence: only ${mc.count} comparable live listing${mc.count === 1 ? "" : "s"} found — not enough to establish a reliable market figure.`;
       }
 
       values = { dealerTradeIn, privateSale, dealerRetail };
@@ -772,7 +800,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       pricingReasoning = `Anchored on ${mc.count} live MarketCheck UK listings (median dealer asking £${Math.round(mc.median).toLocaleString()}). Net adjustment: ${Math.round((mult - 1) * 100)}%${negSummary ? ` — driven by ${negSummary}` : ""}.`;
       dataSource = "marketcheck";
     } else {
-      // Fallback: AI-only estimate via existing market shaping logic.
+      // Fallback: AI-only / anchor-based estimate.
       const fallback = baseValue(body.make, body.year);
       const market = computeMarketRange({
         make: body.make,
@@ -792,10 +820,22 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         privateSale: roundToGrain(fair),
         dealerRetail: roundToGrain(fair * 1.15),
       };
-      rangeLow = market.low;
-      rangeHigh = market.high;
-      confidence = "Low";
-      confidenceReason = `No live MarketCheck listings available for this exact spec — figures are an AI estimate without direct comparable sales data.`;
+      // For ultra-rare cars, widen the range further to communicate uncertainty.
+      if (ultraRare) {
+        rangeLow = roundToGrain(fair * 0.75);
+        rangeHigh = roundToGrain(fair * 1.25);
+      } else {
+        rangeLow = market.low;
+        rangeHigh = market.high;
+      }
+      if (ultraRare) {
+        confidence = "Very Low";
+        confidenceReason = `No reliable live UK market data for this ultra-rare model. Figure is anchored to known transaction bands and should be treated as an indicative guide only.`;
+        rareCarWarning = "Limited market data available for this model. Valuation should be treated as a rough guide only — for an accurate figure, consult a marque specialist or auction house.";
+      } else {
+        confidence = "Low";
+        confidenceReason = `No live MarketCheck listings available for this exact spec — figures are an AI estimate without direct comparable sales data.`;
+      }
       pricingReasoning = market.reasoning;
       dataSource = "ai_estimate";
     }
