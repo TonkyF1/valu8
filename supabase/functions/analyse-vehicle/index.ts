@@ -1060,7 +1060,12 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       photoObservations: sanitizeNarrativeYears(ai.photoObservations, body.year),
       strengths: sanitizeNarrativeList(ai.strengths, body.year),
       watchPoints: sanitizeNarrativeList(ai.watchPoints, body.year),
-      recommendations: { listingPrice, ...ai.recommendations },
+      recommendations: {
+        listingPrice,
+        whereToSell: sanitizeNarrativeList(ai.recommendations?.whereToSell, body.year),
+        highlights: sanitizeNarrativeList(ai.recommendations?.highlights, body.year),
+        documents: sanitizeNarrativeList(ai.recommendations?.documents, body.year),
+      },
       hpi: {
         status: "All Clear" as const,
         checks: [
