@@ -7,6 +7,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 
 // ----- MarketCheck UK live pricing -----
 const MC_KEY = Deno.env.get("MARKETCHECK_API_KEY");
+const CURRENT_YEAR = new Date().getUTCFullYear();
 
 export interface ComparableListing {
   price: number;
@@ -265,6 +266,19 @@ function roundToGrain(n: number) {
 
 function clamp(num: number, min: number, max: number) {
   return Math.max(min, Math.min(max, num));
+}
+
+function sanitizeNarrativeYears(text: string | undefined, vehicleYear: number, currentYear = CURRENT_YEAR) {
+  if (!text) return "";
+  return text.replace(/\b(19|20)\d{2}\b/g, (match) => {
+    const parsed = Number(match);
+    if (parsed === vehicleYear || parsed === currentYear) return match;
+    return String(vehicleYear);
+  });
+}
+
+function sanitizeNarrativeList(items: string[] | undefined, vehicleYear: number, currentYear = CURRENT_YEAR) {
+  return (items ?? []).map((item) => sanitizeNarrativeYears(item, vehicleYear, currentYear));
 }
 
 function isEnthusiastCar(make: string, model: string, variant?: string) {
