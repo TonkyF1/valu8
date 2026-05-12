@@ -695,6 +695,14 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     let confidenceReason: string;
     let pricingReasoning: string;
     let dataSource: "marketcheck" | "ai_estimate";
+    let marketBaseline: {
+      source: "MarketCheck UK";
+      sampleSize: number;
+      baseDealerRetail: number;
+      basePrivateSale: number;
+      baseTradeIn: number;
+      netAdjustmentPct: number;
+    } | undefined;
     const adjustments: { label: string; impactPct: number }[] = [];
 
     const age = Math.max(0, 2026 - body.year);
@@ -796,6 +804,15 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       }
 
       values = { dealerTradeIn, privateSale, dealerRetail };
+      const baseRetail = roundToGrain(mc.median);
+      marketBaseline = {
+        source: "MarketCheck UK",
+        sampleSize: mc.count,
+        baseDealerRetail: baseRetail,
+        basePrivateSale: roundToGrain(baseRetail * 0.90),
+        baseTradeIn: roundToGrain(baseRetail * 0.76),
+        netAdjustmentPct: Math.round((mult - 1) * 100),
+      };
       const negSummary = adjustments.filter(a => a.impactPct < 0).map(a => a.label).slice(0, 3).join(", ");
       pricingReasoning = `Anchored on ${mc.count} live MarketCheck UK listings (median dealer asking £${Math.round(mc.median).toLocaleString()}). Net adjustment: ${Math.round((mult - 1) * 100)}%${negSummary ? ` — driven by ${negSummary}` : ""}.`;
       dataSource = "marketcheck";
@@ -868,6 +885,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       pricingSource: dataSource,
       marketSampleSize: mc?.count,
       priceAdjustments: adjustments,
+      marketBaseline,
       rareCarWarning,
       honestAnalysis: ai.honestAnalysis,
       marketPositioning: ai.marketPositioning,
