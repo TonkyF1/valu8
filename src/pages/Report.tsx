@@ -224,6 +224,11 @@ export default function Report() {
             <div className="text-xs text-muted-foreground tabular-nums mt-2">
               Range £{(r.valueRange?.privateSaleLow ?? r.values.privateSale).toLocaleString()} – £{(r.valueRange?.privateSaleHigh ?? r.values.privateSale).toLocaleString()}
             </div>
+            {r.rareCarWarning && (
+              <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2 text-[11px] sm:text-xs text-amber-200/90 leading-relaxed">
+                <span className="font-medium text-amber-300">Rare model — limited data:</span> {r.rareCarWarning}
+              </div>
+            )}
             <ValuationTrendChart
               currentValue={r.values.privateSale}
               registrationYear={v.year}
