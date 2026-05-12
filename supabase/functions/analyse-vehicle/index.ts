@@ -643,7 +643,7 @@ Deno.serve(async (req) => {
     // so we can feed real signals (corrosion advisories, fails, etc.) into the prompt.
     const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
     const [mc, dvsa] = await Promise.all([
-      fetchMarketCheckPricing(body.make, body.model, body.year, body.mileage),
+      fetchMarketCheckPricing(body.make, body.model, body.year, body.mileage, body.variant),
       body.registration && body.registration.trim().length >= 2
         ? fetchDvsaMotHistory(body.registration).catch((e) => {
             console.error("DVSA fetch failed", e);
