@@ -248,7 +248,7 @@ const PREMIUM = ["BMW","Mercedes-Benz","Mercedes-AMG","Audi","Porsche","Land Rov
 const ECONOMY = ["Dacia","SEAT","Škoda","Skoda","Fiat","Citroën","Citroen","Vauxhall","Peugeot","Renault","Suzuki","MG","Kia","Hyundai","Daihatsu","Perodua","Proton","Lada","Tata","BYD","Leapmotor","VinFast","XPeng"];
 
 function baseValue(make: string, year: number) {
-  const age = Math.max(0, 2026 - year);
+  const age = Math.max(0, CURRENT_YEAR - year);
   let base = 18000;
   if (EXOTIC.includes(make)) base = 120000;
   else if (PREMIUM.includes(make)) base = 32000;
@@ -329,7 +329,7 @@ function computeMarketRange(params: {
   aiPrivateValue: number;
 }) {
   const { make, model, variant, year, mileage, motExpiry, serviceNotes, photoCount, conditionScore, aiPrivateValue } = params;
-  const age = Math.max(0, 2026 - year);
+  const age = Math.max(0, CURRENT_YEAR - year);
   const expectedMileage = age <= 0 ? 3000 : age * 8000;
   const mileageRatio = mileage / Math.max(expectedMileage, 1);
   const serviceText = `${serviceNotes ?? ""}`.toLowerCase();
@@ -528,7 +528,7 @@ async function fetchDvsaMotHistory(registration: string): Promise<{ entries: Mot
 // Fallback: realistic simulated MOT history (used when no reg or API unavailable).
 function simulateMotHistory(year: number, currentMileage: number, seed: number) {
   const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-  const ageYears = Math.max(0, 2026 - year);
+  const ageYears = Math.max(0, CURRENT_YEAR - year);
   if (ageYears < 3) return [];
   const records: { date: string; result: "Pass" | "Advisory" | "Fail"; note: string; mileage: number }[] = [];
   const yearsToShow = Math.min(5, ageYears - 2);
@@ -834,7 +834,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     } | undefined;
     const adjustments: { label: string; impactPct: number }[] = [];
 
-    const age = Math.max(0, 2026 - body.year);
+    const age = Math.max(0, CURRENT_YEAR - body.year);
     const expectedMileage = age <= 0 ? 3000 : age * 8000;
     const mileageRatio = body.mileage / Math.max(expectedMileage, 1);
     const serviceText = `${body.serviceNotes ?? ""}`.toLowerCase();
