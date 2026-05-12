@@ -873,7 +873,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       rangeLow = 0;
       rangeHigh = 0;
       confidence = ultraRare ? "Low" : "Very Low";
-      confidenceReason = "Live market data appears unreliable for this vehicle, so no automated valuation has been shown.";
+      confidenceReason = "The market data we found doesn't look reliable for this car, so we'd rather not show a number that could mislead you.";
       pricingReasoning = LIMITED_DATA_MESSAGE;
       dataSource = "ai_estimate";
       rareCarWarning = LIMITED_DATA_WARNING;
@@ -912,12 +912,12 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         rangeLow = 0;
         rangeHigh = 0;
         confidence = "Low";
-        confidenceReason = "Ultra-rare model without reliable live market evidence. Automated valuation has been withheld for safety.";
+        confidenceReason = "This is a very rare car and we don't have enough reliable market evidence. A specialist will give you a much better figure.";
         rareCarWarning = LIMITED_DATA_WARNING;
         pricingReasoning = LIMITED_DATA_MESSAGE;
       } else {
         confidence = "Low";
-        confidenceReason = `No live MarketCheck listings available for this exact spec — figures are an AI estimate without direct comparable sales data.`;
+        confidenceReason = "We couldn't find enough similar cars for sale right now, so this is our best estimate without direct comparable sales.";
         pricingReasoning = market.reasoning;
       }
       dataSource = "ai_estimate";
