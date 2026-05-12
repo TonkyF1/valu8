@@ -114,14 +114,14 @@ async function fetchMarketCheckPricing(
   if (trim) {
     let r = await tryFetch(new URLSearchParams({
       api_key: MC_KEY,
-      ymmt: `${year}|${make}|${baseModel}|${trim}`,
+      make, model: baseModel, year: String(year), trim,
       miles_range: `${milesLow}-${milesHigh}`,
     }), `${year} ${make} ${baseModel} ${trim} (similar mileage)`);
     if (r && r.listings.length >= 5) return r;
 
     r = await tryFetch(new URLSearchParams({
       api_key: MC_KEY,
-      ymmt: `${year}|${make}|${baseModel}|${trim}`,
+      make, model: baseModel, year: String(year), trim,
     }), `${year} ${make} ${baseModel} ${trim}`);
     if (r && r.listings.length >= 3) return r;
 
@@ -135,14 +135,14 @@ async function fetchMarketCheckPricing(
 
   let r = await tryFetch(new URLSearchParams({
     api_key: MC_KEY,
-    ymm: `${year}|${make}|${baseModel}`,
+    make, model: baseModel, year: String(year),
     miles_range: `${milesLow}-${milesHigh}`,
   }), `${year} ${make} ${baseModel} (similar mileage)`);
   if (r && r.listings.length >= 5) return r;
 
   r = await tryFetch(new URLSearchParams({
     api_key: MC_KEY,
-    ymm: `${year}|${make}|${baseModel}`,
+    make, model: baseModel, year: String(year),
   }), `${year} ${make} ${baseModel}`);
   if (r && r.listings.length >= 3) return r;
 
