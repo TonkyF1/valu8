@@ -138,7 +138,7 @@ export default function Auth() {
                 type="button"
                 variant="outline"
                 size="lg"
-                className="w-full mb-4"
+                className="w-full mb-4 gap-2.5 bg-card hover:bg-muted/60 border-border/80 hover:border-primary/40 transition-colors"
                 onClick={signInWithGoogle}
                 disabled={busy}
               >
