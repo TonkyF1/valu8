@@ -182,7 +182,7 @@ export default function NewValuation() {
         service_notes: combinedNotes || null,
         photo_urls: photoUrls,
         condition_score: report.conditionScore,
-        private_value: report.values.privateSale,
+        private_value: report.valuationUnavailable ? null : report.values.privateSale,
         report: report as any,
       }).select("id").single();
       if (error) throw error;

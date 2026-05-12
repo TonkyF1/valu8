@@ -238,6 +238,7 @@ export default function Dashboard() {
               {list.map((r) => {
                 const cover = Array.isArray(r.photo_urls) ? r.photo_urls[0] : null;
                 const variant = (r as any).report?.variant || (r as any).variant;
+                const valuationUnavailable = !!r.report?.valuationUnavailable;
                 return (
                   <div
                     key={r.id}
@@ -294,10 +295,18 @@ export default function Dashboard() {
 
                       {/* Price */}
                       <div className="text-right flex flex-col justify-center flex-shrink-0">
-                        <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Private sale</div>
-                        <div className="font-bold text-gradient-primary text-lg sm:text-2xl tabular-nums leading-tight mt-0.5">
-                          £{(r.private_value || 0).toLocaleString()}
+                        <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+                          {valuationUnavailable ? "Status" : "Private sale"}
                         </div>
+                        {valuationUnavailable ? (
+                          <div className="font-semibold text-amber-300 text-sm sm:text-base leading-tight mt-0.5 max-w-[160px]">
+                            Specialist appraisal needed
+                          </div>
+                        ) : (
+                          <div className="font-bold text-gradient-primary text-lg sm:text-2xl tabular-nums leading-tight mt-0.5">
+                            £{(r.private_value || 0).toLocaleString()}
+                          </div>
+                        )}
                       </div>
                     </Link>
 

@@ -107,6 +107,9 @@ interface AnalyseRequest {
 
 type ConfidenceLevel = "High" | "Medium" | "Low" | "Very Low";
 
+const LIMITED_DATA_MESSAGE = "Unable to provide accurate valuation at this time. Limited reliable market data available for this model. Please consult a marque specialist.";
+const LIMITED_DATA_WARNING = "Limited reliable market data available for this model. We recommend a marque specialist, specialist dealer, or auction route instead of relying on an automated estimate.";
+
 // Ultra-rare makes — almost no live UK MarketCheck data, valuations are
 // inherently uncertain and must never claim High confidence.
 const ULTRA_RARE_MAKES = [
@@ -211,6 +214,31 @@ function isEnthusiastCar(make: string, model: string, variant?: string) {
 function getExoticAnchor(make: string, model: string, variant?: string) {
   const hay = `${model} ${variant ?? ""}`;
   return EXOTIC_MODEL_ANCHORS.find((entry) => entry.make === make && entry.match.test(hay));
+}
+
+function isClearlyBadMarketData(params: {
+  make: string;
+  model: string;
+  variant?: string;
+  median: number;
+  count: number;
+  ultraRare: boolean;
+  exoticAnchor?: { low: number; high: number };
+}) {
+  const { make, model, variant, median, count, ultraRare, exoticAnchor } = params;
+  if (!Number.isFinite(median) || median <= 0) return true;
+  if (ultraRare && count < 50) return true;
+  if (exoticAnchor && median < exoticAnchor.low * 0.45) return true;
+
+  const hay = `${make} ${model} ${variant ?? ""}`.toLowerCase();
+  if (/(bugatti|koenigsegg|pagani|rimac|laferrari|enzo|f40|f50|senna|p1|speedtail|valkyrie|amg\s?one|veneno|centenario|sian|carrera\s?gt|918\s?spyder)/i.test(hay) && median < 100000) {
+    return true;
+  }
+  if (/(ferrari|lamborghini|mclaren|rolls-royce)/i.test(hay) && median < 35000) {
+    return true;
+  }
+
+  return false;
 }
 
 function computeMarketRange(params: {
@@ -717,16 +745,37 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const ultraRare = isUltraRare(body.make, body.model, body.variant);
     const exoticAnchor = getExoticAnchor(body.make, body.model, body.variant);
     let rareCarWarning: string | undefined;
+    let valuationUnavailable = false;
 
     // Decide whether MarketCheck data is actually usable. For ultra-rare cars
     // the public UK active-listings feed is almost always too thin/noisy to
     // trust as a price anchor, so we deliberately ignore it unless we have a
     // very strong sample.
-    const mcUsable = !!mc && mc.median > 0 && (
-      ultraRare ? mc.count >= 30 : true
+    const badMarketData = !!mc && isClearlyBadMarketData({
+      make: body.make,
+      model: body.model,
+      variant: body.variant,
+      median: mc.median,
+      count: mc.count,
+      ultraRare,
+      exoticAnchor: exoticAnchor ? { low: exoticAnchor.low, high: exoticAnchor.high } : undefined,
+    });
+
+    const mcUsable = !!mc && !badMarketData && mc.median > 0 && (
+      ultraRare ? mc.count >= 50 : true
     );
 
-    if (mcUsable && mc) {
+    if (ultraRare && (!mc || badMarketData || mc.count < 50)) {
+      valuationUnavailable = true;
+      values = { dealerTradeIn: 0, privateSale: 0, dealerRetail: 0 };
+      rangeLow = 0;
+      rangeHigh = 0;
+      confidence = "Low";
+      confidenceReason = "Ultra-rare model with limited or unreliable live market evidence. Automated valuation has been withheld to avoid a misleading figure.";
+      pricingReasoning = LIMITED_DATA_MESSAGE;
+      dataSource = "ai_estimate";
+      rareCarWarning = LIMITED_DATA_WARNING;
+    } else if (mcUsable && mc) {
       let mult = 1.0;
 
       // --- Mileage tiering (absolute miles, not just ratio) ---
@@ -781,9 +830,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
 
       if (ultraRare) {
         // Ultra-rare cars NEVER get High confidence, regardless of sample.
-        confidence = mc.count >= 100 ? "Low" : "Very Low";
-        confidenceReason = `Ultra-rare model — even with ${mc.count} live listing${mc.count === 1 ? "" : "s"}, the UK market is too thin and variable for a confident figure. Treat this as an indicative guide only.`;
-        rareCarWarning = "Limited market data available for this model. Valuation should be treated as a rough guide only — for an accurate figure, consult a marque specialist or auction house.";
+        confidence = "Low";
+        confidenceReason = `Ultra-rare model — even with ${mc.count} live listing${mc.count === 1 ? "" : "s"}, the UK market is too thin and variable for a confident figure.`;
+        rareCarWarning = LIMITED_DATA_WARNING;
       } else if (mc.count >= 500 && !isOutlierMileage && photoUrls.length >= 4 && negativeCount <= 1) {
         confidence = "High";
         confidenceReason = `Backed by ${mc.count} closely comparable live UK listings, with similar mileage and ${photoQuality} photo evidence. Few negative signals.`;
@@ -816,6 +865,16 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       const negSummary = adjustments.filter(a => a.impactPct < 0).map(a => a.label).slice(0, 3).join(", ");
       pricingReasoning = `Anchored on ${mc.count} live MarketCheck UK listings (median dealer asking £${Math.round(mc.median).toLocaleString()}). Net adjustment: ${Math.round((mult - 1) * 100)}%${negSummary ? ` — driven by ${negSummary}` : ""}.`;
       dataSource = "marketcheck";
+    } else if (badMarketData) {
+      valuationUnavailable = true;
+      values = { dealerTradeIn: 0, privateSale: 0, dealerRetail: 0 };
+      rangeLow = 0;
+      rangeHigh = 0;
+      confidence = ultraRare ? "Low" : "Very Low";
+      confidenceReason = "Live market data appears unreliable for this vehicle, so no automated valuation has been shown.";
+      pricingReasoning = LIMITED_DATA_MESSAGE;
+      dataSource = "ai_estimate";
+      rareCarWarning = LIMITED_DATA_WARNING;
     } else {
       // Fallback: AI-only / anchor-based estimate.
       const fallback = baseValue(body.make, body.year);
@@ -846,18 +905,23 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         rangeHigh = market.high;
       }
       if (ultraRare) {
-        confidence = "Very Low";
-        confidenceReason = `No reliable live UK market data for this ultra-rare model. Figure is anchored to known transaction bands and should be treated as an indicative guide only.`;
-        rareCarWarning = "Limited market data available for this model. Valuation should be treated as a rough guide only — for an accurate figure, consult a marque specialist or auction house.";
+        valuationUnavailable = true;
+        values = { dealerTradeIn: 0, privateSale: 0, dealerRetail: 0 };
+        rangeLow = 0;
+        rangeHigh = 0;
+        confidence = "Low";
+        confidenceReason = "Ultra-rare model without reliable live market evidence. Automated valuation has been withheld for safety.";
+        rareCarWarning = LIMITED_DATA_WARNING;
+        pricingReasoning = LIMITED_DATA_MESSAGE;
       } else {
         confidence = "Low";
         confidenceReason = `No live MarketCheck listings available for this exact spec — figures are an AI estimate without direct comparable sales data.`;
+        pricingReasoning = market.reasoning;
       }
-      pricingReasoning = market.reasoning;
       dataSource = "ai_estimate";
     }
 
-    const listingPrice = roundToGrain(Math.min(rangeHigh, values.privateSale * 1.03));
+    const listingPrice = valuationUnavailable ? 0 : roundToGrain(Math.min(rangeHigh, values.privateSale * 1.03));
 
     // ----- Build MOT history payload (real DVSA where available, simulated fallback) -----
     let motHistory: any[] = [];
@@ -878,8 +942,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       conditionScore: Math.round(score * 10) / 10,
       conditionLabel: ai.conditionLabel,
       values,
-      valueRange: { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
-      valueReasoning: `${ai.valueReasoning} ${pricingReasoning}`.trim(),
+      valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
+      valueReasoning: valuationUnavailable ? pricingReasoning : `${ai.valueReasoning} ${pricingReasoning}`.trim(),
       marketConfidence: confidence,
       marketConfidenceReason: confidenceReason,
       pricingSource: dataSource,
@@ -887,8 +951,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       priceAdjustments: adjustments,
       marketBaseline,
       rareCarWarning,
-      honestAnalysis: ai.honestAnalysis,
-      marketPositioning: ai.marketPositioning,
+      valuationUnavailable,
+      honestAnalysis: valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis,
+      marketPositioning: valuationUnavailable ? "Specialist-only market. Use a marque specialist, specialist dealer, or auction house for a proper appraisal." : ai.marketPositioning,
       photoObservations: ai.photoObservations,
       strengths: ai.strengths,
       watchPoints: ai.watchPoints,

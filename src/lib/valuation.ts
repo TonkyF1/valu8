@@ -26,6 +26,7 @@ export interface ValuationReport {
   conditionScore: number;
   conditionLabel: string;
   values: { dealerTradeIn: number; privateSale: number; dealerRetail: number };
+  valuationUnavailable?: boolean;
   valueRange?: { privateSaleLow: number; privateSaleHigh: number };
   valueReasoning?: string;
   marketConfidence?: "High" | "Medium" | "Low" | "Very Low";

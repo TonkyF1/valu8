@@ -170,7 +170,7 @@ export default function EditValuation() {
         service_notes: serviceNotes || null,
         photo_urls: allPhotos,
         condition_score: report.conditionScore,
-        private_value: report.values.privateSale,
+        private_value: report.valuationUnavailable ? null : report.values.privateSale,
         report: updatedReport,
       }).eq("id", row.id);
       if (error) throw error;

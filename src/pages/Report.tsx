@@ -93,6 +93,7 @@ export default function Report() {
   }
 
   const r = v.report;
+  const valuationUnavailable = !!r.valuationUnavailable;
 
   const share = async () => {
     try {
@@ -197,7 +198,7 @@ export default function Report() {
           <div className="lg:col-span-3 premium-card p-5 sm:p-6 relative overflow-hidden border-primary/30">
             <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.06] blur-3xl pointer-events-none" />
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Private Sale</span>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{valuationUnavailable ? "Valuation status" : "Private Sale"}</span>
               {r.marketConfidence && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -218,108 +219,84 @@ export default function Report() {
                 </Tooltip>
               )}
             </div>
-            <div className="text-4xl sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-none">
-              <CountUp value={r.values.privateSale} prefix="£" />
-            </div>
-            <div className="text-xs text-muted-foreground tabular-nums mt-2">
-              Range £{(r.valueRange?.privateSaleLow ?? r.values.privateSale).toLocaleString()} – £{(r.valueRange?.privateSaleHigh ?? r.values.privateSale).toLocaleString()}
-            </div>
+            {valuationUnavailable ? (
+              <div className="max-w-xl">
+                <div className="text-2xl sm:text-3xl font-semibold leading-tight text-foreground">
+                  Unable to value accurately
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed mt-3">
+                  {r.valueReasoning || r.honestAnalysis}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="text-4xl sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-none">
+                  <CountUp value={r.values.privateSale} prefix="£" />
+                </div>
+                <div className="text-xs text-muted-foreground tabular-nums mt-2">
+                  Range £{(r.valueRange?.privateSaleLow ?? r.values.privateSale).toLocaleString()} – £{(r.valueRange?.privateSaleHigh ?? r.values.privateSale).toLocaleString()}
+                </div>
+              </>
+            )}
             {r.rareCarWarning && (
               <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2 text-[11px] sm:text-xs text-amber-200/90 leading-relaxed">
-                <span className="font-medium text-amber-300">Rare model — limited data:</span> {r.rareCarWarning}
+                <span className="font-medium text-amber-300">Limited data:</span> {r.rareCarWarning}
               </div>
             )}
-            <ValuationTrendChart
-              currentValue={r.values.privateSale}
-              registrationYear={v.year}
-              make={v.make}
-              model={v.model}
-            />
+            {!valuationUnavailable && (
+              <ValuationTrendChart
+                currentValue={r.values.privateSale}
+                registrationYear={v.year}
+                make={v.make}
+                model={v.model}
+              />
+            )}
             <p className="text-xs sm:text-sm text-foreground/75 leading-relaxed mt-3 max-w-md">
-              The sweet spot if you sell yourself — strong return for a few weeks of effort.
+              {valuationUnavailable
+                ? "We’ve withheld the automated figure rather than show a number that could be misleading."
+                : "The sweet spot if you sell yourself — strong return for a few weeks of effort."}
             </p>
             {r.marketConfidenceReason && (
               <p className="text-[11px] sm:text-xs text-muted-foreground/80 leading-relaxed mt-2 max-w-xl">
                 <span className="font-medium text-foreground/70">Why {r.marketConfidence?.toLowerCase()} confidence:</span> {r.marketConfidenceReason}
               </p>
             )}
-            {r.valueReasoning && (
+            {!valuationUnavailable && r.valueReasoning && (
               <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed mt-3 max-w-xl">
                 {r.valueReasoning}
               </p>
             )}
-            {(r.marketBaseline || (r.priceAdjustments && r.priceAdjustments.length > 0)) && (
-              <div className="mt-4 pt-4 border-t border-border/40">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">How we calculated this</div>
-                  {r.marketBaseline && (
-                    <span className="text-[9px] uppercase tracking-[0.14em] text-primary/90 bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded">
-                      Hybrid · MarketCheck + AI
-                    </span>
-                  )}
-                </div>
-
-                {r.marketBaseline && (
-                  <div className="grid grid-cols-3 gap-2 mb-3 text-[11px] sm:text-xs">
-                    <div className="rounded-md bg-muted/30 border border-border/40 p-2">
-                      <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground mb-1">Market base</div>
-                      <div className="tabular-nums font-medium">£{r.marketBaseline.basePrivateSale.toLocaleString()}</div>
-                      <div className="text-[10px] text-muted-foreground/80 mt-0.5">{r.marketBaseline.sampleSize} live listings</div>
-                    </div>
-                    <div className="rounded-md bg-muted/30 border border-border/40 p-2">
-                      <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground mb-1">AI net adj.</div>
-                      <div className={cn(
-                        "tabular-nums font-medium",
-                        r.marketBaseline.netAdjustmentPct < 0 ? "text-destructive/90" : r.marketBaseline.netAdjustmentPct > 0 ? "text-primary" : "text-foreground/80",
-                      )}>
-                        {r.marketBaseline.netAdjustmentPct > 0 ? "+" : ""}{r.marketBaseline.netAdjustmentPct}%
-                      </div>
-                      <div className="text-[10px] text-muted-foreground/80 mt-0.5">condition · history · MOT</div>
-                    </div>
-                    <div className="rounded-md bg-primary/[0.06] border border-primary/20 p-2">
-                      <div className="text-[9px] uppercase tracking-[0.14em] text-primary/80 mb-1">Final</div>
-                      <div className="tabular-nums font-medium text-primary">£{r.values.privateSale.toLocaleString()}</div>
-                      <div className="text-[10px] text-muted-foreground/80 mt-0.5">private sale</div>
-                    </div>
-                  </div>
-                )}
-
-                {r.priceAdjustments && r.priceAdjustments.length > 0 && (
-                  <ul className="space-y-1">
-                    {r.priceAdjustments.map((a, i) => (
-                      <li key={i} className="flex items-center justify-between text-[11px] sm:text-xs">
-                        <span className="text-foreground/80">{a.label}</span>
-                        <span className={cn(
-                          "tabular-nums font-medium",
-                          a.impactPct < 0 ? "text-destructive/90" : a.impactPct > 0 ? "text-primary" : "text-muted-foreground",
-                        )}>
-                          {a.impactPct > 0 ? "+" : ""}{a.impactPct}%
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                <p className="text-[10px] text-muted-foreground/80 leading-relaxed mt-3">
-                  We start from the live MarketCheck UK median for comparable listings, then the AI applies adjustments based on your photos, mileage, MOT history and service notes to land on a realistic private-sale figure.
-                </p>
+            {!valuationUnavailable && (
+              <div className="grid grid-cols-2 gap-2 mt-5 pt-5 border-t border-border/60">
+                <MiniTier label="Trade-in" tag="Quick" tip="What a dealer pays you today. Fastest, lowest." value={r.values.dealerTradeIn} />
+                <MiniTier label="Retail" tag="Forecourt" tip="What a dealer would resell it for. Includes their margin." value={r.values.dealerRetail} />
               </div>
             )}
-            <div className="grid grid-cols-2 gap-2 mt-5 pt-5 border-t border-border/60">
-              <MiniTier label="Trade-in" tag="Quick" tip="What a dealer pays you today. Fastest, lowest." value={r.values.dealerTradeIn} />
-              <MiniTier label="Retail" tag="Forecourt" tip="What a dealer would resell it for. Includes their margin." value={r.values.dealerRetail} />
-            </div>
           </div>
 
-          {/* Condition score */}
+          {/* Condition score / specialist guidance */}
           <div className="lg:col-span-2 premium-card py-6 px-5 flex flex-col items-center justify-center text-center">
-            <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-4">Condition Score</div>
-            <div className="w-full max-w-[280px]">
-              <ConditionGauge score={r.conditionScore} label={r.conditionLabel} />
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-4 max-w-[200px] leading-relaxed">
-              Based on photos, mileage and history.
-            </p>
+            {valuationUnavailable ? (
+              <>
+                <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-4">Recommended route</div>
+                <div className="rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-medium text-amber-300">
+                  Specialist / auction
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-4 max-w-[220px] leading-relaxed">
+                  Ultra-rare and thin-market cars need specialist appraisal, not an automated estimate.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-4">Condition Score</div>
+                <div className="w-full max-w-[280px]">
+                  <ConditionGauge score={r.conditionScore} label={r.conditionLabel} />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-4 max-w-[200px] leading-relaxed">
+                  Based on photos, mileage and history.
+                </p>
+              </>
+            )}
           </div>
         </section>
 
@@ -335,57 +312,63 @@ export default function Report() {
           )}
         </Section>
 
-        <Section title="Market Positioning">
-          <p className="text-sm leading-relaxed text-foreground/85">{r.marketPositioning}</p>
-        </Section>
+        {!valuationUnavailable && (
+          <Section title="Market Positioning">
+            <p className="text-sm leading-relaxed text-foreground/85">{r.marketPositioning}</p>
+          </Section>
+        )}
 
         {/* Strengths + watch points — quieter borderless cards */}
-        <section className="grid md:grid-cols-2 gap-3 mb-6">
-          <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Star className="h-3.5 w-3.5 text-primary" />
-              <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Strengths</h2>
+        {!valuationUnavailable && (
+          <section className="grid md:grid-cols-2 gap-3 mb-6">
+            <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="h-3.5 w-3.5 text-primary" />
+                <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Strengths</h2>
+              </div>
+              <ul className="space-y-2">
+                {r.strengths.map(s => (
+                  <li key={s} className="flex gap-2.5 text-sm leading-snug">
+                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> {s}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-2">
-              {r.strengths.map(s => (
-                <li key={s} className="flex gap-2.5 text-sm leading-snug">
-                  <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> {s}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-              <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Watch Points</h2>
+            <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Watch Points</h2>
+              </div>
+              <ul className="space-y-2">
+                {r.watchPoints.map(s => (
+                  <li key={s} className="flex gap-2.5 text-sm leading-snug">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" /> {s}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-2">
-              {r.watchPoints.map(s => (
-                <li key={s} className="flex gap-2.5 text-sm leading-snug">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" /> {s}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Recommendations */}
-        <Section title="Seller Recommendations">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="rounded-xl bg-muted/20 border border-border/50 p-4">
-              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1.5">Recommended listing price</div>
-              <div className="text-2xl font-medium text-foreground/90 tabular-nums">
-                £{r.recommendations.listingPrice.toLocaleString()}
+        {!valuationUnavailable && (
+          <Section title="Seller Recommendations">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="rounded-xl bg-muted/20 border border-border/50 p-4">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1.5">Recommended listing price</div>
+                <div className="text-2xl font-medium text-foreground/90 tabular-nums">
+                  £{r.recommendations.listingPrice.toLocaleString()}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">Sweet spot for fast enquiries with negotiation room.</p>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">Sweet spot for fast enquiries with negotiation room.</p>
+              <div>
+                <RecBlock title="Where to sell" items={r.recommendations.whereToSell} />
+              </div>
+              <RecBlock title="What to highlight" items={r.recommendations.highlights} />
+              <RecBlock title="Documents to prepare" items={r.recommendations.documents} />
             </div>
-            <div>
-              <RecBlock title="Where to sell" items={r.recommendations.whereToSell} />
-            </div>
-            <RecBlock title="What to highlight" items={r.recommendations.highlights} />
-            <RecBlock title="Documents to prepare" items={r.recommendations.documents} />
-          </div>
-        </Section>
+          </Section>
+        )}
 
         {/* HPI */}
         <Section title="HPI Check Summary" right={
@@ -473,26 +456,30 @@ export default function Report() {
           )}
         </Section>
 
-        <SimilarCars
-          make={v.make}
-          model={v.model.split(" · ")[0]}
-          variant={v.model.includes(" · ") ? v.model.split(" · ")[1] : undefined}
-          year={v.year}
-          mileage={v.mileage}
-        />
+        {!valuationUnavailable && (
+          <>
+            <SimilarCars
+              make={v.make}
+              model={v.model.split(" · ")[0]}
+              variant={v.model.includes(" · ") ? v.model.split(" · ")[1] : undefined}
+              year={v.year}
+              mileage={v.mileage}
+            />
 
-        <AdvertCreator
-          valuationId={v.id}
-          vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, registration: v.registration, mot_expiry: v.mot_expiry }}
-          report={{
-            recommendations: { listingPrice: r.recommendations.listingPrice, highlights: r.recommendations.highlights },
-            conditionScore: r.conditionScore,
-            conditionLabel: r.conditionLabel,
-            honestAnalysis: r.honestAnalysis,
-            strengths: r.strengths,
-          }}
-          initialAdvert={(r as any).advert ?? null}
-        />
+            <AdvertCreator
+              valuationId={v.id}
+              vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, registration: v.registration, mot_expiry: v.mot_expiry }}
+              report={{
+                recommendations: { listingPrice: r.recommendations.listingPrice, highlights: r.recommendations.highlights },
+                conditionScore: r.conditionScore,
+                conditionLabel: r.conditionLabel,
+                honestAnalysis: r.honestAnalysis,
+                strengths: r.strengths,
+              }}
+              initialAdvert={(r as any).advert ?? null}
+            />
+          </>
+        )}
 
         <footer className="mt-10 pt-8 border-t border-border text-xs text-muted-foreground space-y-2">
           <p><strong className="text-foreground/80">Data sources:</strong> Live UK market pricing from MarketCheck UK, official MOT history from DVSA, and AI condition analysis from your photos.</p>

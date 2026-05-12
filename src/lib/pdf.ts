@@ -17,6 +17,7 @@ export function downloadValuationPdf(v: VehicleInfo, r: ValuationReport) {
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 48;
   let y = margin;
+  const valuationUnavailable = !!r.valuationUnavailable;
 
   const ensureSpace = (need: number) => {
     if (y + need > pageH - margin) { doc.addPage(); y = margin; }
@@ -37,38 +38,50 @@ export function downloadValuationPdf(v: VehicleInfo, r: ValuationReport) {
 
   // Condition + values
   doc.setTextColor(...DARK); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
-  doc.text("CONDITION", margin, y);
-  doc.setFontSize(28); doc.setTextColor(...TEAL);
-  doc.text(`${r.conditionScore.toFixed(1)}/10`, margin, y + 30);
-  doc.setFontSize(11); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
-  doc.text(r.conditionLabel, margin, y + 46);
+  doc.text(valuationUnavailable ? "VALUATION STATUS" : "CONDITION", margin, y);
+  if (valuationUnavailable) {
+    doc.setFontSize(22); doc.setTextColor(...DARK);
+    doc.text("Unable to value accurately", margin, y + 30);
+    doc.setFontSize(11); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
+    doc.text("Specialist appraisal recommended", margin, y + 46);
+  } else {
+    doc.setFontSize(28); doc.setTextColor(...TEAL);
+    doc.text(`${r.conditionScore.toFixed(1)}/10`, margin, y + 30);
+    doc.setFontSize(11); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
+    doc.text(r.conditionLabel, margin, y + 46);
+  }
 
   // Three value tiers
-  const tiers = [
-    { label: "Dealer Trade-in", value: r.values.dealerTradeIn },
-    { label: "Private Sale (Best)", value: r.values.privateSale, highlight: true },
-    { label: "Dealer Retail", value: r.values.dealerRetail },
-  ];
-  const tierW = 150;
-  const tierStart = pageW - margin - tierW * 3 - 20;
-  tiers.forEach((t, i) => {
-    const x = tierStart + i * (tierW + 10);
-    if (t.highlight) {
-      doc.setFillColor(...TEAL); doc.rect(x, y - 4, tierW, 60, "F");
-      doc.setTextColor(...DARK);
-    } else {
-      doc.setDrawColor(220, 220, 225); doc.setLineWidth(0.5);
-      doc.rect(x, y - 4, tierW, 60);
-      doc.setTextColor(...MUTED);
-    }
-    doc.setFont("helvetica", "bold"); doc.setFontSize(8);
-    doc.text(t.label.toUpperCase(), x + 10, y + 12);
-    doc.setFontSize(18); doc.setTextColor(t.highlight ? 17 : 17, t.highlight ? 17 : 17, t.highlight ? 17 : 17);
-    doc.text(`£${t.value.toLocaleString()}`, x + 10, y + 38);
-  });
+  if (!valuationUnavailable) {
+    const tiers = [
+      { label: "Dealer Trade-in", value: r.values.dealerTradeIn },
+      { label: "Private Sale (Best)", value: r.values.privateSale, highlight: true },
+      { label: "Dealer Retail", value: r.values.dealerRetail },
+    ];
+    const tierW = 150;
+    const tierStart = pageW - margin - tierW * 3 - 20;
+    tiers.forEach((t, i) => {
+      const x = tierStart + i * (tierW + 10);
+      if (t.highlight) {
+        doc.setFillColor(...TEAL); doc.rect(x, y - 4, tierW, 60, "F");
+        doc.setTextColor(...DARK);
+      } else {
+        doc.setDrawColor(220, 220, 225); doc.setLineWidth(0.5);
+        doc.rect(x, y - 4, tierW, 60);
+        doc.setTextColor(...MUTED);
+      }
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+      doc.text(t.label.toUpperCase(), x + 10, y + 12);
+      doc.setFontSize(18); doc.setTextColor(t.highlight ? 17 : 17, t.highlight ? 17 : 17, t.highlight ? 17 : 17);
+      doc.text(`£${t.value.toLocaleString()}`, x + 10, y + 38);
+    });
+  }
   y += 90;
 
-  if (r.valueRange || r.valueReasoning) {
+  if (valuationUnavailable) {
+    y = wrappedText(doc, r.valueReasoning || r.honestAnalysis, margin, y, pageW - margin * 2, 10, 14, MUTED);
+    y += 8;
+  } else if (r.valueRange || r.valueReasoning) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...MUTED);
     const low = r.valueRange?.privateSaleLow ?? r.values.privateSale;
     const high = r.valueRange?.privateSaleHigh ?? r.values.privateSale;
@@ -90,39 +103,45 @@ export function downloadValuationPdf(v: VehicleInfo, r: ValuationReport) {
     y += 10;
   }
 
-  ensureSpace(80);
-  y = section(doc, "MARKET POSITIONING", y, margin, pageW);
-  y = wrappedText(doc, r.marketPositioning, margin, y, pageW - margin * 2, 11, 14);
-  y += 10;
+  if (!valuationUnavailable) {
+    ensureSpace(80);
+    y = section(doc, "MARKET POSITIONING", y, margin, pageW);
+    y = wrappedText(doc, r.marketPositioning, margin, y, pageW - margin * 2, 11, 14);
+    y += 10;
+  }
 
   // Strengths / watch points (2 col)
-  ensureSpace(120);
-  const colW = (pageW - margin * 2 - 20) / 2;
-  const startY = y;
-  y = section(doc, "STRENGTHS", y, margin, pageW);
-  let yL = y;
-  r.strengths.forEach(s => { yL = bullet(doc, s, margin, yL, colW, TEAL); });
-  let yR = section(doc, "WATCH POINTS", startY, margin + colW + 20, pageW, true);
-  r.watchPoints.forEach(s => { yR = bullet(doc, s, margin + colW + 20, yR, colW, [245, 158, 11]); });
-  y = Math.max(yL, yR) + 10;
+  if (!valuationUnavailable) {
+    ensureSpace(120);
+    const colW = (pageW - margin * 2 - 20) / 2;
+    const startY = y;
+    y = section(doc, "STRENGTHS", y, margin, pageW);
+    let yL = y;
+    r.strengths.forEach(s => { yL = bullet(doc, s, margin, yL, colW, TEAL); });
+    let yR = section(doc, "WATCH POINTS", startY, margin + colW + 20, pageW, true);
+    r.watchPoints.forEach(s => { yR = bullet(doc, s, margin + colW + 20, yR, colW, [245, 158, 11]); });
+    y = Math.max(yL, yR) + 10;
+  }
 
   // Recommendations
-  ensureSpace(120);
-  y = section(doc, "SELLER RECOMMENDATIONS", y, margin, pageW);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...MUTED);
-  doc.text("RECOMMENDED LISTING PRICE", margin, y);
-  doc.setFontSize(20); doc.setTextColor(...TEAL);
-  doc.text(`£${r.recommendations.listingPrice.toLocaleString()}`, margin, y + 22);
-  y += 36;
-  y = subsection(doc, "Where to sell", y, margin);
-  r.recommendations.whereToSell.forEach(s => { y = bullet(doc, s, margin, y, pageW - margin * 2, TEAL); });
-  ensureSpace(60);
-  y = subsection(doc, "What to highlight", y + 4, margin);
-  r.recommendations.highlights.forEach(s => { y = bullet(doc, s, margin, y, pageW - margin * 2, TEAL); });
-  ensureSpace(60);
-  y = subsection(doc, "Documents to prepare", y + 4, margin);
-  r.recommendations.documents.forEach(s => { y = bullet(doc, s, margin, y, pageW - margin * 2, TEAL); });
-  y += 10;
+  if (!valuationUnavailable) {
+    ensureSpace(120);
+    y = section(doc, "SELLER RECOMMENDATIONS", y, margin, pageW);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...MUTED);
+    doc.text("RECOMMENDED LISTING PRICE", margin, y);
+    doc.setFontSize(20); doc.setTextColor(...TEAL);
+    doc.text(`£${r.recommendations.listingPrice.toLocaleString()}`, margin, y + 22);
+    y += 36;
+    y = subsection(doc, "Where to sell", y, margin);
+    r.recommendations.whereToSell.forEach(s => { y = bullet(doc, s, margin, y, pageW - margin * 2, TEAL); });
+    ensureSpace(60);
+    y = subsection(doc, "What to highlight", y + 4, margin);
+    r.recommendations.highlights.forEach(s => { y = bullet(doc, s, margin, y, pageW - margin * 2, TEAL); });
+    ensureSpace(60);
+    y = subsection(doc, "Documents to prepare", y + 4, margin);
+    r.recommendations.documents.forEach(s => { y = bullet(doc, s, margin, y, pageW - margin * 2, TEAL); });
+    y += 10;
+  }
 
   // HPI
   ensureSpace(80);
