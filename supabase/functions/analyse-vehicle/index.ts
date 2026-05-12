@@ -773,7 +773,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       rangeLow = 0;
       rangeHigh = 0;
       confidence = "Low";
-      confidenceReason = "Ultra-rare model with limited or unreliable live market evidence. Automated valuation has been withheld to avoid a misleading figure.";
+      confidenceReason = "This is a very rare car and we don't have enough reliable market data to value it confidently. A specialist will give you a much better idea.";
       pricingReasoning = LIMITED_DATA_MESSAGE;
       dataSource = "ai_estimate";
       rareCarWarning = LIMITED_DATA_WARNING;
