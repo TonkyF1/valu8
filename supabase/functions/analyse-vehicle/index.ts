@@ -107,8 +107,8 @@ interface AnalyseRequest {
 
 type ConfidenceLevel = "High" | "Medium" | "Low" | "Very Low";
 
-const LIMITED_DATA_MESSAGE = "Unable to provide accurate valuation at this time. Limited reliable market data available for this model. Please consult a marque specialist.";
-const LIMITED_DATA_WARNING = "Limited reliable market data available for this model. We recommend a marque specialist, specialist dealer, or auction route instead of relying on an automated estimate.";
+const LIMITED_DATA_MESSAGE = "We don't have enough reliable market data to give you an accurate figure for this car. We'd recommend speaking to a marque specialist or auction house instead.";
+const LIMITED_DATA_WARNING = "We don't have enough reliable market data to value this car accurately. A specialist dealer or auction house will give you a much better idea of what it's worth.";
 
 // Ultra-rare makes — almost no live UK MarketCheck data, valuations are
 // inherently uncertain and must never claim High confidence.
