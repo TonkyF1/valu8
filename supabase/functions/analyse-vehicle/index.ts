@@ -107,8 +107,8 @@ interface AnalyseRequest {
 
 type ConfidenceLevel = "High" | "Medium" | "Low" | "Very Low";
 
-const LIMITED_DATA_MESSAGE = "Unable to provide accurate valuation at this time. Limited reliable market data available for this model. Please consult a marque specialist.";
-const LIMITED_DATA_WARNING = "Limited reliable market data available for this model. We recommend a marque specialist, specialist dealer, or auction route instead of relying on an automated estimate.";
+const LIMITED_DATA_MESSAGE = "We don't have enough reliable market data to give you an accurate figure for this car. We'd recommend speaking to a marque specialist or auction house instead.";
+const LIMITED_DATA_WARNING = "We don't have enough reliable market data to value this car accurately. A specialist dealer or auction house will give you a much better idea of what it's worth.";
 
 // Ultra-rare makes — almost no live UK MarketCheck data, valuations are
 // inherently uncertain and must never claim High confidence.
@@ -489,7 +489,7 @@ function hash(s: string) {
   return Math.abs(h);
 }
 
-const SYSTEM_PROMPT = `You are an expert UK private seller car valuer in 2026 with deep, current knowledge of real market prices from AutoTrader, PistonHeads, Facebook Marketplace, Gumtree and Car & Classic. You assess vehicles for PRIVATE SELLERS, not dealers.
+const SYSTEM_PROMPT = `You are a friendly, experienced UK car valuer who helps private sellers understand what their car is really worth. You speak like a helpful expert — honest, clear, and never intimidating.
 
 YOUR JOB IS TO BE HONEST AND CONSERVATIVE — NOT OPTIMISTIC.
 Sellers come to you because they want a realistic number. Over-promising helps no one. When in doubt, lean LOWER. A car the seller can actually sell at your figure within 3-4 weeks is a win; an inflated number that sits unsold is a failure.
@@ -539,9 +539,11 @@ A car with 100k+ miles and corrosion advisories should NOT score above 6.5 regar
 
 OUTPUT DISCIPLINE:
 - Default to the LOWER half of any reasonable range unless EVERY signal is positive.
-- The honestAnalysis MUST explicitly call out negative factors (mileage, corrosion, history gaps) and explain how they affect the price. Do not bury bad news.
-- The valueReasoning must list the specific deductions you applied.
-- Watch points must include each material negative.
+- Use plain English. No jargon like "net adjustment", "anchored on", or "negative signals".
+- honestAnalysis: 2-3 short sentences. Explain the 2-3 biggest factors affecting the price. Be honest but not depressing. End with something helpful or positive where possible. Example: "The price is lower than average because of the high mileage and some corrosion issues noted on the MOT. These are common on cars of this age and can be sorted, but they do affect the value. A clean service history and recent work would help you achieve the top of the range."
+- valueReasoning: 2-3 short sentences max. Same friendly, plain tone. Focus on the main things buyers care about.
+- marketPositioning: 1-2 sentences. Keep it simple and encouraging.
+- watchPoints: Mention real issues but keep the tone practical, not scary.
 
 Always reply by calling the provided function. Never write JSON in plain text.`;
 
@@ -556,9 +558,9 @@ const TOOL = {
         conditionScore: { type: "number", description: "1.0 to 10.0" },
         conditionLabel: { type: "string", enum: ["Outstanding", "Excellent", "Good", "Average", "Below Average"] },
         privateSaleValue: { type: "number", description: "Realistic UK private-sale price in GBP. For exotics/classics may be hundreds of thousands or millions." },
-        honestAnalysis: { type: "string", description: "2-4 sentences. Honest, specific to this car." },
-        marketPositioning: { type: "string", description: "1-2 sentences on UK private market position." },
-        valueReasoning: { type: "string", description: "Short explanation of why this car sits at this valuation level, referencing mileage, condition, history, rarity/spec or demand." },
+        honestAnalysis: { type: "string", description: "2-3 short sentences in plain English. Explain the 2-3 biggest factors affecting the price. Be honest but warm — not cold or depressing. End with something helpful or positive where possible." },
+        marketPositioning: { type: "string", description: "1-2 short sentences. Keep it simple and encouraging. Plain English only." },
+        valueReasoning: { type: "string", description: "2-3 short sentences max. Same friendly, plain tone. Focus on the main things buyers care about. No jargon like 'net adjustment' or 'anchored on'." },
         strengths: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
         watchPoints: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 5 },
         photoObservations: { type: "string", description: "Brief observations on what photos show. Empty if no photos." },
@@ -771,7 +773,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       rangeLow = 0;
       rangeHigh = 0;
       confidence = "Low";
-      confidenceReason = "Ultra-rare model with limited or unreliable live market evidence. Automated valuation has been withheld to avoid a misleading figure.";
+      confidenceReason = "This is a very rare car and we don't have enough reliable market data to value it confidently. A specialist will give you a much better idea.";
       pricingReasoning = LIMITED_DATA_MESSAGE;
       dataSource = "ai_estimate";
       rareCarWarning = LIMITED_DATA_WARNING;
@@ -831,25 +833,25 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       if (ultraRare) {
         // Ultra-rare cars NEVER get High confidence, regardless of sample.
         confidence = "Low";
-        confidenceReason = `Ultra-rare model — even with ${mc.count} live listing${mc.count === 1 ? "" : "s"}, the UK market is too thin and variable for a confident figure.`;
+        confidenceReason = "This is a very rare car and even with some listings, the market is too thin and variable for a confident figure.";
         rareCarWarning = LIMITED_DATA_WARNING;
       } else if (mc.count >= 500 && !isOutlierMileage && photoUrls.length >= 4 && negativeCount <= 1) {
         confidence = "High";
-        confidenceReason = `Backed by ${mc.count} closely comparable live UK listings, with similar mileage and ${photoQuality} photo evidence. Few negative signals.`;
+        confidenceReason = `Plenty of similar cars for sale right now (${mc.count} listings) with matching mileage and good photos. Most things look positive.`;
       } else if (mc.count >= 50 && !isOutlierMileage && negativeCount <= 3) {
         confidence = "Medium";
-        confidenceReason = `${mc.count} comparable live UK listings on file, ${photoQuality} photo evidence${isOutlierMileage ? ", mileage outside the typical band" : ""}. Some negatives applied.`;
+        confidenceReason = `Solid number of similar listings (${mc.count}) and ${photoQuality} photos. A few factors pulled the price down, but the figure is still reasonable.`;
       } else if (mc.count >= 10) {
         confidence = "Low";
         const reasons: string[] = [];
-        reasons.push(`only ${mc.count} comparable live listings (need 50+ for medium, 500+ for high)`);
-        if (isOutlierMileage) reasons.push("mileage well outside the typical band");
-        if (photoUrls.length < 3) reasons.push("limited photo evidence");
-        if (negativeCount >= 4) reasons.push("multiple negative condition/history signals");
-        confidenceReason = `Lower confidence: ${reasons.join(", ")}.`;
+        reasons.push(`only ${mc.count} similar cars found (we like 50+ for a solid figure)`);
+        if (isOutlierMileage) reasons.push("mileage is well outside the usual range");
+        if (photoUrls.length < 3) reasons.push("not many photos to go on");
+        if (negativeCount >= 4) reasons.push("several issues pulled the price down");
+        confidenceReason = `We're less confident because ${reasons.join(" and ")}. The figure is still useful, but treat it as a guide rather than a guarantee.`;
       } else {
         confidence = "Very Low";
-        confidenceReason = `Very low confidence: only ${mc.count} comparable live listing${mc.count === 1 ? "" : "s"} found — not enough to establish a reliable market figure.`;
+        confidenceReason = `Only ${mc.count} similar car${mc.count === 1 ? "" : "s"} found — that's not enough to be sure. Think of this as a rough guide, not a firm price.`;
       }
 
       values = { dealerTradeIn, privateSale, dealerRetail };
@@ -863,7 +865,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         netAdjustmentPct: Math.round((mult - 1) * 100),
       };
       const negSummary = adjustments.filter(a => a.impactPct < 0).map(a => a.label).slice(0, 3).join(", ");
-      pricingReasoning = `Anchored on ${mc.count} live MarketCheck UK listings (median dealer asking £${Math.round(mc.median).toLocaleString()}). Net adjustment: ${Math.round((mult - 1) * 100)}%${negSummary ? ` — driven by ${negSummary}` : ""}.`;
+      pricingReasoning = `Based on ${mc.count} similar cars currently for sale. The main things that affected the price were: ${negSummary || "mileage and overall condition"}.`;
       dataSource = "marketcheck";
     } else if (badMarketData) {
       valuationUnavailable = true;
@@ -871,7 +873,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       rangeLow = 0;
       rangeHigh = 0;
       confidence = ultraRare ? "Low" : "Very Low";
-      confidenceReason = "Live market data appears unreliable for this vehicle, so no automated valuation has been shown.";
+      confidenceReason = "The market data we found doesn't look reliable for this car, so we'd rather not show a number that could mislead you.";
       pricingReasoning = LIMITED_DATA_MESSAGE;
       dataSource = "ai_estimate";
       rareCarWarning = LIMITED_DATA_WARNING;
@@ -910,12 +912,12 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         rangeLow = 0;
         rangeHigh = 0;
         confidence = "Low";
-        confidenceReason = "Ultra-rare model without reliable live market evidence. Automated valuation has been withheld for safety.";
+        confidenceReason = "This is a very rare car and we don't have enough reliable market evidence. A specialist will give you a much better figure.";
         rareCarWarning = LIMITED_DATA_WARNING;
         pricingReasoning = LIMITED_DATA_MESSAGE;
       } else {
         confidence = "Low";
-        confidenceReason = `No live MarketCheck listings available for this exact spec — figures are an AI estimate without direct comparable sales data.`;
+        confidenceReason = "We couldn't find enough similar cars for sale right now, so this is our best estimate without direct comparable sales.";
         pricingReasoning = market.reasoning;
       }
       dataSource = "ai_estimate";
@@ -943,7 +945,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       conditionLabel: ai.conditionLabel,
       values,
       valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
-      valueReasoning: valuationUnavailable ? pricingReasoning : `${ai.valueReasoning} ${pricingReasoning}`.trim(),
+      valueReasoning: valuationUnavailable ? pricingReasoning : ai.valueReasoning,
       marketConfidence: confidence,
       marketConfidenceReason: confidenceReason,
       pricingSource: dataSource,
@@ -953,7 +955,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       rareCarWarning,
       valuationUnavailable,
       honestAnalysis: valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis,
-      marketPositioning: valuationUnavailable ? "Specialist-only market. Use a marque specialist, specialist dealer, or auction house for a proper appraisal." : ai.marketPositioning,
+      marketPositioning: valuationUnavailable ? "This type of car needs a specialist's eye. A marque specialist or auction house will give you a proper appraisal." : ai.marketPositioning,
       photoObservations: ai.photoObservations,
       strengths: ai.strengths,
       watchPoints: ai.watchPoints,

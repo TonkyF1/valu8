@@ -300,7 +300,7 @@ export default function Dashboard() {
                         </div>
                         {valuationUnavailable ? (
                           <div className="font-semibold text-amber-300 text-sm sm:text-base leading-tight mt-0.5 max-w-[160px]">
-                            Specialist appraisal needed
+                            Specialist valuation recommended
                           </div>
                         ) : (
                           <div className="font-bold text-gradient-primary text-lg sm:text-2xl tabular-nums leading-tight mt-0.5">

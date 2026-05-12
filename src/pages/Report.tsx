@@ -253,12 +253,12 @@ export default function Report() {
             )}
             <p className="text-xs sm:text-sm text-foreground/75 leading-relaxed mt-3 max-w-md">
               {valuationUnavailable
-                ? "We’ve withheld the automated figure rather than show a number that could be misleading."
-                : "The sweet spot if you sell yourself — strong return for a few weeks of effort."}
+                ? "We'd rather be honest than give you a number that could be way off."
+                : "This is a realistic price if you sell privately 2014 a good balance of fair value and a reasonably quick sale."}
             </p>
             {r.marketConfidenceReason && (
               <p className="text-[11px] sm:text-xs text-muted-foreground/80 leading-relaxed mt-2 max-w-xl">
-                <span className="font-medium text-foreground/70">Why {r.marketConfidence?.toLowerCase()} confidence:</span> {r.marketConfidenceReason}
+                {r.marketConfidenceReason}
               </p>
             )}
             {!valuationUnavailable && r.valueReasoning && (
@@ -283,7 +283,7 @@ export default function Report() {
                   Specialist / auction
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-4 max-w-[220px] leading-relaxed">
-                  Ultra-rare and thin-market cars need specialist appraisal, not an automated estimate.
+                  Cars like this are too rare for our system to value accurately. A specialist dealer or auction house will give you a much better idea.
                 </p>
               </>
             ) : (
