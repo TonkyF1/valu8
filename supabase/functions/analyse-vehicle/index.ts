@@ -541,18 +541,54 @@ Deno.serve(async (req) => {
 
     const photoUrls = (body.photoUrls || []).slice(0, 6);
 
-    // Pull live UK market pricing from MarketCheck before calling the AI so we
-    // can anchor the model on real data.
-    const mc = await fetchMarketCheckPricing(body.make, body.model, body.year, body.mileage);
+    // Fetch MOT history + MarketCheck pricing in parallel BEFORE calling the AI,
+    // so we can feed real signals (corrosion advisories, fails, etc.) into the prompt.
+    const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
+    const [mc, dvsa] = await Promise.all([
+      fetchMarketCheckPricing(body.make, body.model, body.year, body.mileage),
+      body.registration && body.registration.trim().length >= 2
+        ? fetchDvsaMotHistory(body.registration).catch((e) => {
+            console.error("DVSA fetch failed", e);
+            return { entries: [], error: "MOT service temporarily unavailable" } as const;
+          })
+        : Promise.resolve({ entries: [] as MotEntryOut[] }),
+    ]);
+
+    // Extract MOT signals
+    const motEntries = dvsa.entries ?? [];
+    const allAdvisories = motEntries.flatMap((m) => m.advisories ?? []);
+    const allFailures = motEntries.flatMap((m) => m.failures ?? []);
+    const advisoryText = allAdvisories.join(" ").toLowerCase();
+    const failureText = allFailures.join(" ").toLowerCase();
+    const corrosionMatches = (advisoryText.match(/corro|corrod|rust|excessive\s+rust|structurally\s+weak/g) ?? []).length
+      + (failureText.match(/corro|corrod|rust|structurally\s+weak/g) ?? []).length;
+    const recentFailCount = motEntries.slice(0, 3).filter((m) => m.result === "Fail").length;
+    const totalAdvisoryCount = allAdvisories.length;
+    const latestTest = motEntries[0];
 
     const marketBlock = mc
       ? `LIVE UK MARKET DATA (MarketCheck UK, ${mc.count} active listings for this make/model/year band):
 - Median dealer asking: £${Math.round(mc.median).toLocaleString()}
 - Typical asking range (IQR): £${Math.round(mc.p25 ?? mc.median * 0.9).toLocaleString()} – £${Math.round(mc.p75 ?? mc.median * 1.1).toLocaleString()}
-${mc.avgMiles ? `- Average mileage of comparable listings: ${Math.round(mc.avgMiles).toLocaleString()} mi` : ""}
+${mc.avgMiles ? `- Average mileage of comparable listings: ${Math.round(mc.avgMiles).toLocaleString()} mi (this car: ${body.mileage.toLocaleString()} mi)` : ""}
 
-USE THIS AS YOUR PRIMARY ANCHOR. The dealer asking median above is your dealerRetail benchmark. Apply your condition / mileage / history / spec / modifications adjustments and return a realistic privateSaleValue (typically 8-15% below dealer asking, more if condition/mileage are weak).`
-      : `(No live MarketCheck listings returned for this exact spec — fall back on your own UK private market knowledge.)`;
+REMEMBER: the median above is for typical / clean dealer stock. If this car has high mileage, corrosion, or weak history, the right number is materially BELOW that median.`
+      : `(No live MarketCheck listings returned for this exact spec — fall back on your own UK private market knowledge and stay conservative.)`;
+
+    const motBlock = motEntries.length > 0
+      ? `MOT HISTORY (DVSA — real data):
+- Tests on record: ${motEntries.length}
+- Latest test: ${latestTest?.date ?? "unknown"} — ${latestTest?.result ?? "?"}
+- Recent failures (last 3 tests): ${recentFailCount}
+- Total advisories on file: ${totalAdvisoryCount}
+- Corrosion/rust mentions: ${corrosionMatches}
+${allAdvisories.length > 0 ? `- Recent advisory examples: ${allAdvisories.slice(0, 6).map((a) => `"${a}"`).join("; ")}` : ""}
+${allFailures.length > 0 ? `- Failure examples: ${allFailures.slice(0, 4).map((a) => `"${a}"`).join("; ")}` : ""}
+
+You MUST factor these into the price and call them out explicitly in your analysis.`
+      : body.registration
+        ? `MOT HISTORY: No DVSA records returned for this registration.`
+        : `MOT HISTORY: No registration provided.`;
 
     const userContent: any[] = [
       {
@@ -568,7 +604,9 @@ USE THIS AS YOUR PRIMARY ANCHOR. The dealer asking median above is your dealerRe
 
 ${marketBlock}
 
-Assess condition from photos and data. Be honest and specific. Call the valu8_report function.`,
+${motBlock}
+
+Be honest and conservative. Lean lower if there are negatives. Call out high mileage, corrosion and history gaps explicitly. Call the valu8_report function.`,
       },
       ...photoUrls.map((url) => ({ type: "image_url", image_url: { url } })),
     ];
