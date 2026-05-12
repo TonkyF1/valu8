@@ -28,11 +28,12 @@ export interface ValuationReport {
   values: { dealerTradeIn: number; privateSale: number; dealerRetail: number };
   valueRange?: { privateSaleLow: number; privateSaleHigh: number };
   valueReasoning?: string;
-  marketConfidence?: "High" | "Medium" | "Low";
+  marketConfidence?: "High" | "Medium" | "Low" | "Very Low";
   marketConfidenceReason?: string;
   pricingSource?: "marketcheck" | "ai_estimate";
   marketSampleSize?: number;
   priceAdjustments?: { label: string; impactPct: number }[];
+  rareCarWarning?: string;
   honestAnalysis: string;
   marketPositioning: string;
   photoObservations?: string;
