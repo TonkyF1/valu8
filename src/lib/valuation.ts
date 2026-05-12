@@ -42,6 +42,16 @@ export interface ValuationReport {
     baseTradeIn: number;
     netAdjustmentPct: number;
   };
+  comparableListings?: {
+    price: number;
+    mileage: number;
+    year: number;
+    trim?: string;
+    location?: string;
+    source?: string;
+    url?: string;
+  }[];
+  marketAnchor?: number;
   rareCarWarning?: string;
   honestAnalysis: string;
   marketPositioning: string;
