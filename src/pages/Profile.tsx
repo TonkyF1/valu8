@@ -89,6 +89,32 @@ export default function Profile() {
     } finally { setSavingProfile(false); }
   }
 
+  async function linkGoogle() {
+    setLinkingGoogle(true);
+    try {
+      const { error } = await supabase.auth.linkIdentity({ provider: "google" } as any);
+      if (error) throw error;
+    } catch (err: any) {
+      toast.error(err.message || "Couldn't link Google account");
+      setLinkingGoogle(false);
+    }
+  }
+
+  async function unlinkGoogle() {
+    const identity = user?.identities?.find((i: any) => i.provider === "google");
+    if (!identity) return;
+    setLinkingGoogle(true);
+    try {
+      const { error } = await supabase.auth.unlinkIdentity(identity as any);
+      if (error) throw error;
+      toast.success("Google account disconnected");
+    } catch (err: any) {
+      toast.error(err.message || "Couldn't unlink Google account");
+    } finally {
+      setLinkingGoogle(false);
+    }
+  }
+
 
   return (
     <div className="min-h-screen flex flex-col">
