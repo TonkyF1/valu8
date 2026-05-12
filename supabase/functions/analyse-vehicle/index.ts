@@ -945,7 +945,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       conditionLabel: ai.conditionLabel,
       values,
       valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
-      valueReasoning: valuationUnavailable ? pricingReasoning : `${ai.valueReasoning} ${pricingReasoning}`.trim(),
+      valueReasoning: valuationUnavailable ? pricingReasoning : ai.valueReasoning,
       marketConfidence: confidence,
       marketConfidenceReason: confidenceReason,
       pricingSource: dataSource,
