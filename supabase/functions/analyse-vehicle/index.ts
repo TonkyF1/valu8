@@ -105,7 +105,33 @@ interface AnalyseRequest {
   photoUrls: string[];
 }
 
-type ConfidenceLevel = "High" | "Medium" | "Low";
+type ConfidenceLevel = "High" | "Medium" | "Low" | "Very Low";
+
+// Ultra-rare makes — almost no live UK MarketCheck data, valuations are
+// inherently uncertain and must never claim High confidence.
+const ULTRA_RARE_MAKES = [
+  "Bugatti", "Koenigsegg", "Pagani", "Rimac", "Pininfarina", "Zenvo",
+  "Singer", "Gordon Murray", "Hennessey", "SSC", "Apollo", "Czinger",
+  "W Motors", "Spyker", "Noble",
+];
+
+// Specific hypercar / ultra-rare model patterns (treated like ultra-rare even
+// if the make also makes mainstream cars).
+const ULTRA_RARE_MODEL_PATTERNS: Array<{ make?: string; match: RegExp }> = [
+  { make: "Ferrari", match: /laferrari|enzo|f50|f40|monza|daytona\s?sp3/i },
+  { make: "McLaren", match: /\bp1\b|senna|speedtail|elva|solus/i },
+  { make: "Porsche", match: /carrera\s?gt|918\s?spyder/i },
+  { make: "Aston Martin", match: /valkyrie|valhalla|one[- ]?77|vulcan/i },
+  { make: "Lamborghini", match: /sian|veneno|reventon|centenario|countach\s?lpi/i },
+  { make: "Mercedes-Benz", match: /amg\s?one|slr\s?stirling/i },
+  { make: "Mercedes-AMG", match: /amg\s?one/i },
+];
+
+function isUltraRare(make: string, model: string, variant?: string): boolean {
+  if (ULTRA_RARE_MAKES.includes(make)) return true;
+  const hay = `${model} ${variant ?? ""}`;
+  return ULTRA_RARE_MODEL_PATTERNS.some((p) => (!p.make || p.make === make) && p.match.test(hay));
+}
 
 const ENTHUSIAST_KEYWORDS = [
   "rs", "renaultsport", "renault sport", "gti", "gti clubsport", "st", "vrs", "v-rs", "vxr", "opc", "cupra", "type r", "type-r",
