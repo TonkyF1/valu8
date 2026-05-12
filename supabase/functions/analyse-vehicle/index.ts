@@ -885,6 +885,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       pricingSource: dataSource,
       marketSampleSize: mc?.count,
       priceAdjustments: adjustments,
+      marketBaseline,
       rareCarWarning,
       honestAnalysis: ai.honestAnalysis,
       marketPositioning: ai.marketPositioning,
