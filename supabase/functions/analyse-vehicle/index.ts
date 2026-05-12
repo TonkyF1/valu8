@@ -22,9 +22,11 @@ async function fetchMarketCheckPricing(
   model: string,
   year: number,
   mileage: number,
+  variant?: string,
 ): Promise<MarketPricing | null> {
   if (!MC_KEY) return null;
   const baseModel = model.split(" · ")[0].split("·")[0].trim();
+  const trim = variant?.split(" · ")[0].split("·")[0].trim();
 
   const tryFetch = async (params: URLSearchParams): Promise<MarketPricing | null> => {
     const url = `https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`;
@@ -54,9 +56,49 @@ async function fetchMarketCheckPricing(
     }
   };
 
-  // 1) tight: same year + similar mileage band
   const milesLow = Math.max(0, mileage - 20000);
   const milesHigh = mileage + 20000;
+
+  // 1) trim-specific, same year, similar mileage (most accurate)
+  if (trim) {
+    const tightTrim = new URLSearchParams({
+      api_key: MC_KEY,
+      ymmt: `${year}|${make}|${baseModel}|${trim}`,
+      car_type: "used",
+      stats: "price,miles",
+      rows: "0",
+      miles_range: `${milesLow}-${milesHigh}`,
+    });
+    let r = await tryFetch(tightTrim);
+    if (r && r.count >= 5) return r;
+
+    // 2) trim-specific, same year, any mileage
+    const trimYear = new URLSearchParams({
+      api_key: MC_KEY,
+      ymmt: `${year}|${make}|${baseModel}|${trim}`,
+      car_type: "used",
+      stats: "price,miles",
+      rows: "0",
+    });
+    r = await tryFetch(trimYear);
+    if (r && r.count >= 3) return r;
+
+    // 3) trim-specific, ±2 years
+    const trimWide = new URLSearchParams({
+      api_key: MC_KEY,
+      make,
+      model: baseModel,
+      trim,
+      year_range: `${year - 2}-${year + 2}`,
+      car_type: "used",
+      stats: "price,miles",
+      rows: "0",
+    });
+    r = await tryFetch(trimWide);
+    if (r && r.count >= 3) return r;
+  }
+
+  // 4) same year + similar mileage (no trim filter)
   const tight = new URLSearchParams({
     api_key: MC_KEY,
     ymm: `${year}|${make}|${baseModel}`,
@@ -68,7 +110,7 @@ async function fetchMarketCheckPricing(
   let res = await tryFetch(tight);
   if (res && res.count >= 5) return res;
 
-  // 2) same year, any mileage
+  // 5) same year, any mileage
   const sameYear = new URLSearchParams({
     api_key: MC_KEY,
     ymm: `${year}|${make}|${baseModel}`,
@@ -79,7 +121,7 @@ async function fetchMarketCheckPricing(
   res = await tryFetch(sameYear);
   if (res && res.count >= 3) return res;
 
-  // 3) same make+model ±2 years
+  // 6) same make+model ±2 years
   const wide = new URLSearchParams({
     api_key: MC_KEY,
     make,
