@@ -33,6 +33,14 @@ export interface ValuationReport {
   pricingSource?: "marketcheck" | "ai_estimate";
   marketSampleSize?: number;
   priceAdjustments?: { label: string; impactPct: number }[];
+  marketBaseline?: {
+    source: "MarketCheck UK";
+    sampleSize: number;
+    baseDealerRetail: number;
+    basePrivateSale: number;
+    baseTradeIn: number;
+    netAdjustmentPct: number;
+  };
   rareCarWarning?: string;
   honestAnalysis: string;
   marketPositioning: string;
