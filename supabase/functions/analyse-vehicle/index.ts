@@ -695,6 +695,14 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     let confidenceReason: string;
     let pricingReasoning: string;
     let dataSource: "marketcheck" | "ai_estimate";
+    let marketBaseline: {
+      source: "MarketCheck UK";
+      sampleSize: number;
+      baseDealerRetail: number;
+      basePrivateSale: number;
+      baseTradeIn: number;
+      netAdjustmentPct: number;
+    } | undefined;
     const adjustments: { label: string; impactPct: number }[] = [];
 
     const age = Math.max(0, 2026 - body.year);
