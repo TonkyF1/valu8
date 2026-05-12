@@ -201,7 +201,12 @@ export default function Report() {
               {r.marketConfidence && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="cursor-help text-[9px] uppercase tracking-[0.16em] text-primary/90 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
+                    <span className={cn(
+                      "cursor-help text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border",
+                      r.marketConfidence === "High" && "text-primary/90 bg-primary/10 border-primary/20",
+                      r.marketConfidence === "Medium" && "text-foreground/80 bg-foreground/5 border-foreground/15",
+                      (r.marketConfidence === "Low" || r.marketConfidence === "Very Low") && "text-amber-500 bg-amber-500/10 border-amber-500/30",
+                    )}>
                       {r.marketConfidence} confidence
                     </span>
                   </TooltipTrigger>
