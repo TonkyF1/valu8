@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,40 +14,17 @@ interface Point {
   value: number;
 }
 
-function estimateNewPrice(currentValue: number, ageYears: number) {
-  if (ageYears <= 0) return currentValue;
-  const retention = Math.max(0.18, Math.pow(0.86, ageYears));
-  return Math.round(currentValue / retention);
-}
-
-function generateLifetimeData(currentValue: number, registrationYear: number): Point[] {
-  const nowYear = new Date().getFullYear();
-  const ageYears = Math.max(1, nowYear - registrationYear);
-  const newPrice = estimateNewPrice(currentValue, ageYears);
-  const data: Point[] = [];
-  for (let i = 0; i <= ageYears; i++) {
-    const t = i / ageYears;
-    const curve = 1 - Math.pow(t, 0.7);
-    const base = currentValue + (newPrice - currentValue) * curve;
-    const noise = Math.sin(i * 1.7) * 0.012 * base;
-    data.push({ year: String(registrationYear + i), value: Math.round(base + noise) });
-  }
-  data[0].value = newPrice;
-  data[data.length - 1].value = currentValue;
-  return data;
-}
-
 export function ValuationTrendChart({ currentValue, registrationYear, make, model }: Props) {
-  const fallback = useMemo(
-    () => generateLifetimeData(currentValue, registrationYear),
-    [currentValue, registrationYear]
-  );
-  const [data, setData] = useState<Point[]>(fallback);
-  const [source, setSource] = useState<"marketcheck" | "estimate">("estimate");
+  const [data, setData] = useState<Point[] | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    if (!make || !model) return;
+    if (!make || !model) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     supabase.functions
       .invoke("historical-valuation", {
         body: { make, model: model.split(" · ")[0], year: registrationYear, currentValue },
@@ -55,16 +32,36 @@ export function ValuationTrendChart({ currentValue, registrationYear, make, mode
       .then(({ data: resp }) => {
         if (cancelled) return;
         const series = (resp as any)?.series as Point[] | null;
-        if (series && series.length > 1) {
+        const source = (resp as any)?.source as string | undefined;
+        if (series && series.length > 1 && source === "marketcheck") {
           setData(series);
-          setSource("marketcheck");
+        } else {
+          setData(null);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
   }, [make, model, registrationYear, currentValue]);
+
+  if (loading) {
+    return (
+      <div className="mt-3">
+        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-1">
+          Valuation Trend (Lifetime)
+        </div>
+        <div className="h-[72px] w-full rounded-md bg-muted/20 animate-pulse" />
+      </div>
+    );
+  }
+
+  if (!data) return null;
 
   const tickInterval = data.length > 8 ? Math.ceil(data.length / 6) - 1 : 0;
 
@@ -74,11 +71,9 @@ export function ValuationTrendChart({ currentValue, registrationYear, make, mode
         <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
           Valuation Trend (Lifetime)
         </div>
-        {source === "marketcheck" && (
-          <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground/60">
-            MarketCheck UK
-          </div>
-        )}
+        <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground/60">
+          MarketCheck UK
+        </div>
       </div>
       <div className="h-[72px] w-full">
         <ResponsiveContainer width="100%" height="100%">
