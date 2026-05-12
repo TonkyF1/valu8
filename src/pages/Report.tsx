@@ -254,7 +254,7 @@ export default function Report() {
             <p className="text-xs sm:text-sm text-foreground/75 leading-relaxed mt-3 max-w-md">
               {valuationUnavailable
                 ? "We'd rather be honest than give you a number that could be way off."
-                : "This is a realistic price if you sell privately -- a good balance of fair value and a reasonably quick sale."}
+                : "This is a realistic price if you sell privately 2014 a good balance of fair value and a reasonably quick sale."}
             </p>
             {r.marketConfidenceReason && (
               <p className="text-[11px] sm:text-xs text-muted-foreground/80 leading-relaxed mt-2 max-w-xl">
