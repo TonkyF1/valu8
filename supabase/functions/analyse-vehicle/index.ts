@@ -797,22 +797,6 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       recommendations: { whereToSell: string[]; highlights: string[]; documents: string[] };
     };
 
-    // ----- Post-process AI text: enforce correct year -----
-    const correctYear = String(body.year);
-    const yearPattern = /\b(19\d{2}|20\d{2})\b/g;
-    const sanitizeYear = (text: string) => {
-      return text.replace(yearPattern, (match) => (match === correctYear ? match : correctYear));
-    };
-    ai.honestAnalysis = sanitizeYear(ai.honestAnalysis);
-    ai.marketPositioning = sanitizeYear(ai.marketPositioning);
-    ai.valueReasoning = sanitizeYear(ai.valueReasoning);
-    ai.photoObservations = sanitizeYear(ai.photoObservations);
-    ai.strengths = ai.strengths.map(sanitizeYear);
-    ai.watchPoints = ai.watchPoints.map(sanitizeYear);
-    ai.recommendations.whereToSell = ai.recommendations.whereToSell.map(sanitizeYear);
-    ai.recommendations.highlights = ai.recommendations.highlights.map(sanitizeYear);
-    ai.recommendations.documents = ai.recommendations.documents.map(sanitizeYear);
-
     // ----- Pricing engine: MarketCheck-anchored, with strong deterministic deductions -----
     const score = Math.max(1, Math.min(10, ai.conditionScore));
     const aiPrivate = Math.max(500, Number(ai.privateSaleValue) || 0);
