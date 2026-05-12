@@ -570,7 +570,7 @@ YOUR JOB IS TO BE HONEST AND CONSERVATIVE — NOT OPTIMISTIC.
 Sellers come to you because they want a realistic number. Over-promising helps no one. When in doubt, lean LOWER. A car the seller can actually sell at your figure within 3-4 weeks is a win; an inflated number that sits unsold is a failure.
 
 CRITICAL YEAR RULE — READ CAREFULLY:
-The user message always contains the EXACT vehicle year (e.g., 2020, 2018, 2022). You MUST use ONLY that exact year in every sentence you write. NEVER use the example year below, NEVER guess a year, and NEVER copy a year from any other source. Double-check every mention of a year against the vehicle data provided.
+The user message always contains the EXACT vehicle year (e.g., 2020, 2018, 2022) and the CURRENT YEAR for context. You MUST use ONLY the exact vehicle year when referring to the car, and ONLY the current year when explicitly talking about "today", "now", or the current market year. NEVER guess a year, NEVER copy a year from any other source, and NEVER reuse a year from a previous car. Double-check every mention of a year against the vehicle data provided.
 
 CORE PRINCIPLES:
 1. Private sale prices typically sit 8-15% BELOW dealer asking. Trade-in is 20-25% below dealer asking.
@@ -748,6 +748,8 @@ You MUST factor these into the price and call them out explicitly in your analys
         type: "text",
         text:
 `Vehicle:
+- Vehicle year: ${body.year}
+- Current year: ${CURRENT_YEAR}
 - ${body.year} ${body.make} ${body.model}${body.variant ? ` — ${body.variant}` : ""}
 - Mileage: ${body.mileage.toLocaleString()} miles
 - Registration: ${body.registration || "not provided"}
@@ -759,7 +761,7 @@ ${marketBlock}
 
 ${motBlock}
 
-Be honest and conservative. Lean lower if there are negatives. Call out high mileage, corrosion and history gaps explicitly. Call the valu8_report function.`,
+Be honest and conservative. Lean lower if there are negatives. Call out high mileage, corrosion and history gaps explicitly. If you mention the car's year, you must say ${body.year}. If you mention the current year or today's market, you must say ${CURRENT_YEAR}. Call the valu8_report function.`,
       },
       ...photoUrls.map((url) => ({ type: "image_url", image_url: { url } })),
     ];
@@ -1042,7 +1044,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       conditionLabel: ai.conditionLabel,
       values,
       valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
-      valueReasoning: valuationUnavailable ? pricingReasoning : ai.valueReasoning,
+      valueReasoning: sanitizeNarrativeYears(valuationUnavailable ? pricingReasoning : ai.valueReasoning, body.year),
       marketConfidence: confidence,
       marketConfidenceReason: confidenceReason,
       pricingSource: dataSource,
@@ -1053,11 +1055,11 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       marketAnchor: valuationUnavailable ? undefined : (anchorMedian > 0 ? Math.round(anchorMedian) : undefined),
       rareCarWarning,
       valuationUnavailable,
-      honestAnalysis: valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis,
-      marketPositioning: valuationUnavailable ? "This type of car needs a specialist's eye. A marque specialist or auction house will give you a proper appraisal." : ai.marketPositioning,
-      photoObservations: ai.photoObservations,
-      strengths: ai.strengths,
-      watchPoints: ai.watchPoints,
+      honestAnalysis: sanitizeNarrativeYears(valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis, body.year),
+      marketPositioning: sanitizeNarrativeYears(valuationUnavailable ? "This type of car needs a specialist's eye. A marque specialist or auction house will give you a proper appraisal." : ai.marketPositioning, body.year),
+      photoObservations: sanitizeNarrativeYears(ai.photoObservations, body.year),
+      strengths: sanitizeNarrativeList(ai.strengths, body.year),
+      watchPoints: sanitizeNarrativeList(ai.watchPoints, body.year),
       recommendations: { listingPrice, ...ai.recommendations },
       hpi: {
         status: "All Clear" as const,
