@@ -274,15 +274,29 @@ export default function Report() {
             )}
           </div>
 
-          {/* Condition score */}
+          {/* Condition score / specialist guidance */}
           <div className="lg:col-span-2 premium-card py-6 px-5 flex flex-col items-center justify-center text-center">
-            <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-4">Condition Score</div>
-            <div className="w-full max-w-[280px]">
-              <ConditionGauge score={r.conditionScore} label={r.conditionLabel} />
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-4 max-w-[200px] leading-relaxed">
-              Based on photos, mileage and history.
-            </p>
+            {valuationUnavailable ? (
+              <>
+                <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-4">Recommended route</div>
+                <div className="rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-medium text-amber-300">
+                  Specialist / auction
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-4 max-w-[220px] leading-relaxed">
+                  Ultra-rare and thin-market cars need specialist appraisal, not an automated estimate.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-4">Condition Score</div>
+                <div className="w-full max-w-[280px]">
+                  <ConditionGauge score={r.conditionScore} label={r.conditionLabel} />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-4 max-w-[200px] leading-relaxed">
+                  Based on photos, mileage and history.
+                </p>
+              </>
+            )}
           </div>
         </section>
 
@@ -298,57 +312,63 @@ export default function Report() {
           )}
         </Section>
 
-        <Section title="Market Positioning">
-          <p className="text-sm leading-relaxed text-foreground/85">{r.marketPositioning}</p>
-        </Section>
+        {!valuationUnavailable && (
+          <Section title="Market Positioning">
+            <p className="text-sm leading-relaxed text-foreground/85">{r.marketPositioning}</p>
+          </Section>
+        )}
 
         {/* Strengths + watch points — quieter borderless cards */}
-        <section className="grid md:grid-cols-2 gap-3 mb-6">
-          <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Star className="h-3.5 w-3.5 text-primary" />
-              <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Strengths</h2>
+        {!valuationUnavailable && (
+          <section className="grid md:grid-cols-2 gap-3 mb-6">
+            <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="h-3.5 w-3.5 text-primary" />
+                <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Strengths</h2>
+              </div>
+              <ul className="space-y-2">
+                {r.strengths.map(s => (
+                  <li key={s} className="flex gap-2.5 text-sm leading-snug">
+                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> {s}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-2">
-              {r.strengths.map(s => (
-                <li key={s} className="flex gap-2.5 text-sm leading-snug">
-                  <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> {s}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-              <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Watch Points</h2>
+            <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Watch Points</h2>
+              </div>
+              <ul className="space-y-2">
+                {r.watchPoints.map(s => (
+                  <li key={s} className="flex gap-2.5 text-sm leading-snug">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" /> {s}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-2">
-              {r.watchPoints.map(s => (
-                <li key={s} className="flex gap-2.5 text-sm leading-snug">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" /> {s}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Recommendations */}
-        <Section title="Seller Recommendations">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="rounded-xl bg-muted/20 border border-border/50 p-4">
-              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1.5">Recommended listing price</div>
-              <div className="text-2xl font-medium text-foreground/90 tabular-nums">
-                £{r.recommendations.listingPrice.toLocaleString()}
+        {!valuationUnavailable && (
+          <Section title="Seller Recommendations">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="rounded-xl bg-muted/20 border border-border/50 p-4">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1.5">Recommended listing price</div>
+                <div className="text-2xl font-medium text-foreground/90 tabular-nums">
+                  £{r.recommendations.listingPrice.toLocaleString()}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">Sweet spot for fast enquiries with negotiation room.</p>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">Sweet spot for fast enquiries with negotiation room.</p>
+              <div>
+                <RecBlock title="Where to sell" items={r.recommendations.whereToSell} />
+              </div>
+              <RecBlock title="What to highlight" items={r.recommendations.highlights} />
+              <RecBlock title="Documents to prepare" items={r.recommendations.documents} />
             </div>
-            <div>
-              <RecBlock title="Where to sell" items={r.recommendations.whereToSell} />
-            </div>
-            <RecBlock title="What to highlight" items={r.recommendations.highlights} />
-            <RecBlock title="Documents to prepare" items={r.recommendations.documents} />
-          </div>
-        </Section>
+          </Section>
+        )}
 
         {/* HPI */}
         <Section title="HPI Check Summary" right={
@@ -436,26 +456,30 @@ export default function Report() {
           )}
         </Section>
 
-        <SimilarCars
-          make={v.make}
-          model={v.model.split(" · ")[0]}
-          variant={v.model.includes(" · ") ? v.model.split(" · ")[1] : undefined}
-          year={v.year}
-          mileage={v.mileage}
-        />
+        {!valuationUnavailable && (
+          <>
+            <SimilarCars
+              make={v.make}
+              model={v.model.split(" · ")[0]}
+              variant={v.model.includes(" · ") ? v.model.split(" · ")[1] : undefined}
+              year={v.year}
+              mileage={v.mileage}
+            />
 
-        <AdvertCreator
-          valuationId={v.id}
-          vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, registration: v.registration, mot_expiry: v.mot_expiry }}
-          report={{
-            recommendations: { listingPrice: r.recommendations.listingPrice, highlights: r.recommendations.highlights },
-            conditionScore: r.conditionScore,
-            conditionLabel: r.conditionLabel,
-            honestAnalysis: r.honestAnalysis,
-            strengths: r.strengths,
-          }}
-          initialAdvert={(r as any).advert ?? null}
-        />
+            <AdvertCreator
+              valuationId={v.id}
+              vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, registration: v.registration, mot_expiry: v.mot_expiry }}
+              report={{
+                recommendations: { listingPrice: r.recommendations.listingPrice, highlights: r.recommendations.highlights },
+                conditionScore: r.conditionScore,
+                conditionLabel: r.conditionLabel,
+                honestAnalysis: r.honestAnalysis,
+                strengths: r.strengths,
+              }}
+              initialAdvert={(r as any).advert ?? null}
+            />
+          </>
+        )}
 
         <footer className="mt-10 pt-8 border-t border-border text-xs text-muted-foreground space-y-2">
           <p><strong className="text-foreground/80">Data sources:</strong> Live UK market pricing from MarketCheck UK, official MOT history from DVSA, and AI condition analysis from your photos.</p>
