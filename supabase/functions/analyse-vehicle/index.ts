@@ -1,8 +1,97 @@
 // Valu8 — AI vehicle analysis edge function
-// Uses Lovable AI Gateway (Gemini 2.5 Pro vision) to analyse photos + vehicle data
-// MOT history is realistic simulated data — placeholder for real DVSA API integration
+// Pulls live UK market pricing from MarketCheck UK as the valuation anchor,
+// then uses Lovable AI Gateway (Gemini 2.5 Pro vision) to adjust the figure
+// based on photos, mileage, history, MOT advisories and modifications.
 
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+
+// ----- MarketCheck UK live pricing -----
+const MC_KEY = Deno.env.get("MARKETCHECK_API_KEY");
+
+interface MarketPricing {
+  median: number;
+  mean?: number;
+  p25?: number;
+  p75?: number;
+  count: number;
+  avgMiles?: number;
+}
+
+async function fetchMarketCheckPricing(
+  make: string,
+  model: string,
+  year: number,
+  mileage: number,
+): Promise<MarketPricing | null> {
+  if (!MC_KEY) return null;
+  const baseModel = model.split(" · ")[0].split("·")[0].trim();
+
+  const tryFetch = async (params: URLSearchParams): Promise<MarketPricing | null> => {
+    const url = `https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`;
+    try {
+      const r = await fetch(url);
+      if (!r.ok) {
+        console.error("MarketCheck pricing", r.status, (await r.text()).slice(0, 160));
+        return null;
+      }
+      const j = await r.json();
+      const sp = j?.stats?.price;
+      const sm = j?.stats?.miles;
+      const count = Number(j?.num_found ?? 0);
+      const median = Number(sp?.median ?? sp?.mean ?? 0);
+      if (!median || count < 1) return null;
+      return {
+        median,
+        mean: Number(sp?.mean ?? 0) || undefined,
+        p25: Number(sp?.iqr?.p25 ?? sp?.percentiles?.p25 ?? 0) || undefined,
+        p75: Number(sp?.iqr?.p75 ?? sp?.percentiles?.p75 ?? 0) || undefined,
+        count,
+        avgMiles: Number(sm?.mean ?? sm?.median ?? 0) || undefined,
+      };
+    } catch (e) {
+      console.error("MarketCheck pricing fetch error", e);
+      return null;
+    }
+  };
+
+  // 1) tight: same year + similar mileage band
+  const milesLow = Math.max(0, mileage - 20000);
+  const milesHigh = mileage + 20000;
+  const tight = new URLSearchParams({
+    api_key: MC_KEY,
+    ymm: `${year}|${make}|${baseModel}`,
+    car_type: "used",
+    stats: "price,miles",
+    rows: "0",
+    miles_range: `${milesLow}-${milesHigh}`,
+  });
+  let res = await tryFetch(tight);
+  if (res && res.count >= 5) return res;
+
+  // 2) same year, any mileage
+  const sameYear = new URLSearchParams({
+    api_key: MC_KEY,
+    ymm: `${year}|${make}|${baseModel}`,
+    car_type: "used",
+    stats: "price,miles",
+    rows: "0",
+  });
+  res = await tryFetch(sameYear);
+  if (res && res.count >= 3) return res;
+
+  // 3) same make+model ±2 years
+  const wide = new URLSearchParams({
+    api_key: MC_KEY,
+    make,
+    model: baseModel,
+    year_range: `${year - 2}-${year + 2}`,
+    car_type: "used",
+    stats: "price,miles",
+    rows: "0",
+  });
+  res = await tryFetch(wide);
+  return res;
+}
 
 interface AnalyseRequest {
   make: string;
