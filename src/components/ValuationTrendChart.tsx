@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -12,29 +12,6 @@ interface Props {
 interface Point {
   year: string;
   value: number;
-}
-
-function estimateNewPrice(currentValue: number, ageYears: number) {
-  if (ageYears <= 0) return currentValue;
-  const retention = Math.max(0.18, Math.pow(0.86, ageYears));
-  return Math.round(currentValue / retention);
-}
-
-function generateLifetimeData(currentValue: number, registrationYear: number): Point[] {
-  const nowYear = new Date().getFullYear();
-  const ageYears = Math.max(1, nowYear - registrationYear);
-  const newPrice = estimateNewPrice(currentValue, ageYears);
-  const data: Point[] = [];
-  for (let i = 0; i <= ageYears; i++) {
-    const t = i / ageYears;
-    const curve = 1 - Math.pow(t, 0.7);
-    const base = currentValue + (newPrice - currentValue) * curve;
-    const noise = Math.sin(i * 1.7) * 0.012 * base;
-    data.push({ year: String(registrationYear + i), value: Math.round(base + noise) });
-  }
-  data[0].value = newPrice;
-  data[data.length - 1].value = currentValue;
-  return data;
 }
 
 export function ValuationTrendChart({ currentValue, registrationYear, make, model }: Props) {
