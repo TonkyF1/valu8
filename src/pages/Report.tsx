@@ -305,7 +305,7 @@ export default function Report() {
         {/* HPI */}
         <Section title="HPI Check Summary" right={
           <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted/40 border border-border/60 rounded-full px-2.5 py-1">
-            <ShieldCheck className="h-3 w-3 text-primary" /> {r.hpi.status} <span className="opacity-60">· Sample</span>
+            <ShieldCheck className="h-3 w-3 text-primary" /> {r.hpi.status}
           </span>
         }>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -320,14 +320,11 @@ export default function Report() {
 
         {/* MOT history */}
         <Section title="MOT History" right={
-          <span className={cn(
-            "inline-flex items-center gap-1.5 text-[11px] font-medium rounded-full px-2.5 py-1 border",
-            r.motSource === "dvsa"
-              ? "text-primary bg-primary/5 border-primary/30"
-              : "text-muted-foreground bg-muted/40 border-border/60"
-          )}>
-            {r.motSource === "dvsa" ? "Live DVSA data" : "Sample data"}
-          </span>
+          r.motSource === "dvsa" ? (
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium rounded-full px-2.5 py-1 border text-primary bg-primary/5 border-primary/30">
+              Live DVSA data
+            </span>
+          ) : null
         }>
           {r.motNotice && r.motSource !== "dvsa" && (
             <p className="text-xs text-muted-foreground mb-3">{r.motNotice}</p>
@@ -413,8 +410,8 @@ export default function Report() {
         />
 
         <footer className="mt-10 pt-8 border-t border-border text-xs text-muted-foreground space-y-2">
-          <p><strong className="text-foreground/80">Data sources:</strong> UK retail and trade pricing benchmarks, DVLA-style MOT/HPI summaries, Valu8 condition modelling.</p>
-          <p><strong className="text-foreground/80">Disclaimer:</strong> Valuations are AI-generated estimates for guidance only and do not constitute financial advice or a guaranteed sale price. Always verify HPI and MOT data through official sources before transacting.</p>
+          <p><strong className="text-foreground/80">Data sources:</strong> Live UK market pricing from MarketCheck UK, official MOT history from DVSA, and AI condition analysis from your photos.</p>
+          <p><strong className="text-foreground/80">Disclaimer:</strong> Valuations are estimates for guidance only and do not constitute financial advice or a guaranteed sale price. Always verify HPI and MOT data through official sources before transacting.</p>
         </footer>
       </main>
       <Footer />
