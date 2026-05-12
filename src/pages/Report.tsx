@@ -196,9 +196,22 @@ export default function Report() {
           {/* Headline private sale price */}
           <div className="lg:col-span-3 premium-card p-5 sm:p-6 relative overflow-hidden border-primary/30">
             <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.06] blur-3xl pointer-events-none" />
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Private Sale</span>
-              {r.marketConfidence && <span className="text-[9px] uppercase tracking-[0.16em] text-primary/90 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">{r.marketConfidence} confidence</span>}
+              {r.marketConfidence && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="cursor-help text-[9px] uppercase tracking-[0.16em] text-primary/90 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
+                      {r.marketConfidence} confidence
+                    </span>
+                  </TooltipTrigger>
+                  {r.marketConfidenceReason && (
+                    <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
+                      {r.marketConfidenceReason}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              )}
             </div>
             <div className="text-4xl sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-none">
               <CountUp value={r.values.privateSale} prefix="£" />
@@ -215,10 +228,33 @@ export default function Report() {
             <p className="text-xs sm:text-sm text-foreground/75 leading-relaxed mt-3 max-w-md">
               The sweet spot if you sell yourself — strong return for a few weeks of effort.
             </p>
+            {r.marketConfidenceReason && (
+              <p className="text-[11px] sm:text-xs text-muted-foreground/80 leading-relaxed mt-2 max-w-xl">
+                <span className="font-medium text-foreground/70">Why {r.marketConfidence?.toLowerCase()} confidence:</span> {r.marketConfidenceReason}
+              </p>
+            )}
             {r.valueReasoning && (
               <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed mt-3 max-w-xl">
                 {r.valueReasoning}
               </p>
+            )}
+            {r.priceAdjustments && r.priceAdjustments.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-border/40">
+                <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-2">Price adjustments applied</div>
+                <ul className="space-y-1">
+                  {r.priceAdjustments.map((a, i) => (
+                    <li key={i} className="flex items-center justify-between text-[11px] sm:text-xs">
+                      <span className="text-foreground/80">{a.label}</span>
+                      <span className={cn(
+                        "tabular-nums font-medium",
+                        a.impactPct < 0 ? "text-destructive/90" : "text-primary"
+                      )}>
+                        {a.impactPct > 0 ? "+" : ""}{a.impactPct}%
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
             <div className="grid grid-cols-2 gap-2 mt-5 pt-5 border-t border-border/60">
               <MiniTier label="Trade-in" tag="Quick" tip="What a dealer pays you today. Fastest, lowest." value={r.values.dealerTradeIn} />
