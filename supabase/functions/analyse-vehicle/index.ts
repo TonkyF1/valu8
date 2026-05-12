@@ -8,6 +8,16 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 // ----- MarketCheck UK live pricing -----
 const MC_KEY = Deno.env.get("MARKETCHECK_API_KEY");
 
+export interface ComparableListing {
+  price: number;
+  mileage: number;
+  year: number;
+  trim?: string;
+  location?: string;
+  source?: string;
+  url?: string;
+}
+
 interface MarketPricing {
   median: number;
   mean?: number;
@@ -15,6 +25,21 @@ interface MarketPricing {
   p75?: number;
   count: number;
   avgMiles?: number;
+  listings: ComparableListing[];
+  matchTier: string; // describes what filter matched (for transparency)
+}
+
+function median(nums: number[]): number {
+  if (nums.length === 0) return 0;
+  const s = [...nums].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+function percentile(nums: number[], p: number): number {
+  if (nums.length === 0) return 0;
+  const s = [...nums].sort((a, b) => a - b);
+  const idx = Math.min(s.length - 1, Math.max(0, Math.floor((p / 100) * (s.length - 1))));
+  return s[idx];
 }
 
 async function fetchMarketCheckPricing(
@@ -28,30 +53,57 @@ async function fetchMarketCheckPricing(
   const baseModel = model.split(" · ")[0].split("·")[0].trim();
   const trim = variant?.split(" · ")[0].split("·")[0].trim();
 
-  const tryFetch = async (params: URLSearchParams): Promise<MarketPricing | null> => {
+  // Pull up to 20 real active listings, with stats, for any given filter.
+  const tryFetch = async (params: URLSearchParams, tierLabel: string): Promise<MarketPricing | null> => {
+    params.set("rows", "20");
+    params.set("stats", "price,miles");
+    params.set("car_type", "used");
     const url = `https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`;
     try {
       const r = await fetch(url);
       if (!r.ok) {
-        console.error("MarketCheck pricing", r.status, (await r.text()).slice(0, 160));
+        console.error("MarketCheck listings", r.status, (await r.text()).slice(0, 160));
         return null;
       }
       const j = await r.json();
+      const count = Number(j?.num_found ?? 0);
+      const items: any[] = Array.isArray(j?.listings) ? j.listings : [];
+      const listings: ComparableListing[] = items
+        .filter((it) => Number(it?.price) > 0 && Number(it?.build?.year) > 0)
+        .map((it) => ({
+          price: Math.round(Number(it.price)),
+          mileage: Math.round(Number(it.miles ?? 0)),
+          year: Number(it.build.year),
+          trim: it.build?.trim || undefined,
+          location: it.dealer?.city || it.dealer?.county || undefined,
+          source: it.source || "MarketCheck",
+          url: it.vdp_url || undefined,
+        }))
+        .filter((l) => l.price >= 200 && l.mileage >= 0);
+
+      if (listings.length === 0 && count === 0) return null;
+
+      const prices = listings.map((l) => l.price);
+      const miles = listings.map((l) => l.mileage).filter((m) => m > 0);
       const sp = j?.stats?.price;
       const sm = j?.stats?.miles;
-      const count = Number(j?.num_found ?? 0);
-      const median = Number(sp?.median ?? sp?.mean ?? 0);
-      if (!median || count < 1) return null;
+
+      // Prefer listing-derived stats (real prices), fall back to API stats.
+      const med = prices.length ? median(prices) : Number(sp?.median ?? sp?.mean ?? 0);
+      if (!med) return null;
+
       return {
-        median,
-        mean: Number(sp?.mean ?? 0) || undefined,
-        p25: Number(sp?.iqr?.p25 ?? sp?.percentiles?.p25 ?? 0) || undefined,
-        p75: Number(sp?.iqr?.p75 ?? sp?.percentiles?.p75 ?? 0) || undefined,
+        median: med,
+        mean: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : Number(sp?.mean ?? 0) || undefined,
+        p25: prices.length >= 4 ? percentile(prices, 25) : Number(sp?.iqr?.p25 ?? sp?.percentiles?.p25 ?? 0) || undefined,
+        p75: prices.length >= 4 ? percentile(prices, 75) : Number(sp?.iqr?.p75 ?? sp?.percentiles?.p75 ?? 0) || undefined,
         count,
-        avgMiles: Number(sm?.mean ?? sm?.median ?? 0) || undefined,
+        avgMiles: miles.length ? miles.reduce((a, b) => a + b, 0) / miles.length : Number(sm?.mean ?? sm?.median ?? 0) || undefined,
+        listings,
+        matchTier: tierLabel,
       };
     } catch (e) {
-      console.error("MarketCheck pricing fetch error", e);
+      console.error("MarketCheck listings fetch error", e);
       return null;
     }
   };
@@ -59,80 +111,47 @@ async function fetchMarketCheckPricing(
   const milesLow = Math.max(0, mileage - 20000);
   const milesHigh = mileage + 20000;
 
-  // 1) trim-specific, same year, similar mileage (most accurate)
   if (trim) {
-    const tightTrim = new URLSearchParams({
+    let r = await tryFetch(new URLSearchParams({
       api_key: MC_KEY,
       ymmt: `${year}|${make}|${baseModel}|${trim}`,
-      car_type: "used",
-      stats: "price,miles",
-      rows: "0",
       miles_range: `${milesLow}-${milesHigh}`,
-    });
-    let r = await tryFetch(tightTrim);
-    if (r && r.count >= 5) return r;
+    }), `${year} ${make} ${baseModel} ${trim} (similar mileage)`);
+    if (r && r.listings.length >= 5) return r;
 
-    // 2) trim-specific, same year, any mileage
-    const trimYear = new URLSearchParams({
+    r = await tryFetch(new URLSearchParams({
       api_key: MC_KEY,
       ymmt: `${year}|${make}|${baseModel}|${trim}`,
-      car_type: "used",
-      stats: "price,miles",
-      rows: "0",
-    });
-    r = await tryFetch(trimYear);
-    if (r && r.count >= 3) return r;
+    }), `${year} ${make} ${baseModel} ${trim}`);
+    if (r && r.listings.length >= 3) return r;
 
-    // 3) trim-specific, ±2 years
-    const trimWide = new URLSearchParams({
+    r = await tryFetch(new URLSearchParams({
       api_key: MC_KEY,
-      make,
-      model: baseModel,
-      trim,
+      make, model: baseModel, trim,
       year_range: `${year - 2}-${year + 2}`,
-      car_type: "used",
-      stats: "price,miles",
-      rows: "0",
-    });
-    r = await tryFetch(trimWide);
-    if (r && r.count >= 3) return r;
+    }), `${make} ${baseModel} ${trim} ${year - 2}-${year + 2}`);
+    if (r && r.listings.length >= 3) return r;
   }
 
-  // 4) same year + similar mileage (no trim filter)
-  const tight = new URLSearchParams({
+  let r = await tryFetch(new URLSearchParams({
     api_key: MC_KEY,
     ymm: `${year}|${make}|${baseModel}`,
-    car_type: "used",
-    stats: "price,miles",
-    rows: "0",
     miles_range: `${milesLow}-${milesHigh}`,
-  });
-  let res = await tryFetch(tight);
-  if (res && res.count >= 5) return res;
+  }), `${year} ${make} ${baseModel} (similar mileage)`);
+  if (r && r.listings.length >= 5) return r;
 
-  // 5) same year, any mileage
-  const sameYear = new URLSearchParams({
+  r = await tryFetch(new URLSearchParams({
     api_key: MC_KEY,
     ymm: `${year}|${make}|${baseModel}`,
-    car_type: "used",
-    stats: "price,miles",
-    rows: "0",
-  });
-  res = await tryFetch(sameYear);
-  if (res && res.count >= 3) return res;
+  }), `${year} ${make} ${baseModel}`);
+  if (r && r.listings.length >= 3) return r;
 
-  // 6) same make+model ±2 years
-  const wide = new URLSearchParams({
+  r = await tryFetch(new URLSearchParams({
     api_key: MC_KEY,
-    make,
-    model: baseModel,
+    make, model: baseModel,
     year_range: `${year - 2}-${year + 2}`,
-    car_type: "used",
-    stats: "price,miles",
-    rows: "0",
-  });
-  res = await tryFetch(wide);
-  return res;
+  }), `${make} ${baseModel} ${year - 2}-${year + 2}`);
+  return r;
 }
 
 interface AnalyseRequest {
