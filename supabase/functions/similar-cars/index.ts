@@ -103,79 +103,126 @@ Deno.serve(async (req) => {
       return json({ error: "make, model and year are required" }, 400);
     }
 
-    const prompt = `You are a UK used-car market analyst. Generate 5 realistic CURRENT for-sale listings that match this vehicle:
+    // 1) Try MarketCheck UK for real active listings.
+    let listings: Listing[] = [];
+    const MC_KEY = Deno.env.get("MARKETCHECK_API_KEY");
+    if (MC_KEY) {
+      try {
+        const params = new URLSearchParams({
+          api_key: MC_KEY,
+          car_type: "used",
+          make: body.make,
+          model: body.model,
+          year_range: `${body.year - 2}-${body.year + 2}`,
+          rows: "8",
+          sort_by: "price",
+          sort_order: "asc",
+        });
+        const mcResp = await fetch(
+          `https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`
+        );
+        if (mcResp.ok) {
+          const mcJson = await mcResp.json();
+          const items: any[] = mcJson?.listings ?? [];
+          listings = items
+            .filter((it) => it?.price && it?.build?.year)
+            .slice(0, 6)
+            .map((it): Listing => ({
+              title: it.heading || `${it.build.year} ${it.build.make} ${it.build.model}`,
+              year: Number(it.build.year),
+              make: String(it.build.make || body.make),
+              model: String(it.build.model || body.model),
+              variant: it.build.trim || undefined,
+              colour: it.exterior_color || it.build.exterior_color || "Silver",
+              mileage: Number(it.miles || 0),
+              price: Math.round(Number(it.price)),
+              source: it.source || "MarketCheck",
+              url: it.vdp_url || undefined,
+              location: it.dealer?.city || it.dealer?.county || undefined,
+            }));
+        } else {
+          console.error("MarketCheck error", mcResp.status, (await mcResp.text()).slice(0, 200));
+        }
+      } catch (e) {
+        console.error("MarketCheck fetch error", e);
+      }
+    }
+
+    // 2) Fallback: AI-generated plausible listings if MarketCheck returned nothing.
+    if (listings.length === 0) {
+      const prompt = `You are a UK used-car market analyst. Generate 5 realistic CURRENT for-sale listings that match this vehicle:
 - ${body.year} ${body.make} ${body.model}${body.variant ? ` ${body.variant}` : ""}
 - Around ${body.mileage.toLocaleString()} miles
 
-Listings should be plausible across AutoTrader, PistonHeads, Car & Classic, Motors.co.uk and similar UK marketplaces. Vary mileage within +/- 25,000 of the target, year within +/- 2 of the target. Prices in GBP, realistic for the UK market right now (no decimals). Include a short title and a realistic factory body colour (e.g. "Pearl White", "Racing Green", "Nardo Grey"). Use real plausible UK locations. Do NOT invent fake URLs — set url to a believable search URL on the source site (e.g. "https://www.autotrader.co.uk/car-search?make=${encodeURIComponent(body.make)}&model=${encodeURIComponent(body.model)}").
+Listings should be plausible across AutoTrader, PistonHeads, Car & Classic, Motors.co.uk and similar UK marketplaces. Vary mileage within +/- 25,000 of the target, year within +/- 2 of the target. Prices in GBP, realistic for the UK market right now (no decimals). Include a short title and a realistic factory body colour. Use real plausible UK locations. Do NOT invent fake URLs — set url to a believable search URL on the source site.
 
 Return ONLY a JSON object: { "listings": Listing[] }.`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: prompt }],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "return_listings",
-              description: "Return similar car listings",
-              parameters: {
-                type: "object",
-                properties: {
-                  listings: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        title: { type: "string" },
-                        year: { type: "number" },
-                        make: { type: "string" },
-                        model: { type: "string" },
-                        variant: { type: "string" },
-                        colour: { type: "string" },
-                        mileage: { type: "number" },
-                        price: { type: "number" },
-                        source: { type: "string" },
-                        url: { type: "string" },
-                        location: { type: "string" },
+      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [{ role: "user", content: prompt }],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "return_listings",
+                description: "Return similar car listings",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    listings: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          title: { type: "string" },
+                          year: { type: "number" },
+                          make: { type: "string" },
+                          model: { type: "string" },
+                          variant: { type: "string" },
+                          colour: { type: "string" },
+                          mileage: { type: "number" },
+                          price: { type: "number" },
+                          source: { type: "string" },
+                          url: { type: "string" },
+                          location: { type: "string" },
+                        },
+                        required: ["title", "year", "make", "model", "mileage", "price", "source", "colour"],
                       },
-                      required: ["title", "year", "make", "model", "mileage", "price", "source", "colour"],
                     },
                   },
+                  required: ["listings"],
                 },
-                required: ["listings"],
               },
             },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "return_listings" } },
-      }),
-    });
+          ],
+          tool_choice: { type: "function", function: { name: "return_listings" } },
+        }),
+      });
 
-    if (!aiResp.ok) {
-      const t = await aiResp.text();
-      console.error("AI error", aiResp.status, t);
-      // Degrade gracefully so the client doesn't crash — return empty listings + a soft error flag.
-      const reason =
-        aiResp.status === 402
-          ? "AI credits exhausted"
-          : aiResp.status === 429
-          ? "Rate limited, try again shortly"
-          : "AI request failed";
-      return json({ listings: [], error: reason, fallback: true });
+      if (!aiResp.ok) {
+        const t = await aiResp.text();
+        console.error("AI error", aiResp.status, t);
+        const reason =
+          aiResp.status === 402
+            ? "AI credits exhausted"
+            : aiResp.status === 429
+            ? "Rate limited, try again shortly"
+            : "AI request failed";
+        return json({ listings: [], error: reason, fallback: true });
+      }
+
+      const aiJson = await aiResp.json();
+      const toolCall = aiJson?.choices?.[0]?.message?.tool_calls?.[0];
+      const args = toolCall?.function?.arguments ? JSON.parse(toolCall.function.arguments) : null;
+      listings = (args?.listings ?? []).slice(0, 6);
     }
-
-    const aiJson = await aiResp.json();
-    const toolCall = aiJson?.choices?.[0]?.message?.tool_calls?.[0];
-    const args = toolCall?.function?.arguments ? JSON.parse(toolCall.function.arguments) : null;
-    const listings: Listing[] = (args?.listings ?? []).slice(0, 6);
 
     // Generate / fetch cached photoreal images in parallel
     const withImages = await Promise.all(
