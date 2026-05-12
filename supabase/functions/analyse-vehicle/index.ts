@@ -887,7 +887,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
 
       mult = clamp(mult, 0.45, 1.18);
 
-      let dealerRetail = roundToGrain(mc.median * mult);
+      // Use the mileage-weighted live-listings anchor when available; otherwise fall back to the wider median.
+      const anchor = anchorMedian > 0 ? anchorMedian : mc.median;
+      let dealerRetail = roundToGrain(anchor * mult);
 
       // Sanity floor for ultra-rare cars: never publish a number below ~70% of
       // the lower exotic anchor, even if MarketCheck noise suggests otherwise.
