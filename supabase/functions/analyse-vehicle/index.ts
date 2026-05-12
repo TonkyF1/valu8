@@ -833,25 +833,25 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       if (ultraRare) {
         // Ultra-rare cars NEVER get High confidence, regardless of sample.
         confidence = "Low";
-        confidenceReason = `Ultra-rare model — even with ${mc.count} live listing${mc.count === 1 ? "" : "s"}, the UK market is too thin and variable for a confident figure.`;
+        confidenceReason = "This is a very rare car and even with some listings, the market is too thin and variable for a confident figure.";
         rareCarWarning = LIMITED_DATA_WARNING;
       } else if (mc.count >= 500 && !isOutlierMileage && photoUrls.length >= 4 && negativeCount <= 1) {
         confidence = "High";
-        confidenceReason = `Backed by ${mc.count} closely comparable live UK listings, with similar mileage and ${photoQuality} photo evidence. Few negative signals.`;
+        confidenceReason = `Plenty of similar cars for sale right now (${mc.count} listings) with matching mileage and good photos. Most things look positive.`;
       } else if (mc.count >= 50 && !isOutlierMileage && negativeCount <= 3) {
         confidence = "Medium";
-        confidenceReason = `${mc.count} comparable live UK listings on file, ${photoQuality} photo evidence${isOutlierMileage ? ", mileage outside the typical band" : ""}. Some negatives applied.`;
+        confidenceReason = `Solid number of similar listings (${mc.count}) and ${photoQuality} photos. A few factors pulled the price down, but the figure is still reasonable.`;
       } else if (mc.count >= 10) {
         confidence = "Low";
         const reasons: string[] = [];
-        reasons.push(`only ${mc.count} comparable live listings (need 50+ for medium, 500+ for high)`);
-        if (isOutlierMileage) reasons.push("mileage well outside the typical band");
-        if (photoUrls.length < 3) reasons.push("limited photo evidence");
-        if (negativeCount >= 4) reasons.push("multiple negative condition/history signals");
-        confidenceReason = `Lower confidence: ${reasons.join(", ")}.`;
+        reasons.push(`only ${mc.count} similar cars found (we like 50+ for a solid figure)`);
+        if (isOutlierMileage) reasons.push("mileage is well outside the usual range");
+        if (photoUrls.length < 3) reasons.push("not many photos to go on");
+        if (negativeCount >= 4) reasons.push("several issues pulled the price down");
+        confidenceReason = `We're less confident because ${reasons.join(" and ")}. The figure is still useful, but treat it as a guide rather than a guarantee.`;
       } else {
         confidence = "Very Low";
-        confidenceReason = `Very low confidence: only ${mc.count} comparable live listing${mc.count === 1 ? "" : "s"} found — not enough to establish a reliable market figure.`;
+        confidenceReason = `Only ${mc.count} similar car${mc.count === 1 ? "" : "s"} found — that's not enough to be sure. Think of this as a rough guide, not a firm price.`;
       }
 
       values = { dealerTradeIn, privateSale, dealerRetail };
