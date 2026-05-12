@@ -826,32 +826,28 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       rangeLow = roundToGrain(privateSale * (1 - spread));
       rangeHigh = roundToGrain(privateSale * (1 + spread * 0.7));
 
-      // --- Confidence reasoning (much stricter) ---
+      // --- Confidence reasoning (short, model-specific) ---
       const isOutlierMileage = body.mileage >= 100000 || (mc.avgMiles && Math.abs(body.mileage - mc.avgMiles) > 30000);
-      const photoQuality = photoUrls.length >= 5 ? "strong" : photoUrls.length >= 3 ? "moderate" : "limited";
+      const carName = `${body.make} ${body.model}${body.variant ? ` ${body.variant}` : ""}`.trim();
+      const shortName = body.variant ? `${body.model} ${body.variant}` : body.model;
+      const mileageDescriptor = body.mileage >= 100000 ? "high-mileage " : body.mileage <= 30000 ? "low-mileage " : "";
 
       if (ultraRare) {
-        // Ultra-rare cars NEVER get High confidence, regardless of sample.
         confidence = "Low";
-        confidenceReason = "This is a very rare car and even with some listings, the market is too thin and variable for a confident figure.";
+        confidenceReason = `Very few ${carName}s come up for sale, so this is a guide rather than a firm figure.`;
         rareCarWarning = LIMITED_DATA_WARNING;
       } else if (mc.count >= 500 && !isOutlierMileage && photoUrls.length >= 4 && negativeCount <= 1) {
         confidence = "High";
-        confidenceReason = `Plenty of similar cars for sale right now (${mc.count} listings) with matching mileage and good photos. Most things look positive.`;
+        confidenceReason = `Plenty of comparable ${shortName}s on the market right now, and most signals on this car are positive.`;
       } else if (mc.count >= 50 && !isOutlierMileage && negativeCount <= 3) {
         confidence = "Medium";
-        confidenceReason = `Solid number of similar listings (${mc.count}) and ${photoQuality} photos. A few factors pulled the price down, but the figure is still reasonable.`;
+        confidenceReason = `Reasonable number of similar ${shortName}s for sale. A few things pulled the price down, but the figure is solid.`;
       } else if (mc.count >= 10) {
         confidence = "Low";
-        const reasons: string[] = [];
-        reasons.push(`only ${mc.count} similar cars found (we like 50+ for a solid figure)`);
-        if (isOutlierMileage) reasons.push("mileage is well outside the usual range");
-        if (photoUrls.length < 3) reasons.push("not many photos to go on");
-        if (negativeCount >= 4) reasons.push("several issues pulled the price down");
-        confidenceReason = `We're less confident because ${reasons.join(" and ")}. The figure is still useful, but treat it as a guide rather than a guarantee.`;
+        confidenceReason = `Not many ${mileageDescriptor}${shortName}s like yours on the market right now, so treat this as a useful guide rather than an exact price.`;
       } else {
         confidence = "Very Low";
-        confidenceReason = `Only ${mc.count} similar car${mc.count === 1 ? "" : "s"} found — that's not enough to be sure. Think of this as a rough guide, not a firm price.`;
+        confidenceReason = `Very few ${shortName}s on sale to compare against — this is a rough guide only.`;
       }
 
       values = { dealerTradeIn, privateSale, dealerRetail };
@@ -864,8 +860,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         baseTradeIn: roundToGrain(baseRetail * 0.76),
         netAdjustmentPct: Math.round((mult - 1) * 100),
       };
-      const negSummary = adjustments.filter(a => a.impactPct < 0).map(a => a.label).slice(0, 3).join(", ");
-      pricingReasoning = `Based on ${mc.count} similar cars currently for sale. The main things that affected the price were: ${negSummary || "mileage and overall condition"}.`;
+      const negSummary = adjustments.filter(a => a.impactPct < 0).map(a => a.label).slice(0, 2).join(" and ");
+      pricingReasoning = negSummary
+        ? `Main things affecting the price: ${negSummary.toLowerCase()}.`
+        : `Based on what similar ${shortName}s are selling for.`;
       dataSource = "marketcheck";
     } else if (badMarketData) {
       valuationUnavailable = true;
