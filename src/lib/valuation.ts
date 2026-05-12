@@ -29,6 +29,10 @@ export interface ValuationReport {
   valueRange?: { privateSaleLow: number; privateSaleHigh: number };
   valueReasoning?: string;
   marketConfidence?: "High" | "Medium" | "Low";
+  marketConfidenceReason?: string;
+  pricingSource?: "marketcheck" | "ai_estimate";
+  marketSampleSize?: number;
+  priceAdjustments?: { label: string; impactPct: number }[];
   honestAnalysis: string;
   marketPositioning: string;
   photoObservations?: string;
