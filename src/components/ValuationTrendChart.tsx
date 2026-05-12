@@ -1,56 +1,84 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   currentValue: number;
   registrationYear: number;
+  make?: string;
+  model?: string;
 }
 
-// Rough new-car price estimate working backwards from current value & age.
-// Cars typically lose ~50-65% of value over 8-10 years, then depreciation flattens.
+interface Point {
+  year: string;
+  value: number;
+}
+
 function estimateNewPrice(currentValue: number, ageYears: number) {
   if (ageYears <= 0) return currentValue;
-  // Inverse depreciation curve
   const retention = Math.max(0.18, Math.pow(0.86, ageYears));
   return Math.round(currentValue / retention);
 }
 
-function generateLifetimeData(currentValue: number, registrationYear: number) {
+function generateLifetimeData(currentValue: number, registrationYear: number): Point[] {
   const nowYear = new Date().getFullYear();
   const ageYears = Math.max(1, nowYear - registrationYear);
   const newPrice = estimateNewPrice(currentValue, ageYears);
-
-  const data: { year: string; value: number }[] = [];
+  const data: Point[] = [];
   for (let i = 0; i <= ageYears; i++) {
-    const year = registrationYear + i;
-    // Depreciation curve: steeper early, flatter later
     const t = i / ageYears;
-    const curve = 1 - Math.pow(t, 0.7); // value retention factor
+    const curve = 1 - Math.pow(t, 0.7);
     const base = currentValue + (newPrice - currentValue) * curve;
     const noise = Math.sin(i * 1.7) * 0.012 * base;
-    data.push({
-      year: String(year),
-      value: Math.round(base + noise),
-    });
+    data.push({ year: String(registrationYear + i), value: Math.round(base + noise) });
   }
-  // Pin endpoints exactly
   data[0].value = newPrice;
   data[data.length - 1].value = currentValue;
   return data;
 }
 
-export function ValuationTrendChart({ currentValue, registrationYear }: Props) {
-  const data = useMemo(
+export function ValuationTrendChart({ currentValue, registrationYear, make, model }: Props) {
+  const fallback = useMemo(
     () => generateLifetimeData(currentValue, registrationYear),
     [currentValue, registrationYear]
   );
+  const [data, setData] = useState<Point[]>(fallback);
+  const [source, setSource] = useState<"marketcheck" | "estimate">("estimate");
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!make || !model) return;
+    supabase.functions
+      .invoke("historical-valuation", {
+        body: { make, model: model.split(" · ")[0], year: registrationYear, currentValue },
+      })
+      .then(({ data: resp }) => {
+        if (cancelled) return;
+        const series = (resp as any)?.series as Point[] | null;
+        if (series && series.length > 1) {
+          setData(series);
+          setSource("marketcheck");
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [make, model, registrationYear, currentValue]);
 
   const tickInterval = data.length > 8 ? Math.ceil(data.length / 6) - 1 : 0;
 
   return (
     <div className="mt-3">
-      <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-1">
-        Valuation Trend (Lifetime)
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+          Valuation Trend (Lifetime)
+        </div>
+        {source === "marketcheck" && (
+          <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground/60">
+            MarketCheck UK
+          </div>
+        )}
       </div>
       <div className="h-[72px] w-full">
         <ResponsiveContainer width="100%" height="100%">
