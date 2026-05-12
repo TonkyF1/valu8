@@ -932,6 +932,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         confidenceReason = `Very few ${shortName}s on sale to compare against — this is a rough guide only.`;
       }
 
+      values = { dealerTradeIn, privateSale, dealerRetail };
       const baseRetail = roundToGrain(anchor);
       marketBaseline = {
         source: "MarketCheck UK",
