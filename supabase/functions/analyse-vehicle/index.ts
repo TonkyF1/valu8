@@ -955,7 +955,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       rareCarWarning,
       valuationUnavailable,
       honestAnalysis: valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis,
-      marketPositioning: valuationUnavailable ? "Specialist-only market. Use a marque specialist, specialist dealer, or auction house for a proper appraisal." : ai.marketPositioning,
+      marketPositioning: valuationUnavailable ? "This type of car needs a specialist's eye. A marque specialist or auction house will give you a proper appraisal." : ai.marketPositioning,
       photoObservations: ai.photoObservations,
       strengths: ai.strengths,
       watchPoints: ai.watchPoints,
