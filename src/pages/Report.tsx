@@ -283,7 +283,7 @@ export default function Report() {
                   Specialist / auction
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-4 max-w-[220px] leading-relaxed">
-                  Ultra-rare and thin-market cars need specialist appraisal, not an automated estimate.
+                  Cars like this are too rare for our system to value accurately. A specialist dealer or auction house will give you a much better idea.
                 </p>
               </>
             ) : (
