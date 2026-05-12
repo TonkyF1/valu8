@@ -7,6 +7,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 
 // ----- MarketCheck UK live pricing -----
 const MC_KEY = Deno.env.get("MARKETCHECK_API_KEY");
+const CURRENT_YEAR = new Date().getUTCFullYear();
 
 export interface ComparableListing {
   price: number;
@@ -247,7 +248,7 @@ const PREMIUM = ["BMW","Mercedes-Benz","Mercedes-AMG","Audi","Porsche","Land Rov
 const ECONOMY = ["Dacia","SEAT","Škoda","Skoda","Fiat","Citroën","Citroen","Vauxhall","Peugeot","Renault","Suzuki","MG","Kia","Hyundai","Daihatsu","Perodua","Proton","Lada","Tata","BYD","Leapmotor","VinFast","XPeng"];
 
 function baseValue(make: string, year: number) {
-  const age = Math.max(0, 2026 - year);
+  const age = Math.max(0, CURRENT_YEAR - year);
   let base = 18000;
   if (EXOTIC.includes(make)) base = 120000;
   else if (PREMIUM.includes(make)) base = 32000;
@@ -265,6 +266,19 @@ function roundToGrain(n: number) {
 
 function clamp(num: number, min: number, max: number) {
   return Math.max(min, Math.min(max, num));
+}
+
+function sanitizeNarrativeYears(text: string | undefined, vehicleYear: number, currentYear = CURRENT_YEAR) {
+  if (!text) return "";
+  return text.replace(/\b(19|20)\d{2}\b/g, (match) => {
+    const parsed = Number(match);
+    if (parsed === vehicleYear || parsed === currentYear) return match;
+    return String(vehicleYear);
+  });
+}
+
+function sanitizeNarrativeList(items: string[] | undefined, vehicleYear: number, currentYear = CURRENT_YEAR) {
+  return (items ?? []).map((item) => sanitizeNarrativeYears(item, vehicleYear, currentYear));
 }
 
 function isEnthusiastCar(make: string, model: string, variant?: string) {
@@ -315,7 +329,7 @@ function computeMarketRange(params: {
   aiPrivateValue: number;
 }) {
   const { make, model, variant, year, mileage, motExpiry, serviceNotes, photoCount, conditionScore, aiPrivateValue } = params;
-  const age = Math.max(0, 2026 - year);
+  const age = Math.max(0, CURRENT_YEAR - year);
   const expectedMileage = age <= 0 ? 3000 : age * 8000;
   const mileageRatio = mileage / Math.max(expectedMileage, 1);
   const serviceText = `${serviceNotes ?? ""}`.toLowerCase();
@@ -514,7 +528,7 @@ async function fetchDvsaMotHistory(registration: string): Promise<{ entries: Mot
 // Fallback: realistic simulated MOT history (used when no reg or API unavailable).
 function simulateMotHistory(year: number, currentMileage: number, seed: number) {
   const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-  const ageYears = Math.max(0, 2026 - year);
+  const ageYears = Math.max(0, CURRENT_YEAR - year);
   if (ageYears < 3) return [];
   const records: { date: string; result: "Pass" | "Advisory" | "Fail"; note: string; mileage: number }[] = [];
   const yearsToShow = Math.min(5, ageYears - 2);
@@ -556,7 +570,7 @@ YOUR JOB IS TO BE HONEST AND CONSERVATIVE — NOT OPTIMISTIC.
 Sellers come to you because they want a realistic number. Over-promising helps no one. When in doubt, lean LOWER. A car the seller can actually sell at your figure within 3-4 weeks is a win; an inflated number that sits unsold is a failure.
 
 CRITICAL YEAR RULE — READ CAREFULLY:
-The user message always contains the EXACT vehicle year (e.g., 2020, 2018, 2022). You MUST use ONLY that exact year in every sentence you write. NEVER use the example year below, NEVER guess a year, and NEVER copy a year from any other source. Double-check every mention of a year against the vehicle data provided.
+The user message always contains the EXACT vehicle year (e.g., 2020, 2018, 2022) and the CURRENT YEAR for context. You MUST use ONLY the exact vehicle year when referring to the car, and ONLY the current year when explicitly talking about "today", "now", or the current market year. NEVER guess a year, NEVER copy a year from any other source, and NEVER reuse a year from a previous car. Double-check every mention of a year against the vehicle data provided.
 
 CORE PRINCIPLES:
 1. Private sale prices typically sit 8-15% BELOW dealer asking. Trade-in is 20-25% below dealer asking.
@@ -734,6 +748,8 @@ You MUST factor these into the price and call them out explicitly in your analys
         type: "text",
         text:
 `Vehicle:
+- Vehicle year: ${body.year}
+- Current year: ${CURRENT_YEAR}
 - ${body.year} ${body.make} ${body.model}${body.variant ? ` — ${body.variant}` : ""}
 - Mileage: ${body.mileage.toLocaleString()} miles
 - Registration: ${body.registration || "not provided"}
@@ -745,7 +761,7 @@ ${marketBlock}
 
 ${motBlock}
 
-Be honest and conservative. Lean lower if there are negatives. Call out high mileage, corrosion and history gaps explicitly. Call the valu8_report function.`,
+Be honest and conservative. Lean lower if there are negatives. Call out high mileage, corrosion and history gaps explicitly. If you mention the car's year, you must say ${body.year}. If you mention the current year or today's market, you must say ${CURRENT_YEAR}. Call the valu8_report function.`,
       },
       ...photoUrls.map((url) => ({ type: "image_url", image_url: { url } })),
     ];
@@ -818,7 +834,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     } | undefined;
     const adjustments: { label: string; impactPct: number }[] = [];
 
-    const age = Math.max(0, 2026 - body.year);
+    const age = Math.max(0, CURRENT_YEAR - body.year);
     const expectedMileage = age <= 0 ? 3000 : age * 8000;
     const mileageRatio = body.mileage / Math.max(expectedMileage, 1);
     const serviceText = `${body.serviceNotes ?? ""}`.toLowerCase();
@@ -1028,7 +1044,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       conditionLabel: ai.conditionLabel,
       values,
       valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
-      valueReasoning: valuationUnavailable ? pricingReasoning : ai.valueReasoning,
+      valueReasoning: sanitizeNarrativeYears(valuationUnavailable ? pricingReasoning : ai.valueReasoning, body.year),
       marketConfidence: confidence,
       marketConfidenceReason: confidenceReason,
       pricingSource: dataSource,
@@ -1039,12 +1055,17 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       marketAnchor: valuationUnavailable ? undefined : (anchorMedian > 0 ? Math.round(anchorMedian) : undefined),
       rareCarWarning,
       valuationUnavailable,
-      honestAnalysis: valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis,
-      marketPositioning: valuationUnavailable ? "This type of car needs a specialist's eye. A marque specialist or auction house will give you a proper appraisal." : ai.marketPositioning,
-      photoObservations: ai.photoObservations,
-      strengths: ai.strengths,
-      watchPoints: ai.watchPoints,
-      recommendations: { listingPrice, ...ai.recommendations },
+      honestAnalysis: sanitizeNarrativeYears(valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis, body.year),
+      marketPositioning: sanitizeNarrativeYears(valuationUnavailable ? "This type of car needs a specialist's eye. A marque specialist or auction house will give you a proper appraisal." : ai.marketPositioning, body.year),
+      photoObservations: sanitizeNarrativeYears(ai.photoObservations, body.year),
+      strengths: sanitizeNarrativeList(ai.strengths, body.year),
+      watchPoints: sanitizeNarrativeList(ai.watchPoints, body.year),
+      recommendations: {
+        listingPrice,
+        whereToSell: sanitizeNarrativeList(ai.recommendations?.whereToSell, body.year),
+        highlights: sanitizeNarrativeList(ai.recommendations?.highlights, body.year),
+        documents: sanitizeNarrativeList(ai.recommendations?.documents, body.year),
+      },
       hpi: {
         status: "All Clear" as const,
         checks: [

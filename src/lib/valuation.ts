@@ -1,6 +1,8 @@
 // Deterministic mock valuation generator for Valu8 (test mode)
 import { PHOTO_SLOTS } from "./cars";
 
+const CURRENT_YEAR = new Date().getUTCFullYear();
+
 export interface ValuationInput {
   make: string;
   model: string;
@@ -77,7 +79,7 @@ const PREMIUM = ["BMW","Mercedes-Benz","Audi","Porsche","Land Rover","Jaguar","T
 const ECONOMY = ["Dacia","SEAT","Škoda","Fiat","Citroën","Vauxhall","Peugeot","Renault","Suzuki","MG","Kia","Hyundai"];
 
 function baseValue(make: string, year: number) {
-  const age = Math.max(0, 2026 - year);
+  const age = Math.max(0, CURRENT_YEAR - year);
   let base = 18000;
   if (PREMIUM.includes(make)) base = 32000;
   else if (ECONOMY.includes(make)) base = 13000;
@@ -90,7 +92,7 @@ export function generateValuation(input: ValuationInput): ValuationReport {
   const seed = hash(`${input.make}|${input.model}|${input.year}|${input.mileage}|${input.registration ?? ""}`);
   const r = rand(seed);
 
-  const expectedMileage = (2026 - input.year) * 8500;
+  const expectedMileage = Math.max(1, (CURRENT_YEAR - input.year) * 8500);
   const mileageRatio = input.mileage / Math.max(expectedMileage, 1);
   // condition baseline 6.0..9.2, modulated by mileage and photo completeness
   const photoBoost = (input.photoCount / PHOTO_SLOTS.length) * 0.6;
@@ -151,9 +153,9 @@ export function generateValuation(input: ValuationInput): ValuationReport {
   // MOT history (simulated)
   const motHistory: MotEntry[] = [];
   let curMileage = input.mileage;
-  for (let i = 0; i < Math.min(5, 2026 - input.year); i++) {
-    const yr = 2025 - i;
-    curMileage = Math.max(1000, Math.round(curMileage - expectedMileage / Math.max(1, 2026 - input.year)));
+  for (let i = 0; i < Math.min(5, CURRENT_YEAR - input.year); i++) {
+    const yr = CURRENT_YEAR - 1 - i;
+    curMileage = Math.max(1000, Math.round(curMileage - expectedMileage / Math.max(1, CURRENT_YEAR - input.year)));
     const roll = r();
     motHistory.push({
       date: `${yr}-${String(Math.ceil(r() * 12)).padStart(2, "0")}-${String(Math.ceil(r() * 27)).padStart(2, "0")}`,
