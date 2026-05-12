@@ -107,6 +107,9 @@ interface AnalyseRequest {
 
 type ConfidenceLevel = "High" | "Medium" | "Low" | "Very Low";
 
+const LIMITED_DATA_MESSAGE = "Unable to provide accurate valuation at this time. Limited reliable market data available for this model. Please consult a marque specialist.";
+const LIMITED_DATA_WARNING = "Limited reliable market data available for this model. We recommend a marque specialist, specialist dealer, or auction route instead of relying on an automated estimate.";
+
 // Ultra-rare makes — almost no live UK MarketCheck data, valuations are
 // inherently uncertain and must never claim High confidence.
 const ULTRA_RARE_MAKES = [
@@ -211,6 +214,31 @@ function isEnthusiastCar(make: string, model: string, variant?: string) {
 function getExoticAnchor(make: string, model: string, variant?: string) {
   const hay = `${model} ${variant ?? ""}`;
   return EXOTIC_MODEL_ANCHORS.find((entry) => entry.make === make && entry.match.test(hay));
+}
+
+function isClearlyBadMarketData(params: {
+  make: string;
+  model: string;
+  variant?: string;
+  median: number;
+  count: number;
+  ultraRare: boolean;
+  exoticAnchor?: { low: number; high: number };
+}) {
+  const { make, model, variant, median, count, ultraRare, exoticAnchor } = params;
+  if (!Number.isFinite(median) || median <= 0) return true;
+  if (ultraRare && count < 50) return true;
+  if (exoticAnchor && median < exoticAnchor.low * 0.45) return true;
+
+  const hay = `${make} ${model} ${variant ?? ""}`.toLowerCase();
+  if (/(bugatti|koenigsegg|pagani|rimac|laferrari|enzo|f40|f50|senna|p1|speedtail|valkyrie|amg\s?one|veneno|centenario|sian|carrera\s?gt|918\s?spyder)/i.test(hay) && median < 100000) {
+    return true;
+  }
+  if (/(ferrari|lamborghini|mclaren|rolls-royce)/i.test(hay) && median < 35000) {
+    return true;
+  }
+
+  return false;
 }
 
 function computeMarketRange(params: {
