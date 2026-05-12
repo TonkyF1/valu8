@@ -1,37 +1,56 @@
 import { useMemo } from "react";
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { format, subMonths } from "date-fns";
 
 interface Props {
   currentValue: number;
+  registrationYear: number;
 }
 
-function generateTrendData(currentValue: number) {
-  const now = new Date();
-  const startValue = Math.round(currentValue * 0.88);
-  const data = [];
-  for (let i = 11; i >= 0; i--) {
-    const date = subMonths(now, i);
-    const progress = (11 - i) / 11;
-    const noise = Math.round(
-      (Math.sin(i * 1.3) * 0.015 + Math.cos(i * 2.1) * 0.008) * currentValue
-    );
-    const value = Math.round(startValue + (currentValue - startValue) * progress) + noise;
+// Rough new-car price estimate working backwards from current value & age.
+// Cars typically lose ~50-65% of value over 8-10 years, then depreciation flattens.
+function estimateNewPrice(currentValue: number, ageYears: number) {
+  if (ageYears <= 0) return currentValue;
+  // Inverse depreciation curve
+  const retention = Math.max(0.18, Math.pow(0.86, ageYears));
+  return Math.round(currentValue / retention);
+}
+
+function generateLifetimeData(currentValue: number, registrationYear: number) {
+  const nowYear = new Date().getFullYear();
+  const ageYears = Math.max(1, nowYear - registrationYear);
+  const newPrice = estimateNewPrice(currentValue, ageYears);
+
+  const data: { year: string; value: number }[] = [];
+  for (let i = 0; i <= ageYears; i++) {
+    const year = registrationYear + i;
+    // Depreciation curve: steeper early, flatter later
+    const t = i / ageYears;
+    const curve = 1 - Math.pow(t, 0.7); // value retention factor
+    const base = currentValue + (newPrice - currentValue) * curve;
+    const noise = Math.sin(i * 1.7) * 0.012 * base;
     data.push({
-      month: format(date, "MMM"),
-      value,
+      year: String(year),
+      value: Math.round(base + noise),
     });
   }
+  // Pin endpoints exactly
+  data[0].value = newPrice;
+  data[data.length - 1].value = currentValue;
   return data;
 }
 
-export function ValuationTrendChart({ currentValue }: Props) {
-  const data = useMemo(() => generateTrendData(currentValue), [currentValue]);
+export function ValuationTrendChart({ currentValue, registrationYear }: Props) {
+  const data = useMemo(
+    () => generateLifetimeData(currentValue, registrationYear),
+    [currentValue, registrationYear]
+  );
+
+  const tickInterval = data.length > 8 ? Math.ceil(data.length / 6) - 1 : 0;
 
   return (
     <div className="mt-3">
       <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-1">
-        Valuation Trend (Last 12 Months)
+        Valuation Trend (Lifetime)
       </div>
       <div className="h-[72px] w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -43,17 +62,18 @@ export function ValuationTrendChart({ currentValue }: Props) {
               </linearGradient>
             </defs>
             <XAxis
-              dataKey="month"
+              dataKey="year"
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 9, fill: "hsl(0 0% 60%)", letterSpacing: "0.04em" }}
-              interval={2}
+              interval={tickInterval}
             />
             <Tooltip
-              content={({ active, payload }) => {
+              content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null;
                 return (
                   <div className="rounded-md bg-popover border border-border px-2.5 py-1.5 text-xs shadow-lg">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{label}</div>
                     <span className="tabular-nums text-foreground">
                       £{Number(payload[0].value).toLocaleString()}
                     </span>
