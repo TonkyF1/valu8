@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
-import { Crown, LogOut, Mail, KeyRound, CreditCard, ShieldCheck, Sparkles, ArrowLeft, User as UserIcon, Upload, Trash2, Receipt, Download, Calendar } from "lucide-react";
+import { Crown, LogOut, Mail, KeyRound, CreditCard, ShieldCheck, Sparkles, ArrowLeft, User as UserIcon, Upload, Trash2, Receipt, Download, Calendar, Chrome, Link2, Unlink } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
@@ -23,6 +23,9 @@ export default function Profile() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [linkingGoogle, setLinkingGoogle] = useState(false);
+
+  const hasGoogle = user?.identities?.some((i) => i.provider === "google");
 
   useEffect(() => { document.title = "Profile — Valu8"; }, []);
 
@@ -84,6 +87,32 @@ export default function Profile() {
         : err?.message || "Failed to save";
       toast.error(msg);
     } finally { setSavingProfile(false); }
+  }
+
+  async function linkGoogle() {
+    setLinkingGoogle(true);
+    try {
+      const { error } = await supabase.auth.linkIdentity({ provider: "google" } as any);
+      if (error) throw error;
+    } catch (err: any) {
+      toast.error(err.message || "Couldn't link Google account");
+      setLinkingGoogle(false);
+    }
+  }
+
+  async function unlinkGoogle() {
+    const identity = user?.identities?.find((i: any) => i.provider === "google");
+    if (!identity) return;
+    setLinkingGoogle(true);
+    try {
+      const { error } = await supabase.auth.unlinkIdentity(identity as any);
+      if (error) throw error;
+      toast.success("Google account disconnected");
+    } catch (err: any) {
+      toast.error(err.message || "Couldn't unlink Google account");
+    } finally {
+      setLinkingGoogle(false);
+    }
   }
 
 
@@ -184,6 +213,40 @@ export default function Profile() {
               </Button>
             </div>
           </form>
+        </section>
+
+        {/* Connected Accounts */}
+        <section className="premium-card p-6 sm:p-7 mb-4">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><ShieldCheck className="h-5 w-5" /></span>
+            <div>
+              <h2 className="font-semibold">Connected Accounts</h2>
+              <p className="text-xs text-muted-foreground">Manage how you sign in to Valu8.</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 rounded-xl bg-muted/30 border border-border/60 p-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="h-9 w-9 rounded-lg bg-background border border-border/60 grid place-items-center shrink-0">
+                <Chrome className="h-5 w-5 text-[#4285F4]" />
+              </span>
+              <div className="min-w-0">
+                <div className="text-sm font-medium">Google</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {hasGoogle ? "Connected" : "Not connected"}
+                </div>
+              </div>
+            </div>
+            {hasGoogle ? (
+              <Button variant="ghost" size="sm" onClick={unlinkGoogle} disabled={linkingGoogle}>
+                <Unlink className="h-4 w-4" /> {linkingGoogle ? "Working…" : "Disconnect"}
+              </Button>
+            ) : (
+              <Button variant="premium" size="sm" onClick={linkGoogle} disabled={linkingGoogle}>
+                <Link2 className="h-4 w-4" /> {linkingGoogle ? "Working…" : "Connect"}
+              </Button>
+            )}
+          </div>
         </section>
 
         {/* Subscription & Billing */}
