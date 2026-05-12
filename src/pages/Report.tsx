@@ -206,6 +206,7 @@ export default function Report() {
             <div className="text-xs text-muted-foreground tabular-nums mt-2">
               Range £{(r.valueRange?.privateSaleLow ?? r.values.privateSale).toLocaleString()} – £{(r.valueRange?.privateSaleHigh ?? r.values.privateSale).toLocaleString()}
             </div>
+            <ValuationTrendChart currentValue={r.values.privateSale} />
             <p className="text-xs sm:text-sm text-foreground/75 leading-relaxed mt-3 max-w-md">
               The sweet spot if you sell yourself — strong return for a few weeks of effort.
             </p>
