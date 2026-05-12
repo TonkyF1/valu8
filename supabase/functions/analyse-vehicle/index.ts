@@ -658,7 +658,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       recommendations: { whereToSell: string[]; highlights: string[]; documents: string[] };
     };
 
-    // ----- Pricing engine: prefer MarketCheck-anchored values, blended with AI judgement -----
+    // ----- Pricing engine: MarketCheck-anchored, with strong deterministic deductions -----
     const score = Math.max(1, Math.min(10, ai.conditionScore));
     const aiPrivate = Math.max(500, Number(ai.privateSaleValue) || 0);
 
@@ -666,46 +666,84 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     let rangeLow: number;
     let rangeHigh: number;
     let confidence: ConfidenceLevel;
+    let confidenceReason: string;
     let pricingReasoning: string;
     let dataSource: "marketcheck" | "ai_estimate";
+    const adjustments: { label: string; impactPct: number }[] = [];
+
+    const age = Math.max(0, 2026 - body.year);
+    const expectedMileage = age <= 0 ? 3000 : age * 8000;
+    const mileageRatio = body.mileage / Math.max(expectedMileage, 1);
+    const serviceText = `${body.serviceNotes ?? ""}`.toLowerCase();
+    const hasStrongHistory = /(full service history|fsh|main dealer|specialist|full history|complete service history)/i.test(serviceText);
+    const hasPartialHistory = /(partial|part service|patchy|some history|limited history)/i.test(serviceText);
+    const noHistory = /(no history|no service|missing history|no records)/i.test(serviceText);
+    const needsWork = /(needs|due|overdue|warning light|smoke|fault|damage|dent|scuff|scratch|leak|issue|rust|corrosion)/i.test(serviceText);
 
     if (mc && mc.median > 0) {
-      // Real MarketCheck-anchored pricing.
-      const age = Math.max(0, 2026 - body.year);
-      const expectedMileage = age <= 0 ? 3000 : age * 8000;
-      const mileageRatio = body.mileage / Math.max(expectedMileage, 1);
-      const serviceText = `${body.serviceNotes ?? ""}`.toLowerCase();
-      const hasStrongHistory = /(full service|fsh|main dealer|specialist|major service|timing belt|timing chain|clutch|recent service|full history)/i.test(serviceText);
-      const needsWork = /(needs|due|overdue|warning light|smoke|fault|damage|dent|scuff|scratch|leak|issue)/i.test(serviceText);
+      let mult = 1.0;
 
-      // Condition multiplier centred on 1.0 at score=7.5
-      let mult = 1 + (score - 7.5) * 0.04; // ~0.84 at 1, ~1.10 at 10
-      if (hasStrongHistory) mult *= 1.02;
-      if (needsWork) mult *= 0.93;
-      if (mileageRatio <= 0.7) mult *= 1.05;
-      else if (mileageRatio <= 0.9) mult *= 1.02;
-      else if (mileageRatio >= 1.5) mult *= 0.85;
-      else if (mileageRatio >= 1.25) mult *= 0.92;
-      else if (mileageRatio >= 1.1) mult *= 0.97;
-      mult = clamp(mult, 0.7, 1.2);
+      // --- Mileage tiering (absolute miles, not just ratio) ---
+      if (body.mileage >= 130000) { mult *= 0.68; adjustments.push({ label: "Very high mileage (130k+)", impactPct: -32 }); }
+      else if (body.mileage >= 100000) { mult *= 0.78; adjustments.push({ label: `High mileage (${Math.round(body.mileage/1000)}k)`, impactPct: -22 }); }
+      else if (body.mileage >= 80000) { mult *= 0.88; adjustments.push({ label: `Above-average mileage (${Math.round(body.mileage/1000)}k)`, impactPct: -12 }); }
+      else if (body.mileage >= 60000 && mileageRatio > 1.1) { mult *= 0.95; adjustments.push({ label: "Slightly above-average mileage", impactPct: -5 }); }
+      else if (mileageRatio <= 0.7 && body.mileage < 50000) { mult *= 1.04; adjustments.push({ label: "Below-average mileage for age", impactPct: 4 }); }
+
+      // --- MOT corrosion / failures ---
+      if (corrosionMatches >= 2) { mult *= 0.82; adjustments.push({ label: `Multiple corrosion advisories (${corrosionMatches})`, impactPct: -18 }); }
+      else if (corrosionMatches === 1) { mult *= 0.90; adjustments.push({ label: "Corrosion advisory on MOT", impactPct: -10 }); }
+      if (recentFailCount >= 1) { mult *= 0.92; adjustments.push({ label: `Recent MOT failure(s)`, impactPct: -8 }); }
+      if (totalAdvisoryCount >= 6) { mult *= 0.95; adjustments.push({ label: `${totalAdvisoryCount} advisories on file`, impactPct: -5 }); }
+
+      // --- Service history ---
+      if (hasStrongHistory) { mult *= 1.04; adjustments.push({ label: "Full service history", impactPct: 4 }); }
+      else if (hasPartialHistory) { mult *= 0.93; adjustments.push({ label: "Partial service history", impactPct: -7 }); }
+      else if (noHistory) { mult *= 0.88; adjustments.push({ label: "No service history", impactPct: -12 }); }
+
+      // --- Other condition flags from notes ---
+      if (needsWork && !corrosionMatches) { mult *= 0.96; adjustments.push({ label: "Issues noted in description", impactPct: -4 }); }
+
+      // --- Condition score adjustment (lighter — most penalties already applied above) ---
+      const conditionAdj = 1 + (score - 7.0) * 0.025;
+      mult *= clamp(conditionAdj, 0.92, 1.08);
+
+      mult = clamp(mult, 0.45, 1.18);
 
       const dealerRetail = roundToGrain(mc.median * mult);
-      // Private sale typically 8-12% below dealer asking
-      const privateSale = roundToGrain(dealerRetail * 0.91);
-      const dealerTradeIn = roundToGrain(dealerRetail * 0.78);
+      const privateSale = roundToGrain(dealerRetail * 0.90);
+      const dealerTradeIn = roundToGrain(dealerRetail * 0.76);
 
-      // Range from MarketCheck IQR, condition-adjusted
-      const lowAnchor = (mc.p25 ?? mc.median * 0.92) * mult * 0.93;
-      const highAnchor = (mc.p75 ?? mc.median * 1.08) * mult * 0.95;
-      rangeLow = roundToGrain(Math.min(lowAnchor, privateSale));
-      rangeHigh = roundToGrain(Math.max(highAnchor, privateSale));
+      // Range — wider when there are negatives (more uncertainty)
+      const negativeCount = adjustments.filter((a) => a.impactPct < 0).length;
+      const spread = negativeCount >= 3 ? 0.14 : negativeCount >= 1 ? 0.10 : 0.07;
+      rangeLow = roundToGrain(privateSale * (1 - spread));
+      rangeHigh = roundToGrain(privateSale * (1 + spread * 0.7));
+
+      // --- Confidence reasoning ---
+      const sampleQuality = mc.count >= 30 ? "strong" : mc.count >= 12 ? "moderate" : "limited";
+      const isOutlierMileage = body.mileage >= 100000 || (mc.avgMiles && Math.abs(body.mileage - mc.avgMiles) > 30000);
+      const photoQuality = photoUrls.length >= 5 ? "strong" : photoUrls.length >= 3 ? "moderate" : "limited";
+
+      if (mc.count >= 25 && !isOutlierMileage && photoUrls.length >= 4 && negativeCount <= 1) {
+        confidence = "High";
+        confidenceReason = `Backed by ${mc.count} closely comparable live UK listings, with similar mileage and ${photoQuality} photo evidence. Few negative signals.`;
+      } else if (mc.count >= 8 && !isOutlierMileage && negativeCount <= 3) {
+        confidence = "Medium";
+        confidenceReason = `${sampleQuality.charAt(0).toUpperCase()+sampleQuality.slice(1)} comparable sales (${mc.count} listings), ${photoQuality} photo evidence${isOutlierMileage ? ", and mileage outside the typical band" : ""}. Some negatives applied.`;
+      } else {
+        confidence = "Low";
+        const reasons: string[] = [];
+        if (mc.count < 8) reasons.push(`only ${mc.count} comparable live listing${mc.count === 1 ? "" : "s"}`);
+        if (isOutlierMileage) reasons.push("mileage well outside the typical band for this model");
+        if (photoUrls.length < 3) reasons.push("limited photo evidence");
+        if (negativeCount >= 4) reasons.push("several negative condition/history signals");
+        confidenceReason = `Lower confidence: ${reasons.join(", ") || "limited data"}.`;
+      }
 
       values = { dealerTradeIn, privateSale, dealerRetail };
-      confidence = mc.count >= 25 && photoUrls.length >= 4 ? "High"
-        : mc.count >= 10 || photoUrls.length >= 3 ? "Medium" : "Low";
-      pricingReasoning = `Anchored on ${mc.count} live MarketCheck UK listings (median dealer asking £${Math.round(mc.median).toLocaleString()}), then adjusted for ${
-        mileageRatio < 0.9 ? "lower-than-typical mileage" : mileageRatio > 1.15 ? "above-average mileage" : "age-appropriate mileage"
-      }, ${score >= 8 ? "strong visible condition" : score <= 6.4 ? "condition deductions" : "solid used-market condition"}${hasStrongHistory ? ", and supportive service history" : ""}.`;
+      const negSummary = adjustments.filter(a => a.impactPct < 0).map(a => a.label).slice(0, 3).join(", ");
+      pricingReasoning = `Anchored on ${mc.count} live MarketCheck UK listings (median dealer asking £${Math.round(mc.median).toLocaleString()}). Net adjustment: ${Math.round((mult - 1) * 100)}%${negSummary ? ` — driven by ${negSummary}` : ""}.`;
       dataSource = "marketcheck";
     } else {
       // Fallback: AI-only estimate via existing market shaping logic.
@@ -724,39 +762,30 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       });
       const fair = market.center;
       values = {
-        dealerTradeIn: roundToGrain(fair * 0.80),
+        dealerTradeIn: roundToGrain(fair * 0.78),
         privateSale: roundToGrain(fair),
         dealerRetail: roundToGrain(fair * 1.15),
       };
       rangeLow = market.low;
       rangeHigh = market.high;
-      confidence = market.confidence;
+      confidence = "Low";
+      confidenceReason = `No live MarketCheck listings available for this exact spec — figures are an AI estimate without direct comparable sales data.`;
       pricingReasoning = market.reasoning;
       dataSource = "ai_estimate";
     }
 
     const listingPrice = roundToGrain(Math.min(rangeHigh, values.privateSale * 1.03));
 
-    // MOT history — try real DVSA API first, fall back to simulated.
-    const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
+    // ----- Build MOT history payload (real DVSA where available, simulated fallback) -----
     let motHistory: any[] = [];
     let motSource: "dvsa" | "simulated" = "simulated";
     let motNotice: string | undefined;
-    if (body.registration && body.registration.trim().length >= 2) {
-      try {
-        const dvsa = await fetchDvsaMotHistory(body.registration);
-        if (dvsa.entries.length > 0) {
-          motHistory = dvsa.entries;
-          motSource = "dvsa";
-        } else {
-          motNotice = dvsa.error ?? "No MOT records returned by DVSA.";
-          motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
-        }
-      } catch (e) {
-        console.error("DVSA fetch failed", e);
-        motNotice = "MOT service temporarily unavailable — showing illustrative history.";
-        motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
-      }
+    if (motEntries.length > 0) {
+      motHistory = motEntries;
+      motSource = "dvsa";
+    } else if (body.registration && body.registration.trim().length >= 2) {
+      motNotice = (dvsa as any).error ?? "No MOT records returned by DVSA.";
+      motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
     } else {
       motNotice = "No registration provided — showing illustrative MOT history.";
       motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
@@ -769,8 +798,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       valueRange: { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
       valueReasoning: `${ai.valueReasoning} ${pricingReasoning}`.trim(),
       marketConfidence: confidence,
+      marketConfidenceReason: confidenceReason,
       pricingSource: dataSource,
       marketSampleSize: mc?.count,
+      priceAdjustments: adjustments,
       honestAnalysis: ai.honestAnalysis,
       marketPositioning: ai.marketPositioning,
       photoObservations: ai.photoObservations,
