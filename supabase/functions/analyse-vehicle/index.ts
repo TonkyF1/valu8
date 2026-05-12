@@ -865,7 +865,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         netAdjustmentPct: Math.round((mult - 1) * 100),
       };
       const negSummary = adjustments.filter(a => a.impactPct < 0).map(a => a.label).slice(0, 3).join(", ");
-      pricingReasoning = `Anchored on ${mc.count} live MarketCheck UK listings (median dealer asking £${Math.round(mc.median).toLocaleString()}). Net adjustment: ${Math.round((mult - 1) * 100)}%${negSummary ? ` — driven by ${negSummary}` : ""}.`;
+      pricingReasoning = `Based on ${mc.count} similar cars currently for sale. The main things that affected the price were: ${negSummary || "mileage and overall condition"}.`;
       dataSource = "marketcheck";
     } else if (badMarketData) {
       valuationUnavailable = true;
