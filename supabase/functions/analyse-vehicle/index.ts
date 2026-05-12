@@ -683,13 +683,32 @@ Deno.serve(async (req) => {
     const totalAdvisoryCount = allAdvisories.length;
     const latestTest = motEntries[0];
 
-    const marketBlock = mc
-      ? `LIVE UK MARKET DATA (MarketCheck UK, ${mc.count} active listings for this make/model/year band):
-- Median dealer asking: £${Math.round(mc.median).toLocaleString()}
-- Typical asking range (IQR): £${Math.round(mc.p25 ?? mc.median * 0.9).toLocaleString()} – £${Math.round(mc.p75 ?? mc.median * 1.1).toLocaleString()}
-${mc.avgMiles ? `- Average mileage of comparable listings: ${Math.round(mc.avgMiles).toLocaleString()} mi (this car: ${body.mileage.toLocaleString()} mi)` : ""}
+    // Build a mileage-weighted anchor from the actual live listings.
+    const allListings = mc?.listings ?? [];
+    const sortedByMileageDistance = [...allListings].sort(
+      (a, b) => Math.abs(a.mileage - body.mileage) - Math.abs(b.mileage - body.mileage),
+    );
+    const anchorSubset = sortedByMileageDistance.slice(0, Math.min(10, allListings.length));
+    const anchorMedian = anchorSubset.length >= 3 ? median(anchorSubset.map((l) => l.price)) : (mc?.median ?? 0);
+    const exampleListings = sortedByMileageDistance.slice(0, 3);
 
-REMEMBER: the median above is for typical / clean dealer stock. If this car has high mileage, corrosion, or weak history, the right number is materially BELOW that median.`
+    const examplesText = exampleListings.length
+      ? exampleListings
+          .map((l, i) => `  ${i + 1}. £${l.price.toLocaleString()} — ${l.year} ${l.mileage.toLocaleString()}mi${l.trim ? ` ${l.trim}` : ""}${l.location ? `, ${l.location}` : ""}`)
+          .join("\n")
+      : "";
+
+    const marketBlock = mc
+      ? `LIVE UK LISTINGS (MarketCheck UK — ${allListings.length} pulled from ${mc.count} active; filter: ${mc.matchTier}):
+- Anchor (median of ${anchorSubset.length} closest-mileage live listings): £${Math.round(anchorMedian).toLocaleString()}
+- Wider median across all pulled listings: £${Math.round(mc.median).toLocaleString()}
+- Asking range across listings: £${Math.round(mc.p25 ?? mc.median * 0.9).toLocaleString()} – £${Math.round(mc.p75 ?? mc.median * 1.1).toLocaleString()}
+${mc.avgMiles ? `- Avg mileage of comparable listings: ${Math.round(mc.avgMiles).toLocaleString()} mi (this car: ${body.mileage.toLocaleString()} mi)` : ""}
+
+CLOSEST 3 LIVE EXAMPLES TO THIS CAR:
+${examplesText}
+
+These are REAL cars currently for sale in the UK. Use the anchor above as the dealer-asking benchmark for this exact car. Private sale typically lands 8-12% below dealer asking.`
       : `(No live MarketCheck listings returned for this exact spec — fall back on your own UK private market knowledge and stay conservative.)`;
 
     const motBlock = motEntries.length > 0
