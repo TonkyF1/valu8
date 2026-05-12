@@ -534,6 +534,19 @@ Deno.serve(async (req) => {
 
     const photoUrls = (body.photoUrls || []).slice(0, 6);
 
+    // Pull live UK market pricing from MarketCheck before calling the AI so we
+    // can anchor the model on real data.
+    const mc = await fetchMarketCheckPricing(body.make, body.model, body.year, body.mileage);
+
+    const marketBlock = mc
+      ? `LIVE UK MARKET DATA (MarketCheck UK, ${mc.count} active listings for this make/model/year band):
+- Median dealer asking: £${Math.round(mc.median).toLocaleString()}
+- Typical asking range (IQR): £${Math.round(mc.p25 ?? mc.median * 0.9).toLocaleString()} – £${Math.round(mc.p75 ?? mc.median * 1.1).toLocaleString()}
+${mc.avgMiles ? `- Average mileage of comparable listings: ${Math.round(mc.avgMiles).toLocaleString()} mi` : ""}
+
+USE THIS AS YOUR PRIMARY ANCHOR. The dealer asking median above is your dealerRetail benchmark. Apply your condition / mileage / history / spec / modifications adjustments and return a realistic privateSaleValue (typically 8-15% below dealer asking, more if condition/mileage are weak).`
+      : `(No live MarketCheck listings returned for this exact spec — fall back on your own UK private market knowledge.)`;
+
     const userContent: any[] = [
       {
         type: "text",
@@ -545,6 +558,8 @@ Deno.serve(async (req) => {
 - MOT expiry: ${body.motExpiry || "not provided"}
 - Service notes: ${body.serviceNotes || "none provided"}
 - Photos attached: ${photoUrls.length}
+
+${marketBlock}
 
 Assess condition from photos and data. Be honest and specific. Call the valu8_report function.`,
       },
@@ -573,8 +588,6 @@ Assess condition from photos and data. Be honest and specific. Call the valu8_re
         : aiResp.status === 402
           ? "AI credits exhausted. Please top up Lovable AI credits in workspace settings to generate new valuations."
           : "AI analysis is temporarily unavailable. Please try again shortly.";
-      // Return 200 with a fallback flag so the client can show a friendly toast
-      // instead of a runtime/blank-screen error.
       return new Response(
         JSON.stringify({ error: message, fallback: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -600,22 +613,153 @@ Assess condition from photos and data. Be honest and specific. Call the valu8_re
       recommendations: { whereToSell: string[]; highlights: string[]; documents: string[] };
     };
 
-    // ----- Pricing engine: blend AI value with deterministic market-shaping logic, then derive tiers -----
+    // ----- Pricing engine: prefer MarketCheck-anchored values, blended with AI judgement -----
     const score = Math.max(1, Math.min(10, ai.conditionScore));
     const aiPrivate = Math.max(500, Number(ai.privateSaleValue) || 0);
-    const fallback = baseValue(body.make, body.year);
-    const market = computeMarketRange({
-      make: body.make,
-      model: body.model,
-      variant: body.variant,
-      year: body.year,
-      mileage: body.mileage,
-      motExpiry: body.motExpiry,
-      serviceNotes: body.serviceNotes,
-      photoCount: photoUrls.length,
-      conditionScore: score,
-      aiPrivateValue: aiPrivate > fallback * 0.25 ? aiPrivate : fallback,
+
+    let values: { dealerTradeIn: number; privateSale: number; dealerRetail: number };
+    let rangeLow: number;
+    let rangeHigh: number;
+    let confidence: ConfidenceLevel;
+    let pricingReasoning: string;
+    let dataSource: "marketcheck" | "ai_estimate";
+
+    if (mc && mc.median > 0) {
+      // Real MarketCheck-anchored pricing.
+      const age = Math.max(0, 2026 - body.year);
+      const expectedMileage = age <= 0 ? 3000 : age * 8000;
+      const mileageRatio = body.mileage / Math.max(expectedMileage, 1);
+      const serviceText = `${body.serviceNotes ?? ""}`.toLowerCase();
+      const hasStrongHistory = /(full service|fsh|main dealer|specialist|major service|timing belt|timing chain|clutch|recent service|full history)/i.test(serviceText);
+      const needsWork = /(needs|due|overdue|warning light|smoke|fault|damage|dent|scuff|scratch|leak|issue)/i.test(serviceText);
+
+      // Condition multiplier centred on 1.0 at score=7.5
+      let mult = 1 + (score - 7.5) * 0.04; // ~0.84 at 1, ~1.10 at 10
+      if (hasStrongHistory) mult *= 1.02;
+      if (needsWork) mult *= 0.93;
+      if (mileageRatio <= 0.7) mult *= 1.05;
+      else if (mileageRatio <= 0.9) mult *= 1.02;
+      else if (mileageRatio >= 1.5) mult *= 0.85;
+      else if (mileageRatio >= 1.25) mult *= 0.92;
+      else if (mileageRatio >= 1.1) mult *= 0.97;
+      mult = clamp(mult, 0.7, 1.2);
+
+      const dealerRetail = roundToGrain(mc.median * mult);
+      // Private sale typically 8-12% below dealer asking
+      const privateSale = roundToGrain(dealerRetail * 0.91);
+      const dealerTradeIn = roundToGrain(dealerRetail * 0.78);
+
+      // Range from MarketCheck IQR, condition-adjusted
+      const lowAnchor = (mc.p25 ?? mc.median * 0.92) * mult * 0.93;
+      const highAnchor = (mc.p75 ?? mc.median * 1.08) * mult * 0.95;
+      rangeLow = roundToGrain(Math.min(lowAnchor, privateSale));
+      rangeHigh = roundToGrain(Math.max(highAnchor, privateSale));
+
+      values = { dealerTradeIn, privateSale, dealerRetail };
+      confidence = mc.count >= 25 && photoUrls.length >= 4 ? "High"
+        : mc.count >= 10 || photoUrls.length >= 3 ? "Medium" : "Low";
+      pricingReasoning = `Anchored on ${mc.count} live MarketCheck UK listings (median dealer asking £${Math.round(mc.median).toLocaleString()}), then adjusted for ${
+        mileageRatio < 0.9 ? "lower-than-typical mileage" : mileageRatio > 1.15 ? "above-average mileage" : "age-appropriate mileage"
+      }, ${score >= 8 ? "strong visible condition" : score <= 6.4 ? "condition deductions" : "solid used-market condition"}${hasStrongHistory ? ", and supportive service history" : ""}.`;
+      dataSource = "marketcheck";
+    } else {
+      // Fallback: AI-only estimate via existing market shaping logic.
+      const fallback = baseValue(body.make, body.year);
+      const market = computeMarketRange({
+        make: body.make,
+        model: body.model,
+        variant: body.variant,
+        year: body.year,
+        mileage: body.mileage,
+        motExpiry: body.motExpiry,
+        serviceNotes: body.serviceNotes,
+        photoCount: photoUrls.length,
+        conditionScore: score,
+        aiPrivateValue: aiPrivate > fallback * 0.25 ? aiPrivate : fallback,
+      });
+      const fair = market.center;
+      values = {
+        dealerTradeIn: roundToGrain(fair * 0.80),
+        privateSale: roundToGrain(fair),
+        dealerRetail: roundToGrain(fair * 1.15),
+      };
+      rangeLow = market.low;
+      rangeHigh = market.high;
+      confidence = market.confidence;
+      pricingReasoning = market.reasoning;
+      dataSource = "ai_estimate";
+    }
+
+    const listingPrice = roundToGrain(Math.min(rangeHigh, values.privateSale * 1.03));
+
+    // MOT history — try real DVSA API first, fall back to simulated.
+    const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
+    let motHistory: any[] = [];
+    let motSource: "dvsa" | "simulated" = "simulated";
+    let motNotice: string | undefined;
+    if (body.registration && body.registration.trim().length >= 2) {
+      try {
+        const dvsa = await fetchDvsaMotHistory(body.registration);
+        if (dvsa.entries.length > 0) {
+          motHistory = dvsa.entries;
+          motSource = "dvsa";
+        } else {
+          motNotice = dvsa.error ?? "No MOT records returned by DVSA.";
+          motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
+        }
+      } catch (e) {
+        console.error("DVSA fetch failed", e);
+        motNotice = "MOT service temporarily unavailable — showing illustrative history.";
+        motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
+      }
+    } else {
+      motNotice = "No registration provided — showing illustrative MOT history.";
+      motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
+    }
+
+    const report = {
+      conditionScore: Math.round(score * 10) / 10,
+      conditionLabel: ai.conditionLabel,
+      values,
+      valueRange: { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
+      valueReasoning: `${ai.valueReasoning} ${pricingReasoning}`.trim(),
+      marketConfidence: confidence,
+      pricingSource: dataSource,
+      marketSampleSize: mc?.count,
+      honestAnalysis: ai.honestAnalysis,
+      marketPositioning: ai.marketPositioning,
+      photoObservations: ai.photoObservations,
+      strengths: ai.strengths,
+      watchPoints: ai.watchPoints,
+      recommendations: { listingPrice, ...ai.recommendations },
+      hpi: {
+        status: "All Clear" as const,
+        checks: [
+          { label: "Outstanding finance", ok: true },
+          { label: "Insurance write-off", ok: true },
+          { label: "Stolen marker", ok: true },
+          { label: "Mileage discrepancy", ok: true },
+          { label: "Plate transfers", ok: true },
+          { label: "VIN integrity", ok: true },
+        ],
+      },
+      motHistory,
+      motSource,
+      motNotice,
+      generatedAt: new Date().toISOString(),
+    };
+
+    return new Response(JSON.stringify({ report }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
     });
+  } catch (e) {
+    console.error("analyse-vehicle error:", e);
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
 
     // Trust the AI/market-derived center. Don't floor with the generic fallback —
     // that was inflating cheap/old/high-mileage cars beyond reality.
