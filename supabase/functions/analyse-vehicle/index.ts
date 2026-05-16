@@ -618,10 +618,18 @@ A car with 100k+ miles and corrosion advisories should NOT score above 6.5 regar
 OUTPUT DISCIPLINE:
 - Default to the LOWER half of any reasonable range unless EVERY signal is positive.
 - Use plain English. No jargon like "net adjustment", "anchored on", or "negative signals".
-- honestAnalysis: 2-3 short sentences. Explain the 2-3 biggest factors affecting the price. Be honest but not depressing. End with something helpful or positive where possible. Example: "The price is lower than average because of the high mileage and some corrosion issues noted on the MOT. These are common on cars of this age and can be sorted, but they do affect the value. A clean service history and recent work would help you achieve the top of the range."
+- honestAnalysis: 2-3 short sentences. Explain the 2-3 biggest factors affecting the price. Be honest but not depressing. End with something helpful or positive where possible.
 - valueReasoning: 2-3 short sentences max. Same friendly, plain tone. Focus on the main things buyers care about.
 - marketPositioning: 1-2 sentences. Keep it simple and encouraging.
 - watchPoints: Mention real issues but keep the tone practical, not scary.
+
+NEW FIELDS — REQUIRED, BE SPECIFIC TO THIS CAR:
+- headline: ONE short sentence (max ~110 chars) summarising whether the price is fair/strong/cautious and roughly how quickly it should sell.
+- marketContext: ONE short sentence on current UK demand for this make/model/spec right now.
+- factorsUp: 2-4 SHORT bullet phrases (max ~60 chars each) that genuinely raise this car's value (e.g. "Full dealer service history", "Below-average mileage for the year", "Desirable spec/colour"). No filler.
+- factorsDown: 2-4 SHORT bullet phrases that a buyer will use to negotiate (e.g. "Windscreen chip noted on MOT", "Rear tyre advisory", "Higher than average mileage"). No filler. If you genuinely can't find any, return an empty array.
+- sellerTip: ONE personal, useful sentence written like an experienced private seller giving advice (e.g. "List at £20,500 and expect offers around £19,500–£20,000. The service history is your strongest card — have it ready to show.").
+- negotiationBuffer: integer GBP, typically 3-5% of your privateSaleValue, rounded to the nearest £50. This is the room a buyer will negotiate off the asking price.
 
 Always reply by calling the provided function. Never write JSON in plain text.`;
 
