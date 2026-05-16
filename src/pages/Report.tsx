@@ -251,20 +251,47 @@ export default function Report() {
                 model={v.model}
               />
             )}
-            <p className="text-xs sm:text-sm text-foreground/75 leading-relaxed mt-3 max-w-md">
-              {valuationUnavailable
-                ? "We'd rather be honest than give you a number that could be way off."
-                : `This is a realistic price if you sell privately a ${v.year} today — a good balance of fair value and a reasonably quick sale.`}
-            </p>
-            {r.marketConfidenceReason && (
-              <p className="text-[11px] sm:text-xs text-muted-foreground/80 leading-relaxed mt-2 max-w-xl">
-                {r.marketConfidenceReason}
+            {valuationUnavailable ? (
+              <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8] mt-4 max-w-[44ch]">
+                We'd rather be honest than give you a number that could be way off.
               </p>
-            )}
-            {!valuationUnavailable && r.valueReasoning && (
-              <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed mt-3 max-w-xl">
-                {r.valueReasoning}
-              </p>
+            ) : (
+              <div className="mt-4 space-y-3 max-w-[44ch]">
+                {/* Paragraph 1 — always shows */}
+                <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8]">
+                  <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>
+                  {" "}is a strong asking price for a {v.year} {v.make} {v.model} in today's private market — realistic enough to attract serious buyers quickly, without leaving money on the table.
+                </p>
+
+                {/* Paragraph 2 — only on Low / Medium / Very Low confidence */}
+                {(r.marketConfidence === "Low" || r.marketConfidence === "Very Low" || r.marketConfidence === "Medium") && (
+                  <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
+                    {r.marketConfidenceReason
+                      ? r.marketConfidenceReason
+                      : "We have limited comparable listings right now, so this is our best estimate based on market trends and your car's spec. The range below reflects that uncertainty."}
+                  </p>
+                )}
+
+                {/* Paragraph 3 — factors affecting price (dynamic) */}
+                {(() => {
+                  const adj = r.priceAdjustments?.filter(a => Math.abs(a.impactPct) >= 0.5) ?? [];
+                  const positives = adj.filter(a => a.impactPct > 0).map(a => a.label);
+                  const negatives = adj.filter(a => a.impactPct < 0).map(a => a.label);
+                  if (positives.length === 0 && negatives.length === 0) {
+                    return r.valueReasoning ? (
+                      <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">{r.valueReasoning}</p>
+                    ) : null;
+                  }
+                  const join = (arr: string[]) =>
+                    arr.length <= 1 ? arr[0] ?? "" : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
+                  return (
+                    <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
+                      {positives.length > 0 && <>{join(positives)} {positives.length > 1 ? "all push" : "pushes"} the value up. </>}
+                      {negatives.length > 0 && <>We've nudged it down slightly to account for {join(negatives)} — small things, but a buyer will likely use them to negotiate.</>}
+                    </p>
+                  );
+                })()}
+              </div>
             )}
             {!valuationUnavailable && r.comparableListings && r.comparableListings.length > 0 && (
               <div className="mt-4 max-w-xl">
