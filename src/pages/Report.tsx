@@ -291,14 +291,10 @@ export default function Report() {
                   {" "}is a strong asking price for a {v.year} {v.make} {v.model} in today's private market — realistic enough to attract serious buyers quickly, without leaving money on the table.
                 </p>
 
-                {/* Paragraph 2 — only on Low / Medium / Very Low confidence */}
-                {(r.marketConfidence === "Low" || r.marketConfidence === "Very Low" || r.marketConfidence === "Medium") && (
-                  <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
-                    {r.marketConfidenceReason
-                      ? r.marketConfidenceReason
-                      : "We have limited comparable listings right now, so this is our best estimate based on market trends and your car's spec. The range below reflects that uncertainty."}
-                  </p>
-                )}
+                {/* Paragraph 2 — driven by live MarketCheck count */}
+                <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
+                  {liveConfidenceLine}
+                </p>
 
                 {/* Paragraph 3 — factors affecting price (dynamic) */}
                 {(() => {
