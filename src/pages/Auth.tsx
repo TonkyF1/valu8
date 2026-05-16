@@ -89,7 +89,7 @@ export default function Auth() {
     setBusy(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
       toast.success("Password reset link sent");
@@ -209,8 +209,10 @@ export default function Auth() {
             </Tabs>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            By continuing you agree to our terms. Test mode — no payment required.
+          <p className="text-center text-xs text-muted-foreground mt-6 px-2">
+            By continuing you agree to our{" "}
+            <a href="/terms" className="underline hover:text-foreground">Terms</a>{" "}and{" "}
+            <a href="/privacy" className="underline hover:text-foreground">Privacy Policy</a>.
           </p>
         </div>
       </main>

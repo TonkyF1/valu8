@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NewValuation from "./pages/NewValuation";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Analysing from "./pages/Analysing";
 import Report from "./pages/Report";
@@ -26,11 +27,12 @@ const App = () => (
       <ConfirmProvider>
       <Toaster />
       <Sonner theme="dark" />
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <Routes>
             <Route path="/" element={<NewValuation />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/valuation/new" element={<ProtectedRoute><NewValuation /></ProtectedRoute>} />
             <Route path="/valuation/:id/analysing" element={<ProtectedRoute><Analysing /></ProtectedRoute>} />
