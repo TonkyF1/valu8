@@ -618,10 +618,18 @@ A car with 100k+ miles and corrosion advisories should NOT score above 6.5 regar
 OUTPUT DISCIPLINE:
 - Default to the LOWER half of any reasonable range unless EVERY signal is positive.
 - Use plain English. No jargon like "net adjustment", "anchored on", or "negative signals".
-- honestAnalysis: 2-3 short sentences. Explain the 2-3 biggest factors affecting the price. Be honest but not depressing. End with something helpful or positive where possible. Example: "The price is lower than average because of the high mileage and some corrosion issues noted on the MOT. These are common on cars of this age and can be sorted, but they do affect the value. A clean service history and recent work would help you achieve the top of the range."
+- honestAnalysis: 2-3 short sentences. Explain the 2-3 biggest factors affecting the price. Be honest but not depressing. End with something helpful or positive where possible.
 - valueReasoning: 2-3 short sentences max. Same friendly, plain tone. Focus on the main things buyers care about.
 - marketPositioning: 1-2 sentences. Keep it simple and encouraging.
 - watchPoints: Mention real issues but keep the tone practical, not scary.
+
+NEW FIELDS — REQUIRED, BE SPECIFIC TO THIS CAR:
+- headline: ONE short sentence (max ~110 chars) summarising whether the price is fair/strong/cautious and roughly how quickly it should sell.
+- marketContext: ONE short sentence on current UK demand for this make/model/spec right now.
+- factorsUp: 2-4 SHORT bullet phrases (max ~60 chars each) that genuinely raise this car's value (e.g. "Full dealer service history", "Below-average mileage for the year", "Desirable spec/colour"). No filler.
+- factorsDown: 2-4 SHORT bullet phrases that a buyer will use to negotiate (e.g. "Windscreen chip noted on MOT", "Rear tyre advisory", "Higher than average mileage"). No filler. If you genuinely can't find any, return an empty array.
+- sellerTip: ONE personal, useful sentence written like an experienced private seller giving advice (e.g. "List at £20,500 and expect offers around £19,500–£20,000. The service history is your strongest card — have it ready to show.").
+- negotiationBuffer: integer GBP, typically 3-5% of your privateSaleValue, rounded to the nearest £50. This is the room a buyer will negotiate off the asking price.
 
 Always reply by calling the provided function. Never write JSON in plain text.`;
 
@@ -642,6 +650,12 @@ const TOOL = {
         strengths: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
         watchPoints: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 5 },
         photoObservations: { type: "string", description: "Brief observations on what photos show. Empty if no photos." },
+        headline: { type: "string", description: "One short sentence summarising whether this price is fair/strong and roughly how quickly the car should sell." },
+        marketContext: { type: "string", description: "One short sentence on current UK demand for this make/model/spec." },
+        factorsUp: { type: "array", items: { type: "string" }, minItems: 0, maxItems: 4, description: "Short bullet phrases that raise the value." },
+        factorsDown: { type: "array", items: { type: "string" }, minItems: 0, maxItems: 4, description: "Short bullet phrases a buyer will use to negotiate." },
+        sellerTip: { type: "string", description: "One personal, practical sentence of advice for the seller." },
+        negotiationBuffer: { type: "number", description: "Negotiation room in GBP, typically 3-5% of privateSaleValue, rounded to £50." },
         recommendations: {
           type: "object",
           properties: {
@@ -653,7 +667,7 @@ const TOOL = {
           additionalProperties: false,
         },
       },
-      required: ["conditionScore", "conditionLabel", "privateSaleValue", "honestAnalysis", "marketPositioning", "valueReasoning", "strengths", "watchPoints", "photoObservations", "recommendations"],
+      required: ["conditionScore", "conditionLabel", "privateSaleValue", "honestAnalysis", "marketPositioning", "valueReasoning", "strengths", "watchPoints", "photoObservations", "headline", "marketContext", "factorsUp", "factorsDown", "sellerTip", "negotiationBuffer", "recommendations"],
       additionalProperties: false,
     },
   },
@@ -810,6 +824,12 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       strengths: string[];
       watchPoints: string[];
       photoObservations: string;
+      headline?: string;
+      marketContext?: string;
+      factorsUp?: string[];
+      factorsDown?: string[];
+      sellerTip?: string;
+      negotiationBuffer?: number;
       recommendations: { whereToSell: string[]; highlights: string[]; documents: string[] };
     };
 
@@ -1022,7 +1042,31 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       dataSource = "ai_estimate";
     }
 
-    const listingPrice = valuationUnavailable ? 0 : roundToGrain(Math.min(rangeHigh, values.privateSale * 1.03));
+    // Negotiation buffer: trust AI if reasonable (2-8% of privateSale), else default to ~4%.
+    const aiBuffer = Number(ai.negotiationBuffer) || 0;
+    const minBuf = values.privateSale * 0.02;
+    const maxBuf = values.privateSale * 0.08;
+    const negotiationBuffer = valuationUnavailable
+      ? 0
+      : roundTo50(clamp(aiBuffer > 0 ? aiBuffer : values.privateSale * 0.04, minBuf, maxBuf));
+    const recommendedAskingPrice = valuationUnavailable
+      ? 0
+      : roundTo50(values.privateSale + negotiationBuffer);
+    const listingPrice = recommendedAskingPrice || (valuationUnavailable ? 0 : roundToGrain(values.privateSale * 1.03));
+
+    // Build factorsUp/Down: prefer AI output, fall back to deterministic adjustments.
+    const aiUp = (ai.factorsUp ?? []).map((s) => String(s).trim()).filter(Boolean).slice(0, 4);
+    const aiDown = (ai.factorsDown ?? []).map((s) => String(s).trim()).filter(Boolean).slice(0, 4);
+    const factorsUp = aiUp.length > 0
+      ? sanitizeNarrativeList(aiUp, body.year)
+      : adjustments.filter((a) => a.impactPct > 0).map((a) => a.label).slice(0, 4);
+    const factorsDown = aiDown.length > 0
+      ? sanitizeNarrativeList(aiDown, body.year)
+      : adjustments.filter((a) => a.impactPct < 0).map((a) => a.label).slice(0, 4);
+
+    const headline = sanitizeNarrativeYears(ai.headline ?? "", body.year);
+    const marketContext = sanitizeNarrativeYears(ai.marketContext ?? "", body.year);
+    const sellerTip = sanitizeNarrativeYears(ai.sellerTip ?? "", body.year);
 
     // ----- Build MOT history payload (real DVSA where available, simulated fallback) -----
     let motHistory: any[] = [];
@@ -1062,10 +1106,19 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       watchPoints: sanitizeNarrativeList(ai.watchPoints, body.year),
       recommendations: {
         listingPrice,
+        recommendedAskingPrice,
+        negotiationBuffer,
         whereToSell: sanitizeNarrativeList(ai.recommendations?.whereToSell, body.year),
         highlights: sanitizeNarrativeList(ai.recommendations?.highlights, body.year),
         documents: sanitizeNarrativeList(ai.recommendations?.documents, body.year),
       },
+      headline,
+      marketContext,
+      factorsUp,
+      factorsDown,
+      sellerTip,
+      negotiationBuffer,
+      recommendedAskingPrice,
       hpi: {
         status: "All Clear" as const,
         checks: [

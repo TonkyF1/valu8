@@ -285,37 +285,74 @@ export default function Report() {
               </p>
             ) : (
               <div className="mt-4 space-y-3 max-w-[44ch]">
-                {/* Paragraph 1 — always shows */}
+                {/* Paragraph 1 — AI headline or fallback */}
                 <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8]">
-                  <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>
-                  {" "}is a strong asking price for a {v.year} {v.make} {v.model} in today's private market — realistic enough to attract serious buyers quickly, without leaving money on the table.
+                  {r.headline ? (
+                    r.headline
+                  ) : (
+                    <>
+                      <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>
+                      {" "}is a strong asking price for a {v.year} {v.make} {v.model} in today's private market — realistic enough to attract serious buyers quickly, without leaving money on the table.
+                    </>
+                  )}
                 </p>
 
-                {/* Paragraph 2 — driven by live MarketCheck count */}
+                {/* Paragraph 2 — market context from AI or live confidence */}
                 <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
-                  {liveConfidenceLine}
+                  {r.marketContext || liveConfidenceLine}
                 </p>
 
-                {/* Paragraph 3 — factors affecting price (dynamic) */}
+                {/* Paragraph 3 — factors affecting price (AI-driven, fall back to deterministic) */}
                 {(() => {
-                  const adj = r.priceAdjustments?.filter(a => Math.abs(a.impactPct) >= 0.5) ?? [];
-                  const positives = adj.filter(a => a.impactPct > 0).map(a => a.label);
-                  const negatives = adj.filter(a => a.impactPct < 0).map(a => a.label);
+                  const positives = (r.factorsUp && r.factorsUp.length > 0)
+                    ? r.factorsUp
+                    : (r.priceAdjustments?.filter(a => a.impactPct > 0).map(a => a.label) ?? []);
+                  const negatives = (r.factorsDown && r.factorsDown.length > 0)
+                    ? r.factorsDown
+                    : (r.priceAdjustments?.filter(a => a.impactPct < 0).map(a => a.label) ?? []);
                   if (positives.length === 0 && negatives.length === 0) {
                     return r.valueReasoning ? (
                       <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">{r.valueReasoning}</p>
                     ) : null;
                   }
                   const join = (arr: string[]) =>
-                    arr.length <= 1 ? arr[0] ?? "" : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
+                    arr.length <= 1 ? (arr[0] ?? "") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
                   return (
                     <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
                       {positives.length > 0 && <>{join(positives)} {positives.length > 1 ? "all push" : "pushes"} the value up. </>}
-                      {negatives.length > 0 && <>We've nudged it down slightly to account for {join(negatives)} — small things, but a buyer will likely use them to negotiate.</>}
+                      {negatives.length > 0 && <>We've nudged it down to account for {join(negatives)} — buyers will likely use these to negotiate.</>}
                     </p>
                   );
                 })()}
               </div>
+            )}
+
+            {/* Recommended asking price + seller tip — only when valuation is available */}
+            {!valuationUnavailable && (r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice) && (
+              <div className="mt-5 rounded-xl border border-primary/30 bg-primary/[0.05] px-4 py-3.5">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-medium mb-1">Recommended listing price</div>
+                <div className="text-3xl sm:text-[2.25rem] font-semibold tabular-nums text-foreground leading-none">
+                  £{(r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice).toLocaleString()}
+                </div>
+                {(r.negotiationBuffer || r.recommendations?.negotiationBuffer) ? (
+                  <div className="text-[11px] text-muted-foreground mt-1.5">
+                    Build in £{(r.negotiationBuffer || r.recommendations?.negotiationBuffer)!.toLocaleString()} negotiating room when you list
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+            {!valuationUnavailable && r.sellerTip && (
+              <div className="mt-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.05] px-4 py-3 flex gap-2.5">
+                <span className="text-amber-300 mt-0.5 leading-none" aria-hidden>💡</span>
+                <p className="text-[13px] leading-[1.55] text-[#E8E8E8]">{r.sellerTip}</p>
+              </div>
+            )}
+
+            {!valuationUnavailable && liveCount == null && (
+              <p className="text-[11px] text-muted-foreground/70 mt-3">
+                Valued using AI market analysis — fewer live comparables available for this model right now.
+              </p>
             )}
             {!valuationUnavailable && r.comparableListings && r.comparableListings.length > 0 && (
               <div className="mt-4 max-w-xl">
