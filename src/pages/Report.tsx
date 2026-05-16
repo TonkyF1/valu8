@@ -259,6 +259,11 @@ export default function Report() {
                 <div className="text-xs text-muted-foreground tabular-nums mt-2">
                   Range £{(r.valueRange?.privateSaleLow ?? r.values.privateSale).toLocaleString()} – £{(r.valueRange?.privateSaleHigh ?? r.values.privateSale).toLocaleString()}
                 </div>
+                {liveCount != null && liveCount > 0 && (
+                  <div className="text-xs text-muted-foreground/80 mt-1">
+                    Based on {liveCount.toLocaleString()} similar cars listed in the UK right now
+                  </div>
+                )}
               </>
             )}
             {r.rareCarWarning && (
