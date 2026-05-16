@@ -58,9 +58,16 @@ export interface ValuationReport {
   honestAnalysis: string;
   marketPositioning: string;
   photoObservations?: string;
+  headline?: string;
+  marketContext?: string;
+  factorsUp?: string[];
+  factorsDown?: string[];
+  sellerTip?: string;
+  negotiationBuffer?: number;
+  recommendedAskingPrice?: number;
   strengths: string[];
   watchPoints: string[];
-  recommendations: { listingPrice: number; whereToSell: string[]; highlights: string[]; documents: string[] };
+  recommendations: { listingPrice: number; recommendedAskingPrice?: number; negotiationBuffer?: number; whereToSell: string[]; highlights: string[]; documents: string[] };
   hpi: { status: "All Clear" | "Needs Review"; checks: { label: string; ok: boolean }[] };
   motHistory: MotEntry[];
   motSource?: "dvsa" | "simulated";
