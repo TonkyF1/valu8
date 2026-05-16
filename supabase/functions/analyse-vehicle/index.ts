@@ -1042,7 +1042,31 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       dataSource = "ai_estimate";
     }
 
-    const listingPrice = valuationUnavailable ? 0 : roundToGrain(Math.min(rangeHigh, values.privateSale * 1.03));
+    // Negotiation buffer: trust AI if reasonable (2-8% of privateSale), else default to ~4%.
+    const aiBuffer = Number(ai.negotiationBuffer) || 0;
+    const minBuf = values.privateSale * 0.02;
+    const maxBuf = values.privateSale * 0.08;
+    const negotiationBuffer = valuationUnavailable
+      ? 0
+      : roundTo50(clamp(aiBuffer > 0 ? aiBuffer : values.privateSale * 0.04, minBuf, maxBuf));
+    const recommendedAskingPrice = valuationUnavailable
+      ? 0
+      : roundTo50(values.privateSale + negotiationBuffer);
+    const listingPrice = recommendedAskingPrice || (valuationUnavailable ? 0 : roundToGrain(values.privateSale * 1.03));
+
+    // Build factorsUp/Down: prefer AI output, fall back to deterministic adjustments.
+    const aiUp = (ai.factorsUp ?? []).map((s) => String(s).trim()).filter(Boolean).slice(0, 4);
+    const aiDown = (ai.factorsDown ?? []).map((s) => String(s).trim()).filter(Boolean).slice(0, 4);
+    const factorsUp = aiUp.length > 0
+      ? sanitizeNarrativeList(aiUp, body.year)
+      : adjustments.filter((a) => a.impactPct > 0).map((a) => a.label).slice(0, 4);
+    const factorsDown = aiDown.length > 0
+      ? sanitizeNarrativeList(aiDown, body.year)
+      : adjustments.filter((a) => a.impactPct < 0).map((a) => a.label).slice(0, 4);
+
+    const headline = sanitizeNarrativeYears(ai.headline ?? "", body.year);
+    const marketContext = sanitizeNarrativeYears(ai.marketContext ?? "", body.year);
+    const sellerTip = sanitizeNarrativeYears(ai.sellerTip ?? "", body.year);
 
     // ----- Build MOT history payload (real DVSA where available, simulated fallback) -----
     let motHistory: any[] = [];
