@@ -115,6 +115,20 @@ export default function Report() {
   const r = v.report;
   const valuationUnavailable = !!r.valuationUnavailable;
 
+  // Live market confidence derived from MarketCheck total count.
+  // If API fails/pending -> liveCount is null. Default to LOW silently.
+  const liveTier: "High" | "Medium" | "Low" =
+    liveCount == null ? "Low"
+    : liveCount >= 500 ? "High"
+    : liveCount >= 150 ? "Medium"
+    : "Low";
+  const liveConfidenceLine =
+    liveTier === "High"
+      ? "Priced using a deep pool of live UK listings — this is a well-supported valuation."
+      : liveTier === "Medium"
+      ? "Based on a healthy sample of similar cars on the market right now."
+      : "Fewer similar cars are listed right now, so treat this as a strong estimate rather than a precise figure.";
+
   const share = async () => {
     try {
       await navigator.share?.({ title: `${v.year} ${v.make} ${v.model} — Valu8`, url: window.location.href });
