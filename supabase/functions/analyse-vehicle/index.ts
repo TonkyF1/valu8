@@ -1106,10 +1106,19 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       watchPoints: sanitizeNarrativeList(ai.watchPoints, body.year),
       recommendations: {
         listingPrice,
+        recommendedAskingPrice,
+        negotiationBuffer,
         whereToSell: sanitizeNarrativeList(ai.recommendations?.whereToSell, body.year),
         highlights: sanitizeNarrativeList(ai.recommendations?.highlights, body.year),
         documents: sanitizeNarrativeList(ai.recommendations?.documents, body.year),
       },
+      headline,
+      marketContext,
+      factorsUp,
+      factorsDown,
+      sellerTip,
+      negotiationBuffer,
+      recommendedAskingPrice,
       hpi: {
         status: "All Clear" as const,
         checks: [
