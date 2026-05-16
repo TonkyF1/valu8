@@ -209,8 +209,10 @@ export default function Auth() {
             </Tabs>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            By continuing you agree to our terms. Test mode — no payment required.
+          <p className="text-center text-xs text-muted-foreground mt-6 px-2">
+            By continuing you agree to our{" "}
+            <a href="/terms" className="underline hover:text-foreground">Terms</a>{" "}and{" "}
+            <a href="/privacy" className="underline hover:text-foreground">Privacy Policy</a>.
           </p>
         </div>
       </main>
