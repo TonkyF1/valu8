@@ -25,7 +25,7 @@ export function useProfile() {
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      setProfile(data ?? { is_premium: false, plan: "free", full_name: null, username: null, avatar_url: null });
+      setProfile(data ?? { is_premium: true, plan: "monthly", full_name: null, username: null, avatar_url: null });
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -43,8 +43,10 @@ export function useProfile() {
       .from("profiles")
       .upsert({ user_id: user.id, ...updates }, { onConflict: "user_id" });
     if (error) throw error;
-    setProfile((p) => ({ ...(p ?? { is_premium: false, plan: "free", full_name: null, username: null, avatar_url: null }), ...updates }));
+    setProfile((p) => ({ ...(p ?? { is_premium: true, plan: "monthly", full_name: null, username: null, avatar_url: null }), ...updates }));
   }
 
-  return { profile, loading, isPremium: !!profile?.is_premium, setPremium, updateProfile };
+  // While Stripe billing is being finalised, every signed-in user gets full access.
+  // Real billing will flip this back to `!!profile?.is_premium`.
+  return { profile, loading, isPremium: true, setPremium, updateProfile };
 }
