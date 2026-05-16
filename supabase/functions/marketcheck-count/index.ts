@@ -5,9 +5,17 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const make = url.searchParams.get('make');
-    const model = url.searchParams.get('model');
-    const year = Number(url.searchParams.get('year'));
+    let make = url.searchParams.get('make');
+    let model = url.searchParams.get('model');
+    let year = Number(url.searchParams.get('year'));
+    if ((!make || !model || !year) && req.method !== 'GET') {
+      try {
+        const body = await req.json();
+        make = make || body?.make;
+        model = model || body?.model;
+        year = year || Number(body?.year);
+      } catch { /* ignore */ }
+    }
     const apiKey = Deno.env.get('MARKETCHECK_API_KEY');
 
     if (!make || !model || !year || !apiKey) {
