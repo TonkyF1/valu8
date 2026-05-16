@@ -824,6 +824,12 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       strengths: string[];
       watchPoints: string[];
       photoObservations: string;
+      headline?: string;
+      marketContext?: string;
+      factorsUp?: string[];
+      factorsDown?: string[];
+      sellerTip?: string;
+      negotiationBuffer?: number;
       recommendations: { whereToSell: string[]; highlights: string[]; documents: string[] };
     };
 
