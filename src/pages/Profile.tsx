@@ -7,14 +7,17 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
-import { Crown, LogOut, Mail, KeyRound, CreditCard, ShieldCheck, Sparkles, ArrowLeft, User as UserIcon, Upload, Trash2, Receipt, Download, Calendar, Chrome, Link2, Unlink } from "lucide-react";
+import { Crown, LogOut, Mail, KeyRound, CreditCard, ShieldCheck, Sparkles, ArrowLeft, User as UserIcon, Upload, Trash2, Receipt, Download, Calendar, Chrome, Link2, Unlink, AlertTriangle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
   const { isPremium, setPremium, profile, updateProfile } = useProfile();
   const navigate = useNavigate();
+  const confirm = useConfirm();
+  const [deleting, setDeleting] = useState(false);
   const [newPw, setNewPw] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -252,11 +255,51 @@ export default function Profile() {
         {/* Subscription & Billing */}
         <SubscriptionBilling
           isPremium={isPremium}
-          plan={profile?.plan ?? "free"}
+          plan={profile?.plan ?? "monthly"}
           email={user?.email ?? ""}
           onUpgrade={(p) => setPremium(true, p)}
           onCancel={() => setPremium(false, "free")}
         />
+
+        {/* Danger zone */}
+        <section className="rounded-2xl border border-destructive/30 bg-destructive/[0.04] p-6 sm:p-7">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="h-10 w-10 rounded-xl bg-destructive/15 text-destructive grid place-items-center">
+              <AlertTriangle className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="font-semibold">Delete account</h2>
+              <p className="text-xs text-muted-foreground">Permanently removes your account, valuations and photos. This cannot be undone.</p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            disabled={deleting}
+            onClick={async () => {
+              const ok = await confirm({
+                title: "Delete your Valu8 account?",
+                description: "Every valuation, photo and account record will be permanently erased. You'll be signed out immediately.",
+                confirmLabel: deleting ? "Deleting…" : "Delete forever",
+                destructive: true,
+              });
+              if (!ok) return;
+              setDeleting(true);
+              try {
+                const { error } = await supabase.functions.invoke("delete-account");
+                if (error) throw error;
+                toast.success("Account deleted");
+                await signOut();
+                navigate("/", { replace: true });
+              } catch (err: any) {
+                toast.error(err.message || "Couldn't delete account");
+                setDeleting(false);
+              }
+            }}
+          >
+            <Trash2 className="h-4 w-4" /> {deleting ? "Deleting…" : "Delete my account"}
+          </Button>
+        </section>
       </main>
       <Footer />
     </div>
@@ -390,14 +433,11 @@ function SubscriptionBilling({ isPremium, plan, email, onUpgrade, onCancel }: { 
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-2">
-            <Button variant="premium" size="sm" onClick={() => toast.info("Billing portal coming soon")}>
+            <Button variant="premium" size="sm" onClick={() => toast.info("Paid billing launches soon — your account already has full access.")}>
               <CreditCard className="h-4 w-4" /> Manage subscription
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => toast.info("Update payment method coming soon")}>
+            <Button variant="ghost" size="sm" onClick={() => toast.info("Paid billing launches soon — no card needed today.")}>
               Update card
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onCancel}>
-              Cancel
             </Button>
           </div>
 
