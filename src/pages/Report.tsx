@@ -39,6 +39,7 @@ export default function Report() {
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
   const [showAllMot, setShowAllMot] = useState(false);
+  const [liveCount, setLiveCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -52,6 +53,25 @@ export default function Report() {
         setLoading(false);
       });
   }, [id]);
+
+  useEffect(() => {
+    if (!v) return;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    supabase.functions
+      .invoke("marketcheck-count", {
+        body: { make: v.make, model: v.model, year: v.year },
+        // @ts-ignore - method query workaround
+      })
+      .then(({ data, error }) => {
+        if (error) return;
+        const n = Number((data as any)?.totalCount);
+        if (Number.isFinite(n)) setLiveCount(n);
+      })
+      .catch(() => {})
+      .finally(() => clearTimeout(timer));
+    return () => { clearTimeout(timer); ctrl.abort(); };
+  }, [v]);
 
   if (loading) {
     return (
@@ -94,6 +114,20 @@ export default function Report() {
 
   const r = v.report;
   const valuationUnavailable = !!r.valuationUnavailable;
+
+  // Live market confidence derived from MarketCheck total count.
+  // If API fails/pending -> liveCount is null. Default to LOW silently.
+  const liveTier: "High" | "Medium" | "Low" =
+    liveCount == null ? "Low"
+    : liveCount >= 500 ? "High"
+    : liveCount >= 150 ? "Medium"
+    : "Low";
+  const liveConfidenceLine =
+    liveTier === "High"
+      ? "Priced using a deep pool of live UK listings — this is a well-supported valuation."
+      : liveTier === "Medium"
+      ? "Based on a healthy sample of similar cars on the market right now."
+      : "Fewer similar cars are listed right now, so treat this as a strong estimate rather than a precise figure.";
 
   const share = async () => {
     try {
@@ -199,25 +233,14 @@ export default function Report() {
             <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.06] blur-3xl pointer-events-none" />
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{valuationUnavailable ? "Valuation status" : "Private Sale"}</span>
-              {r.marketConfidence && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className={cn(
-                      "cursor-help text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border",
-                      r.marketConfidence === "High" && "text-primary/90 bg-primary/10 border-primary/20",
-                      r.marketConfidence === "Medium" && "text-foreground/80 bg-foreground/5 border-foreground/15",
-                      (r.marketConfidence === "Low" || r.marketConfidence === "Very Low") && "text-amber-500 bg-amber-500/10 border-amber-500/30",
-                    )}>
-                      {r.marketConfidence} confidence
-                    </span>
-                  </TooltipTrigger>
-                  {r.marketConfidenceReason && (
-                    <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
-                      {r.marketConfidenceReason}
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              )}
+              <span className={cn(
+                "text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border",
+                liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
+                liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
+                liveTier === "Low" && "text-red-400 bg-red-500/10 border-red-500/30",
+              )}>
+                {liveTier} confidence
+              </span>
             </div>
             {valuationUnavailable ? (
               <div className="max-w-xl">
@@ -236,6 +259,11 @@ export default function Report() {
                 <div className="text-xs text-muted-foreground tabular-nums mt-2">
                   Range £{(r.valueRange?.privateSaleLow ?? r.values.privateSale).toLocaleString()} – £{(r.valueRange?.privateSaleHigh ?? r.values.privateSale).toLocaleString()}
                 </div>
+                {liveCount != null && liveCount > 0 && (
+                  <div className="text-xs text-muted-foreground/80 mt-1">
+                    Based on {liveCount.toLocaleString()} similar cars listed in the UK right now
+                  </div>
+                )}
               </>
             )}
             {r.rareCarWarning && (
@@ -263,14 +291,10 @@ export default function Report() {
                   {" "}is a strong asking price for a {v.year} {v.make} {v.model} in today's private market — realistic enough to attract serious buyers quickly, without leaving money on the table.
                 </p>
 
-                {/* Paragraph 2 — only on Low / Medium / Very Low confidence */}
-                {(r.marketConfidence === "Low" || r.marketConfidence === "Very Low" || r.marketConfidence === "Medium") && (
-                  <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
-                    {r.marketConfidenceReason
-                      ? r.marketConfidenceReason
-                      : "We have limited comparable listings right now, so this is our best estimate based on market trends and your car's spec. The range below reflects that uncertainty."}
-                  </p>
-                )}
+                {/* Paragraph 2 — driven by live MarketCheck count */}
+                <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
+                  {liveConfidenceLine}
+                </p>
 
                 {/* Paragraph 3 — factors affecting price (dynamic) */}
                 {(() => {
