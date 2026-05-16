@@ -233,25 +233,14 @@ export default function Report() {
             <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.06] blur-3xl pointer-events-none" />
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{valuationUnavailable ? "Valuation status" : "Private Sale"}</span>
-              {r.marketConfidence && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className={cn(
-                      "cursor-help text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border",
-                      r.marketConfidence === "High" && "text-primary/90 bg-primary/10 border-primary/20",
-                      r.marketConfidence === "Medium" && "text-foreground/80 bg-foreground/5 border-foreground/15",
-                      (r.marketConfidence === "Low" || r.marketConfidence === "Very Low") && "text-amber-500 bg-amber-500/10 border-amber-500/30",
-                    )}>
-                      {r.marketConfidence} confidence
-                    </span>
-                  </TooltipTrigger>
-                  {r.marketConfidenceReason && (
-                    <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
-                      {r.marketConfidenceReason}
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              )}
+              <span className={cn(
+                "text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border",
+                liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
+                liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
+                liveTier === "Low" && "text-red-400 bg-red-500/10 border-red-500/30",
+              )}>
+                {liveTier} confidence
+              </span>
             </div>
             {valuationUnavailable ? (
               <div className="max-w-xl">
