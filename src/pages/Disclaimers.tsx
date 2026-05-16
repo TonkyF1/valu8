@@ -18,7 +18,7 @@ export default function Disclaimers() {
             Each report is produced by a large vision-and-language model trained on UK market data and your vehicle photos and details. Results are indicative and will vary from actual sale prices depending on local demand, time of year, and buyer competition.
           </Card>
           <Card icon={<Database className="h-4 w-4" />} title="Data sources">
-            Pricing benchmarks are derived from public UK retail and trade listings. HPI and MOT summaries shown in Test Mode are realistic simulations — once production keys for the official DVSA MOT History API and an HPI provider (e.g. RegCheck, MotorCheck, HPI Ltd) are configured, real records will replace the simulated data automatically.
+            Live UK listing data is provided by MarketCheck (marketcheck.com). MOT history is retrieved from the official DVSA MOT History API. Pricing benchmarks combine these live signals with public retail/trade comparables. Where any provider is unavailable we fall back to a realistic estimate and label it clearly inside the report.
           </Card>
           <Card icon={<ShieldAlert className="h-4 w-4" />} title="Not financial advice">
             Valu8 reports do not constitute financial, legal, or commercial advice. Always carry out an independent HPI check and arrange a viewing/inspection before transacting.

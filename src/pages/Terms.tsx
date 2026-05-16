@@ -10,7 +10,7 @@ export default function Terms() {
       <main className="flex-1 container max-w-3xl py-12 md:py-16">
         <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Legal</div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gradient mb-6">Terms of Service</h1>
-        <p className="text-sm text-muted-foreground mb-10">Last updated: 6 May 2026</p>
+        <p className="text-sm text-muted-foreground mb-10">Last updated: 16 May 2026</p>
 
         <div className="space-y-6 text-sm leading-relaxed text-foreground/85">
           <section>
