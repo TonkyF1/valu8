@@ -39,6 +39,7 @@ export default function Report() {
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
   const [showAllMot, setShowAllMot] = useState(false);
+  const [liveCount, setLiveCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -52,6 +53,25 @@ export default function Report() {
         setLoading(false);
       });
   }, [id]);
+
+  useEffect(() => {
+    if (!v) return;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    supabase.functions
+      .invoke("marketcheck-count", {
+        body: { make: v.make, model: v.model, year: v.year },
+        // @ts-ignore - method query workaround
+      })
+      .then(({ data, error }) => {
+        if (error) return;
+        const n = Number((data as any)?.totalCount);
+        if (Number.isFinite(n)) setLiveCount(n);
+      })
+      .catch(() => {})
+      .finally(() => clearTimeout(timer));
+    return () => { clearTimeout(timer); ctrl.abort(); };
+  }, [v]);
 
   if (loading) {
     return (
