@@ -650,6 +650,12 @@ const TOOL = {
         strengths: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
         watchPoints: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 5 },
         photoObservations: { type: "string", description: "Brief observations on what photos show. Empty if no photos." },
+        headline: { type: "string", description: "One short sentence summarising whether this price is fair/strong and roughly how quickly the car should sell." },
+        marketContext: { type: "string", description: "One short sentence on current UK demand for this make/model/spec." },
+        factorsUp: { type: "array", items: { type: "string" }, minItems: 0, maxItems: 4, description: "Short bullet phrases that raise the value." },
+        factorsDown: { type: "array", items: { type: "string" }, minItems: 0, maxItems: 4, description: "Short bullet phrases a buyer will use to negotiate." },
+        sellerTip: { type: "string", description: "One personal, practical sentence of advice for the seller." },
+        negotiationBuffer: { type: "number", description: "Negotiation room in GBP, typically 3-5% of privateSaleValue, rounded to £50." },
         recommendations: {
           type: "object",
           properties: {
@@ -661,7 +667,7 @@ const TOOL = {
           additionalProperties: false,
         },
       },
-      required: ["conditionScore", "conditionLabel", "privateSaleValue", "honestAnalysis", "marketPositioning", "valueReasoning", "strengths", "watchPoints", "photoObservations", "recommendations"],
+      required: ["conditionScore", "conditionLabel", "privateSaleValue", "honestAnalysis", "marketPositioning", "valueReasoning", "strengths", "watchPoints", "photoObservations", "headline", "marketContext", "factorsUp", "factorsDown", "sellerTip", "negotiationBuffer", "recommendations"],
       additionalProperties: false,
     },
   },
