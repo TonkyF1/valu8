@@ -897,6 +897,14 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       strengths: string[];
       watchPoints: string[];
       photoObservations: string;
+      photoInsights?: Array<{
+        slot?: string;
+        observation?: string;
+        severity?: string;
+        priceImpact?: number;
+        fixCost?: number;
+        fixable?: boolean;
+      }>;
       headline?: string;
       marketContext?: string;
       factorsUp?: string[];
