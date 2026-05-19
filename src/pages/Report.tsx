@@ -233,7 +233,7 @@ export default function Report() {
           <div className="lg:col-span-3 premium-card p-5 sm:p-6 relative overflow-hidden border-primary/30">
             <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.06] blur-3xl pointer-events-none" />
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{valuationUnavailable ? "Valuation status" : "Private Sale"}</span>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{valuationUnavailable ? "Valuation status" : "Your Realistic Private Sale Price"}</span>
               <span className={cn(
                 "text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border",
                 liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
@@ -257,9 +257,9 @@ export default function Report() {
                 <div className="text-4xl sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-none">
                   <CountUp value={r.values.privateSale} prefix="£" />
                 </div>
-                <div className="text-xs text-muted-foreground tabular-nums mt-2">
-                  Range £{(r.valueRange?.privateSaleLow ?? r.values.privateSale).toLocaleString()} – £{(r.valueRange?.privateSaleHigh ?? r.values.privateSale).toLocaleString()}
-                </div>
+                <p className="text-sm text-muted-foreground mt-2 max-w-[44ch]">
+                  This is what you can realistically expect to sell for privately in the current UK market.
+                </p>
                 {liveCount != null && liveCount > 0 && (
                   <div className="text-xs text-muted-foreground/80 mt-1">
                     Based on {liveCount.toLocaleString()} similar cars listed in the UK right now
@@ -328,25 +328,47 @@ export default function Report() {
               </div>
             )}
 
-            {/* Recommended asking price + seller tip — only when valuation is available */}
-            {!valuationUnavailable && (r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice) && (
+            {/* Suggested Asking Price — range with honest context */}
+            {!valuationUnavailable && (
               <div className="mt-5 rounded-xl border border-primary/30 bg-primary/[0.05] px-4 py-3.5">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-medium mb-1">Recommended listing price</div>
-                <div className="text-3xl sm:text-[2.25rem] font-semibold tabular-nums text-foreground leading-none">
-                  £{(r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice).toLocaleString()}
-                </div>
-                {(r.negotiationBuffer || r.recommendations?.negotiationBuffer) ? (
-                  <div className="text-[11px] text-muted-foreground mt-1.5">
-                    Build in £{(r.negotiationBuffer || r.recommendations?.negotiationBuffer)!.toLocaleString()} negotiating room when you list
-                  </div>
-                ) : null}
+                <div className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-medium mb-1">Suggested Asking Price</div>
+                {(() => {
+                  const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
+                  const rangeLow = Math.round((base - 250) / 50) * 50;
+                  const rangeHigh = Math.round((base + 250) / 50) * 50;
+                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
+                  const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
+                  const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
+                  return (
+                    <>
+                      <div className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none">
+                        £{rangeLow.toLocaleString()} – £{rangeHigh.toLocaleString()}
+                      </div>
+                      <p className="text-[12px] text-muted-foreground mt-2 leading-relaxed max-w-[44ch]">
+                        List in this range to attract serious buyers while leaving £{buffer.toLocaleString()}–£{Math.round(buffer * 1.35 / 50) * 50} room to negotiate. Most similar cars are currently selling between £{marketLow.toLocaleString()} – £{marketHigh.toLocaleString()}.
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
-            {!valuationUnavailable && r.sellerTip && (
+            {/* Pro Tip — negotiation guidance */}
+            {!valuationUnavailable && (
               <div className="mt-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.05] px-4 py-3 flex gap-2.5">
                 <span className="text-amber-300 mt-0.5 leading-none" aria-hidden>💡</span>
-                <p className="text-[13px] leading-[1.55] text-[#E8E8E8]">{r.sellerTip}</p>
+                {(() => {
+                  const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
+                  const listAt = Math.round((base + 500) / 50) * 50;
+                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
+                  const offerLow = Math.round((listAt - buffer * 1.2) / 50) * 50;
+                  const offerHigh = Math.round((listAt - buffer * 0.6) / 50) * 50;
+                  return (
+                    <p className="text-[13px] leading-[1.55] text-[#E8E8E8]">
+                      <span className="font-semibold text-amber-300">Pro Tip:</span> List at £{listAt.toLocaleString()} and expect offers around £{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}. {r.strengths.includes("Full service history") || r.strengths.some(s => s.toLowerCase().includes("service history")) ? "Your full service history is a strong selling point." : "Highlight your car's strengths when negotiating."}
+                    </p>
+                  );
+                })()}
               </div>
             )}
 
