@@ -1146,6 +1146,31 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       : adjustments.filter((a) => a.impactPct < 0).map((a) => a.label).slice(0, 4);
 
     const headline = sanitizeNarrativeYears(ai.headline ?? "", body.year);
+
+    // Sanitize per-photo insights and attach the matching photoIndex.
+    const rawInsights = Array.isArray(ai.photoInsights) ? ai.photoInsights : [];
+    const photoInsights = rawInsights
+      .map((ins) => {
+        const slot = (VALID_SLOTS.includes(ins?.slot as PhotoSlot) ? ins!.slot : "other") as PhotoSlot;
+        const observation = sanitizeNarrativeYears(String(ins?.observation ?? "").trim(), body.year).slice(0, 140);
+        if (!observation) return null;
+        const severity = (["positive","neutral","minor","notable"].includes(String(ins?.severity)) ? ins!.severity : "neutral") as "positive"|"neutral"|"minor"|"notable";
+        const photoIndex = labeledPhotos.findIndex((p) => p.slot === slot);
+        const priceImpact = Number.isFinite(Number(ins?.priceImpact)) && Number(ins?.priceImpact) !== 0 ? Math.round(Number(ins!.priceImpact)) : undefined;
+        const fixCost = Number.isFinite(Number(ins?.fixCost)) && Number(ins?.fixCost) > 0 ? Math.round(Number(ins!.fixCost)) : undefined;
+        const fixable = typeof ins?.fixable === "boolean" ? ins!.fixable : undefined;
+        return {
+          slot,
+          photoIndex: photoIndex >= 0 ? photoIndex : undefined,
+          observation,
+          severity,
+          ...(priceImpact !== undefined ? { priceImpact } : {}),
+          ...(fixCost !== undefined ? { fixCost } : {}),
+          ...(fixable !== undefined ? { fixable } : {}),
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 18);
     const marketContext = sanitizeNarrativeYears(ai.marketContext ?? "", body.year);
     const sellerTip = sanitizeNarrativeYears(ai.sellerTip ?? "", body.year);
 
@@ -1183,6 +1208,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       honestAnalysis: sanitizeNarrativeYears(valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis, body.year),
       marketPositioning: sanitizeNarrativeYears(valuationUnavailable ? "This type of car needs a specialist's eye. A marque specialist or auction house will give you a proper appraisal." : ai.marketPositioning, body.year),
       photoObservations: sanitizeNarrativeYears(ai.photoObservations, body.year),
+      photoInsights,
       strengths: sanitizeNarrativeList(ai.strengths, body.year),
       watchPoints: sanitizeNarrativeList(ai.watchPoints, body.year),
       recommendations: {
