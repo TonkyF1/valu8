@@ -659,3 +659,174 @@ function RecBlock({ title, items }: { title: string; items: string[] }) {
     </div>
   );
 }
+
+const SLOT_LABELS: Record<string, string> = {
+  front: "Front 3/4",
+  rear: "Rear 3/4",
+  side: "Side profile",
+  interior: "Interior",
+  odometer: "Odometer",
+  engine: "Engine bay",
+  other: "Other photo",
+};
+
+function PhotoFeedback({
+  insights,
+  photoUrls,
+  onSelectPhoto,
+}: {
+  insights: PhotoInsight[];
+  photoUrls: string[];
+  onSelectPhoto: (i: number) => void;
+}) {
+  // Group insights by photoIndex (fall back to grouping by slot when index missing)
+  const grouped = new Map<number, PhotoInsight[]>();
+  insights.forEach((ins) => {
+    const idx = typeof ins.photoIndex === "number" && ins.photoIndex >= 0 && ins.photoIndex < photoUrls.length
+      ? ins.photoIndex
+      : -1;
+    const arr = grouped.get(idx) ?? [];
+    arr.push(ins);
+    grouped.set(idx, arr);
+  });
+
+  const totalImpact = insights.reduce((sum, i) => sum + (i.priceImpact ?? 0), 0);
+  const totalFixCost = insights.reduce((sum, i) => sum + (i.fixCost ?? 0), 0);
+  const fixableUpside = insights
+    .filter((i) => i.fixable && (i.priceImpact ?? 0) < 0)
+    .reduce((sum, i) => sum + Math.abs(i.priceImpact ?? 0), 0);
+
+  const orderedKeys = Array.from(grouped.keys()).sort((a, b) => {
+    if (a === -1) return 1;
+    if (b === -1) return -1;
+    return a - b;
+  });
+
+  return (
+    <section className="mb-6 animate-fade-in-up">
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">What the AI saw in your photos</h2>
+        </div>
+        <div className="flex items-center gap-2 text-[11px]">
+          {totalImpact !== 0 && (
+            <span className={cn(
+              "tabular-nums font-medium rounded-full px-2.5 py-1 border",
+              totalImpact > 0 ? "text-primary bg-primary/10 border-primary/30" : "text-amber-300 bg-amber-500/10 border-amber-500/30",
+            )}>
+              Net impact {totalImpact > 0 ? "+" : "−"}£{Math.abs(totalImpact).toLocaleString()}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border/50 bg-card/50 p-4 sm:p-5">
+        <div className="grid gap-4">
+          {orderedKeys.map((idx) => {
+            const items = grouped.get(idx)!;
+            const url = idx >= 0 ? photoUrls[idx] : undefined;
+            const slotKey = items[0]?.slot ?? "other";
+            return (
+              <div key={idx} className="flex gap-3 sm:gap-4">
+                {url ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectPhoto(idx)}
+                    className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-border/60 hover:border-primary/50 transition-colors relative group"
+                    aria-label={`View ${SLOT_LABELS[slotKey] ?? "photo"}`}
+                  >
+                    <img src={url} alt={SLOT_LABELS[slotKey] ?? "photo"} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity grid place-items-end p-1.5">
+                      <Camera className="h-3 w-3 text-white" />
+                    </div>
+                  </button>
+                ) : (
+                  <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-muted/30 border border-border/40 grid place-items-center">
+                    <Camera className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1.5">
+                    {SLOT_LABELS[slotKey] ?? "Photo"}
+                  </div>
+                  <ul className="space-y-1.5">
+                    {items.map((ins, k) => (
+                      <li key={k}>
+                        <InsightRow insight={ins} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {(fixableUpside > 0 || totalFixCost > 0) && (
+          <div className="mt-4 pt-4 border-t border-border/50 grid sm:grid-cols-2 gap-3">
+            {fixableUpside > 0 && (
+              <div className="rounded-lg bg-primary/[0.06] border border-primary/20 px-3 py-2.5">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-primary/90 mb-0.5">Potential upside if you fix the flagged items</div>
+                <div className="text-base font-semibold tabular-nums text-foreground">+£{fixableUpside.toLocaleString()}</div>
+              </div>
+            )}
+            {totalFixCost > 0 && (
+              <div className="rounded-lg bg-muted/30 border border-border/50 px-3 py-2.5">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-0.5">Estimated cost to remedy</div>
+                <div className="text-base font-semibold tabular-nums text-foreground/90">£{totalFixCost.toLocaleString()}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <p className="text-[10px] text-muted-foreground/70 mt-3 leading-relaxed">
+          AI observations are guidance only — based on what's visible in each photo. Always confirm condition in person.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function InsightRow({ insight }: { insight: PhotoInsight }) {
+  const sev = insight.severity;
+  const Icon = sev === "positive" ? TrendingUp : sev === "notable" ? TrendingDown : sev === "minor" ? AlertTriangle : Minus;
+  const tone =
+    sev === "positive" ? "text-primary" :
+    sev === "notable" ? "text-red-400" :
+    sev === "minor" ? "text-amber-400" :
+    "text-muted-foreground";
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", tone)} />
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] leading-snug text-foreground/90">{insight.observation}</div>
+        {(insight.priceImpact !== undefined || insight.fixCost !== undefined) && (
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {insight.priceImpact !== undefined && insight.priceImpact !== 0 && (
+              <span className={cn(
+                "inline-flex items-center text-[10px] tabular-nums font-medium rounded px-1.5 py-0.5 border",
+                insight.priceImpact > 0
+                  ? "text-primary bg-primary/10 border-primary/30"
+                  : "text-amber-300 bg-amber-500/10 border-amber-500/30",
+              )}>
+                {insight.priceImpact > 0 ? "+" : "−"}£{Math.abs(insight.priceImpact).toLocaleString()}
+              </span>
+            )}
+            {insight.fixCost !== undefined && insight.fixCost > 0 && (
+              <span className="inline-flex items-center text-[10px] tabular-nums font-medium rounded px-1.5 py-0.5 border border-border/60 bg-muted/30 text-muted-foreground">
+                Fix ~£{insight.fixCost.toLocaleString()}
+              </span>
+            )}
+            {insight.fixable && insight.priceImpact !== undefined && insight.priceImpact < 0 && (
+              <span className="inline-flex items-center text-[10px] font-medium rounded px-1.5 py-0.5 border border-primary/30 bg-primary/5 text-primary/90">
+                Fixable
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
