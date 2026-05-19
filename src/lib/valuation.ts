@@ -24,6 +24,19 @@ export interface MotEntry {
   failures?: string[];
   source?: "dvsa" | "simulated";
 }
+export type PhotoInsightSlot = "front" | "rear" | "side" | "interior" | "odometer" | "engine" | "other";
+export type PhotoInsightSeverity = "positive" | "neutral" | "minor" | "notable";
+
+export interface PhotoInsight {
+  slot: PhotoInsightSlot;
+  photoIndex?: number;
+  observation: string;
+  severity: PhotoInsightSeverity;
+  priceImpact?: number; // GBP, negative for deductions, positive for value-adds
+  fixCost?: number;     // GBP, estimated cost to remedy
+  fixable?: boolean;
+}
+
 export interface ValuationReport {
   conditionScore: number;
   conditionLabel: string;
@@ -58,6 +71,7 @@ export interface ValuationReport {
   honestAnalysis: string;
   marketPositioning: string;
   photoObservations?: string;
+  photoInsights?: PhotoInsight[];
   headline?: string;
   marketContext?: string;
   factorsUp?: string[];

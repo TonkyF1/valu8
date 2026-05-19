@@ -165,7 +165,20 @@ interface AnalyseRequest {
   motExpiry?: string;
   serviceNotes?: string;
   photoUrls: string[];
+  photos?: { slot: string; url: string }[];
 }
+
+type PhotoSlot = "front" | "rear" | "side" | "interior" | "odometer" | "engine" | "other";
+const VALID_SLOTS: PhotoSlot[] = ["front","rear","side","interior","odometer","engine","other"];
+const SLOT_LABELS: Record<PhotoSlot, string> = {
+  front: "Front 3/4 exterior",
+  rear: "Rear 3/4 exterior",
+  side: "Driver's side profile",
+  interior: "Interior (dash + seats)",
+  odometer: "Odometer / mileage",
+  engine: "Engine bay",
+  other: "Additional photo",
+};
 
 type ConfidenceLevel = "High" | "Medium" | "Low" | "Very Low";
 
@@ -631,6 +644,25 @@ NEW FIELDS — REQUIRED, BE SPECIFIC TO THIS CAR:
 - sellerTip: ONE personal, useful sentence written like an experienced private seller giving advice (e.g. "List at £20,500 and expect offers around £19,500–£20,000. The service history is your strongest card — have it ready to show.").
 - negotiationBuffer: integer GBP, typically 3-5% of your privateSaleValue, rounded to the nearest £50. This is the room a buyer will negotiate off the asking price.
 
+PER-PHOTO ANALYSIS — THIS IS OUR MOAT, BE SPECIFIC:
+The user message tells you EXACTLY which photo is in which slot (front, rear, side, interior, odometer, engine, other). For EVERY photo provided, return 1-3 observations in the photoInsights array. Each observation must be:
+- SHORT and CONCRETE (max ~80 chars). Reference what is visibly in THAT photo — a part, a panel, a tyre, a screen reading. NEVER generic ("looks clean").
+- Examples of GOOD observations:
+  "Kerbed nearside front alloy — typical refurb"
+  "Tyre tread on driver-side rear looks marginal"
+  "Stone chips on bonnet leading edge — age-typical"
+  "Dashboard warning light visible (engine management)"
+  "Odometer confirms 47,213 miles — matches declared"
+  "Driver bolster wear consistent with mileage"
+  "Front bumper paint match looks slightly off — possible respray"
+  "Engine bay clean, no obvious oil leaks visible"
+- severity: "positive" (genuinely raises value), "neutral" (factual confirmation, no impact), "minor" (small ding, age-typical), "notable" (real negotiating point or cost).
+- priceImpact: GBP integer. NEGATIVE for issues (e.g. -180), POSITIVE for value-adds (e.g. 150). Omit ONLY when truly zero-impact.
+- fixCost: GBP integer for the realistic cost to fix the issue (e.g. 80 for an alloy refurb, 220 for a paint correction, 0 if not fixable). Omit for positive/neutral observations.
+- fixable: true if a normal private seller can sensibly remedy it before listing; false for structural/age-related.
+- slot: must match the slot label given in the user message for that photo.
+Aim for 4-10 total insights across all photos. Be honest — if a photo is clean, return a positive or neutral note rather than inventing a problem.
+
 Always reply by calling the provided function. Never write JSON in plain text.`;
 
 const TOOL = {
@@ -649,7 +681,26 @@ const TOOL = {
         valueReasoning: { type: "string", description: "2-3 short sentences max. Same friendly, plain tone. Focus on the main things buyers care about. No jargon like 'net adjustment' or 'anchored on'." },
         strengths: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
         watchPoints: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 5 },
-        photoObservations: { type: "string", description: "Brief observations on what photos show. Empty if no photos." },
+        photoObservations: { type: "string", description: "Brief overall summary of what photos show. Empty if no photos." },
+        photoInsights: {
+          type: "array",
+          description: "Per-photo observations. Aim for 4-10 across all photos. Each item should be short, specific to what is visible, and reference the slot label provided in the user message.",
+          minItems: 0,
+          maxItems: 18,
+          items: {
+            type: "object",
+            properties: {
+              slot: { type: "string", enum: ["front","rear","side","interior","odometer","engine","other"], description: "Which photo this observation refers to." },
+              observation: { type: "string", description: "Short, concrete observation (max ~80 chars)." },
+              severity: { type: "string", enum: ["positive","neutral","minor","notable"] },
+              priceImpact: { type: "number", description: "GBP impact on value. Negative = deduction, positive = uplift. Omit if zero." },
+              fixCost: { type: "number", description: "GBP estimate to remedy. Omit for positive/neutral." },
+              fixable: { type: "boolean", description: "Whether a private seller can sensibly fix this before listing." },
+            },
+            required: ["slot", "observation", "severity"],
+            additionalProperties: false,
+          },
+        },
         headline: { type: "string", description: "One short sentence summarising whether this price is fair/strong and roughly how quickly the car should sell." },
         marketContext: { type: "string", description: "One short sentence on current UK demand for this make/model/spec." },
         factorsUp: { type: "array", items: { type: "string" }, minItems: 0, maxItems: 4, description: "Short bullet phrases that raise the value." },
@@ -667,7 +718,7 @@ const TOOL = {
           additionalProperties: false,
         },
       },
-      required: ["conditionScore", "conditionLabel", "privateSaleValue", "honestAnalysis", "marketPositioning", "valueReasoning", "strengths", "watchPoints", "photoObservations", "headline", "marketContext", "factorsUp", "factorsDown", "sellerTip", "negotiationBuffer", "recommendations"],
+      required: ["conditionScore", "conditionLabel", "privateSaleValue", "honestAnalysis", "marketPositioning", "valueReasoning", "strengths", "watchPoints", "photoObservations", "photoInsights", "headline", "marketContext", "factorsUp", "factorsDown", "sellerTip", "negotiationBuffer", "recommendations"],
       additionalProperties: false,
     },
   },
@@ -687,7 +738,25 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const photoUrls = (body.photoUrls || []).slice(0, 6);
+    // Build labeled photo list (slot + url). Prefer the new `photos` array,
+    // fall back to plain photoUrls (older clients) where slot is unknown.
+    const labeledPhotos: { slot: PhotoSlot; url: string }[] = (() => {
+      if (Array.isArray(body.photos) && body.photos.length > 0) {
+        return body.photos
+          .filter((p) => p && typeof p.url === "string" && p.url.length > 0)
+          .slice(0, 6)
+          .map((p) => ({
+            slot: (VALID_SLOTS.includes(p.slot as PhotoSlot) ? p.slot : "other") as PhotoSlot,
+            url: p.url,
+          }));
+      }
+      const guess: PhotoSlot[] = ["front", "rear", "side", "interior", "odometer", "engine"];
+      return (body.photoUrls || []).slice(0, 6).map((url, i) => ({
+        slot: guess[i] ?? "other",
+        url,
+      }));
+    })();
+    const photoUrls = labeledPhotos.map((p) => p.url);
 
     // Fetch MOT history + MarketCheck pricing in parallel BEFORE calling the AI,
     // so we can feed real signals (corrosion advisories, fails, etc.) into the prompt.
@@ -770,6 +839,10 @@ You MUST factor these into the price and call them out explicitly in your analys
 - MOT expiry: ${body.motExpiry || "not provided"}
 - Service notes: ${body.serviceNotes || "none provided"}
 - Photos attached: ${photoUrls.length}
+${labeledPhotos.length > 0 ? `
+PHOTO SLOT MAP — use these EXACT slot keys in your photoInsights output:
+${labeledPhotos.map((p, i) => `  Photo ${i + 1} — slot="${p.slot}" (${SLOT_LABELS[p.slot]})`).join("\n")}
+The images below are sent in the same order as this list.` : ""}
 
 ${marketBlock}
 
@@ -824,6 +897,14 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       strengths: string[];
       watchPoints: string[];
       photoObservations: string;
+      photoInsights?: Array<{
+        slot?: string;
+        observation?: string;
+        severity?: string;
+        priceImpact?: number;
+        fixCost?: number;
+        fixable?: boolean;
+      }>;
       headline?: string;
       marketContext?: string;
       factorsUp?: string[];
@@ -1065,6 +1146,31 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       : adjustments.filter((a) => a.impactPct < 0).map((a) => a.label).slice(0, 4);
 
     const headline = sanitizeNarrativeYears(ai.headline ?? "", body.year);
+
+    // Sanitize per-photo insights and attach the matching photoIndex.
+    const rawInsights = Array.isArray(ai.photoInsights) ? ai.photoInsights : [];
+    const photoInsights = rawInsights
+      .map((ins) => {
+        const slot = (VALID_SLOTS.includes(ins?.slot as PhotoSlot) ? ins!.slot : "other") as PhotoSlot;
+        const observation = sanitizeNarrativeYears(String(ins?.observation ?? "").trim(), body.year).slice(0, 140);
+        if (!observation) return null;
+        const severity = (["positive","neutral","minor","notable"].includes(String(ins?.severity)) ? ins!.severity : "neutral") as "positive"|"neutral"|"minor"|"notable";
+        const photoIndex = labeledPhotos.findIndex((p) => p.slot === slot);
+        const priceImpact = Number.isFinite(Number(ins?.priceImpact)) && Number(ins?.priceImpact) !== 0 ? Math.round(Number(ins!.priceImpact)) : undefined;
+        const fixCost = Number.isFinite(Number(ins?.fixCost)) && Number(ins?.fixCost) > 0 ? Math.round(Number(ins!.fixCost)) : undefined;
+        const fixable = typeof ins?.fixable === "boolean" ? ins!.fixable : undefined;
+        return {
+          slot,
+          photoIndex: photoIndex >= 0 ? photoIndex : undefined,
+          observation,
+          severity,
+          ...(priceImpact !== undefined ? { priceImpact } : {}),
+          ...(fixCost !== undefined ? { fixCost } : {}),
+          ...(fixable !== undefined ? { fixable } : {}),
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 18);
     const marketContext = sanitizeNarrativeYears(ai.marketContext ?? "", body.year);
     const sellerTip = sanitizeNarrativeYears(ai.sellerTip ?? "", body.year);
 
@@ -1102,6 +1208,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       honestAnalysis: sanitizeNarrativeYears(valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis, body.year),
       marketPositioning: sanitizeNarrativeYears(valuationUnavailable ? "This type of car needs a specialist's eye. A marque specialist or auction house will give you a proper appraisal." : ai.marketPositioning, body.year),
       photoObservations: sanitizeNarrativeYears(ai.photoObservations, body.year),
+      photoInsights,
       strengths: sanitizeNarrativeList(ai.strengths, body.year),
       watchPoints: sanitizeNarrativeList(ai.watchPoints, body.year),
       recommendations: {
