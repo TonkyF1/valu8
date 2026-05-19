@@ -359,13 +359,13 @@ export default function Report() {
                 <span className="text-amber-300 mt-0.5 leading-none" aria-hidden>💡</span>
                 {(() => {
                   const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  const listAt = Math.round((base + 500) / 50) * 50;
+                  const listAt = Math.round((base * 1.03) / 50) * 50;
                   const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
-                  const offerLow = Math.round((listAt - buffer * 1.2) / 50) * 50;
-                  const offerHigh = Math.round((listAt - buffer * 0.6) / 50) * 50;
+                  const offerLow = Math.max(r.values.privateSale, Math.round((listAt - buffer * 1.3) / 50) * 50);
+                  const offerHigh = Math.max(r.values.privateSale, Math.round((listAt - buffer * 0.7) / 50) * 50);
                   return (
                     <p className="text-[13px] leading-[1.55] text-[#E8E8E8]">
-                      <span className="font-semibold text-amber-300">Pro Tip:</span> List at £{listAt.toLocaleString()} and expect offers around £{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}. {r.strengths.includes("Full service history") || r.strengths.some(s => s.toLowerCase().includes("service history")) ? "Your full service history is a strong selling point." : "Highlight your car's strengths when negotiating."}
+                      <span className="font-semibold text-amber-300">Pro Tip:</span> List at £{listAt.toLocaleString()} and expect offers around £{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}. {r.strengths.some(s => /full service history|fsh|main dealer/i.test(s)) ? "Your full service history is a strong selling point." : "Highlight your car's strengths when negotiating."}
                     </p>
                   );
                 })()}
