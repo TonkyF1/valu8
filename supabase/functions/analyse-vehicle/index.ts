@@ -738,7 +738,25 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const photoUrls = (body.photoUrls || []).slice(0, 6);
+    // Build labeled photo list (slot + url). Prefer the new `photos` array,
+    // fall back to plain photoUrls (older clients) where slot is unknown.
+    const labeledPhotos: { slot: PhotoSlot; url: string }[] = (() => {
+      if (Array.isArray(body.photos) && body.photos.length > 0) {
+        return body.photos
+          .filter((p) => p && typeof p.url === "string" && p.url.length > 0)
+          .slice(0, 6)
+          .map((p) => ({
+            slot: (VALID_SLOTS.includes(p.slot as PhotoSlot) ? p.slot : "other") as PhotoSlot,
+            url: p.url,
+          }));
+      }
+      const guess: PhotoSlot[] = ["front", "rear", "side", "interior", "odometer", "engine"];
+      return (body.photoUrls || []).slice(0, 6).map((url, i) => ({
+        slot: guess[i] ?? "other",
+        url,
+      }));
+    })();
+    const photoUrls = labeledPhotos.map((p) => p.url);
 
     // Fetch MOT history + MarketCheck pricing in parallel BEFORE calling the AI,
     // so we can feed real signals (corrosion advisories, fails, etc.) into the prompt.
@@ -821,6 +839,10 @@ You MUST factor these into the price and call them out explicitly in your analys
 - MOT expiry: ${body.motExpiry || "not provided"}
 - Service notes: ${body.serviceNotes || "none provided"}
 - Photos attached: ${photoUrls.length}
+${labeledPhotos.length > 0 ? `
+PHOTO SLOT MAP — use these EXACT slot keys in your photoInsights output:
+${labeledPhotos.map((p, i) => `  Photo ${i + 1} — slot="${p.slot}" (${SLOT_LABELS[p.slot]})`).join("\n")}
+The images below are sent in the same order as this list.` : ""}
 
 ${marketBlock}
 
