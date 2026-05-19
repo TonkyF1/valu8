@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { ConditionGauge } from "@/components/ConditionGauge";
 import { AdvertCreator } from "@/components/AdvertCreator";
+import { WhatIfSimulator } from "@/components/WhatIfSimulator";
 import { SimilarCars } from "@/components/SimilarCars";
 import type { ValuationReport, PhotoInsight } from "@/lib/valuation";
 import { downloadValuationPdf } from "@/lib/pdf";
@@ -430,6 +431,20 @@ export default function Report() {
         {/* Per-photo AI feedback — our moat made visible */}
         {r.photoInsights && r.photoInsights.length > 0 && v.photo_urls.length > 0 && (
           <PhotoFeedback insights={r.photoInsights} photoUrls={v.photo_urls} onSelectPhoto={setActivePhoto} />
+        )}
+
+        {/* What If Simulator — toggle fixable issues to see the upside */}
+        {!valuationUnavailable && r.photoInsights && r.photoInsights.length > 0 && (
+          <WhatIfSimulator
+            insights={r.photoInsights}
+            privateSale={r.values.privateSale}
+            recommendedAskingPrice={
+              r.recommendedAskingPrice ||
+              r.recommendations?.recommendedAskingPrice ||
+              r.recommendations.listingPrice
+            }
+            negotiationBuffer={r.negotiationBuffer || r.recommendations?.negotiationBuffer}
+          />
         )}
 
 
