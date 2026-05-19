@@ -644,6 +644,25 @@ NEW FIELDS — REQUIRED, BE SPECIFIC TO THIS CAR:
 - sellerTip: ONE personal, useful sentence written like an experienced private seller giving advice (e.g. "List at £20,500 and expect offers around £19,500–£20,000. The service history is your strongest card — have it ready to show.").
 - negotiationBuffer: integer GBP, typically 3-5% of your privateSaleValue, rounded to the nearest £50. This is the room a buyer will negotiate off the asking price.
 
+PER-PHOTO ANALYSIS — THIS IS OUR MOAT, BE SPECIFIC:
+The user message tells you EXACTLY which photo is in which slot (front, rear, side, interior, odometer, engine, other). For EVERY photo provided, return 1-3 observations in the photoInsights array. Each observation must be:
+- SHORT and CONCRETE (max ~80 chars). Reference what is visibly in THAT photo — a part, a panel, a tyre, a screen reading. NEVER generic ("looks clean").
+- Examples of GOOD observations:
+  "Kerbed nearside front alloy — typical refurb"
+  "Tyre tread on driver-side rear looks marginal"
+  "Stone chips on bonnet leading edge — age-typical"
+  "Dashboard warning light visible (engine management)"
+  "Odometer confirms 47,213 miles — matches declared"
+  "Driver bolster wear consistent with mileage"
+  "Front bumper paint match looks slightly off — possible respray"
+  "Engine bay clean, no obvious oil leaks visible"
+- severity: "positive" (genuinely raises value), "neutral" (factual confirmation, no impact), "minor" (small ding, age-typical), "notable" (real negotiating point or cost).
+- priceImpact: GBP integer. NEGATIVE for issues (e.g. -180), POSITIVE for value-adds (e.g. 150). Omit ONLY when truly zero-impact.
+- fixCost: GBP integer for the realistic cost to fix the issue (e.g. 80 for an alloy refurb, 220 for a paint correction, 0 if not fixable). Omit for positive/neutral observations.
+- fixable: true if a normal private seller can sensibly remedy it before listing; false for structural/age-related.
+- slot: must match the slot label given in the user message for that photo.
+Aim for 4-10 total insights across all photos. Be honest — if a photo is clean, return a positive or neutral note rather than inventing a problem.
+
 Always reply by calling the provided function. Never write JSON in plain text.`;
 
 const TOOL = {
