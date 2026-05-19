@@ -130,6 +130,7 @@ export default function NewValuation() {
     setUploadProgress(photos.length === 0 ? 100 : 0);
     try {
       const photoUrls: string[] = [];
+      const photos_labeled: { slot: string; url: string }[] = [];
       for (let i = 0; i < photos.length; i++) {
         const p = photos[i];
         const ext = p.file.name.split(".").pop() || "jpg";
@@ -140,6 +141,7 @@ export default function NewValuation() {
         if (error) throw error;
         const { data } = supabase.storage.from("vehicle-photos").getPublicUrl(path);
         photoUrls.push(data.publicUrl);
+        photos_labeled.push({ slot: p.key, url: data.publicUrl });
         setUploadProgress(Math.round(((i + 1) / photos.length) * 100));
       }
 
@@ -163,6 +165,7 @@ export default function NewValuation() {
           motExpiry: lookup?.motExpiry || undefined,
           serviceNotes: combinedNotes || undefined,
           photoUrls,
+          photos: photos_labeled,
         },
       });
       if (aiErr) throw aiErr;
