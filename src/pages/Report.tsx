@@ -419,13 +419,19 @@ export default function Report() {
         {/* Honest analysis — no card chrome, lighter weight */}
         <Section title="Honest Analysis">
           <p className="text-sm leading-relaxed text-foreground/85">{r.honestAnalysis}</p>
-          {r.photoObservations && (
+          {r.photoObservations && (!r.photoInsights || r.photoInsights.length === 0) && (
             <div className="mt-4 pt-4 border-t border-border/60">
               <div className="text-[10px] uppercase tracking-[0.16em] text-primary font-medium mb-1.5">From your photos</div>
               <p className="text-xs leading-relaxed text-muted-foreground">{r.photoObservations}</p>
             </div>
           )}
         </Section>
+
+        {/* Per-photo AI feedback — our moat made visible */}
+        {r.photoInsights && r.photoInsights.length > 0 && v.photo_urls.length > 0 && (
+          <PhotoFeedback insights={r.photoInsights} photoUrls={v.photo_urls} onSelectPhoto={setActivePhoto} />
+        )}
+
 
         {!valuationUnavailable && (
           <Section title="Market Positioning">
