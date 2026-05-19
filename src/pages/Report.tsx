@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { ConditionGauge } from "@/components/ConditionGauge";
 import { AdvertCreator } from "@/components/AdvertCreator";
 import { SimilarCars } from "@/components/SimilarCars";
-import type { ValuationReport } from "@/lib/valuation";
+import type { ValuationReport, PhotoInsight } from "@/lib/valuation";
 import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
 import {
   Share2, Download, Bookmark, Check, ShieldCheck, AlertTriangle, ArrowLeft,
-  Star, Pencil, ChevronDown, MoreHorizontal,
+  Star, Pencil, ChevronDown, MoreHorizontal, Sparkles, Camera, TrendingUp, TrendingDown, Minus,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
