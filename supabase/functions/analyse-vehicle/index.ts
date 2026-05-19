@@ -165,7 +165,20 @@ interface AnalyseRequest {
   motExpiry?: string;
   serviceNotes?: string;
   photoUrls: string[];
+  photos?: { slot: string; url: string }[];
 }
+
+type PhotoSlot = "front" | "rear" | "side" | "interior" | "odometer" | "engine" | "other";
+const VALID_SLOTS: PhotoSlot[] = ["front","rear","side","interior","odometer","engine","other"];
+const SLOT_LABELS: Record<PhotoSlot, string> = {
+  front: "Front 3/4 exterior",
+  rear: "Rear 3/4 exterior",
+  side: "Driver's side profile",
+  interior: "Interior (dash + seats)",
+  odometer: "Odometer / mileage",
+  engine: "Engine bay",
+  other: "Additional photo",
+};
 
 type ConfidenceLevel = "High" | "Medium" | "Low" | "Very Low";
 
