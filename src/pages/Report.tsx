@@ -433,6 +433,20 @@ export default function Report() {
           <PhotoFeedback insights={r.photoInsights} photoUrls={v.photo_urls} onSelectPhoto={setActivePhoto} />
         )}
 
+        {/* What If Simulator — toggle fixable issues to see the upside */}
+        {!valuationUnavailable && r.photoInsights && r.photoInsights.length > 0 && (
+          <WhatIfSimulator
+            insights={r.photoInsights}
+            privateSale={r.values.privateSale}
+            recommendedAskingPrice={
+              r.recommendedAskingPrice ||
+              r.recommendations?.recommendedAskingPrice ||
+              r.recommendations.listingPrice
+            }
+            negotiationBuffer={r.negotiationBuffer || r.recommendations?.negotiationBuffer}
+          />
+        )}
+
 
         {!valuationUnavailable && (
           <Section title="Market Positioning">
