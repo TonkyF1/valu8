@@ -498,13 +498,30 @@ export default function Report() {
                 <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
                 <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Watch Points</h2>
               </div>
-              <ul className="space-y-2">
-                {r.watchPoints.map(s => (
-                  <li key={s} className="flex gap-2.5 text-sm leading-snug">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" /> {s}
-                  </li>
-                ))}
-              </ul>
+              {(() => {
+                const latestMot = r.motHistory?.[0];
+                const currentAdvisories = latestMot?.advisories ?? [];
+                if (currentAdvisories.length === 0) {
+                  return (
+                    <div className="flex items-start gap-2.5 text-sm leading-snug">
+                      <Check className="h-4 w-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-emerald-300">No advisories on the latest MOT</span>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-3">
+                    <p className="text-[11px] text-muted-foreground">These are from the most recent MOT only</p>
+                    <ul className="space-y-2">
+                      {currentAdvisories.map((a, i) => (
+                        <li key={i} className="flex gap-2.5 text-sm leading-snug">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" /> {a}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
             </div>
           </section>
         )}
