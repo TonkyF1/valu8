@@ -771,17 +771,18 @@ Deno.serve(async (req) => {
         : Promise.resolve({ entries: [] as MotEntryOut[] }),
     ]);
 
-    // Extract MOT signals
+    // Extract MOT signals — ONLY use the latest test for pricing / watchPoints
     const motEntries = dvsa.entries ?? [];
-    const allAdvisories = motEntries.flatMap((m) => m.advisories ?? []);
-    const allFailures = motEntries.flatMap((m) => m.failures ?? []);
-    const advisoryText = allAdvisories.join(" ").toLowerCase();
-    const failureText = allFailures.join(" ").toLowerCase();
-    const corrosionMatches = (advisoryText.match(/corro|corrod|rust|excessive\s+rust|structurally\s+weak/g) ?? []).length
-      + (failureText.match(/corro|corrod|rust|structurally\s+weak/g) ?? []).length;
-    const recentFailCount = motEntries.slice(0, 3).filter((m) => m.result === "Fail").length;
-    const totalAdvisoryCount = allAdvisories.length;
     const latestTest = motEntries[0];
+    const latestAdvisories = latestTest?.advisories ?? [];
+    const latestFailures = latestTest?.failures ?? [];
+    const allFailures = motEntries.flatMap((m) => m.failures ?? []);
+    const latestAdvisoryText = latestAdvisories.join(" ").toLowerCase();
+    const latestFailureText = latestFailures.join(" ").toLowerCase();
+    const corrosionMatches = (latestAdvisoryText.match(/corro|corrod|rust|excessive\s+rust|structurally\s+weak/g) ?? []).length
+      + (latestFailureText.match(/corro|corrod|rust|structurally\s+weak/g) ?? []).length;
+    const recentFailCount = motEntries.slice(0, 3).filter((m) => m.result === "Fail").length;
+    const totalAdvisoryCount = latestAdvisories.length;
 
     // Build a mileage-weighted anchor from the actual live listings.
     const allListings = mc?.listings ?? [];
@@ -816,12 +817,12 @@ These are REAL cars currently for sale in the UK. Use the anchor above as the de
 - Tests on record: ${motEntries.length}
 - Latest test: ${latestTest?.date ?? "unknown"} — ${latestTest?.result ?? "?"}
 - Recent failures (last 3 tests): ${recentFailCount}
-- Total advisories on file: ${totalAdvisoryCount}
-- Corrosion/rust mentions: ${corrosionMatches}
-${allAdvisories.length > 0 ? `- Recent advisory examples: ${allAdvisories.slice(0, 6).map((a) => `"${a}"`).join("; ")}` : ""}
-${allFailures.length > 0 ? `- Failure examples: ${allFailures.slice(0, 4).map((a) => `"${a}"`).join("; ")}` : ""}
+- Advisories on LATEST test only: ${totalAdvisoryCount}
+- Corrosion/rust mentions on latest test: ${corrosionMatches}
+${latestAdvisories.length > 0 ? `- Latest test advisories: ${latestAdvisories.slice(0, 6).map((a) => `"${a}"`).join("; ")}` : ""}
+${latestFailures.length > 0 ? `- Latest test failures: ${latestFailures.slice(0, 4).map((a) => `"${a}"`).join("; ")}` : ""}
 
-You MUST factor these into the price and call them out explicitly in your analysis.`
+ONLY consider advisories and failures from the LATEST test when pricing and writing watchPoints. Older advisories that do not appear on the latest test have been rectified and must NOT be mentioned.`
       : body.registration
         ? `MOT HISTORY: No DVSA records returned for this registration.`
         : `MOT HISTORY: No registration provided.`;
