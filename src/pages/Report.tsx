@@ -40,6 +40,7 @@ export default function Report() {
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
   const [showAllMot, setShowAllMot] = useState(false);
+  const [showOldAdvisories, setShowOldAdvisories] = useState(false);
   const [liveCount, setLiveCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -497,16 +498,72 @@ export default function Report() {
                 <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
                 <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Watch Points</h2>
               </div>
-              <ul className="space-y-2">
-                {r.watchPoints.map(s => (
-                  <li key={s} className="flex gap-2.5 text-sm leading-snug">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" /> {s}
-                  </li>
-                ))}
-              </ul>
+              {(() => {
+                const latestMot = r.motHistory?.[0];
+                const currentAdvisories = latestMot?.advisories ?? [];
+                if (currentAdvisories.length === 0) {
+                  return (
+                    <div className="flex items-start gap-2.5 text-sm leading-snug">
+                      <Check className="h-4 w-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-emerald-300">No advisories on the latest MOT</span>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-3">
+                    <p className="text-[11px] text-muted-foreground">These are from the most recent MOT only</p>
+                    <ul className="space-y-2">
+                      {currentAdvisories.map((a, i) => (
+                        <li key={i} className="flex gap-2.5 text-sm leading-snug">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" /> {a}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
             </div>
           </section>
         )}
+
+        {/* Previously Rectified Advisories */}
+        {r.motHistory && r.motHistory.length > 1 && (() => {
+          const currentSet = new Set((r.motHistory[0]?.advisories ?? []).map(a => a.toLowerCase()));
+          const oldAdvisories = Array.from(new Set(
+            r.motHistory.slice(1).flatMap((m: any) => m.advisories ?? [])
+              .filter((a: string) => !currentSet.has(a.toLowerCase()))
+          ));
+          if (oldAdvisories.length === 0) return null;
+          return (
+            <section className="mb-6 animate-fade-in-up">
+              <button
+                onClick={() => setShowOldAdvisories(s => !s)}
+                className="w-full flex items-center justify-between gap-3 rounded-2xl border border-border/50 bg-card/50 px-5 py-4 text-left hover:bg-card/70 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Previously Rectified Advisories</h2>
+                  <span className="text-[10px] text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">{oldAdvisories.length}</span>
+                </div>
+                <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showOldAdvisories && "rotate-180")} />
+              </button>
+              {showOldAdvisories && (
+                <div className="mt-2 rounded-2xl border border-border/50 bg-card/50 p-5">
+                  <p className="text-[11px] text-muted-foreground mb-3">These advisories appeared on earlier MOTs and are no longer present — likely fixed before the latest test.</p>
+                  <ul className="space-y-2">
+                    {oldAdvisories.map((a, i) => (
+                      <li key={i} className="flex gap-2.5 text-sm leading-snug text-muted-foreground">
+                        <Check className="h-4 w-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                        <span>{a}</span>
+                        <span className="text-[10px] text-emerald-400/80 ml-auto shrink-0">Fixed on latest MOT</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+          );
+        })()}
 
         {/* Recommendations */}
         {!valuationUnavailable && (
