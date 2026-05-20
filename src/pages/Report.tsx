@@ -526,6 +526,45 @@ export default function Report() {
           </section>
         )}
 
+        {/* Previously Rectified Advisories */}
+        {r.motHistory && r.motHistory.length > 1 && (() => {
+          const currentSet = new Set((r.motHistory[0]?.advisories ?? []).map(a => a.toLowerCase()));
+          const oldAdvisories = Array.from(new Set(
+            r.motHistory.slice(1).flatMap((m: any) => m.advisories ?? [])
+              .filter((a: string) => !currentSet.has(a.toLowerCase()))
+          ));
+          if (oldAdvisories.length === 0) return null;
+          return (
+            <section className="mb-6 animate-fade-in-up">
+              <button
+                onClick={() => setShowOldAdvisories(s => !s)}
+                className="w-full flex items-center justify-between gap-3 rounded-2xl border border-border/50 bg-card/50 px-5 py-4 text-left hover:bg-card/70 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Previously Rectified Advisories</h2>
+                  <span className="text-[10px] text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">{oldAdvisories.length}</span>
+                </div>
+                <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showOldAdvisories && "rotate-180")} />
+              </button>
+              {showOldAdvisories && (
+                <div className="mt-2 rounded-2xl border border-border/50 bg-card/50 p-5">
+                  <p className="text-[11px] text-muted-foreground mb-3">These advisories appeared on earlier MOTs and are no longer present — likely fixed before the latest test.</p>
+                  <ul className="space-y-2">
+                    {oldAdvisories.map((a, i) => (
+                      <li key={i} className="flex gap-2.5 text-sm leading-snug text-muted-foreground">
+                        <Check className="h-4 w-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                        <span>{a}</span>
+                        <span className="text-[10px] text-emerald-400/80 ml-auto shrink-0">Fixed on latest MOT</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+          );
+        })()}
+
         {/* Recommendations */}
         {!valuationUnavailable && (
           <Section title="Seller Recommendations">
