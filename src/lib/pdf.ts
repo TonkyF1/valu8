@@ -204,46 +204,19 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport): 
   const filename = buildPdfFilename(v);
   const blob = doc.output("blob");
 
-  // Native Capacitor (iOS/Android): write to Documents and open share sheet.
+  // Native Capacitor (iOS/Android): open in a new window so the OS share sheet appears.
   try {
     const cap: any = (window as any).Capacitor;
     if (cap?.isNativePlatform?.()) {
-      const [{ Filesystem, Directory }, { Share }] = await Promise.all([
-        import("@capacitor/filesystem").catch(() => ({} as any)),
-        import("@capacitor/share").catch(() => ({} as any)),
-      ]);
-      if (Filesystem && Directory) {
-        const base64 = await blobToBase64(blob);
-        const res = await Filesystem.writeFile({
-          path: filename,
-          data: base64,
-          directory: Directory.Documents,
-        });
-        if (Share?.share && res?.uri) {
-          await Share.share({ title: filename, url: res.uri });
-        }
-        return;
-      }
+      const dataUri = doc.output("dataurlstring");
+      window.open(dataUri, "_blank");
+      return;
     }
-  } catch (err) {
-    // fall through to browser download
-    console.warn("Native PDF save failed, falling back to blob download", err);
+  } catch {
+    /* fall through */
   }
 
   triggerBlobDownload(blob, filename);
-}
-
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error);
-    reader.onload = () => {
-      const result = String(reader.result || "");
-      const comma = result.indexOf(",");
-      resolve(comma >= 0 ? result.slice(comma + 1) : result);
-    };
-    reader.readAsDataURL(blob);
-  });
 }
 
 function section(doc: jsPDF, title: string, y: number, x: number, pageW: number, inline = false) {
