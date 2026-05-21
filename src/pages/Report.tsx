@@ -266,6 +266,11 @@ export default function Report() {
                 <p className="text-sm text-muted-foreground mt-2 max-w-[44ch]">
                   This is what you can realistically expect to sell for privately in the current UK market.
                 </p>
+                {liveTier === "Low" && (
+                  <p className="text-xs text-muted-foreground/85 mt-2 max-w-[44ch] leading-relaxed">
+                    This is a desirable low-mileage, high-spec model with fewer recent comparables. We've applied careful specialist analysis to give you a confident figure.
+                  </p>
+                )}
                 {liveCount != null && liveCount > 0 && (
                   <div className="text-xs text-muted-foreground/80 mt-1">
                     Based on {liveCount.toLocaleString()} similar cars listed in the UK right now
