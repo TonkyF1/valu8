@@ -235,14 +235,19 @@ export default function Report() {
             <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.06] blur-3xl pointer-events-none" />
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{valuationUnavailable ? "Valuation status" : "Your Realistic Private Sale Price"}</span>
-              <span className={cn(
-                "text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border",
-                liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
-                liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
-                liveTier === "Low" && "text-red-400 bg-red-500/10 border-red-500/30",
-              )}>
-                {liveTier} confidence
-              </span>
+              {liveTier === "Low" ? (
+                <span className="text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30">
+                  Specialist Valuation Applied
+                </span>
+              ) : (
+                <span className={cn(
+                  "text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border",
+                  liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
+                  liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
+                )}>
+                  {liveTier} confidence
+                </span>
+              )}
             </div>
             {valuationUnavailable ? (
               <div className="max-w-xl">
@@ -261,6 +266,11 @@ export default function Report() {
                 <p className="text-sm text-muted-foreground mt-2 max-w-[44ch]">
                   This is what you can realistically expect to sell for privately in the current UK market.
                 </p>
+                {liveTier === "Low" && (
+                  <p className="text-xs text-muted-foreground/85 mt-2 max-w-[44ch] leading-relaxed">
+                    This is a desirable low-mileage, high-spec model with fewer recent comparables. We've applied careful specialist analysis to give you a confident figure.
+                  </p>
+                )}
                 {liveCount != null && liveCount > 0 && (
                   <div className="text-xs text-muted-foreground/80 mt-1">
                     Based on {liveCount.toLocaleString()} similar cars listed in the UK right now
@@ -440,9 +450,25 @@ export default function Report() {
         </section>
 
 
-        {/* Honest analysis — no card chrome, lighter weight */}
+        {/* Honest analysis — scannable bullets */}
         <Section title="Honest Analysis">
-          <p className="text-sm leading-relaxed text-foreground/85">{r.honestAnalysis}</p>
+          {(() => {
+            const bullets = r.honestAnalysis
+              .split(/(?<=[.!?])\s+/)
+              .map(s => s.trim())
+              .filter(Boolean)
+              .slice(0, 3);
+            return (
+              <ul className="space-y-2">
+                {bullets.map((b, i) => (
+                  <li key={i} className="flex gap-2.5 text-sm leading-snug text-foreground/85">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
           {r.photoObservations && (!r.photoInsights || r.photoInsights.length === 0) && (
             <div className="mt-4 pt-4 border-t border-border/60">
               <div className="text-[10px] uppercase tracking-[0.16em] text-primary font-medium mb-1.5">From your photos</div>
