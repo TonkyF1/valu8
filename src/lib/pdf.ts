@@ -11,7 +11,31 @@ const TEAL: [number, number, number] = [0, 212, 200];
 const DARK: [number, number, number] = [17, 17, 17];
 const MUTED: [number, number, number] = [120, 120, 130];
 
-export function downloadValuationPdf(v: VehicleInfo, r: ValuationReport) {
+function sanitize(s: string) {
+  return (s || "").replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+}
+
+export function buildPdfFilename(v: VehicleInfo) {
+  const date = format(new Date(), "dd-MM-yyyy");
+  return `Valu8_${sanitize(v.make)}_${sanitize(v.model)}_${v.year}_${date}.pdf`;
+}
+
+function triggerBlobDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 1000);
+}
+
+export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
