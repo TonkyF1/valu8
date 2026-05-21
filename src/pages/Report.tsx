@@ -153,10 +153,20 @@ export default function Report() {
             <Button
               variant="premium"
               size="sm"
-              onClick={() => {
+              onClick={async () => {
                 if (!isPremium) return toast.info("PDF export is a Premium feature");
-                downloadValuationPdf(v, r);
-                toast.success("PDF downloaded");
+                const id = toast.loading("Generating PDF…");
+                try {
+                  await downloadValuationPdf(v, r);
+                  toast.success("Report downloaded successfully", { id });
+                } catch (err) {
+                  console.error("PDF download failed", err);
+                  toast.error("Couldn't generate PDF", {
+                    id,
+                    description: "Please try again.",
+                    action: { label: "Retry", onClick: () => downloadValuationPdf(v, r).catch(() => {}) },
+                  });
+                }
               }}
             >
               <Download className="h-4 w-4" /> PDF
