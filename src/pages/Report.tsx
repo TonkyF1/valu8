@@ -450,9 +450,25 @@ export default function Report() {
         </section>
 
 
-        {/* Honest analysis — no card chrome, lighter weight */}
+        {/* Honest analysis — scannable bullets */}
         <Section title="Honest Analysis">
-          <p className="text-sm leading-relaxed text-foreground/85">{r.honestAnalysis}</p>
+          {(() => {
+            const bullets = r.honestAnalysis
+              .split(/(?<=[.!?])\s+/)
+              .map(s => s.trim())
+              .filter(Boolean)
+              .slice(0, 3);
+            return (
+              <ul className="space-y-2">
+                {bullets.map((b, i) => (
+                  <li key={i} className="flex gap-2.5 text-sm leading-snug text-foreground/85">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
           {r.photoObservations && (!r.photoInsights || r.photoInsights.length === 0) && (
             <div className="mt-4 pt-4 border-t border-border/60">
               <div className="text-[10px] uppercase tracking-[0.16em] text-primary font-medium mb-1.5">From your photos</div>
