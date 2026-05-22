@@ -120,6 +120,11 @@ export function ValuationTrendChart({ currentValue, registrationYear, make, mode
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      {note && (
+        <div className="mt-1.5 text-[10px] text-muted-foreground/70 italic leading-snug">
+          {note}
+        </div>
+      )}
     </div>
   );
 }
