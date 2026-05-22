@@ -16,6 +16,7 @@ interface Point {
 
 export function ValuationTrendChart({ currentValue, registrationYear, make, model }: Props) {
   const [data, setData] = useState<Point[] | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
