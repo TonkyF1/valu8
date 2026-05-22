@@ -16,6 +16,7 @@ interface Point {
 
 export function ValuationTrendChart({ currentValue, registrationYear, make, model }: Props) {
   const [data, setData] = useState<Point[] | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,10 +34,13 @@ export function ValuationTrendChart({ currentValue, registrationYear, make, mode
         if (cancelled) return;
         const series = (resp as any)?.series as Point[] | null;
         const source = (resp as any)?.source as string | undefined;
+        const respNote = (resp as any)?.note as string | undefined;
         if (series && series.length > 1 && source === "marketcheck") {
           setData(series);
+          setNote(respNote ?? null);
         } else {
           setData(null);
+          setNote(null);
         }
       })
       .catch(() => {
@@ -116,6 +120,11 @@ export function ValuationTrendChart({ currentValue, registrationYear, make, mode
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      {note && (
+        <div className="mt-1.5 text-[10px] text-muted-foreground/70 italic leading-snug">
+          {note}
+        </div>
+      )}
     </div>
   );
 }
