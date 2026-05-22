@@ -34,10 +34,13 @@ export function ValuationTrendChart({ currentValue, registrationYear, make, mode
         if (cancelled) return;
         const series = (resp as any)?.series as Point[] | null;
         const source = (resp as any)?.source as string | undefined;
+        const respNote = (resp as any)?.note as string | undefined;
         if (series && series.length > 1 && source === "marketcheck") {
           setData(series);
+          setNote(respNote ?? null);
         } else {
           setData(null);
+          setNote(null);
         }
       })
       .catch(() => {
