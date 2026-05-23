@@ -13,13 +13,12 @@ import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
 import {
   Share2, Download, Bookmark, Check, ShieldCheck, AlertTriangle, ArrowLeft,
-  Star, Pencil, ChevronDown, MoreHorizontal, Sparkles, Camera, TrendingUp, TrendingDown, Minus,
+  Star, Pencil, ChevronDown, MoreHorizontal, Sparkles, Camera,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CountUp } from "@/components/CountUp";
-import { ValuationTrendChart } from "@/components/ValuationTrendChart";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -292,14 +291,6 @@ export default function Report() {
               <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2 text-[11px] sm:text-xs text-amber-200/90 leading-relaxed">
                 <span className="font-medium text-amber-300">Limited data:</span> {r.rareCarWarning}
               </div>
-            )}
-            {!valuationUnavailable && (
-              <ValuationTrendChart
-                currentValue={r.values.privateSale}
-                registrationYear={v.year}
-                make={v.make}
-                model={v.model}
-              />
             )}
             {valuationUnavailable ? (
               <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8] mt-4 max-w-[44ch]">
