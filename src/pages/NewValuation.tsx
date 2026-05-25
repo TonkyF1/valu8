@@ -205,23 +205,23 @@ export default function NewValuation() {
       <TestModeBanner />
       <Header />
 
-      <main className="flex-1">
+      <main className="flex-1 flex flex-col items-center">
         {/* Hero */}
-        <section className="relative overflow-hidden">
-          <div className="container pt-16 pb-6 md:pt-20 md:pb-8 text-center max-w-2xl">
-            <h1 className="text-3xl md:text-[2.5rem] font-semibold tracking-tight text-gradient leading-[1.08] animate-fade-in-up">
+        <section className="relative overflow-hidden w-full">
+          <div className="container pt-16 pb-6 md:pt-24 md:pb-10 text-center max-w-2xl mx-auto">
+            <h1 className="text-3xl md:text-[2.75rem] font-semibold tracking-tight text-gradient leading-[1.08] animate-fade-in-up">
               Know exactly what your car is worth
             </h1>
-            <p className="text-sm text-muted-foreground/80 mt-3 max-w-md mx-auto leading-relaxed animate-fade-in-up">
+            <p className="text-sm md:text-base text-muted-foreground/80 mt-4 max-w-md mx-auto leading-relaxed animate-fade-in-up">
               Enter your registration and we'll pull the details instantly.
             </p>
           </div>
         </section>
 
         {/* Reg input */}
-        <section className="container max-w-sm pb-6 relative z-10">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+        <section className="w-full max-w-md mx-auto px-4 sm:px-6 pb-8 relative z-10">
+          <div className="flex items-center justify-center gap-2">
+            <div className="relative flex-1 max-w-xs sm:max-w-none">
               <Input
                 id="reg-main"
                 value={reg}
@@ -231,10 +231,10 @@ export default function NewValuation() {
                 disabled={looking}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleLookup(); } }}
                 className={cn(
-                  "h-11 text-center text-lg sm:text-xl font-semibold tracking-[0.18em] uppercase",
+                  "h-12 text-center text-lg sm:text-xl font-semibold tracking-[0.18em] uppercase",
                   "bg-yellow-300 text-black border-2 border-yellow-400/80 focus-visible:border-yellow-500 focus-visible:ring-2 focus-visible:ring-yellow-500/30",
-                  "rounded-lg placeholder:text-black/30 placeholder:tracking-[0.1em]",
-                  "transition-all duration-200",
+                  "rounded-xl placeholder:text-black/30 placeholder:tracking-[0.1em]",
+                  "transition-all duration-200 shadow-sm",
                 )}
               />
             </div>
@@ -242,20 +242,20 @@ export default function NewValuation() {
               type="button"
               onClick={handleLookup}
               disabled={looking || reg.replace(/\s/g, "").length < 2}
-              className="h-11 w-11 shrink-0 rounded-lg bg-primary hover:bg-primary/90 grid place-items-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+              className="h-12 w-12 shrink-0 rounded-xl bg-primary hover:bg-primary/90 grid place-items-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
               aria-label="Lookup registration"
             >
               {looking ? (
-                <Loader2 className="h-4 w-4 text-primary-foreground animate-spin" />
+                <Loader2 className="h-5 w-5 text-primary-foreground animate-spin" />
               ) : (
-                <Search className="h-4 w-4 text-primary-foreground" />
+                <Search className="h-5 w-5 text-primary-foreground" />
               )}
             </button>
           </div>
 
-          <div className="mt-2.5 flex items-center justify-center gap-4 text-[10px] text-muted-foreground/40">
+          <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-muted-foreground/50">
             <span className="flex items-center gap-1">
-              <ShieldCheck className="h-3 w-3" />
+              <ShieldCheck className="h-3.5 w-3.5" />
               Official DVSA database
             </span>
             <button
