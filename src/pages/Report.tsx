@@ -273,7 +273,7 @@ export default function Report() {
             <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.06] blur-3xl pointer-events-none" />
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{valuationUnavailable ? "Valuation status" : "Your Realistic Private Sale Price"}</span>
-              {liveTier === "Low" ? (
+              {showSpecialistBadge ? (
                 <span className="text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30">
                   Specialist Valuation Applied
                 </span>
@@ -282,6 +282,7 @@ export default function Report() {
                   "text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border",
                   liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
                   liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
+                  liveTier === "Low" && "text-muted-foreground bg-muted/40 border-border",
                 )}>
                   {liveTier} confidence
                 </span>
@@ -304,9 +305,9 @@ export default function Report() {
                 <p className="text-sm text-muted-foreground mt-2 max-w-[44ch]">
                   This is what you can realistically expect to sell for privately in the current UK market.
                 </p>
-                {liveTier === "Low" && (
-                  <p className="text-xs text-muted-foreground/85 mt-2 max-w-[44ch] leading-relaxed">
-                    This is a desirable low-mileage, high-spec model with fewer recent comparables. We've applied careful specialist analysis to give you a confident figure.
+                {showSpecialistBadge && specialistExplanation && (
+                  <p className="text-xs text-muted-foreground/85 mt-2 max-w-[48ch] leading-relaxed">
+                    {specialistExplanation}
                   </p>
                 )}
                 {liveCount != null && liveCount > 0 && (
