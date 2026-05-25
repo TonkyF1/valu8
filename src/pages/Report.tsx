@@ -244,55 +244,85 @@ export default function Report() {
           </div>
         </div>
 
-        {/* Quick Summary — scannable TL;DR at the top */}
-        {!valuationUnavailable && (
-          <section className="mb-5 animate-fade-in-up">
-            <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.06] to-transparent p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Quick Summary</h2>
+        {/* Quick Summary — confident verdict + scannable bullets + trust strip */}
+        {!valuationUnavailable && (() => {
+          const verdict =
+            r.conditionScore >= 8
+              ? { label: "Sell privately", tone: "primary" as const, line: "A clean private sale is your best route — quality examples like this attract serious buyers fast." }
+              : r.conditionScore >= 6.5
+              ? { label: "Sell privately", tone: "primary" as const, line: "Worth a private sale, but price honestly and lead with photos + history to build trust." }
+              : { label: "Consider trade-in", tone: "amber" as const, line: "Condition or mileage will hold back private buyers — a part-exchange may be smoother." };
+          const upside = (r.photoInsights ?? [])
+            .filter(i => i.fixable && (i.priceImpact ?? 0) < 0)
+            .reduce((s, i) => s + Math.abs(i.priceImpact ?? 0), 0);
+          const latestAdv = r.motHistory?.[0]?.advisories?.length ?? 0;
+          return (
+            <section className="mb-5 animate-fade-in-up">
+              <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.07] to-transparent p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Quick Summary</h2>
+                  </div>
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full border",
+                    verdict.tone === "primary"
+                      ? "text-primary bg-primary/10 border-primary/30"
+                      : "text-amber-300 bg-amber-500/10 border-amber-500/30",
+                  )}>
+                    Our verdict: {verdict.label}
+                  </span>
+                </div>
+
+                <p className="text-sm leading-[1.55] text-foreground/90 mb-4 max-w-[58ch]">
+                  {verdict.line}
+                </p>
+
+                <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-2.5 text-sm">
+                  <li className="flex gap-2.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span className="text-foreground/90">
+                      Realistic private sale: <strong className="tabular-nums text-foreground">£{r.values.privateSale.toLocaleString()}</strong>
+                    </span>
+                  </li>
+                  <li className="flex gap-2.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span className="text-foreground/90">
+                      Condition: <strong className="text-foreground">{r.conditionLabel}</strong>
+                      <span className="text-muted-foreground"> · {r.conditionScore}/10</span>
+                    </span>
+                  </li>
+                  <li className="flex gap-2.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span className="text-foreground/90">
+                      Market: <strong className="text-foreground">{showSpecialistBadge ? "Specialist applied" : `${liveTier} confidence`}</strong>
+                      {liveCount != null && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
+                    </span>
+                  </li>
+                  <li className="flex gap-2.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span className="text-foreground/90">
+                      {upside > 0
+                        ? (<>Upside if you tidy flagged items: <strong className="tabular-nums text-primary">+£{upside.toLocaleString()}</strong></>)
+                        : latestAdv > 0
+                        ? (<>Latest MOT: <strong className="text-amber-300">{latestAdv} current advisor{latestAdv === 1 ? "y" : "ies"}</strong></>)
+                        : (<>Latest MOT: <strong className="text-emerald-300">No current advisories</strong></>)}
+                    </span>
+                  </li>
+                </ul>
+
+                {/* Trust strip — the data moat made visible */}
+                <div className="mt-4 pt-3 border-t border-border/40 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> DVSA MOT history</span>
+                  <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> MarketCheck UK live pricing</span>
+                  <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> AI vision condition</span>
+                </div>
               </div>
-              <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-2.5 text-sm">
-                <li className="flex gap-2.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                  <span className="text-foreground/90">
-                    Realistic private sale: <strong className="tabular-nums text-foreground">£{r.values.privateSale.toLocaleString()}</strong>
-                  </span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                  <span className="text-foreground/90">
-                    Condition: <strong className="text-foreground">{r.conditionLabel}</strong>
-                    <span className="text-muted-foreground"> · {r.conditionScore}/10</span>
-                  </span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                  <span className="text-foreground/90">
-                    Market data: <strong className="text-foreground">{showSpecialistBadge ? "Specialist applied" : `${liveTier} confidence`}</strong>
-                    {liveCount != null && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
-                  </span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                  <span className="text-foreground/90">
-                    {(() => {
-                      const upside = (r.photoInsights ?? [])
-                        .filter(i => i.fixable && (i.priceImpact ?? 0) < 0)
-                        .reduce((s, i) => s + Math.abs(i.priceImpact ?? 0), 0);
-                      if (upside > 0) {
-                        return (<>Upside if you tidy flagged items: <strong className="tabular-nums text-primary">+£{upside.toLocaleString()}</strong></>);
-                      }
-                      const latestAdv = r.motHistory?.[0]?.advisories?.length ?? 0;
-                      if (latestAdv > 0) return (<>Latest MOT: <strong className="text-amber-300">{latestAdv} current advisor{latestAdv === 1 ? "y" : "ies"}</strong></>);
-                      return (<>Latest MOT: <strong className="text-emerald-300">No current advisories</strong></>);
-                    })()}
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </section>
-        )}
+            </section>
+          );
+        })()}
+
+
 
 
         {/* Photo gallery */}
