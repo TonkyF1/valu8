@@ -244,6 +244,57 @@ export default function Report() {
           </div>
         </div>
 
+        {/* Quick Summary — scannable TL;DR at the top */}
+        {!valuationUnavailable && (
+          <section className="mb-5 animate-fade-in-up">
+            <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.06] to-transparent p-4 sm:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Quick Summary</h2>
+              </div>
+              <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-2.5 text-sm">
+                <li className="flex gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                  <span className="text-foreground/90">
+                    Realistic private sale: <strong className="tabular-nums text-foreground">£{r.values.privateSale.toLocaleString()}</strong>
+                  </span>
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                  <span className="text-foreground/90">
+                    Condition: <strong className="text-foreground">{r.conditionLabel}</strong>
+                    <span className="text-muted-foreground"> · {r.conditionScore}/10</span>
+                  </span>
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                  <span className="text-foreground/90">
+                    Market data: <strong className="text-foreground">{showSpecialistBadge ? "Specialist applied" : `${liveTier} confidence`}</strong>
+                    {liveCount != null && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
+                  </span>
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                  <span className="text-foreground/90">
+                    {(() => {
+                      const upside = (r.photoInsights ?? [])
+                        .filter(i => i.fixable && (i.priceImpact ?? 0) < 0)
+                        .reduce((s, i) => s + Math.abs(i.priceImpact ?? 0), 0);
+                      if (upside > 0) {
+                        return (<>Upside if you tidy flagged items: <strong className="tabular-nums text-primary">+£{upside.toLocaleString()}</strong></>);
+                      }
+                      const latestAdv = r.motHistory?.[0]?.advisories?.length ?? 0;
+                      if (latestAdv > 0) return (<>Latest MOT: <strong className="text-amber-300">{latestAdv} current advisor{latestAdv === 1 ? "y" : "ies"}</strong></>);
+                      return (<>Latest MOT: <strong className="text-emerald-300">No current advisories</strong></>);
+                    })()}
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </section>
+        )}
+
+
         {/* Photo gallery */}
         {v.photo_urls.length > 0 && (
           <section className="premium-card p-2 mb-4 animate-fade-in-up">
@@ -334,8 +385,8 @@ export default function Report() {
                     r.headline
                   ) : (
                     <>
-                      <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>
-                      {" "}is a strong asking price for a {v.year} {v.make} {v.model} in today's private market — realistic enough to attract serious buyers quickly, without leaving money on the table.
+                      Based on live UK market data, a realistic private sale figure for this {v.year} {v.make} {v.model} sits around{" "}
+                      <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>. Price honestly and your car will move; over-price it and it'll sit.
                     </>
                   )}
                 </p>
@@ -376,8 +427,10 @@ export default function Report() {
                 <div className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-medium mb-1">Suggested Asking Price</div>
                 {(() => {
                   const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  const rangeLow = Math.round((base - 250) / 50) * 50;
-                  const rangeHigh = Math.round((base + 250) / 50) * 50;
+                  // Wider, more honest range: ~±3.5% of the asking figure, minimum £500 spread.
+                  const spread = Math.max(500, Math.round(base * 0.035 / 50) * 50);
+                  const rangeLow = Math.round((base - spread) / 50) * 50;
+                  const rangeHigh = Math.round((base + spread) / 50) * 50;
                   const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
                   const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
                   const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
@@ -387,7 +440,7 @@ export default function Report() {
                         £{rangeLow.toLocaleString()} – £{rangeHigh.toLocaleString()}
                       </div>
                       <p className="text-[12px] text-muted-foreground mt-2 leading-relaxed max-w-[44ch]">
-                        List in this range to attract serious buyers while leaving £{buffer.toLocaleString()}–£{Math.round(buffer * 1.35 / 50) * 50} room to negotiate. Most similar cars are currently selling between £{marketLow.toLocaleString()} – £{marketHigh.toLocaleString()}.
+                        Where you land in this range depends on your photos, history file and how quickly you need to sell. Expect serious buyers to negotiate £{buffer.toLocaleString()}–£{Math.round(buffer * 1.5 / 50) * 50} off. Comparable cars are currently asking £{marketLow.toLocaleString()} – £{marketHigh.toLocaleString()}.
                       </p>
                     </>
                   );
@@ -401,13 +454,14 @@ export default function Report() {
                 <span className="text-amber-300 mt-0.5 leading-none" aria-hidden>💡</span>
                 {(() => {
                   const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  const listAt = Math.round((base * 1.03) / 50) * 50;
+                  // Honest list price ≈ asking; small head-room only, not an upsell.
+                  const listAt = Math.round((base * 1.015) / 50) * 50;
                   const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
-                  const offerLow = Math.max(r.values.privateSale, Math.round((listAt - buffer * 1.3) / 50) * 50);
+                  const offerLow = Math.max(Math.round(r.values.privateSale * 0.95 / 50) * 50, Math.round((listAt - buffer * 1.6) / 50) * 50);
                   const offerHigh = Math.max(r.values.privateSale, Math.round((listAt - buffer * 0.7) / 50) * 50);
                   return (
                     <p className="text-[13px] leading-[1.55] text-[#E8E8E8]">
-                      <span className="font-semibold text-amber-300">Pro Tip:</span> List at £{listAt.toLocaleString()} and expect offers around £{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}. {r.strengths.some(s => /full service history|fsh|main dealer/i.test(s)) ? "Your full service history is a strong selling point." : "Highlight your car's strengths when negotiating."}
+                      <span className="font-semibold text-amber-300">Pro Tip:</span> Listing around <strong className="tabular-nums">£{listAt.toLocaleString()}</strong> gives you a little head-room without scaring buyers off. Realistic offers will come in between <strong className="tabular-nums">£{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}</strong>. Don't drop below <strong className="tabular-nums">£{r.values.privateSale.toLocaleString()}</strong> unless you need a fast sale.
                     </p>
                   );
                 })()}
@@ -846,10 +900,15 @@ function PhotoFeedback({
 
   return (
     <section className="mb-6 animate-fade-in-up">
-      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
-          <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">What the AI saw in your photos</h2>
+      <div className="flex items-end justify-between mb-3 gap-3 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">What the AI saw in your photos</h2>
+          </div>
+          <p className="text-[11px] text-muted-foreground/80 mt-1 ml-5">
+            Vision analysis · {insights.length} observation{insights.length === 1 ? "" : "s"} across {orderedKeys.filter(k => k !== -1).length || photoUrls.length} photo{(orderedKeys.filter(k => k !== -1).length || photoUrls.length) === 1 ? "" : "s"}
+          </p>
         </div>
         <div className="flex items-center gap-2 text-[11px]">
           {totalImpact !== 0 && (
@@ -862,6 +921,7 @@ function PhotoFeedback({
           )}
         </div>
       </div>
+
 
       <div className="rounded-2xl border border-border/50 bg-card/50 p-4 sm:p-5">
         <div className="grid gap-4">
