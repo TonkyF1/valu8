@@ -608,10 +608,17 @@ export default function Report() {
 
 
         {!valuationUnavailable && (
-          <Section title="Market Positioning">
-            <p className="text-sm leading-relaxed text-foreground/85">{r.marketPositioning}</p>
-          </Section>
+          <section className="mb-6 animate-fade-in-up">
+            <div className="rounded-xl border border-border/50 bg-card/40 px-4 py-3 flex items-start gap-2.5">
+              <TrendingUp className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium mb-0.5">Market positioning</div>
+                <p className="text-sm leading-snug text-foreground/90">{r.marketPositioning}</p>
+              </div>
+            </div>
+          </section>
         )}
+
 
         {/* Strengths + watch points — quieter borderless cards */}
         {!valuationUnavailable && (
