@@ -244,55 +244,85 @@ export default function Report() {
           </div>
         </div>
 
-        {/* Quick Summary — scannable TL;DR at the top */}
-        {!valuationUnavailable && (
-          <section className="mb-5 animate-fade-in-up">
-            <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.06] to-transparent p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Quick Summary</h2>
+        {/* Quick Summary — confident verdict + scannable bullets + trust strip */}
+        {!valuationUnavailable && (() => {
+          const verdict =
+            r.conditionScore >= 8
+              ? { label: "Sell privately", tone: "primary" as const, line: "A clean private sale is your best route — quality examples like this attract serious buyers fast." }
+              : r.conditionScore >= 6.5
+              ? { label: "Sell privately", tone: "primary" as const, line: "Worth a private sale, but price honestly and lead with photos + history to build trust." }
+              : { label: "Consider trade-in", tone: "amber" as const, line: "Condition or mileage will hold back private buyers — a part-exchange may be smoother." };
+          const upside = (r.photoInsights ?? [])
+            .filter(i => i.fixable && (i.priceImpact ?? 0) < 0)
+            .reduce((s, i) => s + Math.abs(i.priceImpact ?? 0), 0);
+          const latestAdv = r.motHistory?.[0]?.advisories?.length ?? 0;
+          return (
+            <section className="mb-5 animate-fade-in-up">
+              <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.07] to-transparent p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Quick Summary</h2>
+                  </div>
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full border",
+                    verdict.tone === "primary"
+                      ? "text-primary bg-primary/10 border-primary/30"
+                      : "text-amber-300 bg-amber-500/10 border-amber-500/30",
+                  )}>
+                    Our verdict: {verdict.label}
+                  </span>
+                </div>
+
+                <p className="text-sm leading-[1.55] text-foreground/90 mb-4 max-w-[58ch]">
+                  {verdict.line}
+                </p>
+
+                <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-2.5 text-sm">
+                  <li className="flex gap-2.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span className="text-foreground/90">
+                      Realistic private sale: <strong className="tabular-nums text-foreground">£{r.values.privateSale.toLocaleString()}</strong>
+                    </span>
+                  </li>
+                  <li className="flex gap-2.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span className="text-foreground/90">
+                      Condition: <strong className="text-foreground">{r.conditionLabel}</strong>
+                      <span className="text-muted-foreground"> · {r.conditionScore}/10</span>
+                    </span>
+                  </li>
+                  <li className="flex gap-2.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span className="text-foreground/90">
+                      Market: <strong className="text-foreground">{showSpecialistBadge ? "Specialist applied" : `${liveTier} confidence`}</strong>
+                      {liveCount != null && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
+                    </span>
+                  </li>
+                  <li className="flex gap-2.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span className="text-foreground/90">
+                      {upside > 0
+                        ? (<>Upside if you tidy flagged items: <strong className="tabular-nums text-primary">+£{upside.toLocaleString()}</strong></>)
+                        : latestAdv > 0
+                        ? (<>Latest MOT: <strong className="text-amber-300">{latestAdv} current advisor{latestAdv === 1 ? "y" : "ies"}</strong></>)
+                        : (<>Latest MOT: <strong className="text-emerald-300">No current advisories</strong></>)}
+                    </span>
+                  </li>
+                </ul>
+
+                {/* Trust strip — the data moat made visible */}
+                <div className="mt-4 pt-3 border-t border-border/40 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> DVSA MOT history</span>
+                  <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> MarketCheck UK live pricing</span>
+                  <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> AI vision condition</span>
+                </div>
               </div>
-              <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-2.5 text-sm">
-                <li className="flex gap-2.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                  <span className="text-foreground/90">
-                    Realistic private sale: <strong className="tabular-nums text-foreground">£{r.values.privateSale.toLocaleString()}</strong>
-                  </span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                  <span className="text-foreground/90">
-                    Condition: <strong className="text-foreground">{r.conditionLabel}</strong>
-                    <span className="text-muted-foreground"> · {r.conditionScore}/10</span>
-                  </span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                  <span className="text-foreground/90">
-                    Market data: <strong className="text-foreground">{showSpecialistBadge ? "Specialist applied" : `${liveTier} confidence`}</strong>
-                    {liveCount != null && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
-                  </span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                  <span className="text-foreground/90">
-                    {(() => {
-                      const upside = (r.photoInsights ?? [])
-                        .filter(i => i.fixable && (i.priceImpact ?? 0) < 0)
-                        .reduce((s, i) => s + Math.abs(i.priceImpact ?? 0), 0);
-                      if (upside > 0) {
-                        return (<>Upside if you tidy flagged items: <strong className="tabular-nums text-primary">+£{upside.toLocaleString()}</strong></>);
-                      }
-                      const latestAdv = r.motHistory?.[0]?.advisories?.length ?? 0;
-                      if (latestAdv > 0) return (<>Latest MOT: <strong className="text-amber-300">{latestAdv} current advisor{latestAdv === 1 ? "y" : "ies"}</strong></>);
-                      return (<>Latest MOT: <strong className="text-emerald-300">No current advisories</strong></>);
-                    })()}
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </section>
-        )}
+            </section>
+          );
+        })()}
+
+
 
 
         {/* Photo gallery */}
@@ -535,18 +565,18 @@ export default function Report() {
         </section>
 
 
-        {/* Honest analysis — scannable bullets */}
+        {/* Honest analysis — max 2 bullets, punchy */}
         <Section title="Honest Analysis">
           {(() => {
             const bullets = r.honestAnalysis
               .split(/(?<=[.!?])\s+/)
               .map(s => s.trim())
               .filter(Boolean)
-              .slice(0, 3);
+              .slice(0, 2);
             return (
               <ul className="space-y-2">
                 {bullets.map((b, i) => (
-                  <li key={i} className="flex gap-2.5 text-sm leading-snug text-foreground/85">
+                  <li key={i} className="flex gap-2.5 text-sm leading-snug text-foreground/90">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span>{b}</span>
                   </li>
@@ -554,13 +584,8 @@ export default function Report() {
               </ul>
             );
           })()}
-          {r.photoObservations && (!r.photoInsights || r.photoInsights.length === 0) && (
-            <div className="mt-4 pt-4 border-t border-border/60">
-              <div className="text-[10px] uppercase tracking-[0.16em] text-primary font-medium mb-1.5">From your photos</div>
-              <p className="text-xs leading-relaxed text-muted-foreground">{r.photoObservations}</p>
-            </div>
-          )}
         </Section>
+
 
         {/* Per-photo AI feedback — our moat made visible */}
         {r.photoInsights && r.photoInsights.length > 0 && v.photo_urls.length > 0 && (
@@ -583,10 +608,17 @@ export default function Report() {
 
 
         {!valuationUnavailable && (
-          <Section title="Market Positioning">
-            <p className="text-sm leading-relaxed text-foreground/85">{r.marketPositioning}</p>
-          </Section>
+          <section className="mb-6 animate-fade-in-up">
+            <div className="rounded-xl border border-border/50 bg-card/40 px-4 py-3 flex items-start gap-2.5">
+              <TrendingUp className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium mb-0.5">Market positioning</div>
+                <p className="text-sm leading-snug text-foreground/90">{r.marketPositioning}</p>
+              </div>
+            </div>
+          </section>
         )}
+
 
         {/* Strengths + watch points — quieter borderless cards */}
         {!valuationUnavailable && (
@@ -898,93 +930,145 @@ function PhotoFeedback({
     return a - b;
   });
 
+  const positiveCount = insights.filter(i => i.severity === "positive").length;
+  const notableCount = insights.filter(i => i.severity === "notable").length;
+  const minorCount = insights.filter(i => i.severity === "minor").length;
+  const fixableCount = insights.filter(i => i.fixable && (i.priceImpact ?? 0) < 0).length;
+
   return (
     <section className="mb-6 animate-fade-in-up">
-      <div className="flex items-end justify-between mb-3 gap-3 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">What the AI saw in your photos</h2>
+      {/* Hero header — positions this as Valu8's differentiator */}
+      <div className="rounded-2xl overflow-hidden border border-primary/30 bg-gradient-to-br from-primary/[0.08] via-primary/[0.03] to-transparent">
+        <div className="px-4 sm:px-5 pt-5 pb-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap mb-1">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-primary/15 border border-primary/30 grid place-items-center">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <h2 className="text-base sm:text-lg font-semibold text-foreground">Vision AI Analysis</h2>
+              <span className="text-[9px] uppercase tracking-[0.18em] px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
+                Valu8 exclusive
+              </span>
+            </div>
+            {totalImpact !== 0 && (
+              <span className={cn(
+                "tabular-nums font-semibold text-sm rounded-full px-3 py-1 border",
+                totalImpact > 0 ? "text-primary bg-primary/10 border-primary/30" : "text-amber-300 bg-amber-500/10 border-amber-500/30",
+              )}>
+                Net {totalImpact > 0 ? "+" : "−"}£{Math.abs(totalImpact).toLocaleString()}
+              </span>
+            )}
           </div>
-          <p className="text-[11px] text-muted-foreground/80 mt-1 ml-5">
-            Vision analysis · {insights.length} observation{insights.length === 1 ? "" : "s"} across {orderedKeys.filter(k => k !== -1).length || photoUrls.length} photo{(orderedKeys.filter(k => k !== -1).length || photoUrls.length) === 1 ? "" : "s"}
+          <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed max-w-[58ch]">
+            We scanned each of your photos for value-affecting details — paint, panel gaps, wheels, interior wear, dashboard signals. <span className="text-foreground/85">AutoTrader, Parkers and AutoUncle don't do this.</span>
           </p>
-        </div>
-        <div className="flex items-center gap-2 text-[11px]">
-          {totalImpact !== 0 && (
-            <span className={cn(
-              "tabular-nums font-medium rounded-full px-2.5 py-1 border",
-              totalImpact > 0 ? "text-primary bg-primary/10 border-primary/30" : "text-amber-300 bg-amber-500/10 border-amber-500/30",
-            )}>
-              Net impact {totalImpact > 0 ? "+" : "−"}£{Math.abs(totalImpact).toLocaleString()}
-            </span>
+
+          {/* Stat strip */}
+          <div className="grid grid-cols-3 gap-2 mt-4">
+            <div className="rounded-lg bg-card/60 border border-border/50 px-3 py-2.5 text-center">
+              <div className="text-lg sm:text-xl font-semibold tabular-nums text-foreground leading-none">{insights.length}</div>
+              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1">Observations</div>
+            </div>
+            <div className="rounded-lg bg-primary/[0.06] border border-primary/25 px-3 py-2.5 text-center">
+              <div className="text-lg sm:text-xl font-semibold tabular-nums text-primary leading-none">
+                {fixableUpside > 0 ? `+£${fixableUpside.toLocaleString()}` : "—"}
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.12em] text-primary/90 mt-1">Fixable upside</div>
+            </div>
+            <div className="rounded-lg bg-card/60 border border-border/50 px-3 py-2.5 text-center">
+              <div className="text-lg sm:text-xl font-semibold tabular-nums text-foreground leading-none">
+                {notableCount + minorCount}
+                <span className="text-xs text-muted-foreground font-normal"> / {insights.length}</span>
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1">Need attention</div>
+            </div>
+          </div>
+
+          {/* Mini-legend */}
+          {(positiveCount > 0 || notableCount > 0 || minorCount > 0) && (
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] text-muted-foreground">
+              {positiveCount > 0 && <span className="inline-flex items-center gap-1"><TrendingUp className="h-3 w-3 text-primary" /> {positiveCount} value-add</span>}
+              {minorCount > 0 && <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-amber-400" /> {minorCount} minor</span>}
+              {notableCount > 0 && <span className="inline-flex items-center gap-1"><TrendingDown className="h-3 w-3 text-red-400" /> {notableCount} notable</span>}
+            </div>
           )}
         </div>
-      </div>
 
-
-      <div className="rounded-2xl border border-border/50 bg-card/50 p-4 sm:p-5">
-        <div className="grid gap-4">
-          {orderedKeys.map((idx) => {
-            const items = grouped.get(idx)!;
-            const url = idx >= 0 ? photoUrls[idx] : undefined;
-            const slotKey = items[0]?.slot ?? "other";
-            return (
-              <div key={idx} className="flex gap-3 sm:gap-4">
-                {url ? (
-                  <button
-                    type="button"
-                    onClick={() => onSelectPhoto(idx)}
-                    className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-border/60 hover:border-primary/50 transition-colors relative group"
-                    aria-label={`View ${SLOT_LABELS[slotKey] ?? "photo"}`}
-                  >
-                    <img src={url} alt={SLOT_LABELS[slotKey] ?? "photo"} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity grid place-items-end p-1.5">
-                      <Camera className="h-3 w-3 text-white" />
+        {/* Per-photo observations */}
+        <div className="border-t border-border/50 bg-card/40 p-4 sm:p-5">
+          <div className="grid gap-4">
+            {orderedKeys.map((idx) => {
+              const items = grouped.get(idx)!;
+              const url = idx >= 0 ? photoUrls[idx] : undefined;
+              const slotKey = items[0]?.slot ?? "other";
+              const photoImpact = items.reduce((s, i) => s + (i.priceImpact ?? 0), 0);
+              return (
+                <div key={idx} className="flex gap-3 sm:gap-4">
+                  {url ? (
+                    <button
+                      type="button"
+                      onClick={() => onSelectPhoto(idx)}
+                      className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-border/60 hover:border-primary/50 transition-colors relative group"
+                      aria-label={`View ${SLOT_LABELS[slotKey] ?? "photo"}`}
+                    >
+                      <img src={url} alt={SLOT_LABELS[slotKey] ?? "photo"} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity grid place-items-end p-1.5">
+                        <Camera className="h-3 w-3 text-white" />
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-muted/30 border border-border/40 grid place-items-center">
+                      <Camera className="h-4 w-4 text-muted-foreground" />
                     </div>
-                  </button>
-                ) : (
-                  <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-muted/30 border border-border/40 grid place-items-center">
-                    <Camera className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2 mb-1.5 flex-wrap">
+                      <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium">
+                        {SLOT_LABELS[slotKey] ?? "Photo"}
+                      </div>
+                      {photoImpact !== 0 && (
+                        <div className={cn(
+                          "text-[10px] tabular-nums font-medium",
+                          photoImpact > 0 ? "text-primary" : "text-amber-300",
+                        )}>
+                          {photoImpact > 0 ? "+" : "−"}£{Math.abs(photoImpact).toLocaleString()} on this photo
+                        </div>
+                      )}
+                    </div>
+                    <ul className="space-y-1.5">
+                      {items.map((ins, k) => (
+                        <li key={k}><InsightRow insight={ins} /></li>
+                      ))}
+                    </ul>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1.5">
-                    {SLOT_LABELS[slotKey] ?? "Photo"}
-                  </div>
-                  <ul className="space-y-1.5">
-                    {items.map((ins, k) => (
-                      <li key={k}>
-                        <InsightRow insight={ins} />
-                      </li>
-                    ))}
-                  </ul>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {(fixableUpside > 0 || totalFixCost > 0) && (
-          <div className="mt-4 pt-4 border-t border-border/50 grid sm:grid-cols-2 gap-3">
-            {fixableUpside > 0 && (
-              <div className="rounded-lg bg-primary/[0.06] border border-primary/20 px-3 py-2.5">
-                <div className="text-[10px] uppercase tracking-[0.14em] text-primary/90 mb-0.5">Potential upside if you fix the flagged items</div>
-                <div className="text-base font-semibold tabular-nums text-foreground">+£{fixableUpside.toLocaleString()}</div>
-              </div>
-            )}
-            {totalFixCost > 0 && (
-              <div className="rounded-lg bg-muted/30 border border-border/50 px-3 py-2.5">
-                <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-0.5">Estimated cost to remedy</div>
-                <div className="text-base font-semibold tabular-nums text-foreground/90">£{totalFixCost.toLocaleString()}</div>
-              </div>
-            )}
+              );
+            })}
           </div>
-        )}
 
-        <p className="text-[10px] text-muted-foreground/70 mt-3 leading-relaxed">
-          AI observations are guidance only — based on what's visible in each photo. Always confirm condition in person.
-        </p>
+          {(fixableUpside > 0 || totalFixCost > 0) && (
+            <div className="mt-4 pt-4 border-t border-border/50 grid sm:grid-cols-2 gap-3">
+              {fixableUpside > 0 && (
+                <div className="rounded-lg bg-primary/[0.06] border border-primary/25 px-3 py-2.5">
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-primary/90 mb-0.5 font-medium">Potential upside</div>
+                  <div className="text-base font-semibold tabular-nums text-foreground">+£{fixableUpside.toLocaleString()}</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">If you tidy the {fixableCount} fixable item{fixableCount === 1 ? "" : "s"} before listing</div>
+                </div>
+              )}
+              {totalFixCost > 0 && (
+                <div className="rounded-lg bg-muted/30 border border-border/50 px-3 py-2.5">
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-0.5 font-medium">Estimated cost</div>
+                  <div className="text-base font-semibold tabular-nums text-foreground/90">£{totalFixCost.toLocaleString()}</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">Indicative trade prices, parts + labour</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <p className="text-[10px] text-muted-foreground/70 mt-3 leading-relaxed">
+            Observations are AI-generated from what's visible in each photo. Always verify condition in person.
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -1007,7 +1091,7 @@ function InsightRow({ insight }: { insight: PhotoInsight }) {
           <div className="flex flex-wrap gap-1.5 mt-1">
             {insight.priceImpact !== undefined && insight.priceImpact !== 0 && (
               <span className={cn(
-                "inline-flex items-center text-[10px] tabular-nums font-medium rounded px-1.5 py-0.5 border",
+                "inline-flex items-center text-[10px] tabular-nums font-semibold rounded px-1.5 py-0.5 border",
                 insight.priceImpact > 0
                   ? "text-primary bg-primary/10 border-primary/30"
                   : "text-amber-300 bg-amber-500/10 border-amber-500/30",
@@ -1021,7 +1105,7 @@ function InsightRow({ insight }: { insight: PhotoInsight }) {
               </span>
             )}
             {insight.fixable && insight.priceImpact !== undefined && insight.priceImpact < 0 && (
-              <span className="inline-flex items-center text-[10px] font-medium rounded px-1.5 py-0.5 border border-primary/30 bg-primary/5 text-primary/90">
+              <span className="inline-flex items-center text-[10px] font-semibold rounded px-1.5 py-0.5 border border-primary/30 bg-primary/5 text-primary/90 uppercase tracking-wider">
                 Fixable
               </span>
             )}
