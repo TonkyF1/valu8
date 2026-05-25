@@ -427,8 +427,10 @@ export default function Report() {
                 <div className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-medium mb-1">Suggested Asking Price</div>
                 {(() => {
                   const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  const rangeLow = Math.round((base - 250) / 50) * 50;
-                  const rangeHigh = Math.round((base + 250) / 50) * 50;
+                  // Wider, more honest range: ~±3.5% of the asking figure, minimum £500 spread.
+                  const spread = Math.max(500, Math.round(base * 0.035 / 50) * 50);
+                  const rangeLow = Math.round((base - spread) / 50) * 50;
+                  const rangeHigh = Math.round((base + spread) / 50) * 50;
                   const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
                   const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
                   const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
@@ -438,7 +440,7 @@ export default function Report() {
                         £{rangeLow.toLocaleString()} – £{rangeHigh.toLocaleString()}
                       </div>
                       <p className="text-[12px] text-muted-foreground mt-2 leading-relaxed max-w-[44ch]">
-                        List in this range to attract serious buyers while leaving £{buffer.toLocaleString()}–£{Math.round(buffer * 1.35 / 50) * 50} room to negotiate. Most similar cars are currently selling between £{marketLow.toLocaleString()} – £{marketHigh.toLocaleString()}.
+                        Where you land in this range depends on your photos, history file and how quickly you need to sell. Expect serious buyers to negotiate £{buffer.toLocaleString()}–£{Math.round(buffer * 1.5 / 50) * 50} off. Comparable cars are currently asking £{marketLow.toLocaleString()} – £{marketHigh.toLocaleString()}.
                       </p>
                     </>
                   );
