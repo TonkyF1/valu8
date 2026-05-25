@@ -122,12 +122,51 @@ export default function Report() {
     : liveCount >= 500 ? "High"
     : liveCount >= 150 ? "Medium"
     : "Low";
+
+  // Specialist Valuation logic — combines multiple signals so a normal
+  // mainstream car doesn't trigger it from a temporary MarketCheck gap.
+  const carAge = new Date().getUTCFullYear() - v.year;
+  const expectedMileage = Math.max(1, carAge * 8500);
+  const mileageRatio = v.mileage / expectedMileage;
+  const aiConfidence = r.marketConfidence ?? "Medium";
+  const photoInsightCount = Array.isArray(r.photoInsights) ? r.photoInsights.length : 0;
+
+  const rarityReasons: string[] = [];
+  if (liveCount != null && liveCount < 80) rarityReasons.push("few comparable cars are listed in the UK right now");
+  if (carAge >= 20) rarityReasons.push("its age puts it into modern-classic territory");
+  if (carAge <= 1 && liveCount != null && liveCount < 200) rarityReasons.push("it's a very recent model with limited resale data");
+  if (mileageRatio < 0.45) rarityReasons.push("it has exceptionally low mileage for its age");
+  if (mileageRatio > 2.2) rarityReasons.push("it has an unusually high mileage profile");
+  if (r.rareCarWarning) rarityReasons.push("of its rare specification or trim");
+  if (aiConfidence === "Low" || aiConfidence === "Very Low") rarityReasons.push("our AI flagged it as a harder-than-average car to price");
+  if (photoInsightCount > 0 && photoInsightCount < 2) rarityReasons.push("of limited photo evidence to verify condition");
+
+  // Trigger specialist if we have 2+ signals, OR a very strong single signal.
+  // A low MarketCheck count alone is NOT enough — that was the old bug.
+  const strongSingleSignal =
+    (liveCount != null && liveCount < 25) ||
+    !!r.rareCarWarning ||
+    aiConfidence === "Very Low";
+  const showSpecialistBadge = strongSingleSignal || rarityReasons.length >= 2;
+
   const liveConfidenceLine =
     liveTier === "High"
       ? "Priced using a deep pool of live UK listings — this is a well-supported valuation."
       : liveTier === "Medium"
       ? "Based on a healthy sample of similar cars on the market right now."
       : "Fewer similar cars are listed right now, so treat this as a strong estimate rather than a precise figure.";
+
+  const specialistExplanation = (() => {
+    if (!showSpecialistBadge) return null;
+    const top = rarityReasons.slice(0, 2);
+    if (top.length === 0) {
+      return "We've applied careful specialist analysis on top of live market data to give you a confident figure on a harder-than-average car to price.";
+    }
+    if (top.length === 1) {
+      return `Because ${top[0]}, we've layered specialist analysis on top of live market data to give you a confident figure.`;
+    }
+    return `Because ${top[0]} and ${top[1]}, we've layered specialist analysis on top of live market data to give you a confident figure.`;
+  })();
 
   const share = async () => {
     try {
