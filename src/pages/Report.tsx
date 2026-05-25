@@ -12,10 +12,10 @@ import type { ValuationReport, PhotoInsight } from "@/lib/valuation";
 import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
 import {
-  Share2, Download, Bookmark, Check, ShieldCheck, AlertTriangle, ArrowLeft,
+  Share2, Download, Check, ShieldCheck, AlertTriangle, ArrowLeft,
   Star, Pencil, ChevronDown, MoreHorizontal, Sparkles, Camera, TrendingUp, TrendingDown, Minus,
 } from "lucide-react";
-import { useProfile } from "@/hooks/useProfile";
+
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CountUp } from "@/components/CountUp";
@@ -34,7 +34,6 @@ interface Valuation {
 export default function Report() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isPremium } = useProfile();
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
@@ -153,7 +152,6 @@ export default function Report() {
               variant="premium"
               size="sm"
               onClick={async () => {
-                if (!isPremium) return toast.info("PDF export is a Premium feature");
                 const id = toast.loading("Generating PDF…");
                 try {
                   await downloadValuationPdf(v, r);
@@ -177,19 +175,11 @@ export default function Report() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem
-                  onClick={() => {
-                    if (isPremium) navigate(`/valuation/${v.id}/edit`);
-                    else toast.info("Editing reports is a Premium feature");
-                  }}
-                >
+                <DropdownMenuItem onClick={() => navigate(`/valuation/${v.id}/edit`)}>
                   <Pencil className="h-4 w-4" /> Edit valuation
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={share}>
                   <Share2 className="h-4 w-4" /> Share link
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled className="opacity-70">
-                  <Bookmark className="h-4 w-4" /> Saved
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

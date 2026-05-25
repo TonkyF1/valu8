@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmProvider } from "@/components/ConfirmDialog";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ReportErrorBoundary } from "@/components/ReportErrorBoundary";
 import NewValuation from "./pages/NewValuation";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -36,7 +37,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/valuation/new" element={<ProtectedRoute><NewValuation /></ProtectedRoute>} />
             <Route path="/valuation/:id/analysing" element={<ProtectedRoute><Analysing /></ProtectedRoute>} />
-            <Route path="/valuation/:id" element={<ProtectedRoute><Report /></ProtectedRoute>} />
+            <Route path="/valuation/:id" element={<ProtectedRoute><ReportErrorBoundary><Report /></ReportErrorBoundary></ProtectedRoute>} />
             <Route path="/valuation/:id/edit" element={<ProtectedRoute><EditValuation /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/privacy" element={<Privacy />} />
