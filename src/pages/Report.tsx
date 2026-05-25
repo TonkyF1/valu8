@@ -565,18 +565,18 @@ export default function Report() {
         </section>
 
 
-        {/* Honest analysis — scannable bullets */}
+        {/* Honest analysis — max 2 bullets, punchy */}
         <Section title="Honest Analysis">
           {(() => {
             const bullets = r.honestAnalysis
               .split(/(?<=[.!?])\s+/)
               .map(s => s.trim())
               .filter(Boolean)
-              .slice(0, 3);
+              .slice(0, 2);
             return (
               <ul className="space-y-2">
                 {bullets.map((b, i) => (
-                  <li key={i} className="flex gap-2.5 text-sm leading-snug text-foreground/85">
+                  <li key={i} className="flex gap-2.5 text-sm leading-snug text-foreground/90">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span>{b}</span>
                   </li>
@@ -584,13 +584,8 @@ export default function Report() {
               </ul>
             );
           })()}
-          {r.photoObservations && (!r.photoInsights || r.photoInsights.length === 0) && (
-            <div className="mt-4 pt-4 border-t border-border/60">
-              <div className="text-[10px] uppercase tracking-[0.16em] text-primary font-medium mb-1.5">From your photos</div>
-              <p className="text-xs leading-relaxed text-muted-foreground">{r.photoObservations}</p>
-            </div>
-          )}
         </Section>
+
 
         {/* Per-photo AI feedback — our moat made visible */}
         {r.photoInsights && r.photoInsights.length > 0 && v.photo_urls.length > 0 && (
