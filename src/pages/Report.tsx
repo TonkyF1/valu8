@@ -900,10 +900,15 @@ function PhotoFeedback({
 
   return (
     <section className="mb-6 animate-fade-in-up">
-      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
-          <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">What the AI saw in your photos</h2>
+      <div className="flex items-end justify-between mb-3 gap-3 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">What the AI saw in your photos</h2>
+          </div>
+          <p className="text-[11px] text-muted-foreground/80 mt-1 ml-5">
+            Vision analysis · {insights.length} observation{insights.length === 1 ? "" : "s"} across {orderedKeys.filter(k => k !== -1).length || photoUrls.length} photo{(orderedKeys.filter(k => k !== -1).length || photoUrls.length) === 1 ? "" : "s"}
+          </p>
         </div>
         <div className="flex items-center gap-2 text-[11px]">
           {totalImpact !== 0 && (
@@ -916,6 +921,7 @@ function PhotoFeedback({
           )}
         </div>
       </div>
+
 
       <div className="rounded-2xl border border-border/50 bg-card/50 p-4 sm:p-5">
         <div className="grid gap-4">
