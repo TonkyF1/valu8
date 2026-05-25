@@ -385,8 +385,8 @@ export default function Report() {
                     r.headline
                   ) : (
                     <>
-                      <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>
-                      {" "}is a strong asking price for a {v.year} {v.make} {v.model} in today's private market — realistic enough to attract serious buyers quickly, without leaving money on the table.
+                      Based on live UK market data, a realistic private sale figure for this {v.year} {v.make} {v.model} sits around{" "}
+                      <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>. Price honestly and your car will move; over-price it and it'll sit.
                     </>
                   )}
                 </p>
