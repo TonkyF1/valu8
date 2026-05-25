@@ -244,6 +244,57 @@ export default function Report() {
           </div>
         </div>
 
+        {/* Quick Summary — scannable TL;DR at the top */}
+        {!valuationUnavailable && (
+          <section className="mb-5 animate-fade-in-up">
+            <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.06] to-transparent p-4 sm:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Quick Summary</h2>
+              </div>
+              <ul className="grid sm:grid-cols-2 gap-x-5 gap-y-2.5 text-sm">
+                <li className="flex gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                  <span className="text-foreground/90">
+                    Realistic private sale: <strong className="tabular-nums text-foreground">£{r.values.privateSale.toLocaleString()}</strong>
+                  </span>
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                  <span className="text-foreground/90">
+                    Condition: <strong className="text-foreground">{r.conditionLabel}</strong>
+                    <span className="text-muted-foreground"> · {r.conditionScore}/10</span>
+                  </span>
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                  <span className="text-foreground/90">
+                    Market data: <strong className="text-foreground">{showSpecialistBadge ? "Specialist applied" : `${liveTier} confidence`}</strong>
+                    {liveCount != null && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
+                  </span>
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                  <span className="text-foreground/90">
+                    {(() => {
+                      const upside = (r.photoInsights ?? [])
+                        .filter(i => i.fixable && (i.priceImpact ?? 0) < 0)
+                        .reduce((s, i) => s + Math.abs(i.priceImpact ?? 0), 0);
+                      if (upside > 0) {
+                        return (<>Upside if you tidy flagged items: <strong className="tabular-nums text-primary">+£{upside.toLocaleString()}</strong></>);
+                      }
+                      const latestAdv = r.motHistory?.[0]?.advisories?.length ?? 0;
+                      if (latestAdv > 0) return (<>Latest MOT: <strong className="text-amber-300">{latestAdv} current advisor{latestAdv === 1 ? "y" : "ies"}</strong></>);
+                      return (<>Latest MOT: <strong className="text-emerald-300">No current advisories</strong></>);
+                    })()}
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </section>
+        )}
+
+
         {/* Photo gallery */}
         {v.photo_urls.length > 0 && (
           <section className="premium-card p-2 mb-4 animate-fade-in-up">
