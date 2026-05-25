@@ -12,10 +12,10 @@ import type { ValuationReport, PhotoInsight } from "@/lib/valuation";
 import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
 import {
-  Share2, Download, Bookmark, Check, ShieldCheck, AlertTriangle, ArrowLeft,
+  Share2, Download, Check, ShieldCheck, AlertTriangle, ArrowLeft,
   Star, Pencil, ChevronDown, MoreHorizontal, Sparkles, Camera, TrendingUp, TrendingDown, Minus,
 } from "lucide-react";
-import { useProfile } from "@/hooks/useProfile";
+
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CountUp } from "@/components/CountUp";
@@ -34,7 +34,6 @@ interface Valuation {
 export default function Report() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isPremium } = useProfile();
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
