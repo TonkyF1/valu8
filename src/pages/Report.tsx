@@ -1025,10 +1025,10 @@ function PhotoFeedback({
                       </div>
                       {photoImpact !== 0 && (
                         <div className={cn(
-                          "text-[10px] tabular-nums font-medium",
-                          photoImpact > 0 ? "text-primary" : "text-amber-300",
+                          "text-[11px] tabular-nums font-semibold rounded-md px-2 py-0.5 border",
+                          photoImpact > 0 ? "text-primary bg-primary/10 border-primary/30" : "text-amber-300 bg-amber-500/10 border-amber-500/30",
                         )}>
-                          {photoImpact > 0 ? "+" : "−"}£{Math.abs(photoImpact).toLocaleString()} on this photo
+                          {photoImpact > 0 ? "+" : "−"}£{Math.abs(photoImpact).toLocaleString()}
                         </div>
                       )}
                     </div>
