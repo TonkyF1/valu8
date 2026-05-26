@@ -106,7 +106,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      beta_signup_count: { Args: never; Returns: number }
+      has_beta_access: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
