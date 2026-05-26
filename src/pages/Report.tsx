@@ -457,20 +457,18 @@ export default function Report() {
                 <div className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-medium mb-1">Suggested Asking Price</div>
                 {(() => {
                   const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  // Wider, more honest range: ~±3.5% of the asking figure, minimum £500 spread.
-                  const spread = Math.max(500, Math.round(base * 0.035 / 50) * 50);
+                  // Realistic spread — ~±6% of asking, minimum £450 each side (≥£900 total).
+                  const spread = Math.max(450, Math.round(base * 0.06 / 50) * 50);
                   const rangeLow = Math.round((base - spread) / 50) * 50;
                   const rangeHigh = Math.round((base + spread) / 50) * 50;
-                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
-                  const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
-                  const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
+                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.05 / 50) * 50;
                   return (
                     <>
                       <div className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none">
                         £{rangeLow.toLocaleString()} – £{rangeHigh.toLocaleString()}
                       </div>
                       <p className="text-[12px] text-muted-foreground mt-2 leading-relaxed max-w-[44ch]">
-                        Where you land in this range depends on your photos, history file and how quickly you need to sell. Expect serious buyers to negotiate £{buffer.toLocaleString()}–£{Math.round(buffer * 1.5 / 50) * 50} off. Comparable cars are currently asking £{marketLow.toLocaleString()} – £{marketHigh.toLocaleString()}.
+                        Top of range = strong photos, full history, no rush. Bottom = fast sale. Expect £{buffer.toLocaleString()}–£{Math.round(buffer * 1.6 / 50) * 50} of negotiation either way.
                       </p>
                     </>
                   );
