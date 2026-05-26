@@ -408,25 +408,17 @@ export default function Report() {
                 We'd rather be honest than give you a number that could be way off.
               </p>
             ) : (
-              <div className="mt-4 space-y-3 max-w-[44ch]">
-                {/* Paragraph 1 — AI headline or fallback */}
-                <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8]">
+              <div className="mt-4 space-y-2.5 max-w-[44ch]">
+                {/* Headline */}
+                <p className="text-sm sm:text-base leading-[1.6] text-[#E8E8E8]">
                   {r.headline ? (
                     r.headline
                   ) : (
-                    <>
-                      Based on live UK market data, a realistic private sale figure for this {v.year} {v.make} {v.model} sits around{" "}
-                      <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>. Price honestly and your car will move; over-price it and it'll sit.
-                    </>
+                    <>Price honestly and this car will move. Over-price it and it'll sit.</>
                   )}
                 </p>
 
-                {/* Paragraph 2 — market context from AI or live confidence */}
-                <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
-                  {r.marketContext || liveConfidenceLine}
-                </p>
-
-                {/* Paragraph 3 — factors affecting price (AI-driven, fall back to deterministic) */}
+                {/* Factors — compact one-liner */}
                 {(() => {
                   const positives = (r.factorsUp && r.factorsUp.length > 0)
                     ? r.factorsUp
@@ -434,21 +426,25 @@ export default function Report() {
                   const negatives = (r.factorsDown && r.factorsDown.length > 0)
                     ? r.factorsDown
                     : (r.priceAdjustments?.filter(a => a.impactPct < 0).map(a => a.label) ?? []);
-                  if (positives.length === 0 && negatives.length === 0) {
-                    return r.valueReasoning ? (
-                      <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">{r.valueReasoning}</p>
-                    ) : null;
-                  }
-                  const join = (arr: string[]) =>
-                    arr.length <= 1 ? (arr[0] ?? "") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
+                  if (positives.length === 0 && negatives.length === 0) return null;
+                  const top = (arr: string[]) => arr.slice(0, 2).join(" + ");
                   return (
-                    <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
-                      {positives.length > 0 && <>{join(positives)} {positives.length > 1 ? "all push" : "pushes"} the value up. </>}
-                      {negatives.length > 0 && <>We've nudged it down to account for {join(negatives)} — buyers will likely use these to negotiate.</>}
-                    </p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[12px] pt-1">
+                      {positives.length > 0 && (
+                        <span className="inline-flex items-center gap-1.5 text-primary">
+                          <TrendingUp className="h-3 w-3" /> {top(positives)}
+                        </span>
+                      )}
+                      {negatives.length > 0 && (
+                        <span className="inline-flex items-center gap-1.5 text-amber-300">
+                          <TrendingDown className="h-3 w-3" /> {top(negatives)}
+                        </span>
+                      )}
+                    </div>
                   );
                 })()}
               </div>
+
             )}
 
             {/* Suggested Asking Price — range with honest context */}
@@ -457,20 +453,18 @@ export default function Report() {
                 <div className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-medium mb-1">Suggested Asking Price</div>
                 {(() => {
                   const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  // Wider, more honest range: ~±3.5% of the asking figure, minimum £500 spread.
-                  const spread = Math.max(500, Math.round(base * 0.035 / 50) * 50);
+                  // Realistic spread — ~±6% of asking, minimum £450 each side (≥£900 total).
+                  const spread = Math.max(450, Math.round(base * 0.06 / 50) * 50);
                   const rangeLow = Math.round((base - spread) / 50) * 50;
                   const rangeHigh = Math.round((base + spread) / 50) * 50;
-                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
-                  const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
-                  const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
+                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.05 / 50) * 50;
                   return (
                     <>
                       <div className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none">
                         £{rangeLow.toLocaleString()} – £{rangeHigh.toLocaleString()}
                       </div>
                       <p className="text-[12px] text-muted-foreground mt-2 leading-relaxed max-w-[44ch]">
-                        Where you land in this range depends on your photos, history file and how quickly you need to sell. Expect serious buyers to negotiate £{buffer.toLocaleString()}–£{Math.round(buffer * 1.5 / 50) * 50} off. Comparable cars are currently asking £{marketLow.toLocaleString()} – £{marketHigh.toLocaleString()}.
+                        Top of range = strong photos, full history, no rush. Bottom = fast sale. Expect £{buffer.toLocaleString()}–£{Math.round(buffer * 1.6 / 50) * 50} of negotiation either way.
                       </p>
                     </>
                   );
@@ -484,14 +478,14 @@ export default function Report() {
                 <span className="text-amber-300 mt-0.5 leading-none" aria-hidden>💡</span>
                 {(() => {
                   const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  // Honest list price ≈ asking; small head-room only, not an upsell.
-                  const listAt = Math.round((base * 1.015) / 50) * 50;
-                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
-                  const offerLow = Math.max(Math.round(r.values.privateSale * 0.95 / 50) * 50, Math.round((listAt - buffer * 1.6) / 50) * 50);
-                  const offerHigh = Math.max(r.values.privateSale, Math.round((listAt - buffer * 0.7) / 50) * 50);
+                  const listAt = Math.round((base * 1.02) / 50) * 50;
+                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.05 / 50) * 50;
+                  const offerLow = Math.max(Math.round(r.values.privateSale * 0.93 / 50) * 50, Math.round((listAt - buffer * 1.8) / 50) * 50);
+                  const offerHigh = Math.max(r.values.privateSale, Math.round((listAt - buffer * 0.6) / 50) * 50);
+                  const floor = Math.round((r.values.privateSale * 0.97) / 50) * 50;
                   return (
                     <p className="text-[13px] leading-[1.55] text-[#E8E8E8]">
-                      <span className="font-semibold text-amber-300">Pro Tip:</span> Listing around <strong className="tabular-nums">£{listAt.toLocaleString()}</strong> gives you a little head-room without scaring buyers off. Realistic offers will come in between <strong className="tabular-nums">£{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}</strong>. Don't drop below <strong className="tabular-nums">£{r.values.privateSale.toLocaleString()}</strong> unless you need a fast sale.
+                      <span className="font-semibold text-amber-300">Pro Tip:</span> List at <strong className="tabular-nums">£{listAt.toLocaleString()}</strong>. Serious offers will land at <strong className="tabular-nums">£{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}</strong>. Hold firm above <strong className="tabular-nums">£{floor.toLocaleString()}</strong> — anything less and you're giving the car away.
                     </p>
                   );
                 })()}
@@ -572,7 +566,7 @@ export default function Report() {
               .split(/(?<=[.!?])\s+/)
               .map(s => s.trim())
               .filter(Boolean)
-              .slice(0, 2);
+              .slice(0, 1);
             return (
               <ul className="space-y-2">
                 {bullets.map((b, i) => (
@@ -613,7 +607,7 @@ export default function Report() {
               <TrendingUp className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
               <div>
                 <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium mb-0.5">Market positioning</div>
-                <p className="text-sm leading-snug text-foreground/90">{r.marketPositioning}</p>
+                <p className="text-sm leading-snug text-foreground/90">{r.marketPositioning.split(/(?<=[.!?])\s+/)[0]}</p>
               </div>
             </div>
           </section>
@@ -951,12 +945,15 @@ function PhotoFeedback({
               </span>
             </div>
             {totalImpact !== 0 && (
-              <span className={cn(
-                "tabular-nums font-semibold text-sm rounded-full px-3 py-1 border",
-                totalImpact > 0 ? "text-primary bg-primary/10 border-primary/30" : "text-amber-300 bg-amber-500/10 border-amber-500/30",
+              <div className={cn(
+                "flex flex-col items-end rounded-xl px-3.5 py-2 border",
+                totalImpact > 0 ? "text-primary bg-primary/10 border-primary/40" : "text-amber-300 bg-amber-500/10 border-amber-500/40",
               )}>
-                Net {totalImpact > 0 ? "+" : "−"}£{Math.abs(totalImpact).toLocaleString()}
-              </span>
+                <span className="text-[9px] uppercase tracking-[0.16em] font-semibold opacity-80 leading-none">Net impact</span>
+                <span className="tabular-nums font-bold text-lg sm:text-xl leading-tight mt-0.5">
+                  {totalImpact > 0 ? "+" : "−"}£{Math.abs(totalImpact).toLocaleString()}
+                </span>
+              </div>
             )}
           </div>
           <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed max-w-[58ch]">
@@ -1008,7 +1005,7 @@ function PhotoFeedback({
                     <button
                       type="button"
                       onClick={() => onSelectPhoto(idx)}
-                      className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-border/60 hover:border-primary/50 transition-colors relative group"
+                      className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden border border-border/60 hover:border-primary/50 transition-colors relative group"
                       aria-label={`View ${SLOT_LABELS[slotKey] ?? "photo"}`}
                     >
                       <img src={url} alt={SLOT_LABELS[slotKey] ?? "photo"} className="w-full h-full object-cover" />
@@ -1017,7 +1014,7 @@ function PhotoFeedback({
                       </div>
                     </button>
                   ) : (
-                    <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-muted/30 border border-border/40 grid place-items-center">
+                    <div className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-xl bg-muted/30 border border-border/40 grid place-items-center">
                       <Camera className="h-4 w-4 text-muted-foreground" />
                     </div>
                   )}
@@ -1028,10 +1025,10 @@ function PhotoFeedback({
                       </div>
                       {photoImpact !== 0 && (
                         <div className={cn(
-                          "text-[10px] tabular-nums font-medium",
-                          photoImpact > 0 ? "text-primary" : "text-amber-300",
+                          "text-[11px] tabular-nums font-semibold rounded-md px-2 py-0.5 border",
+                          photoImpact > 0 ? "text-primary bg-primary/10 border-primary/30" : "text-amber-300 bg-amber-500/10 border-amber-500/30",
                         )}>
-                          {photoImpact > 0 ? "+" : "−"}£{Math.abs(photoImpact).toLocaleString()} on this photo
+                          {photoImpact > 0 ? "+" : "−"}£{Math.abs(photoImpact).toLocaleString()}
                         </div>
                       )}
                     </div>
