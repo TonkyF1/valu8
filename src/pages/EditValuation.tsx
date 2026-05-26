@@ -150,8 +150,10 @@ export default function EditValuation() {
         },
       });
       if (aiErr) throw aiErr;
+      if ((aiData as any)?.error) throw new Error((aiData as any).error);
       const report = (aiData as any)?.report;
-      if (!report) throw new Error("AI did not return a report");
+      if (!report) throw new Error("AI did not return a report — please try again in a moment");
+
 
       const updatedReport = {
         ...report,
