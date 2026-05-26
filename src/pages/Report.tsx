@@ -1005,7 +1005,7 @@ function PhotoFeedback({
                     <button
                       type="button"
                       onClick={() => onSelectPhoto(idx)}
-                      className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-border/60 hover:border-primary/50 transition-colors relative group"
+                      className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden border border-border/60 hover:border-primary/50 transition-colors relative group"
                       aria-label={`View ${SLOT_LABELS[slotKey] ?? "photo"}`}
                     >
                       <img src={url} alt={SLOT_LABELS[slotKey] ?? "photo"} className="w-full h-full object-cover" />
