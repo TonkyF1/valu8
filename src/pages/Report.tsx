@@ -607,7 +607,7 @@ export default function Report() {
               <TrendingUp className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
               <div>
                 <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium mb-0.5">Market positioning</div>
-                <p className="text-sm leading-snug text-foreground/90">{r.marketPositioning}</p>
+                <p className="text-sm leading-snug text-foreground/90">{r.marketPositioning.split(/(?<=[.!?])\s+/)[0]}</p>
               </div>
             </div>
           </section>
