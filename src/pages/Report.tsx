@@ -408,25 +408,17 @@ export default function Report() {
                 We'd rather be honest than give you a number that could be way off.
               </p>
             ) : (
-              <div className="mt-4 space-y-3 max-w-[44ch]">
-                {/* Paragraph 1 — AI headline or fallback */}
-                <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8]">
+              <div className="mt-4 space-y-2.5 max-w-[44ch]">
+                {/* Headline */}
+                <p className="text-sm sm:text-base leading-[1.6] text-[#E8E8E8]">
                   {r.headline ? (
                     r.headline
                   ) : (
-                    <>
-                      Based on live UK market data, a realistic private sale figure for this {v.year} {v.make} {v.model} sits around{" "}
-                      <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>. Price honestly and your car will move; over-price it and it'll sit.
-                    </>
+                    <>Price honestly and this car will move. Over-price it and it'll sit.</>
                   )}
                 </p>
 
-                {/* Paragraph 2 — market context from AI or live confidence */}
-                <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
-                  {r.marketContext || liveConfidenceLine}
-                </p>
-
-                {/* Paragraph 3 — factors affecting price (AI-driven, fall back to deterministic) */}
+                {/* Factors — compact one-liner */}
                 {(() => {
                   const positives = (r.factorsUp && r.factorsUp.length > 0)
                     ? r.factorsUp
@@ -434,21 +426,25 @@ export default function Report() {
                   const negatives = (r.factorsDown && r.factorsDown.length > 0)
                     ? r.factorsDown
                     : (r.priceAdjustments?.filter(a => a.impactPct < 0).map(a => a.label) ?? []);
-                  if (positives.length === 0 && negatives.length === 0) {
-                    return r.valueReasoning ? (
-                      <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">{r.valueReasoning}</p>
-                    ) : null;
-                  }
-                  const join = (arr: string[]) =>
-                    arr.length <= 1 ? (arr[0] ?? "") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
+                  if (positives.length === 0 && negatives.length === 0) return null;
+                  const top = (arr: string[]) => arr.slice(0, 2).join(" + ");
                   return (
-                    <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
-                      {positives.length > 0 && <>{join(positives)} {positives.length > 1 ? "all push" : "pushes"} the value up. </>}
-                      {negatives.length > 0 && <>We've nudged it down to account for {join(negatives)} — buyers will likely use these to negotiate.</>}
-                    </p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[12px] pt-1">
+                      {positives.length > 0 && (
+                        <span className="inline-flex items-center gap-1.5 text-primary">
+                          <TrendingUp className="h-3 w-3" /> {top(positives)}
+                        </span>
+                      )}
+                      {negatives.length > 0 && (
+                        <span className="inline-flex items-center gap-1.5 text-amber-300">
+                          <TrendingDown className="h-3 w-3" /> {top(negatives)}
+                        </span>
+                      )}
+                    </div>
                   );
                 })()}
               </div>
+
             )}
 
             {/* Suggested Asking Price — range with honest context */}
