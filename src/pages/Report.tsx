@@ -1014,7 +1014,7 @@ function PhotoFeedback({
                       </div>
                     </button>
                   ) : (
-                    <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-muted/30 border border-border/40 grid place-items-center">
+                    <div className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-xl bg-muted/30 border border-border/40 grid place-items-center">
                       <Camera className="h-4 w-4 text-muted-foreground" />
                     </div>
                   )}
