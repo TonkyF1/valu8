@@ -482,14 +482,14 @@ export default function Report() {
                 <span className="text-amber-300 mt-0.5 leading-none" aria-hidden>💡</span>
                 {(() => {
                   const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  // Honest list price ≈ asking; small head-room only, not an upsell.
-                  const listAt = Math.round((base * 1.015) / 50) * 50;
-                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
-                  const offerLow = Math.max(Math.round(r.values.privateSale * 0.95 / 50) * 50, Math.round((listAt - buffer * 1.6) / 50) * 50);
-                  const offerHigh = Math.max(r.values.privateSale, Math.round((listAt - buffer * 0.7) / 50) * 50);
+                  const listAt = Math.round((base * 1.02) / 50) * 50;
+                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.05 / 50) * 50;
+                  const offerLow = Math.max(Math.round(r.values.privateSale * 0.93 / 50) * 50, Math.round((listAt - buffer * 1.8) / 50) * 50);
+                  const offerHigh = Math.max(r.values.privateSale, Math.round((listAt - buffer * 0.6) / 50) * 50);
+                  const floor = Math.round((r.values.privateSale * 0.97) / 50) * 50;
                   return (
                     <p className="text-[13px] leading-[1.55] text-[#E8E8E8]">
-                      <span className="font-semibold text-amber-300">Pro Tip:</span> Listing around <strong className="tabular-nums">£{listAt.toLocaleString()}</strong> gives you a little head-room without scaring buyers off. Realistic offers will come in between <strong className="tabular-nums">£{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}</strong>. Don't drop below <strong className="tabular-nums">£{r.values.privateSale.toLocaleString()}</strong> unless you need a fast sale.
+                      <span className="font-semibold text-amber-300">Pro Tip:</span> List at <strong className="tabular-nums">£{listAt.toLocaleString()}</strong>. Serious offers will land at <strong className="tabular-nums">£{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}</strong>. Hold firm above <strong className="tabular-nums">£{floor.toLocaleString()}</strong> — anything less and you're giving the car away.
                     </p>
                   );
                 })()}
