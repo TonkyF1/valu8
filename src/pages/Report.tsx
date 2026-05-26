@@ -945,12 +945,15 @@ function PhotoFeedback({
               </span>
             </div>
             {totalImpact !== 0 && (
-              <span className={cn(
-                "tabular-nums font-semibold text-sm rounded-full px-3 py-1 border",
-                totalImpact > 0 ? "text-primary bg-primary/10 border-primary/30" : "text-amber-300 bg-amber-500/10 border-amber-500/30",
+              <div className={cn(
+                "flex flex-col items-end rounded-xl px-3.5 py-2 border",
+                totalImpact > 0 ? "text-primary bg-primary/10 border-primary/40" : "text-amber-300 bg-amber-500/10 border-amber-500/40",
               )}>
-                Net {totalImpact > 0 ? "+" : "−"}£{Math.abs(totalImpact).toLocaleString()}
-              </span>
+                <span className="text-[9px] uppercase tracking-[0.16em] font-semibold opacity-80 leading-none">Net impact</span>
+                <span className="tabular-nums font-bold text-lg sm:text-xl leading-tight mt-0.5">
+                  {totalImpact > 0 ? "+" : "−"}£{Math.abs(totalImpact).toLocaleString()}
+                </span>
+              </div>
             )}
           </div>
           <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed max-w-[58ch]">
