@@ -566,7 +566,7 @@ export default function Report() {
               .split(/(?<=[.!?])\s+/)
               .map(s => s.trim())
               .filter(Boolean)
-              .slice(0, 2);
+              .slice(0, 1);
             return (
               <ul className="space-y-2">
                 {bullets.map((b, i) => (
