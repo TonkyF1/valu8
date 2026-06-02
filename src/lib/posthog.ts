@@ -6,7 +6,7 @@ import posthog from "posthog-js";
  * Paste your key here from PostHog → Settings → Project → Project API Key.
  * It starts with `phc_`. Leave empty to disable analytics in this build.
  */
-const POSTHOG_KEY = "";
+const POSTHOG_KEY = "phc_CPtsdMVYmduf4Uk92SPeCwXgUyxieWp5GvrqcDDzRUNz";
 
 const POSTHOG_HOST = "https://eu.i.posthog.com";
 
