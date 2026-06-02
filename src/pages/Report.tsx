@@ -489,32 +489,78 @@ export default function Report() {
               </div>
             )}
 
-            {/* Suggested Asking Price — range with honest context */}
-            {!valuationUnavailable && (
-              <div className="mt-5 rounded-xl border border-primary/30 bg-primary/[0.05] px-4 py-3.5">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-medium mb-1">Suggested Asking Price</div>
-                {(() => {
-                  const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  // Wider, more honest range: ~±3.5% of the asking figure, minimum £500 spread.
-                  const spread = Math.max(500, Math.round(base * 0.035 / 50) * 50);
-                  const rangeLow = Math.round((base - spread) / 50) * 50;
-                  const rangeHigh = Math.round((base + spread) / 50) * 50;
-                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
-                  const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
-                  const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
-                  return (
-                    <>
-                      <div className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none">
-                        £{rangeLow.toLocaleString()} – £{rangeHigh.toLocaleString()}
+            {/* Suggested Asking Price — with visual price band */}
+            {!valuationUnavailable && (() => {
+              const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
+              const spread = Math.max(500, Math.round(base * 0.035 / 50) * 50);
+              const rangeLow = Math.round((base - spread) / 50) * 50;
+              const rangeHigh = Math.round((base + spread) / 50) * 50;
+              const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
+              const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
+              const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
+              // Build the visual band — extend slightly past market bounds for breathing room
+              const trackLow = Math.min(marketLow, rangeLow) - Math.max(200, spread * 0.4);
+              const trackHigh = Math.max(marketHigh, rangeHigh) + Math.max(200, spread * 0.4);
+              const trackSpan = Math.max(1, trackHigh - trackLow);
+              const pct = (v: number) => Math.max(0, Math.min(100, ((v - trackLow) / trackSpan) * 100));
+              const askLeft = pct(rangeLow);
+              const askWidth = Math.max(6, pct(rangeHigh) - askLeft);
+              const marketLeft = pct(marketLow);
+              const marketWidth = Math.max(4, pct(marketHigh) - marketLeft);
+              const valLeft = pct(r.values.privateSale);
+              return (
+                <div className="mt-5 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.07] to-transparent px-4 py-4">
+                  <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-semibold">Suggested Asking Price</span>
+                    <span className="text-[10px] tabular-nums text-muted-foreground">Negotiation buffer ~£{buffer.toLocaleString()}</span>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none tracking-tight">
+                    £{rangeLow.toLocaleString()} – £{rangeHigh.toLocaleString()}
+                  </div>
+
+                  {/* Price band visualization */}
+                  <div className="mt-5 mb-1">
+                    <div className="relative h-9">
+                      {/* base track */}
+                      <div className="absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2 rounded-full bg-muted/40" />
+                      {/* market range */}
+                      <div
+                        className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-muted-foreground/30"
+                        style={{ left: `${marketLeft}%`, width: `${marketWidth}%` }}
+                        aria-label="Live market range"
+                      />
+                      {/* asking range */}
+                      <div
+                        className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary/70 to-primary shadow-[0_0_12px_hsl(176_100%_42%_/_0.5)]"
+                        style={{ left: `${askLeft}%`, width: `${askWidth}%` }}
+                        aria-label="Your suggested asking range"
+                      />
+                      {/* realistic sale marker */}
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
+                        style={{ left: `${valLeft}%` }}
+                      >
+                        <span className="h-3.5 w-3.5 rounded-full bg-background border-2 border-primary shadow-[0_0_0_3px_hsl(176_100%_42%_/_0.18)]" />
                       </div>
-                      <p className="text-[12px] text-muted-foreground mt-2 leading-relaxed max-w-[44ch]">
-                        Where you land in this range depends on your photos, history file and how quickly you need to sell. Expect serious buyers to negotiate £{buffer.toLocaleString()}–£{Math.round(buffer * 1.5 / 50) * 50} off. Comparable cars are currently asking £{marketLow.toLocaleString()} – £{marketHigh.toLocaleString()}.
-                      </p>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
+                    </div>
+                    <div className="flex items-center justify-between mt-1.5 text-[10px] tabular-nums text-muted-foreground/80">
+                      <span>£{Math.round(trackLow / 100) * 100 >= 1000 ? `${Math.round(trackLow / 100) * 100 / 1000}k` : Math.round(trackLow / 100) * 100}</span>
+                      <span>£{Math.round(trackHigh / 100) * 100 >= 1000 ? `${Math.round(trackHigh / 100) * 100 / 1000}k` : Math.round(trackHigh / 100) * 100}</span>
+                    </div>
+                    {/* Legend */}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10.5px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-primary" /> Ask range</span>
+                      <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-muted-foreground/40" /> Live market</span>
+                      <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full border-2 border-primary bg-background" /> Realistic sale</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[12px] text-muted-foreground mt-3 leading-relaxed max-w-[48ch]">
+                    Where you land depends on photos, history file and how quickly you need to sell. Comparable UK cars are asking between <span className="tabular-nums text-foreground/85">£{marketLow.toLocaleString()}</span> and <span className="tabular-nums text-foreground/85">£{marketHigh.toLocaleString()}</span>.
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* Pro Tip — negotiation guidance */}
             {!valuationUnavailable && (
