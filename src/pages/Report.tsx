@@ -816,7 +816,9 @@ export default function Report() {
               variant={v.model.includes(" · ") ? v.model.split(" · ")[1] : undefined}
               year={v.year}
               mileage={v.mileage}
+              valuation={Math.round(r.values?.privateSale || r.recommendations?.listingPrice || 0)}
             />
+
 
             <AdvertCreator
               valuationId={v.id}
