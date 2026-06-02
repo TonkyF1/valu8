@@ -20,7 +20,7 @@ import { ArrowLeft, RefreshCw, Save, Crown, X } from "lucide-react";
 export default function EditValuation() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { isPremium, loading: pLoading, setPremium } = useProfile();
+  const { loading: pLoading } = useProfile();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
