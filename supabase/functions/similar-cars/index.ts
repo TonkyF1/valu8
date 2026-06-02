@@ -103,8 +103,9 @@ Deno.serve(async (req) => {
       return json({ error: "make, model and year are required" }, 400);
     }
 
-    // 1) Try MarketCheck UK for real active listings.
+    // 1) MarketCheck UK — fetch wide, then rank by closeness in year, mileage, spec.
     let listings: Listing[] = [];
+    let fallback = false;
     const MC_KEY = Deno.env.get("MARKETCHECK_API_KEY");
     if (MC_KEY) {
       try {
@@ -113,9 +114,9 @@ Deno.serve(async (req) => {
           car_type: "used",
           make: body.make,
           model: body.model,
-          year_range: `${body.year - 2}-${body.year + 2}`,
-          rows: "8",
-          sort_by: "price",
+          year_range: `${body.year - 3}-${body.year + 3}`,
+          rows: "40",
+          sort_by: "miles",
           sort_order: "asc",
         });
         const mcResp = await fetch(
@@ -124,22 +125,43 @@ Deno.serve(async (req) => {
         if (mcResp.ok) {
           const mcJson = await mcResp.json();
           const items: any[] = mcJson?.listings ?? [];
-          listings = items
-            .filter((it) => it?.price && it?.build?.year)
-            .slice(0, 6)
-            .map((it): Listing => ({
-              title: it.heading || `${it.build.year} ${it.build.make} ${it.build.model}`,
-              year: Number(it.build.year),
-              make: String(it.build.make || body.make),
-              model: String(it.build.model || body.model),
-              variant: it.build.trim || undefined,
-              colour: it.exterior_color || it.build.exterior_color || "Silver",
-              mileage: Number(it.miles || 0),
-              price: Math.round(Number(it.price)),
-              source: it.source || "MarketCheck",
-              url: it.vdp_url || undefined,
-              location: it.dealer?.city || it.dealer?.county || undefined,
-            }));
+          const variantWords = (body.variant || "")
+            .toLowerCase()
+            .split(/\s+/)
+            .filter((w) => w.length > 1);
+
+          const scored = items
+            .filter((it) => it?.price && it?.build?.year && it?.miles)
+            .map((it) => {
+              const year = Number(it.build.year);
+              const miles = Number(it.miles);
+              const trim = String(it.build.trim || it.heading || "").toLowerCase();
+              const yearDelta = Math.abs(year - body.year);
+              const mileDelta = Math.abs(miles - body.mileage);
+              const trimHits = variantWords.filter((w) => trim.includes(w)).length;
+              const variantBonus = variantWords.length
+                ? (trimHits / variantWords.length) * 30000
+                : 0;
+              // Lower = better. Weight: 1yr ≈ 7,500 miles.
+              const score = yearDelta * 7500 + mileDelta - variantBonus;
+              return { it, score };
+            })
+            .sort((a, b) => a.score - b.score)
+            .slice(0, 6);
+
+          listings = scored.map(({ it }): Listing => ({
+            title: it.heading || `${it.build.year} ${it.build.make} ${it.build.model}`,
+            year: Number(it.build.year),
+            make: String(it.build.make || body.make),
+            model: String(it.build.model || body.model),
+            variant: it.build.trim || undefined,
+            colour: it.exterior_color || it.build.exterior_color || "Silver",
+            mileage: Number(it.miles || 0),
+            price: Math.round(Number(it.price)),
+            source: it.source || "MarketCheck",
+            url: it.vdp_url || undefined,
+            location: it.dealer?.city || it.dealer?.county || undefined,
+          }));
         } else {
           console.error("MarketCheck error", mcResp.status, (await mcResp.text()).slice(0, 200));
         }
@@ -147,6 +169,7 @@ Deno.serve(async (req) => {
         console.error("MarketCheck fetch error", e);
       }
     }
+    if (listings.length === 0) fallback = true;
 
     // 2) Fallback: AI-generated plausible listings if MarketCheck returned nothing.
     if (listings.length === 0) {
