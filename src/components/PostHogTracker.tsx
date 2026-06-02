@@ -11,10 +11,19 @@ export function PostHogTracker() {
   const location = useLocation();
   const { user } = useAuth();
   const identifiedRef = useRef<string | null>(null);
+  const openedRef = useRef(false);
 
   useEffect(() => {
     initPostHog();
+    if (!openedRef.current && posthog.__loaded) {
+      posthog.capture("App Opened", {
+        path: window.location.pathname,
+        referrer: document.referrer || undefined,
+      });
+      openedRef.current = true;
+    }
   }, []);
+
 
   // Identify / reset on auth changes
   useEffect(() => {

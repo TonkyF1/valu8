@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { posthog } from "@/lib/posthog";
 import { useAuth } from "@/contexts/AuthContext";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -128,6 +129,15 @@ export default function NewValuation() {
     setBusy(true);
     setPhase("uploading");
     setUploadProgress(photos.length === 0 ? 100 : 0);
+    const t0 = Date.now();
+    posthog.capture?.("Valuation Started", {
+      make: parsed.data.make,
+      model: parsed.data.model,
+      year: parsed.data.year,
+      mileage: parsed.data.mileage,
+      photo_count: photos.length,
+      has_registration: !!(lookup?.registration || reg),
+    });
     try {
       const photoUrls: string[] = [];
       const photos_labeled: { slot: string; url: string }[] = [];
@@ -144,6 +154,13 @@ export default function NewValuation() {
         photos_labeled.push({ slot: p.key, url: data.publicUrl });
         setUploadProgress(Math.round(((i + 1) / photos.length) * 100));
       }
+      if (photos.length > 0) {
+        posthog.capture?.("Photos Uploaded", {
+          count: photos.length,
+          slots: photos_labeled.map((p) => p.slot),
+        });
+      }
+
 
       setPhase("analysing");
       const combinedNotes = [
@@ -190,13 +207,27 @@ export default function NewValuation() {
       }).select("id").single();
       if (error) throw error;
 
+      posthog.capture?.("Valuation Report Generated", {
+        valuation_id: data.id,
+        make: parsed.data.make,
+        model: parsed.data.model,
+        year: parsed.data.year,
+        condition_score: report.conditionScore,
+        private_value: report.values?.privateSale,
+        photo_count: photoUrls.length,
+        duration_ms: Date.now() - t0,
+        valuation_unavailable: !!report.valuationUnavailable,
+      });
+
       setPhase("done");
       setTimeout(() => navigate(`/valuation/${data.id}`), 600);
     } catch (err: any) {
+      posthog.capture?.("Valuation Failed", { message: err?.message });
       toast.error(err.message || "Failed to create valuation");
       setBusy(false);
     }
   }
+
 
   const showVehicleStep = !!lookup;
 

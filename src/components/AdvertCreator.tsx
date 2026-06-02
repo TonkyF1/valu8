@@ -3,6 +3,7 @@ import { Sparkles, Copy, Download, RefreshCw, Bookmark, X, Check } from "lucide-
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { posthog } from "@/lib/posthog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +39,15 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: P
 
   const generate = async () => {
     setLoading(true);
+    posthog.capture?.("Create Selling Advert Clicked", {
+      valuation_id: valuationId,
+      make: vehicle.make,
+      model: vehicle.model,
+      year: vehicle.year,
+      has_location: !!location.trim(),
+    });
     try {
+
       const { data, error } = await supabase.functions.invoke("generate-advert", {
         body: {
           make: vehicle.make,
