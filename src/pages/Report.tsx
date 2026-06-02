@@ -932,6 +932,12 @@ function PhotoFeedback({
   const orderedKeys = Array.from(grouped.keys()).sort((a, b) => {
     if (a === -1) return 1;
     if (b === -1) return -1;
+    // Sort by severity weight then index — surface the most important photos first
+    const weight = (arr: PhotoInsight[]) =>
+      arr.reduce((w, i) => w + (i.severity === "notable" ? 3 : i.severity === "minor" ? 2 : i.severity === "positive" ? 1 : 0), 0);
+    const wa = weight(grouped.get(a)!);
+    const wb = weight(grouped.get(b)!);
+    if (wb !== wa) return wb - wa;
     return a - b;
   });
 
@@ -941,106 +947,168 @@ function PhotoFeedback({
   const fixableCount = insights.filter(i => i.fixable && (i.priceImpact ?? 0) < 0).length;
 
   return (
-    <section className="mb-6 animate-fade-in-up">
+    <section className="mb-7 animate-fade-in-up">
       {/* Hero header — positions this as Valu8's differentiator */}
-      <div className="rounded-2xl overflow-hidden border border-primary/30 bg-gradient-to-br from-primary/[0.08] via-primary/[0.03] to-transparent">
-        <div className="px-4 sm:px-5 pt-5 pb-4">
-          <div className="flex items-start justify-between gap-3 flex-wrap mb-1">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-primary/15 border border-primary/30 grid place-items-center">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
+      <div className="rounded-[20px] overflow-hidden border border-primary/30 bg-gradient-to-br from-primary/[0.10] via-primary/[0.04] to-transparent shadow-[0_24px_48px_-24px_hsl(176_100%_42%_/_0.25)]">
+        <div className="px-5 sm:px-6 pt-6 pb-5">
+          <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-xl bg-primary/15 border border-primary/30 grid place-items-center shadow-[inset_0_1px_0_hsl(176_100%_60%_/_0.2)]">
+                <Sparkles className="h-4 w-4 text-primary" />
               </div>
-              <h2 className="text-base sm:text-lg font-semibold text-foreground">Vision AI Analysis</h2>
-              <span className="text-[9px] uppercase tracking-[0.18em] px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
-                Valu8 exclusive
-              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg sm:text-xl font-semibold text-foreground tracking-tight">Vision AI Analysis</h2>
+                  <span className="text-[9px] uppercase tracking-[0.18em] px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
+                    Valu8 exclusive
+                  </span>
+                </div>
+                <div className="text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/80 mt-0.5">
+                  Powered by multimodal vision · {insights.length * 12}+ datapoints scanned
+                </div>
+              </div>
             </div>
             {totalImpact !== 0 && (
-              <span className={cn(
-                "tabular-nums font-semibold text-sm rounded-full px-3 py-1 border",
+              <div className={cn(
+                "tabular-nums font-semibold text-sm rounded-full px-3.5 py-1.5 border backdrop-blur-sm",
                 totalImpact > 0 ? "text-primary bg-primary/10 border-primary/30" : "text-amber-300 bg-amber-500/10 border-amber-500/30",
               )}>
                 Net {totalImpact > 0 ? "+" : "−"}£{Math.abs(totalImpact).toLocaleString()}
-              </span>
+              </div>
             )}
           </div>
-          <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed max-w-[58ch]">
-            We scanned each of your photos for value-affecting details — paint, panel gaps, wheels, interior wear, dashboard signals. <span className="text-foreground/85">AutoTrader, Parkers and AutoUncle don't do this.</span>
+          <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed max-w-[60ch] mb-4">
+            We scanned every photo for value-affecting details — paint, panel gaps, wheels, interior wear, dashboard signals.
+            <span className="text-foreground/85"> AutoTrader, Parkers and AutoUncle don't do this.</span>
           </p>
 
-          {/* Stat strip */}
-          <div className="grid grid-cols-3 gap-2 mt-4">
-            <div className="rounded-lg bg-card/60 border border-border/50 px-3 py-2.5 text-center">
-              <div className="text-lg sm:text-xl font-semibold tabular-nums text-foreground leading-none">{insights.length}</div>
-              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1">Observations</div>
+          {/* Stat strip — bigger, more confident */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="rounded-xl bg-background/40 border border-border/50 px-3 py-3 text-center">
+              <div className="text-xl sm:text-2xl font-semibold tabular-nums text-foreground leading-none tracking-tight">{insights.length}</div>
+              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1.5">Observations</div>
             </div>
-            <div className="rounded-lg bg-primary/[0.06] border border-primary/25 px-3 py-2.5 text-center">
-              <div className="text-lg sm:text-xl font-semibold tabular-nums text-primary leading-none">
+            <div className="rounded-xl bg-primary/[0.08] border border-primary/30 px-3 py-3 text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
+              <div className="relative text-xl sm:text-2xl font-semibold tabular-nums text-primary leading-none tracking-tight">
                 {fixableUpside > 0 ? `+£${fixableUpside.toLocaleString()}` : "—"}
               </div>
-              <div className="text-[10px] uppercase tracking-[0.12em] text-primary/90 mt-1">Fixable upside</div>
+              <div className="relative text-[10px] uppercase tracking-[0.12em] text-primary/90 mt-1.5 font-medium">Fixable upside</div>
             </div>
-            <div className="rounded-lg bg-card/60 border border-border/50 px-3 py-2.5 text-center">
-              <div className="text-lg sm:text-xl font-semibold tabular-nums text-foreground leading-none">
+            <div className="rounded-xl bg-background/40 border border-border/50 px-3 py-3 text-center">
+              <div className="text-xl sm:text-2xl font-semibold tabular-nums text-foreground leading-none tracking-tight">
                 {notableCount + minorCount}
-                <span className="text-xs text-muted-foreground font-normal"> / {insights.length}</span>
+                <span className="text-sm text-muted-foreground font-normal"> / {insights.length}</span>
               </div>
-              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1">Need attention</div>
+              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1.5">Need attention</div>
             </div>
           </div>
 
           {/* Mini-legend */}
           {(positiveCount > 0 || notableCount > 0 || minorCount > 0) && (
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] text-muted-foreground">
-              {positiveCount > 0 && <span className="inline-flex items-center gap-1"><TrendingUp className="h-3 w-3 text-primary" /> {positiveCount} value-add</span>}
-              {minorCount > 0 && <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-amber-400" /> {minorCount} minor</span>}
-              {notableCount > 0 && <span className="inline-flex items-center gap-1"><TrendingDown className="h-3 w-3 text-red-400" /> {notableCount} notable</span>}
+            <div className="flex flex-wrap gap-x-3.5 gap-y-1 mt-3.5 text-[10.5px] text-muted-foreground">
+              {positiveCount > 0 && <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-primary" /> {positiveCount} value-add{positiveCount === 1 ? "" : "s"}</span>}
+              {minorCount > 0 && <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> {minorCount} minor</span>}
+              {notableCount > 0 && <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-red-400" /> {notableCount} notable</span>}
             </div>
           )}
         </div>
 
-        {/* Per-photo observations */}
-        <div className="border-t border-border/50 bg-card/40 p-4 sm:p-5">
-          <div className="grid gap-4">
-            {orderedKeys.map((idx) => {
+        {/* Per-photo cards — cinematic grid */}
+        <div className="border-t border-border/50 bg-background/30 backdrop-blur-sm p-4 sm:p-5">
+          <div className="grid gap-4 sm:gap-5 sm:grid-cols-2">
+            {orderedKeys.map((idx, cardIdx) => {
               const items = grouped.get(idx)!;
               const url = idx >= 0 ? photoUrls[idx] : undefined;
               const slotKey = items[0]?.slot ?? "other";
               const photoImpact = items.reduce((s, i) => s + (i.priceImpact ?? 0), 0);
+              const topSev = items.some(i => i.severity === "notable") ? "notable"
+                : items.some(i => i.severity === "minor") ? "minor"
+                : items.some(i => i.severity === "positive") ? "positive"
+                : "neutral";
+              const sevRail =
+                topSev === "notable" ? "before:bg-red-400/70"
+                : topSev === "minor" ? "before:bg-amber-400/70"
+                : topSev === "positive" ? "before:bg-primary/70"
+                : "before:bg-border";
+
               return (
-                <div key={idx} className="flex gap-3 sm:gap-4">
+                <div
+                  key={idx}
+                  className={cn(
+                    "group relative rounded-2xl overflow-hidden border border-border/60 bg-card/60 backdrop-blur-sm hover:border-primary/40 transition-all duration-300",
+                    "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:rounded-l-2xl before:transition-colors",
+                    sevRail,
+                    "animate-fade-in-up",
+                  )}
+                  style={{ animationDelay: `${Math.min(cardIdx * 60, 360)}ms` }}
+                >
+                  {/* Large photo with overlays */}
                   {url ? (
                     <button
                       type="button"
-                      onClick={() => onSelectPhoto(idx)}
-                      className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-border/60 hover:border-primary/50 transition-colors relative group"
-                      aria-label={`View ${SLOT_LABELS[slotKey] ?? "photo"}`}
+                      onClick={() => {
+                        onSelectPhoto(idx);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="relative block w-full aspect-[4/3] overflow-hidden bg-muted"
+                      aria-label={`View ${SLOT_LABELS[slotKey] ?? "photo"} full size`}
                     >
-                      <img src={url} alt={SLOT_LABELS[slotKey] ?? "photo"} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity grid place-items-end p-1.5">
-                        <Camera className="h-3 w-3 text-white" />
+                      <img
+                        src={url}
+                        alt={SLOT_LABELS[slotKey] ?? "photo"}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                        loading="lazy"
+                      />
+                      {/* Top gradient + slot pill */}
+                      <div className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/55 to-transparent pointer-events-none" />
+                      <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] font-semibold text-white">
+                        {SLOT_LABELS[slotKey] ?? "Photo"}
+                      </div>
+                      {/* Bottom gradient + impact + severity dots */}
+                      <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-black/75 to-transparent pointer-events-none" />
+                      <div className="absolute bottom-2.5 inset-x-2.5 flex items-end justify-between gap-2">
+                        <div className="flex items-center gap-1">
+                          {items.slice(0, 5).map((it, k) => (
+                            <span
+                              key={k}
+                              className={cn(
+                                "h-1.5 w-1.5 rounded-full ring-1 ring-black/30",
+                                it.severity === "notable" && "bg-red-400",
+                                it.severity === "minor" && "bg-amber-400",
+                                it.severity === "positive" && "bg-primary",
+                                it.severity === "neutral" && "bg-white/60",
+                              )}
+                            />
+                          ))}
+                          {items.length > 5 && (
+                            <span className="text-[9.5px] text-white/80 font-medium ml-0.5">+{items.length - 5}</span>
+                          )}
+                        </div>
+                        {photoImpact !== 0 && (
+                          <span className={cn(
+                            "tabular-nums text-[11px] font-semibold rounded-full px-2 py-0.5 border backdrop-blur-md",
+                            photoImpact > 0
+                              ? "text-primary bg-primary/15 border-primary/40"
+                              : "text-amber-200 bg-amber-500/15 border-amber-400/40",
+                          )}>
+                            {photoImpact > 0 ? "+" : "−"}£{Math.abs(photoImpact).toLocaleString()}
+                          </span>
+                        )}
                       </div>
                     </button>
                   ) : (
-                    <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-muted/30 border border-border/40 grid place-items-center">
-                      <Camera className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between gap-2 mb-1.5 flex-wrap">
-                      <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium">
+                    <div className="relative w-full aspect-[4/3] bg-muted/30 grid place-items-center">
+                      <Camera className="h-5 w-5 text-muted-foreground" />
+                      <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-background/70 border border-border/60 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
                         {SLOT_LABELS[slotKey] ?? "Photo"}
                       </div>
-                      {photoImpact !== 0 && (
-                        <div className={cn(
-                          "text-[10px] tabular-nums font-medium",
-                          photoImpact > 0 ? "text-primary" : "text-amber-300",
-                        )}>
-                          {photoImpact > 0 ? "+" : "−"}£{Math.abs(photoImpact).toLocaleString()} on this photo
-                        </div>
-                      )}
                     </div>
-                    <ul className="space-y-1.5">
+                  )}
+
+                  {/* Observations body */}
+                  <div className="p-3.5 sm:p-4">
+                    <ul className="space-y-2.5">
                       {items.map((ins, k) => (
                         <li key={k}><InsightRow insight={ins} /></li>
                       ))}
@@ -1052,27 +1120,32 @@ function PhotoFeedback({
           </div>
 
           {(fixableUpside > 0 || totalFixCost > 0) && (
-            <div className="mt-4 pt-4 border-t border-border/50 grid sm:grid-cols-2 gap-3">
+            <div className="mt-5 pt-5 border-t border-border/50 grid sm:grid-cols-2 gap-3">
               {fixableUpside > 0 && (
-                <div className="rounded-lg bg-primary/[0.06] border border-primary/25 px-3 py-2.5">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-primary/90 mb-0.5 font-medium">Potential upside</div>
-                  <div className="text-base font-semibold tabular-nums text-foreground">+£{fixableUpside.toLocaleString()}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">If you tidy the {fixableCount} fixable item{fixableCount === 1 ? "" : "s"} before listing</div>
+                <div className="rounded-xl bg-primary/[0.07] border border-primary/30 px-4 py-3 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.08] to-transparent pointer-events-none" />
+                  <div className="relative text-[10px] uppercase tracking-[0.14em] text-primary/90 mb-1 font-semibold">Potential upside</div>
+                  <div className="relative text-lg font-semibold tabular-nums text-foreground">+£{fixableUpside.toLocaleString()}</div>
+                  <div className="relative text-[11px] text-muted-foreground mt-0.5">If you tidy the {fixableCount} fixable item{fixableCount === 1 ? "" : "s"} before listing</div>
                 </div>
               )}
               {totalFixCost > 0 && (
-                <div className="rounded-lg bg-muted/30 border border-border/50 px-3 py-2.5">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-0.5 font-medium">Estimated cost</div>
-                  <div className="text-base font-semibold tabular-nums text-foreground/90">£{totalFixCost.toLocaleString()}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">Indicative trade prices, parts + labour</div>
+                <div className="rounded-xl bg-muted/20 border border-border/60 px-4 py-3">
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1 font-semibold">Estimated fix cost</div>
+                  <div className="text-lg font-semibold tabular-nums text-foreground/90">£{totalFixCost.toLocaleString()}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">Indicative trade prices, parts + labour</div>
                 </div>
               )}
             </div>
           )}
 
-          <p className="text-[10px] text-muted-foreground/70 mt-3 leading-relaxed">
-            Observations are AI-generated from what's visible in each photo. Always verify condition in person.
-          </p>
+          <div className="mt-4 flex items-center justify-between gap-3 flex-wrap text-[10.5px] text-muted-foreground/80">
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="h-3 w-3 text-primary/70" />
+              AI-generated from visible evidence · always verify in person
+            </span>
+            <span className="text-muted-foreground/60">Tap any photo to view full size</span>
+          </div>
         </div>
       </div>
     </section>
@@ -1087,16 +1160,23 @@ function InsightRow({ insight }: { insight: PhotoInsight }) {
     sev === "notable" ? "text-red-400" :
     sev === "minor" ? "text-amber-400" :
     "text-muted-foreground";
+  const iconBg =
+    sev === "positive" ? "bg-primary/10 border-primary/25" :
+    sev === "notable" ? "bg-red-500/10 border-red-500/25" :
+    sev === "minor" ? "bg-amber-500/10 border-amber-500/25" :
+    "bg-muted/30 border-border/50";
   return (
-    <div className="flex items-start gap-2">
-      <Icon className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", tone)} />
+    <div className="flex items-start gap-2.5">
+      <div className={cn("shrink-0 h-5 w-5 rounded-md border grid place-items-center mt-0.5", iconBg)}>
+        <Icon className={cn("h-3 w-3", tone)} />
+      </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] leading-snug text-foreground/90">{insight.observation}</div>
+        <div className="text-[13px] leading-snug text-foreground/95">{insight.observation}</div>
         {(insight.priceImpact !== undefined || insight.fixCost !== undefined) && (
-          <div className="flex flex-wrap gap-1.5 mt-1">
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
             {insight.priceImpact !== undefined && insight.priceImpact !== 0 && (
               <span className={cn(
-                "inline-flex items-center text-[10px] tabular-nums font-semibold rounded px-1.5 py-0.5 border",
+                "inline-flex items-center text-[10.5px] tabular-nums font-semibold rounded-md px-1.5 py-0.5 border",
                 insight.priceImpact > 0
                   ? "text-primary bg-primary/10 border-primary/30"
                   : "text-amber-300 bg-amber-500/10 border-amber-500/30",
@@ -1105,12 +1185,12 @@ function InsightRow({ insight }: { insight: PhotoInsight }) {
               </span>
             )}
             {insight.fixCost !== undefined && insight.fixCost > 0 && (
-              <span className="inline-flex items-center text-[10px] tabular-nums font-medium rounded px-1.5 py-0.5 border border-border/60 bg-muted/30 text-muted-foreground">
+              <span className="inline-flex items-center text-[10.5px] tabular-nums font-medium rounded-md px-1.5 py-0.5 border border-border/60 bg-muted/30 text-muted-foreground">
                 Fix ~£{insight.fixCost.toLocaleString()}
               </span>
             )}
             {insight.fixable && insight.priceImpact !== undefined && insight.priceImpact < 0 && (
-              <span className="inline-flex items-center text-[10px] font-semibold rounded px-1.5 py-0.5 border border-primary/30 bg-primary/5 text-primary/90 uppercase tracking-wider">
+              <span className="inline-flex items-center text-[10px] font-semibold rounded-md px-1.5 py-0.5 border border-primary/30 bg-primary/5 text-primary/90 uppercase tracking-[0.12em]">
                 Fixable
               </span>
             )}
