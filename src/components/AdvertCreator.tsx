@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { posthog } from "@/lib/posthog";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ const LENGTHS: { key: Length; label: string; sub: string }[] = [
 ];
 
 export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: Props) {
+  const { user } = useAuth();
   const [open, setOpen] = useState(!!initialAdvert);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -63,8 +65,10 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: P
           honestAnalysis: report.honestAnalysis,
           strengths: report.strengths,
           highlights: report.recommendations.highlights,
+          userId: user?.id,
         },
       });
+
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       setAdverts((data as any).advert as Adverts);
