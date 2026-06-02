@@ -1,5 +1,7 @@
 // Valu8 — Generates ready-to-post car adverts using Lovable AI
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { capturePosthogAiGeneration } from "../_shared/posthog.ts";
+
 
 interface AdvertRequest {
   make: string;
@@ -82,11 +84,13 @@ ${body.highlights?.length ? `\nFeatures to highlight:\n${body.highlights.map(s =
 
 Generate the three advert versions now. Call valu8_advert.`;
 
+    const aiStart = Date.now();
+    const aiModel = "google/gemini-2.5-flash";
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: aiModel,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userText },
@@ -95,10 +99,16 @@ Generate the three advert versions now. Call valu8_advert.`;
         tool_choice: { type: "function", function: { name: "valu8_advert" } },
       }),
     });
+    const aiLatency = Date.now() - aiStart;
 
     if (!aiResp.ok) {
       const txt = await aiResp.text();
       console.error("AI gateway error:", aiResp.status, txt);
+      capturePosthogAiGeneration({
+        model: aiModel, latencyMs: aiLatency, httpStatus: aiResp.status,
+        isError: true, errorMessage: txt.slice(0, 300), feature: "generate-advert",
+        distinctId: (body as any).userId ?? null,
+      });
       if (aiResp.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded — please try again shortly." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       if (aiResp.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       return new Response(JSON.stringify({ error: "AI generation failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -108,6 +118,17 @@ Generate the three advert versions now. Call valu8_advert.`;
     const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall?.function?.arguments) throw new Error("AI did not return advert");
     const advert = JSON.parse(toolCall.function.arguments);
+
+    capturePosthogAiGeneration({
+      model: aiModel, latencyMs: aiLatency, httpStatus: 200,
+      inputTokens: data?.usage?.prompt_tokens,
+      outputTokens: data?.usage?.completion_tokens,
+      totalTokens: data?.usage?.total_tokens,
+      feature: "generate-advert",
+      distinctId: (body as any).userId ?? null,
+      extra: { make: body.make, model: body.model, year: body.year },
+    });
+
 
     return new Response(JSON.stringify({ advert }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,

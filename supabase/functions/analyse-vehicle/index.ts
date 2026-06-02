@@ -4,6 +4,8 @@
 // based on photos, mileage, history, MOT advisories and modifications.
 
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { capturePosthogAiGeneration } from "../_shared/posthog.ts";
+
 
 // ----- MarketCheck UK live pricing -----
 const MC_KEY = Deno.env.get("MARKETCHECK_API_KEY");
@@ -854,11 +856,13 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       ...photoUrls.map((url) => ({ type: "image_url", image_url: { url } })),
     ];
 
+    const aiStart = Date.now();
+    const aiModel = "google/gemini-2.5-pro";
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: aiModel,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userContent },
@@ -867,10 +871,16 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         tool_choice: { type: "function", function: { name: "valu8_report" } },
       }),
     });
+    const aiLatency = Date.now() - aiStart;
 
     if (!aiResp.ok) {
       const txt = await aiResp.text();
       console.error("AI gateway error:", aiResp.status, txt);
+      capturePosthogAiGeneration({
+        model: aiModel, latencyMs: aiLatency, httpStatus: aiResp.status,
+        isError: true, errorMessage: txt.slice(0, 300), feature: "analyse-vehicle",
+        distinctId: (body as any).userId ?? null,
+      });
       const message = aiResp.status === 429
         ? "AI service is busy right now — please try again in a moment."
         : aiResp.status === 402
@@ -883,11 +893,21 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     }
 
     const aiData = await aiResp.json();
+    capturePosthogAiGeneration({
+      model: aiModel, latencyMs: aiLatency, httpStatus: 200,
+      inputTokens: aiData?.usage?.prompt_tokens,
+      outputTokens: aiData?.usage?.completion_tokens,
+      totalTokens: aiData?.usage?.total_tokens,
+      feature: "analyse-vehicle",
+      distinctId: (body as any).userId ?? null,
+      extra: { make: body.make, model: body.model, year: body.year, photoCount: photoUrls.length },
+    });
     const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall?.function?.arguments) {
       console.error("No tool call in AI response", JSON.stringify(aiData));
       throw new Error("AI did not return a structured report");
     }
+
     const ai = JSON.parse(toolCall.function.arguments) as {
       conditionScore: number;
       conditionLabel: string;
