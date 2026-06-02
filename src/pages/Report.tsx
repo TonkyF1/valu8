@@ -354,27 +354,40 @@ export default function Report() {
         <section className="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-6">
           {/* Headline private sale price */}
           <div className="lg:col-span-3 premium-card p-5 sm:p-6 relative overflow-hidden border-primary/30">
-            <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.06] blur-3xl pointer-events-none" />
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{valuationUnavailable ? "Valuation status" : "Your Realistic Private Sale Price"}</span>
-              {showSpecialistBadge ? (
-                <span className="text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30">
-                  Specialist Valuation Applied
-                </span>
-              ) : (
-                <span className={cn(
-                  "text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border",
-                  liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
-                  liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
-                  liveTier === "Low" && "text-muted-foreground bg-muted/40 border-border",
-                )}>
-                  {liveTier} confidence
-                </span>
+            <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.08] blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-32 -left-20 w-64 h-64 rounded-full bg-primary/[0.04] blur-3xl pointer-events-none" />
+
+            {/* Eyebrow + confidence pill */}
+            <div className="flex items-center justify-between gap-2 mb-3 flex-wrap relative">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
+                {valuationUnavailable ? "Valuation status" : "Realistic Private Sale Price"}
+              </span>
+              {!valuationUnavailable && (
+                showSpecialistBadge ? (
+                  <span className="inline-flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] px-2.5 py-1 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
+                    <ShieldCheck className="h-3 w-3" /> Specialist applied
+                  </span>
+                ) : (
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] px-2.5 py-1 rounded-full border font-semibold",
+                    liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
+                    liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
+                    liveTier === "Low" && "text-muted-foreground bg-muted/40 border-border",
+                  )}>
+                    <span className={cn(
+                      "h-1.5 w-1.5 rounded-full",
+                      liveTier === "High" && "bg-primary animate-pulse",
+                      liveTier === "Medium" && "bg-amber-400",
+                      liveTier === "Low" && "bg-muted-foreground",
+                    )} /> {liveTier} confidence
+                  </span>
+                )
               )}
             </div>
+
             {valuationUnavailable ? (
-              <div className="max-w-xl">
-                <div className="text-2xl sm:text-3xl font-semibold leading-tight text-foreground">
+              <div className="max-w-xl relative">
+                <div className="text-2xl sm:text-3xl font-semibold leading-tight text-foreground tracking-tight">
                   Unable to value accurately
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed mt-3">
@@ -382,24 +395,46 @@ export default function Report() {
                 </p>
               </div>
             ) : (
-              <>
-                <div className="text-4xl sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-none">
+              <div className="relative">
+                {/* Headline price — bigger, tighter, more Apple */}
+                <div className="text-5xl sm:text-6xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight">
                   <CountUp value={r.values.privateSale} prefix="£" />
                 </div>
-                <p className="text-sm text-muted-foreground mt-2 max-w-[44ch]">
-                  This is what you can realistically expect to sell for privately in the current UK market.
+                <p className="text-sm sm:text-[15px] text-foreground/80 mt-3 max-w-[44ch] leading-relaxed">
+                  What you can realistically achieve selling privately in today's UK market.
                 </p>
-                {showSpecialistBadge && specialistExplanation && (
-                  <p className="text-xs text-muted-foreground/85 mt-2 max-w-[48ch] leading-relaxed">
-                    {specialistExplanation}
-                  </p>
-                )}
+
+                {/* Live data ticker */}
                 {liveCount != null && liveCount > 0 && (
-                  <div className="text-xs text-muted-foreground/80 mt-1">
-                    Based on {liveCount.toLocaleString()} similar cars listed in the UK right now
+                  <div className="mt-2.5 inline-flex items-center gap-2 text-[11.5px] text-muted-foreground/90">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inset-0 rounded-full bg-primary opacity-75 animate-ping" />
+                        <span className="relative h-1.5 w-1.5 rounded-full bg-primary" />
+                      </span>
+                      <span className="font-medium text-foreground/85 tabular-nums">{liveCount.toLocaleString()}</span>
+                      <span>comparable cars listed live in the UK</span>
+                    </span>
                   </div>
                 )}
-              </>
+
+                {/* Specialist Valuation callout — proper trust block, not a footnote */}
+                {showSpecialistBadge && specialistExplanation && (
+                  <div className="mt-4 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.08] to-primary/[0.02] px-4 py-3 flex gap-3">
+                    <div className="shrink-0 h-7 w-7 rounded-lg bg-primary/15 border border-primary/30 grid place-items-center mt-0.5">
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10.5px] uppercase tracking-[0.16em] text-primary font-semibold mb-1">
+                        Specialist Valuation Applied
+                      </div>
+                      <p className="text-[12.5px] leading-[1.55] text-foreground/85">
+                        {specialistExplanation}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             {r.rareCarWarning && (
               <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2 text-[11px] sm:text-xs text-amber-200/90 leading-relaxed">
@@ -454,32 +489,78 @@ export default function Report() {
               </div>
             )}
 
-            {/* Suggested Asking Price — range with honest context */}
-            {!valuationUnavailable && (
-              <div className="mt-5 rounded-xl border border-primary/30 bg-primary/[0.05] px-4 py-3.5">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-medium mb-1">Suggested Asking Price</div>
-                {(() => {
-                  const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  // Wider, more honest range: ~±3.5% of the asking figure, minimum £500 spread.
-                  const spread = Math.max(500, Math.round(base * 0.035 / 50) * 50);
-                  const rangeLow = Math.round((base - spread) / 50) * 50;
-                  const rangeHigh = Math.round((base + spread) / 50) * 50;
-                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
-                  const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
-                  const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
-                  return (
-                    <>
-                      <div className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none">
-                        £{rangeLow.toLocaleString()} – £{rangeHigh.toLocaleString()}
+            {/* Suggested Asking Price — with visual price band */}
+            {!valuationUnavailable && (() => {
+              const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
+              const spread = Math.max(500, Math.round(base * 0.035 / 50) * 50);
+              const rangeLow = Math.round((base - spread) / 50) * 50;
+              const rangeHigh = Math.round((base + spread) / 50) * 50;
+              const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
+              const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
+              const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
+              // Build the visual band — extend slightly past market bounds for breathing room
+              const trackLow = Math.min(marketLow, rangeLow) - Math.max(200, spread * 0.4);
+              const trackHigh = Math.max(marketHigh, rangeHigh) + Math.max(200, spread * 0.4);
+              const trackSpan = Math.max(1, trackHigh - trackLow);
+              const pct = (v: number) => Math.max(0, Math.min(100, ((v - trackLow) / trackSpan) * 100));
+              const askLeft = pct(rangeLow);
+              const askWidth = Math.max(6, pct(rangeHigh) - askLeft);
+              const marketLeft = pct(marketLow);
+              const marketWidth = Math.max(4, pct(marketHigh) - marketLeft);
+              const valLeft = pct(r.values.privateSale);
+              return (
+                <div className="mt-5 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.07] to-transparent px-4 py-4">
+                  <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-semibold">Suggested Asking Price</span>
+                    <span className="text-[10px] tabular-nums text-muted-foreground">Negotiation buffer ~£{buffer.toLocaleString()}</span>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none tracking-tight">
+                    £{rangeLow.toLocaleString()} – £{rangeHigh.toLocaleString()}
+                  </div>
+
+                  {/* Price band visualization */}
+                  <div className="mt-5 mb-1">
+                    <div className="relative h-9">
+                      {/* base track */}
+                      <div className="absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2 rounded-full bg-muted/40" />
+                      {/* market range */}
+                      <div
+                        className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-muted-foreground/30"
+                        style={{ left: `${marketLeft}%`, width: `${marketWidth}%` }}
+                        aria-label="Live market range"
+                      />
+                      {/* asking range */}
+                      <div
+                        className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary/70 to-primary shadow-[0_0_12px_hsl(176_100%_42%_/_0.5)]"
+                        style={{ left: `${askLeft}%`, width: `${askWidth}%` }}
+                        aria-label="Your suggested asking range"
+                      />
+                      {/* realistic sale marker */}
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
+                        style={{ left: `${valLeft}%` }}
+                      >
+                        <span className="h-3.5 w-3.5 rounded-full bg-background border-2 border-primary shadow-[0_0_0_3px_hsl(176_100%_42%_/_0.18)]" />
                       </div>
-                      <p className="text-[12px] text-muted-foreground mt-2 leading-relaxed max-w-[44ch]">
-                        Where you land in this range depends on your photos, history file and how quickly you need to sell. Expect serious buyers to negotiate £{buffer.toLocaleString()}–£{Math.round(buffer * 1.5 / 50) * 50} off. Comparable cars are currently asking £{marketLow.toLocaleString()} – £{marketHigh.toLocaleString()}.
-                      </p>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
+                    </div>
+                    <div className="flex items-center justify-between mt-1.5 text-[10px] tabular-nums text-muted-foreground/80">
+                      <span>£{Math.round(trackLow / 100) * 100 >= 1000 ? `${Math.round(trackLow / 100) * 100 / 1000}k` : Math.round(trackLow / 100) * 100}</span>
+                      <span>£{Math.round(trackHigh / 100) * 100 >= 1000 ? `${Math.round(trackHigh / 100) * 100 / 1000}k` : Math.round(trackHigh / 100) * 100}</span>
+                    </div>
+                    {/* Legend */}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10.5px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-primary" /> Ask range</span>
+                      <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-muted-foreground/40" /> Live market</span>
+                      <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full border-2 border-primary bg-background" /> Realistic sale</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[12px] text-muted-foreground mt-3 leading-relaxed max-w-[48ch]">
+                    Where you land depends on photos, history file and how quickly you need to sell. Comparable UK cars are asking between <span className="tabular-nums text-foreground/85">£{marketLow.toLocaleString()}</span> and <span className="tabular-nums text-foreground/85">£{marketHigh.toLocaleString()}</span>.
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* Pro Tip — negotiation guidance */}
             {!valuationUnavailable && (
