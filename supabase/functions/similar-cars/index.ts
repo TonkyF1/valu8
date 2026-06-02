@@ -251,14 +251,14 @@ Return ONLY a JSON object: { "listings": Listing[] }.`;
     const withImages = await Promise.all(
       listings.map(async (l) => {
         const url = await ensureCachedImage(l);
-        const fallback = `https://source.unsplash.com/featured/800x500/?${encodeURIComponent(
+        const fb = `https://source.unsplash.com/featured/800x500/?${encodeURIComponent(
           `${l.colour || ""} ${l.make} ${l.model} car`.trim()
         )}`;
-        return { ...l, imageUrl: url || fallback, imageFallbackUrl: fallback };
+        return { ...l, imageUrl: url || fb, imageFallbackUrl: fb };
       })
     );
 
-    return json({ listings: withImages });
+    return json({ listings: withImages, fallback });
   } catch (err) {
     console.error(err);
     return json({ error: (err as Error).message }, 500);
