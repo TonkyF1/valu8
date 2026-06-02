@@ -7,6 +7,7 @@ import { ConfirmProvider } from "@/components/ConfirmDialog";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ReportErrorBoundary } from "@/components/ReportErrorBoundary";
+import { PostHogTracker } from "@/components/PostHogTracker";
 import NewValuation from "./pages/NewValuation";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -30,6 +31,7 @@ const App = () => (
       <Sonner theme="dark" />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
+          <PostHogTracker />
           <Routes>
             <Route path="/" element={<NewValuation />} />
             <Route path="/auth" element={<Auth />} />
