@@ -242,6 +242,9 @@ export default function Report() {
               </span>
             )}
           </div>
+          <p className="mt-3 text-[11px] text-muted-foreground max-w-[60ch]">
+            Guidance only — this is an AI-assisted estimate, not a regulated valuation or financial advice.
+          </p>
         </div>
 
         {/* Quick Summary — confident verdict + scannable bullets + trust strip */}
