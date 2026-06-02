@@ -354,27 +354,40 @@ export default function Report() {
         <section className="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-6">
           {/* Headline private sale price */}
           <div className="lg:col-span-3 premium-card p-5 sm:p-6 relative overflow-hidden border-primary/30">
-            <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.06] blur-3xl pointer-events-none" />
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{valuationUnavailable ? "Valuation status" : "Your Realistic Private Sale Price"}</span>
-              {showSpecialistBadge ? (
-                <span className="text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30">
-                  Specialist Valuation Applied
-                </span>
-              ) : (
-                <span className={cn(
-                  "text-[9px] uppercase tracking-[0.16em] px-2 py-0.5 rounded-full border",
-                  liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
-                  liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
-                  liveTier === "Low" && "text-muted-foreground bg-muted/40 border-border",
-                )}>
-                  {liveTier} confidence
-                </span>
+            <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.08] blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-32 -left-20 w-64 h-64 rounded-full bg-primary/[0.04] blur-3xl pointer-events-none" />
+
+            {/* Eyebrow + confidence pill */}
+            <div className="flex items-center justify-between gap-2 mb-3 flex-wrap relative">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
+                {valuationUnavailable ? "Valuation status" : "Realistic Private Sale Price"}
+              </span>
+              {!valuationUnavailable && (
+                showSpecialistBadge ? (
+                  <span className="inline-flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] px-2.5 py-1 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
+                    <ShieldCheck className="h-3 w-3" /> Specialist applied
+                  </span>
+                ) : (
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] px-2.5 py-1 rounded-full border font-semibold",
+                    liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
+                    liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
+                    liveTier === "Low" && "text-muted-foreground bg-muted/40 border-border",
+                  )}>
+                    <span className={cn(
+                      "h-1.5 w-1.5 rounded-full",
+                      liveTier === "High" && "bg-primary animate-pulse",
+                      liveTier === "Medium" && "bg-amber-400",
+                      liveTier === "Low" && "bg-muted-foreground",
+                    )} /> {liveTier} confidence
+                  </span>
+                )
               )}
             </div>
+
             {valuationUnavailable ? (
-              <div className="max-w-xl">
-                <div className="text-2xl sm:text-3xl font-semibold leading-tight text-foreground">
+              <div className="max-w-xl relative">
+                <div className="text-2xl sm:text-3xl font-semibold leading-tight text-foreground tracking-tight">
                   Unable to value accurately
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed mt-3">
@@ -382,24 +395,46 @@ export default function Report() {
                 </p>
               </div>
             ) : (
-              <>
-                <div className="text-4xl sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-none">
+              <div className="relative">
+                {/* Headline price — bigger, tighter, more Apple */}
+                <div className="text-5xl sm:text-6xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight">
                   <CountUp value={r.values.privateSale} prefix="£" />
                 </div>
-                <p className="text-sm text-muted-foreground mt-2 max-w-[44ch]">
-                  This is what you can realistically expect to sell for privately in the current UK market.
+                <p className="text-sm sm:text-[15px] text-foreground/80 mt-3 max-w-[44ch] leading-relaxed">
+                  What you can realistically achieve selling privately in today's UK market.
                 </p>
-                {showSpecialistBadge && specialistExplanation && (
-                  <p className="text-xs text-muted-foreground/85 mt-2 max-w-[48ch] leading-relaxed">
-                    {specialistExplanation}
-                  </p>
-                )}
+
+                {/* Live data ticker */}
                 {liveCount != null && liveCount > 0 && (
-                  <div className="text-xs text-muted-foreground/80 mt-1">
-                    Based on {liveCount.toLocaleString()} similar cars listed in the UK right now
+                  <div className="mt-2.5 inline-flex items-center gap-2 text-[11.5px] text-muted-foreground/90">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inset-0 rounded-full bg-primary opacity-75 animate-ping" />
+                        <span className="relative h-1.5 w-1.5 rounded-full bg-primary" />
+                      </span>
+                      <span className="font-medium text-foreground/85 tabular-nums">{liveCount.toLocaleString()}</span>
+                      <span>comparable cars listed live in the UK</span>
+                    </span>
                   </div>
                 )}
-              </>
+
+                {/* Specialist Valuation callout — proper trust block, not a footnote */}
+                {showSpecialistBadge && specialistExplanation && (
+                  <div className="mt-4 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.08] to-primary/[0.02] px-4 py-3 flex gap-3">
+                    <div className="shrink-0 h-7 w-7 rounded-lg bg-primary/15 border border-primary/30 grid place-items-center mt-0.5">
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10.5px] uppercase tracking-[0.16em] text-primary font-semibold mb-1">
+                        Specialist Valuation Applied
+                      </div>
+                      <p className="text-[12.5px] leading-[1.55] text-foreground/85">
+                        {specialistExplanation}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             {r.rareCarWarning && (
               <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2 text-[11px] sm:text-xs text-amber-200/90 leading-relaxed">
