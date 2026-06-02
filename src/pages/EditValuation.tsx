@@ -20,7 +20,7 @@ import { ArrowLeft, RefreshCw, Save, Crown, X } from "lucide-react";
 export default function EditValuation() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { isPremium, loading: pLoading, setPremium } = useProfile();
+  const { loading: pLoading } = useProfile();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -192,35 +192,6 @@ export default function EditValuation() {
     );
   }
 
-  if (!isPremium) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <TestModeBanner />
-        <Header />
-        <main className="flex-1 container py-16 max-w-2xl">
-          <div className="premium-card p-10 text-center">
-            <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 grid place-items-center mb-4">
-              <Crown className="h-6 w-6 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold">Editing is a Premium feature</h1>
-            <p className="text-muted-foreground mt-3 max-w-md mx-auto">
-              Premium subscribers can update any saved valuation — change mileage, refresh photos, add new service history, then regenerate the report. The original is always kept.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
-              <Button variant="hero" size="lg" onClick={() => setPremium(true, "monthly")}>
-                <Crown className="h-4 w-4" /> Activate Premium (test)
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link to="/dashboard">Back to dashboard</Link>
-              </Button>
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-6">In production this would route to Stripe checkout. Test mode toggles instantly.</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col">

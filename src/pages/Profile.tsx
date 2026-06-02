@@ -252,14 +252,7 @@ export default function Profile() {
           </div>
         </section>
 
-        {/* Subscription & Billing */}
-        <SubscriptionBilling
-          isPremium={isPremium}
-          plan={profile?.plan ?? "monthly"}
-          email={user?.email ?? ""}
-          onUpgrade={(p) => setPremium(true, p)}
-          onCancel={() => setPremium(false, "free")}
-        />
+        {/* Subscription & Billing — temporarily removed; all features free during launch */}
 
         {/* Danger zone */}
         <section className="rounded-2xl border border-destructive/30 bg-destructive/[0.04] p-6 sm:p-7">
