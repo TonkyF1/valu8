@@ -183,8 +183,10 @@ export default function NewValuation() {
           serviceNotes: combinedNotes || undefined,
           photoUrls,
           photos: photos_labeled,
+          userId: user.id,
         },
       });
+
       if (aiErr) throw aiErr;
       if ((aiData as any)?.error) throw new Error((aiData as any).error);
       const report = (aiData as any)?.report;
