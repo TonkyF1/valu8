@@ -851,74 +851,86 @@ export default function Report() {
         </Section>
 
         {/* MOT history */}
-        <Section title="MOT History" right={
-          r.motSource === "dvsa" ? (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium rounded-full px-2.5 py-1 border text-primary bg-primary/5 border-primary/30">
-              Live DVSA data
-            </span>
-          ) : null
-        }>
-          {r.motNotice && r.motSource !== "dvsa" && (
-            <p className="text-xs text-muted-foreground mb-3">{r.motNotice}</p>
-          )}
-          {r.motHistory.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No prior MOT records (vehicle under 3 years old).</p>
-          ) : (
-            <>
-              <ol className="space-y-3">
-                {(showAllMot ? r.motHistory : r.motHistory.slice(0, 1)).map((m, i) => (
-                  <li key={i} className={cn(i > 0 && "pt-3 border-t border-border/40")}>
-                    <div className="flex items-baseline justify-between flex-wrap gap-x-3 gap-y-1">
-                      <div className="flex items-baseline gap-2.5">
-                        <span className={cn(
-                          "text-[11px] font-semibold uppercase tracking-wider",
-                          m.result === "Pass" ? "text-primary" : m.result === "Advisory" ? "text-amber-400" : "text-destructive"
-                        )}>{m.result}</span>
-                        <span className="font-medium text-sm">{format(new Date(m.date), "d MMM yyyy")}</span>
-                        {m.expiryDate && m.result !== "Fail" && (
-                          <span className="text-[11px] text-muted-foreground">· Expires {format(new Date(m.expiryDate), "d MMM yyyy")}</span>
+        {(() => {
+          const latest = r.motHistory?.[0];
+          const previewText = latest
+            ? `${latest.result} · ${format(new Date(latest.date), "d MMM yyyy")}${latest.mileage > 0 ? ` · ${latest.mileage.toLocaleString()} mi` : ""}`
+            : "No prior MOT records";
+          const hasFail = r.motHistory?.some((m: any) => m.result === "Fail");
+          return (
+            <CollapsibleSection
+              title="MOT History"
+              icon={FileCheck2}
+              defaultOpen={!!hasFail}
+              preview={previewText}
+              badge={
+                <>
+                  {r.motSource === "dvsa" && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium rounded-full px-2 py-0.5 border text-primary bg-primary/5 border-primary/30">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                      Live DVSA
+                    </span>
+                  )}
+                  {r.motHistory.length > 0 && (
+                    <span className="text-[10px] font-medium text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">
+                      {r.motHistory.length} {r.motHistory.length === 1 ? "test" : "tests"}
+                    </span>
+                  )}
+                </>
+              }
+            >
+              {r.motNotice && r.motSource !== "dvsa" && (
+                <p className="text-xs text-muted-foreground mb-3">{r.motNotice}</p>
+              )}
+              {r.motHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No prior MOT records (vehicle under 3 years old).</p>
+              ) : (
+                <ol className="space-y-3">
+                  {r.motHistory.map((m, i) => (
+                    <li key={i} className={cn(i > 0 && "pt-3 border-t border-border/40")}>
+                      <div className="flex items-baseline justify-between flex-wrap gap-x-3 gap-y-1">
+                        <div className="flex items-baseline gap-2.5">
+                          <span className={cn(
+                            "text-[11px] font-semibold uppercase tracking-wider",
+                            m.result === "Pass" ? "text-primary" : m.result === "Advisory" ? "text-amber-400" : "text-destructive"
+                          )}>{m.result}</span>
+                          <span className="font-medium text-sm">{format(new Date(m.date), "d MMM yyyy")}</span>
+                          {m.expiryDate && m.result !== "Fail" && (
+                            <span className="text-[11px] text-muted-foreground">· Expires {format(new Date(m.expiryDate), "d MMM yyyy")}</span>
+                          )}
+                        </div>
+                        {m.mileage > 0 && (
+                          <span className="text-xs text-muted-foreground tabular-nums">{m.mileage.toLocaleString()} mi</span>
                         )}
                       </div>
-                      {m.mileage > 0 && (
-                        <span className="text-xs text-muted-foreground tabular-nums">{m.mileage.toLocaleString()} mi</span>
+                      {(m.failures?.length ?? 0) > 0 && (
+                        <ul className="mt-1.5 space-y-0.5">
+                          {m.failures!.map((f, k) => (
+                            <li key={k} className="text-xs text-foreground/85 leading-snug">
+                              <span className="font-semibold uppercase tracking-wider text-destructive mr-1.5">Fail</span>{f}
+                            </li>
+                          ))}
+                        </ul>
                       )}
-                    </div>
-                    {(m.failures?.length ?? 0) > 0 && (
-                      <ul className="mt-1.5 space-y-0.5">
-                        {m.failures!.map((f, k) => (
-                          <li key={k} className="text-xs text-foreground/85 leading-snug">
-                            <span className="font-semibold uppercase tracking-wider text-destructive mr-1.5">Fail</span>{f}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {(m.advisories?.length ?? 0) > 0 && (
-                      <ul className="mt-1.5 space-y-0.5">
-                        {m.advisories!.map((a, k) => (
-                          <li key={k} className="text-xs text-foreground/85 leading-snug">
-                            <span className="font-semibold uppercase tracking-wider text-amber-400 mr-1.5">Advisory</span>{a}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {(!m.advisories || m.advisories.length === 0) && (!m.failures || m.failures.length === 0) && m.note && (
-                      <div className="text-xs text-muted-foreground mt-1">{m.note}</div>
-                    )}
-                  </li>
-                ))}
-              </ol>
-              {r.motHistory.length > 1 && (
-                <button
-                  onClick={() => setShowAllMot(s => !s)}
-                  className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-2 rounded-lg hover:bg-muted/30"
-                >
-                  {showAllMot ? "Show less" : `Show full MOT history (${r.motHistory.length - 1} more)`}
-                  <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showAllMot && "rotate-180")} />
-                </button>
+                      {(m.advisories?.length ?? 0) > 0 && (
+                        <ul className="mt-1.5 space-y-0.5">
+                          {m.advisories!.map((a, k) => (
+                            <li key={k} className="text-xs text-foreground/85 leading-snug">
+                              <span className="font-semibold uppercase tracking-wider text-amber-400 mr-1.5">Advisory</span>{a}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {(!m.advisories || m.advisories.length === 0) && (!m.failures || m.failures.length === 0) && m.note && (
+                        <div className="text-xs text-muted-foreground mt-1">{m.note}</div>
+                      )}
+                    </li>
+                  ))}
+                </ol>
               )}
-            </>
-          )}
-        </Section>
+            </CollapsibleSection>
+          );
+        })()}
 
         {!valuationUnavailable && (
           <>
