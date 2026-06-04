@@ -15,6 +15,7 @@ interface Listing {
   imageUrl?: string;
   imageFallbackUrl?: string;
   location?: string;
+  relevance?: "very-similar" | "good-match" | "broad";
 }
 
 interface Props {
