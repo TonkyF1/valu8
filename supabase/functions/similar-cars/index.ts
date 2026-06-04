@@ -26,6 +26,7 @@ interface Listing {
   imageUrl?: string;
   imageFallbackUrl?: string;
   location?: string;
+  relevance?: "very-similar" | "good-match" | "broad";
 }
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
@@ -130,7 +131,7 @@ Deno.serve(async (req) => {
             .split(/\s+/)
             .filter((w) => w.length > 1);
 
-          const scored = items
+          const allScored = items
             .filter((it) => it?.price && it?.build?.year && it?.miles)
             .map((it) => {
               const year = Number(it.build.year);
@@ -138,18 +139,28 @@ Deno.serve(async (req) => {
               const trim = String(it.build.trim || it.heading || "").toLowerCase();
               const yearDelta = Math.abs(year - body.year);
               const mileDelta = Math.abs(miles - body.mileage);
+              const milePct = body.mileage > 0 ? mileDelta / body.mileage : 1;
               const trimHits = variantWords.filter((w) => trim.includes(w)).length;
-              const variantBonus = variantWords.length
-                ? (trimHits / variantWords.length) * 30000
-                : 0;
-              // Lower = better. Weight: 1yr ≈ 7,500 miles.
+              const trimScore = variantWords.length ? trimHits / variantWords.length : 1;
+              const variantBonus = trimScore * 30000;
               const score = yearDelta * 7500 + mileDelta - variantBonus;
-              return { it, score };
-            })
-            .sort((a, b) => a.score - b.score)
-            .slice(0, 6);
 
-          listings = scored.map(({ it }): Listing => ({
+              let relevance: "very-similar" | "good-match" | "broad" = "broad";
+              if (yearDelta <= 2 && milePct <= 0.15 && trimScore >= 0.5) {
+                relevance = "very-similar";
+              } else if (yearDelta <= 4 && milePct <= 0.35) {
+                relevance = "good-match";
+              }
+              return { it, score, relevance };
+            })
+            .sort((a, b) => a.score - b.score);
+
+          const tier1 = allScored.filter((s) => s.relevance === "very-similar");
+          const tier2 = allScored.filter((s) => s.relevance === "good-match");
+          const tier3 = allScored.filter((s) => s.relevance === "broad");
+          const scored = [...tier1, ...tier2, ...tier3].slice(0, 6);
+
+          listings = scored.map(({ it, relevance }): Listing => ({
             title: it.heading || `${it.build.year} ${it.build.make} ${it.build.model}`,
             year: Number(it.build.year),
             make: String(it.build.make || body.make),
@@ -161,6 +172,7 @@ Deno.serve(async (req) => {
             source: it.source || "MarketCheck",
             url: it.vdp_url || undefined,
             location: it.dealer?.city || it.dealer?.county || undefined,
+            relevance,
           }));
         } else {
           console.error("MarketCheck error", mcResp.status, (await mcResp.text()).slice(0, 200));
