@@ -826,12 +826,22 @@ Deno.serve(async (req) => {
     const totalAdvisoryCount = latestAdvisories.length;
 
     // Build a mileage-weighted anchor from the actual live listings.
+    // Use a fully deterministic sort so identical inputs yield identical anchors
+    // even when MarketCheck returns the same listings in a different order.
     const allListings = mc?.listings ?? [];
-    const sortedByMileageDistance = [...allListings].sort(
-      (a, b) => Math.abs(a.mileage - body.mileage) - Math.abs(b.mileage - body.mileage),
-    );
+    const sortedByMileageDistance = [...allListings].sort((a, b) => {
+      const da = Math.abs(a.mileage - body.mileage);
+      const db = Math.abs(b.mileage - body.mileage);
+      if (da !== db) return da - db;
+      if (a.price !== b.price) return a.price - b.price;
+      if (a.year !== b.year) return a.year - b.year;
+      return (a.url ?? "").localeCompare(b.url ?? "");
+    });
     const anchorSubset = sortedByMileageDistance.slice(0, Math.min(10, allListings.length));
-    const anchorMedian = anchorSubset.length >= 3 ? median(anchorSubset.map((l) => l.price)) : (mc?.median ?? 0);
+    const anchorMedianRaw = anchorSubset.length >= 3 ? median(anchorSubset.map((l) => l.price)) : (mc?.median ?? 0);
+    // Round the anchor to a stable grain so small price wobbles in the sample
+    // (one listing changing by £200) don't bleed into the final valuation.
+    const anchorMedian = anchorMedianRaw > 0 ? roundToGrain(anchorMedianRaw) : 0;
     const exampleListings = sortedByMileageDistance.slice(0, 3);
 
     const examplesText = exampleListings.length
