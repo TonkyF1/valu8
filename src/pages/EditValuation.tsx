@@ -73,7 +73,7 @@ export default function EditValuation() {
 
   async function uploadNewPhotos(): Promise<string[]> {
     if (!user) return [];
-    const urls: string[] = [];
+    const paths: string[] = [];
     for (const p of newPhotos) {
       const ext = p.file.name.split(".").pop() || "jpg";
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
@@ -81,10 +81,9 @@ export default function EditValuation() {
         contentType: p.file.type, upsert: false,
       });
       if (error) throw error;
-      const { data } = supabase.storage.from("vehicle-photos").getPublicUrl(path);
-      urls.push(data.publicUrl);
+      paths.push(path);
     }
-    return urls;
+    return paths;
   }
 
   const composedModel = variant.trim() ? `${model} · ${variant.trim()}` : model;

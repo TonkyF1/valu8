@@ -139,7 +139,7 @@ export default function NewValuation() {
       has_registration: !!(lookup?.registration || reg),
     });
     try {
-      const photoUrls: string[] = [];
+      const photoUrls: string[] = []; // now stores storage PATHS (private bucket)
       const photos_labeled: { slot: string; url: string }[] = [];
       for (let i = 0; i < photos.length; i++) {
         const p = photos[i];
@@ -149,9 +149,8 @@ export default function NewValuation() {
           contentType: p.file.type, upsert: false,
         });
         if (error) throw error;
-        const { data } = supabase.storage.from("vehicle-photos").getPublicUrl(path);
-        photoUrls.push(data.publicUrl);
-        photos_labeled.push({ slot: p.key, url: data.publicUrl });
+        photoUrls.push(path);
+        photos_labeled.push({ slot: p.key, url: path });
         setUploadProgress(Math.round(((i + 1) / photos.length) * 100));
       }
       if (photos.length > 0) {
