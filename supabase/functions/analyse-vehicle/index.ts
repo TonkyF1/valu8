@@ -106,6 +106,11 @@ async function fetchMarketCheckPricing(
     params.set("rows", "20");
     params.set("stats", "price,miles");
     params.set("car_type", "used");
+    // Stable ordering — without this MarketCheck returns relevance/freshness
+    // order which shuffles between calls and makes the anchor wobble even with
+    // identical inputs. Sorting by miles ascending gives a deterministic slice.
+    params.set("sort_by", "miles");
+    params.set("sort_order", "asc");
     const url = `https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`;
     try {
       const r = await fetch(url);
@@ -624,6 +629,35 @@ function hash(s: string) {
   return Math.abs(h);
 }
 
+// Stable fingerprint of every input that should change the valuation.
+// Normalise whitespace/case so cosmetic edits to service notes don't bust the lock.
+export function computeInputsHash(input: {
+  make: string;
+  model: string;
+  variant?: string;
+  year: number;
+  mileage: number;
+  registration?: string;
+  motExpiry?: string;
+  serviceNotes?: string;
+  photoRefs: string[];
+}): string {
+  const norm = (s: string | undefined | null) => (s ?? "").toString().trim().toLowerCase().replace(/\s+/g, " ");
+  const photos = [...(input.photoRefs ?? [])].map(norm).sort().join("|");
+  const payload = [
+    norm(input.make),
+    norm(input.model),
+    norm(input.variant),
+    String(input.year ?? ""),
+    String(input.mileage ?? ""),
+    norm(input.registration),
+    norm(input.motExpiry),
+    norm(input.serviceNotes),
+    photos,
+  ].join("::");
+  return hash(payload).toString(36);
+}
+
 const SYSTEM_PROMPT = `You are a senior UK car valuer who advises PRIVATE sellers — not dealers. You speak clearly, plainly, and with the confidence of someone who values cars every day.
 
 YOUR JOB: produce a REALISTIC private-sale figure that a well-presented car can genuinely achieve within 3–4 weeks. Not the rock-bottom trade figure. Not the optimistic dealer-asking screenshot. The honest mid-point of what private buyers actually pay for a car of this exact condition, history and spec.
@@ -821,12 +855,22 @@ Deno.serve(async (req) => {
     const totalAdvisoryCount = latestAdvisories.length;
 
     // Build a mileage-weighted anchor from the actual live listings.
+    // Use a fully deterministic sort so identical inputs yield identical anchors
+    // even when MarketCheck returns the same listings in a different order.
     const allListings = mc?.listings ?? [];
-    const sortedByMileageDistance = [...allListings].sort(
-      (a, b) => Math.abs(a.mileage - body.mileage) - Math.abs(b.mileage - body.mileage),
-    );
+    const sortedByMileageDistance = [...allListings].sort((a, b) => {
+      const da = Math.abs(a.mileage - body.mileage);
+      const db = Math.abs(b.mileage - body.mileage);
+      if (da !== db) return da - db;
+      if (a.price !== b.price) return a.price - b.price;
+      if (a.year !== b.year) return a.year - b.year;
+      return (a.url ?? "").localeCompare(b.url ?? "");
+    });
     const anchorSubset = sortedByMileageDistance.slice(0, Math.min(10, allListings.length));
-    const anchorMedian = anchorSubset.length >= 3 ? median(anchorSubset.map((l) => l.price)) : (mc?.median ?? 0);
+    const anchorMedianRaw = anchorSubset.length >= 3 ? median(anchorSubset.map((l) => l.price)) : (mc?.median ?? 0);
+    // Round the anchor to a stable grain so small price wobbles in the sample
+    // (one listing changing by £200) don't bleed into the final valuation.
+    const anchorMedian = anchorMedianRaw > 0 ? roundToGrain(anchorMedianRaw) : 0;
     const exampleListings = sortedByMileageDistance.slice(0, 3);
 
     const examplesText = exampleListings.length
@@ -903,6 +947,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         ],
         tools: [TOOL],
         tool_choice: { type: "function", function: { name: "valu8_report" } },
+        // Determinism: same inputs -> same output. Gemini honours all three.
+        temperature: 0,
+        top_p: 0,
+        seed,
       }),
     });
     const aiLatency = Date.now() - aiStart;
@@ -1351,6 +1399,18 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       motSource,
       motNotice,
       generatedAt: new Date().toISOString(),
+      engineVersion: "v2.1-deterministic",
+      inputsHash: computeInputsHash({
+        make: body.make,
+        model: body.model,
+        variant: body.variant,
+        year: body.year,
+        mileage: body.mileage,
+        registration: body.registration,
+        motExpiry: body.motExpiry,
+        serviceNotes: body.serviceNotes,
+        photoRefs: rawLabeled.map((p) => extractPhotoPath(p.ref) ?? p.ref),
+      }),
     };
 
     return new Response(JSON.stringify({ report }), {
