@@ -246,6 +246,11 @@ export default function Report() {
               </span>
             )}
           </div>
+          {(r as any).regenerationReason && (
+            <p className="mt-2 text-[11px] text-primary/80 max-w-[60ch]">
+              {(r as any).regenerationReason}
+            </p>
+          )}
           <p className="mt-3 text-[11px] text-muted-foreground max-w-[60ch]">
             Guidance only — this is an AI-assisted estimate, not a regulated valuation or financial advice.
           </p>
