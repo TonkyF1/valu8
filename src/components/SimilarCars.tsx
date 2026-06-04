@@ -81,6 +81,11 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
     el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: "smooth" });
   };
 
+  // Hide the entire section when we don't have enough trustworthy data.
+  if (!loading && (error || !listings || listings.length < 3)) {
+    return null;
+  }
+
   return (
     <section className="mb-8 animate-fade-in-up">
       <div className="flex items-end justify-between mb-4 gap-3 flex-wrap">
@@ -128,33 +133,8 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
         </div>
       )}
 
-      {!loading && error && (
-        <div className="rounded-2xl border border-border/50 bg-card/50 p-6 text-sm text-muted-foreground">
-          Couldn't load similar listings right now.
-        </div>
-      )}
-
-      {!loading && !error && listings && listings.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-border/60 bg-card/40 p-8 text-center">
-          <Info className="h-6 w-6 text-muted-foreground/70 mx-auto mb-3" />
-          <p className="text-sm font-medium">No exact matches right now</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            We couldn't find live listings for this exact spec. Try again later — the UK market refreshes constantly.
-          </p>
-        </div>
-      )}
-
-      {!loading && !error && listings && listings.length > 0 && (
+      {!loading && listings && listings.length >= 3 && (
         <>
-          {fallback && (
-            <div className="mb-3 rounded-xl border border-border/50 bg-card/40 px-4 py-2.5 text-xs text-muted-foreground flex items-start gap-2">
-              <Info className="h-3.5 w-3.5 mt-0.5 text-amber-400 flex-shrink-0" />
-              <span>
-                <span className="text-foreground">No exact matches right now</span> — showing the closest available comparables based on current UK market data.
-              </span>
-            </div>
-          )}
-
           <div
             ref={scrollerRef}
             className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-subtle pb-2 -mx-4 px-4 sm:mx-0 sm:px-0"
@@ -172,6 +152,13 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
                 : diff > 0
                 ? "text-emerald-400"
                 : "text-amber-400";
+
+              const relevanceMeta =
+                l.relevance === "very-similar"
+                  ? { label: "Very similar", cls: "bg-primary/15 text-primary border-primary/30" }
+                  : l.relevance === "good-match"
+                  ? { label: "Good match", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" }
+                  : null;
 
               return (
                 <a
@@ -211,6 +198,11 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
                     <span className={`absolute top-2.5 left-2.5 text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-full backdrop-blur-sm border ${badge.cls}`}>
                       {badge.label}
                     </span>
+                    {relevanceMeta && (
+                      <span className={`absolute bottom-2.5 left-2.5 text-[10px] font-medium px-2 py-1 rounded-full backdrop-blur-sm border ${relevanceMeta.cls}`}>
+                        {relevanceMeta.label}
+                      </span>
+                    )}
                     {l.url && (
                       <span className="absolute top-2.5 right-2.5 h-6 w-6 grid place-items-center rounded-full bg-background/80 backdrop-blur-sm border border-border/60 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                         <ExternalLink className="h-3 w-3" />
@@ -256,8 +248,9 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
         </>
       )}
       <p className="text-[10px] text-muted-foreground/60 mt-2">
-        Live comparables from UK marketplaces. Prices and availability change frequently.
+        Live market data from UK classifieds. Prices can change quickly.
       </p>
     </section>
   );
 }
+
