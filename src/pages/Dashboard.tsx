@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { signPhotoUrls } from "@/lib/photos";
 
 
 type SortKey = "newest" | "oldest" | "highest" | "lowest";
@@ -35,6 +36,7 @@ export default function Dashboard() {
   const { isPremium } = useProfile();
   const confirm = useConfirm();
   const [rows, setRows] = useState<Row[]>([]);
+  const [coverUrls, setCoverUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
@@ -46,7 +48,17 @@ export default function Dashboard() {
     supabase.from("valuations")
       .select("id,make,model,year,mileage,registration,condition_score,private_value,created_at,photo_urls,report")
       .order("created_at", { ascending: false })
-      .then(({ data }) => { setRows((data as any) || []); setLoading(false); });
+      .then(async ({ data }) => {
+        const list = (data as any[]) || [];
+        setRows(list as Row[]);
+        setLoading(false);
+        // Sign the first photo of each row in one batch for thumbnails.
+        const refs = list.map((r) => (Array.isArray(r.photo_urls) ? r.photo_urls[0] : null));
+        const signed = await signPhotoUrls(refs);
+        const map: Record<string, string> = {};
+        list.forEach((r, i) => { if (signed[i]) map[r.id] = signed[i]; });
+        setCoverUrls(map);
+      });
   }, [user]);
 
   async function remove(id: string) {
@@ -236,7 +248,7 @@ export default function Dashboard() {
           return (
             <div className="grid gap-3">
               {list.map((r) => {
-                const cover = Array.isArray(r.photo_urls) ? r.photo_urls[0] : null;
+                const cover = coverUrls[r.id] || null;
                 const variant = (r as any).report?.variant || (r as any).variant;
                 const valuationUnavailable = !!r.report?.valuationUnavailable;
                 return (
