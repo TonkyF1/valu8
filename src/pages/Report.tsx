@@ -38,7 +38,7 @@ export default function Report() {
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
-  const [showAllMot, setShowAllMot] = useState(false);
+  const [showAllMot, _setShowAllMot] = useState(false); void showAllMot;
   const [showOldAdvisories, setShowOldAdvisories] = useState(false);
   const [liveCount, setLiveCount] = useState<number | null>(null);
 
