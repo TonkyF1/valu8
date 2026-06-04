@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import {
   Share2, Download, Check, ShieldCheck, AlertTriangle, ArrowLeft,
   Star, Pencil, ChevronDown, MoreHorizontal, Sparkles, Camera, TrendingUp, TrendingDown, Minus,
+  Megaphone, FileCheck2, Wrench,
 } from "lucide-react";
 
 import { toast } from "sonner";
