@@ -697,51 +697,65 @@ export default function Report() {
 
 
         {!valuationUnavailable && (
-          <section className="mb-6 animate-fade-in-up">
-            <div className="rounded-xl border border-border/50 bg-card/40 px-4 py-3 flex items-start gap-2.5">
-              <TrendingUp className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium mb-0.5">Market positioning</div>
-                <p className="text-sm leading-snug text-foreground/90">{r.marketPositioning}</p>
-              </div>
-            </div>
-          </section>
+          <CollapsibleSection
+            title="Market Positioning"
+            icon={TrendingUp}
+            preview={r.marketPositioning}
+          >
+            <p className="text-sm leading-relaxed text-foreground/90">{r.marketPositioning}</p>
+          </CollapsibleSection>
         )}
 
 
-        {/* Strengths + watch points — quieter borderless cards */}
-        {!valuationUnavailable && (
-          <section className="grid md:grid-cols-2 gap-3 mb-6">
-            <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Star className="h-3.5 w-3.5 text-primary" />
-                <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Strengths</h2>
-              </div>
-              <ul className="space-y-2">
-                {r.strengths.map(s => (
-                  <li key={s} className="flex gap-2.5 text-sm leading-snug">
-                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-2xl bg-card/50 border border-border/50 p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-                <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Watch Points</h2>
-              </div>
-              {(() => {
-                const latestMot = r.motHistory?.[0];
-                const currentAdvisories = latestMot?.advisories ?? [];
-                if (currentAdvisories.length === 0) {
-                  return (
-                    <div className="flex items-start gap-2.5 text-sm leading-snug">
-                      <Check className="h-4 w-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-emerald-300">No advisories on the latest MOT</span>
-                    </div>
-                  );
+        {/* Strengths + Watch Points — collapsible */}
+        {!valuationUnavailable && (() => {
+          const latestMot = r.motHistory?.[0];
+          const currentAdvisories = latestMot?.advisories ?? [];
+          return (
+            <>
+              <CollapsibleSection
+                title="Strengths"
+                icon={Star}
+                defaultOpen
+                badge={
+                  <span className="text-[10px] font-medium text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
+                    {r.strengths.length}
+                  </span>
                 }
-                return (
+                preview={r.strengths[0]}
+              >
+                <ul className="space-y-2">
+                  {r.strengths.map(s => (
+                    <li key={s} className="flex gap-2.5 text-sm leading-snug">
+                      <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> {s}
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title="Watch Points"
+                icon={AlertTriangle}
+                defaultOpen={currentAdvisories.length > 0}
+                badge={
+                  currentAdvisories.length > 0 ? (
+                    <span className="text-[10px] font-medium text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-full px-2 py-0.5">
+                      {currentAdvisories.length}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-medium text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 rounded-full px-2 py-0.5">
+                      Clean
+                    </span>
+                  )
+                }
+                preview={currentAdvisories.length > 0 ? currentAdvisories[0] : "No advisories on the latest MOT"}
+              >
+                {currentAdvisories.length === 0 ? (
+                  <div className="flex items-start gap-2.5 text-sm leading-snug">
+                    <Check className="h-4 w-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-emerald-300">No advisories on the latest MOT</span>
+                  </div>
+                ) : (
                   <div className="space-y-3">
                     <p className="text-[11px] text-muted-foreground">These are from the most recent MOT only</p>
                     <ul className="space-y-2">
@@ -752,11 +766,13 @@ export default function Report() {
                       ))}
                     </ul>
                   </div>
-                );
-              })()}
-            </div>
-          </section>
-        )}
+                )}
+              </CollapsibleSection>
+            </>
+          );
+        })()}
+
+
 
         {/* Previously Rectified Advisories */}
         {r.motHistory && r.motHistory.length > 1 && (() => {
