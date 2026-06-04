@@ -650,14 +650,19 @@ export default function Report() {
 
 
         {/* Honest analysis — max 2 bullets, punchy */}
-        <Section title="Honest Analysis">
-          {(() => {
-            const bullets = r.honestAnalysis
-              .split(/(?<=[.!?])\s+/)
-              .map(s => s.trim())
-              .filter(Boolean)
-              .slice(0, 2);
-            return (
+        {(() => {
+          const bullets = r.honestAnalysis
+            .split(/(?<=[.!?])\s+/)
+            .map(s => s.trim())
+            .filter(Boolean)
+            .slice(0, 2);
+          return (
+            <CollapsibleSection
+              title="Honest Analysis"
+              icon={Sparkles}
+              defaultOpen
+              preview={bullets[0]}
+            >
               <ul className="space-y-2">
                 {bullets.map((b, i) => (
                   <li key={i} className="flex gap-2.5 text-sm leading-snug text-foreground/90">
@@ -666,9 +671,9 @@ export default function Report() {
                   </li>
                 ))}
               </ul>
-            );
-          })()}
-        </Section>
+            </CollapsibleSection>
+          );
+        })()}
 
 
         {/* Per-photo AI feedback — our moat made visible */}
