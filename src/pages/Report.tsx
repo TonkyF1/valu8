@@ -959,6 +959,89 @@ function Section({ title, right, children }: { title: string; right?: React.Reac
   );
 }
 
+function CollapsibleSection({
+  title,
+  icon: Icon,
+  defaultOpen = false,
+  badge,
+  right,
+  preview,
+  children,
+}: {
+  title: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  defaultOpen?: boolean;
+  badge?: React.ReactNode;
+  right?: React.ReactNode;
+  preview?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="mb-4 animate-fade-in-up">
+      <div
+        className={cn(
+          "rounded-2xl border transition-all duration-300 overflow-hidden",
+          open
+            ? "border-primary/30 bg-card/70 shadow-[0_0_28px_-14px_hsl(var(--primary)/0.45)]"
+            : "border-border/50 bg-card/40 hover:bg-card/60 hover:border-border"
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          aria-expanded={open}
+          className="w-full flex items-center gap-3 px-5 sm:px-6 py-4 text-left group"
+        >
+          {Icon && (
+            <span
+              className={cn(
+                "h-8 w-8 rounded-lg grid place-items-center shrink-0 transition-all",
+                open ? "bg-primary/15 text-primary" : "bg-muted/40 text-muted-foreground group-hover:text-foreground"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+            </span>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2
+                className={cn(
+                  "text-sm font-medium uppercase tracking-[0.14em] transition-colors",
+                  open ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                )}
+              >
+                {title}
+              </h2>
+              {badge}
+            </div>
+            {preview && !open && (
+              <p className="text-xs text-muted-foreground/80 mt-1 line-clamp-1">{preview}</p>
+            )}
+          </div>
+          {right && <div className="mr-2">{right}</div>}
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 transition-all duration-300 shrink-0",
+              open ? "rotate-180 text-primary" : "text-muted-foreground group-hover:text-foreground"
+            )}
+          />
+        </button>
+        <div
+          className={cn(
+            "grid transition-all duration-300 ease-out",
+            open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          )}
+        >
+          <div className="overflow-hidden">
+            <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-1">{children}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function RecBlock({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
