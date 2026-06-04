@@ -816,13 +816,22 @@ export default function Report() {
 
         {/* Recommendations */}
         {!valuationUnavailable && (
-          <Section title="Seller Recommendations">
+          <CollapsibleSection
+            title="Seller Recommendations"
+            icon={Megaphone}
+            preview={`Where to sell, what to highlight, what to prepare`}
+            badge={
+              <span className="text-[10px] font-medium text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">
+                3 guides
+              </span>
+            }
+          >
             <div className="grid md:grid-cols-2 gap-6">
               <RecBlock title="Where to sell" items={r.recommendations.whereToSell} />
               <RecBlock title="What to highlight" items={r.recommendations.highlights} />
               <RecBlock title="Documents to prepare" items={r.recommendations.documents} />
             </div>
-          </Section>
+          </CollapsibleSection>
         )}
 
         {/* HPI */}
