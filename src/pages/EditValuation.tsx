@@ -16,7 +16,28 @@ import { getVariantsFor } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { toast } from "sonner";
 import { ArrowLeft, RefreshCw, Save, Crown, X } from "lucide-react";
-import { signPhotoUrls } from "@/lib/photos";
+import { signPhotoUrls, extractPhotoPath } from "@/lib/photos";
+
+type InputSnapshot = {
+  make: string; model: string; variant?: string; year: number; mileage: number;
+  registration?: string; motExpiry?: string; serviceNotes?: string; photoRefs: string[];
+};
+function describeInputChanges(prev: InputSnapshot, next: InputSnapshot): string[] {
+  const out: string[] = [];
+  const norm = (s: any) => (s ?? "").toString().trim().toLowerCase();
+  if (norm(prev.make) !== norm(next.make)) out.push("the make changed");
+  if (norm(prev.model) !== norm(next.model)) out.push("the model changed");
+  if (norm(prev.variant) !== norm(next.variant)) out.push("the variant changed");
+  if (Number(prev.year) !== Number(next.year)) out.push("the year changed");
+  if (Number(prev.mileage) !== Number(next.mileage)) out.push("the mileage changed");
+  if (norm(prev.registration) !== norm(next.registration)) out.push("the registration changed");
+  if (norm(prev.motExpiry) !== norm(next.motExpiry)) out.push("the MOT expiry changed");
+  if (norm(prev.serviceNotes) !== norm(next.serviceNotes)) out.push("the service notes changed");
+  const a = [...(prev.photoRefs ?? [])].map((p) => extractPhotoPath(p) ?? p).sort();
+  const b = [...(next.photoRefs ?? [])].map((p) => extractPhotoPath(p) ?? p).sort();
+  if (a.length !== b.length || a.some((v, i) => v !== b[i])) out.push("the photos changed");
+  return out;
+}
 
 export default function EditValuation() {
   const { id } = useParams<{ id: string }>();
