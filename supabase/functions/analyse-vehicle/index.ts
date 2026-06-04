@@ -106,6 +106,11 @@ async function fetchMarketCheckPricing(
     params.set("rows", "20");
     params.set("stats", "price,miles");
     params.set("car_type", "used");
+    // Stable ordering — without this MarketCheck returns relevance/freshness
+    // order which shuffles between calls and makes the anchor wobble even with
+    // identical inputs. Sorting by miles ascending gives a deterministic slice.
+    params.set("sort_by", "miles");
+    params.set("sort_order", "asc");
     const url = `https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`;
     try {
       const r = await fetch(url);
