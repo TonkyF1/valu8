@@ -25,6 +25,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { signPhotoUrls } from "@/lib/photos";
 
 interface Valuation {
   id: string; make: string; model: string; year: number; mileage: number;
@@ -45,10 +46,12 @@ export default function Report() {
   useEffect(() => {
     if (!id) return;
     supabase.from("valuations").select("*").eq("id", id).maybeSingle()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (data) {
-          const photo_urls = Array.isArray(data.photo_urls) ? data.photo_urls as string[] : [];
-          setV({ ...(data as any), photo_urls, report: data.report as unknown as ValuationReport });
+          const refs = Array.isArray(data.photo_urls) ? (data.photo_urls as string[]) : [];
+          // Refresh signed URLs on every load so photos always render even after expiry.
+          const signed = refs.length > 0 ? (await signPhotoUrls(refs)).filter(Boolean) : [];
+          setV({ ...(data as any), photo_urls: signed, report: data.report as unknown as ValuationReport });
           document.title = `${data.year} ${data.make} ${data.model} — Valu8`;
         }
         setLoading(false);
