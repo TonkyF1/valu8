@@ -4,7 +4,52 @@
 // based on photos, mileage, history, MOT advisories and modifications.
 
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { capturePosthogAiGeneration } from "../_shared/posthog.ts";
+
+const PHOTO_BUCKET = "vehicle-photos";
+// 1h is plenty — the AI vision call completes in seconds.
+const AI_PHOTO_EXPIRY_SECONDS = 60 * 60;
+
+function extractPhotoPath(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const v = String(value).trim();
+  if (!v) return null;
+  if (!v.startsWith("http")) return v.replace(/^\/+/, "");
+  try {
+    const u = new URL(v);
+    const marker = `/${PHOTO_BUCKET}/`;
+    const idx = u.pathname.indexOf(marker);
+    if (idx === -1) return null;
+    return decodeURIComponent(u.pathname.slice(idx + marker.length));
+  } catch {
+    return null;
+  }
+}
+
+async function signPhotoRefsForAi(refs: string[]): Promise<string[]> {
+  if (!refs.length) return [];
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!SUPABASE_URL || !SERVICE_ROLE) return refs; // best-effort fallback
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const paths = refs.map(extractPhotoPath);
+  const unique = Array.from(new Set(paths.filter((p): p is string => !!p)));
+  if (unique.length === 0) return refs.map(() => "");
+  const { data, error } = await admin.storage
+    .from(PHOTO_BUCKET)
+    .createSignedUrls(unique, AI_PHOTO_EXPIRY_SECONDS);
+  if (error || !data) {
+    console.error("Failed to sign vehicle photos for AI", error);
+    return refs.map(() => "");
+  }
+  const map = new Map<string, string>();
+  for (const item of data) {
+    if (item.path && item.signedUrl) map.set(item.path, item.signedUrl);
+  }
+  return paths.map((p) => (p ? map.get(p) ?? "" : ""));
+}
+
 
 
 // ----- MarketCheck UK live pricing -----
@@ -724,24 +769,29 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Build labeled photo list (slot + url). Prefer the new `photos` array,
-    // fall back to plain photoUrls (older clients) where slot is unknown.
-    const labeledPhotos: { slot: PhotoSlot; url: string }[] = (() => {
+    // Build labeled photo list (slot + ref). Accepts either storage paths
+    // (new private-bucket clients) or legacy public URLs. All refs are then
+    // signed via service-role for the AI vision call.
+    const rawLabeled: { slot: PhotoSlot; ref: string }[] = (() => {
       if (Array.isArray(body.photos) && body.photos.length > 0) {
         return body.photos
           .filter((p) => p && typeof p.url === "string" && p.url.length > 0)
           .slice(0, 6)
           .map((p) => ({
             slot: (VALID_SLOTS.includes(p.slot as PhotoSlot) ? p.slot : "other") as PhotoSlot,
-            url: p.url,
+            ref: p.url,
           }));
       }
       const guess: PhotoSlot[] = ["front", "rear", "side", "interior", "odometer", "engine"];
       return (body.photoUrls || []).slice(0, 6).map((url, i) => ({
         slot: guess[i] ?? "other",
-        url,
+        ref: url,
       }));
     })();
+    const signed = await signPhotoRefsForAi(rawLabeled.map((p) => p.ref));
+    const labeledPhotos: { slot: PhotoSlot; url: string }[] = rawLabeled
+      .map((p, i) => ({ slot: p.slot, url: signed[i] }))
+      .filter((p) => !!p.url);
     const photoUrls = labeledPhotos.map((p) => p.url);
 
     // Fetch MOT history + MarketCheck pricing in parallel BEFORE calling the AI,

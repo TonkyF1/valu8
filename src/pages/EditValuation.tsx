@@ -16,6 +16,7 @@ import { getVariantsFor } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { toast } from "sonner";
 import { ArrowLeft, RefreshCw, Save, Crown, X } from "lucide-react";
+import { signPhotoUrls } from "@/lib/photos";
 
 export default function EditValuation() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +41,7 @@ export default function EditValuation() {
   const [motExpiry, setMotExpiry] = useState("");
   const [serviceNotes, setServiceNotes] = useState("");
   const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
+  const [existingPhotoPreviews, setExistingPhotoPreviews] = useState<string[]>([]);
   const [newPhotos, setNewPhotos] = useState<PhotoFile[]>([]);
 
   const filteredMakes = CAR_MAKES.filter(m => m.toLowerCase().includes(makeQuery.toLowerCase()));
@@ -66,14 +68,16 @@ export default function EditValuation() {
       setRegistration(data.registration ?? "");
       setMotExpiry(data.mot_expiry ?? "");
       setServiceNotes(data.service_notes ?? "");
-      setExistingPhotos(Array.isArray(data.photo_urls) ? (data.photo_urls as unknown as string[]) : []);
+      const photos = Array.isArray(data.photo_urls) ? (data.photo_urls as unknown as string[]) : [];
+      setExistingPhotos(photos);
+      setExistingPhotoPreviews(await signPhotoUrls(photos));
       setLoading(false);
     })();
   }, [id, user, navigate]);
 
   async function uploadNewPhotos(): Promise<string[]> {
     if (!user) return [];
-    const urls: string[] = [];
+    const paths: string[] = [];
     for (const p of newPhotos) {
       const ext = p.file.name.split(".").pop() || "jpg";
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
@@ -81,10 +85,9 @@ export default function EditValuation() {
         contentType: p.file.type, upsert: false,
       });
       if (error) throw error;
-      const { data } = supabase.storage.from("vehicle-photos").getPublicUrl(path);
-      urls.push(data.publicUrl);
+      paths.push(path);
     }
-    return urls;
+    return paths;
   }
 
   const composedModel = variant.trim() ? `${model} · ${variant.trim()}` : model;
@@ -299,12 +302,15 @@ export default function EditValuation() {
               <p className="text-sm text-muted-foreground">No photos on this valuation yet.</p>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {existingPhotos.map((url, i) => (
-                  <div key={url} className="relative group aspect-[4/3] rounded-lg overflow-hidden border border-border">
-                    <img src={url} alt={`Photo ${i+1}`} className="w-full h-full object-cover" />
+                {existingPhotos.map((ref, i) => (
+                  <div key={ref} className="relative group aspect-[4/3] rounded-lg overflow-hidden border border-border">
+                    <img src={existingPhotoPreviews[i] || ""} alt={`Photo ${i+1}`} className="w-full h-full object-cover" />
                     <button
                       type="button"
-                      onClick={() => setExistingPhotos(p => p.filter(u => u !== url))}
+                      onClick={() => {
+                        setExistingPhotos(p => p.filter((u) => u !== ref));
+                        setExistingPhotoPreviews(p => p.filter((_, idx) => existingPhotos[idx] !== ref));
+                      }}
                       className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/90 border border-border grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
                       aria-label="Remove photo"
                     >
