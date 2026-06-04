@@ -1370,6 +1370,18 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       motSource,
       motNotice,
       generatedAt: new Date().toISOString(),
+      engineVersion: "v2.1-deterministic",
+      inputsHash: computeInputsHash({
+        make: body.make,
+        model: body.model,
+        variant: body.variant,
+        year: body.year,
+        mileage: body.mileage,
+        registration: body.registration,
+        motExpiry: body.motExpiry,
+        serviceNotes: body.serviceNotes,
+        photoRefs: rawLabeled.map((p) => extractPhotoPath(p.ref) ?? p.ref),
+      }),
     };
 
     return new Response(JSON.stringify({ report }), {
