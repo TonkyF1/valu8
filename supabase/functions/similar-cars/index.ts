@@ -26,6 +26,7 @@ interface Listing {
   imageUrl?: string;
   imageFallbackUrl?: string;
   location?: string;
+  relevance?: "very-similar" | "good-match" | "broad";
 }
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
