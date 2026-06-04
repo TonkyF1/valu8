@@ -944,13 +944,17 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const expectedMileage = age <= 0 ? 3000 : age * 8000;
     const mileageRatio = body.mileage / Math.max(expectedMileage, 1);
     const serviceText = `${body.serviceNotes ?? ""}`.toLowerCase();
-    const hasStrongHistory = /(full service history|fsh|main dealer|specialist|full history|complete service history)/i.test(serviceText);
-    const hasPartialHistory = /(partial|part service|patchy|some history|limited history)/i.test(serviceText);
-    const noHistory = /(no history|no service|missing history|no records)/i.test(serviceText);
+    const hasStrongHistory = /(full service history|fsh|main dealer|marque specialist|specialist serviced|full history|complete service history|every service|all stamps|stamped book)/i.test(serviceText);
+    const hasPartialHistory = /(partial|part service|patchy|some history|limited history|few stamps)/i.test(serviceText);
+    const noHistory = /(no history|no service history|missing history|no records|history lost)/i.test(serviceText);
+    // Recent major mechanical work — strong positive signal for private buyers
+    const recentMajorWork = /(cambelt|timing belt|timing chain|new clutch|clutch replaced|subframe|new turbo|turbo replaced|new dpf|dpf replaced|new battery|hybrid battery|injectors replaced|gearbox rebuilt|suspension overhaul|new shocks|new dampers|coilovers fitted|full respray|new tyres all round|four new tyres|brake discs and pads|new brakes|recently serviced|just serviced|fresh service|fresh mot)/i.test(serviceText);
+    const desirableSpec = /(manual|alcantara|carbon|ceramic|sports exhaust|akrapovic|milltek|panoramic|sunroof|heads.?up|hud|adaptive cruise|matrix led|night vision|comfort access|harman|bang.?olufsen|burmester|bowers|pan roof|extended leather|nappa|m sport plus|black pack|tech pack|premium plus|sport plus|launch edition|first edition|limited edition|low owners?|one owner|two owners|sole owner|original paint|garaged|never tracked|non.?smoker|pet.?free)/i.test(serviceText);
     const needsWork = /(needs|due|overdue|warning light|smoke|fault|damage|dent|scuff|scratch|leak|issue|rust|corrosion)/i.test(serviceText);
 
     const ultraRare = isUltraRare(body.make, body.model, body.variant);
     const exoticAnchor = getExoticAnchor(body.make, body.model, body.variant);
+    const enthusiast = isEnthusiastCar(body.make, body.model, body.variant);
     let rareCarWarning: string | undefined;
     let valuationUnavailable = false;
 
@@ -985,56 +989,98 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     } else if (mcUsable && mc) {
       let mult = 1.0;
 
-      // --- Mileage tiering (absolute miles, not just ratio) ---
-      if (body.mileage >= 130000) { mult *= 0.68; adjustments.push({ label: "Very high mileage (130k+)", impactPct: -32 }); }
-      else if (body.mileage >= 100000) { mult *= 0.78; adjustments.push({ label: `High mileage (${Math.round(body.mileage/1000)}k)`, impactPct: -22 }); }
-      else if (body.mileage >= 80000) { mult *= 0.88; adjustments.push({ label: `Above-average mileage (${Math.round(body.mileage/1000)}k)`, impactPct: -12 }); }
-      else if (body.mileage >= 60000 && mileageRatio > 1.1) { mult *= 0.95; adjustments.push({ label: "Slightly above-average mileage", impactPct: -5 }); }
-      else if (mileageRatio <= 0.7 && body.mileage < 50000) { mult *= 1.04; adjustments.push({ label: "Below-average mileage for age", impactPct: 4 }); }
+      // --- Mileage adjustments — LIGHT because the anchor is already mileage-matched.
+      // Only penalise when this car is meaningfully above the comparable sample average.
+      const sampleAvg = mc.avgMiles ?? expectedMileage;
+      const milesVsSample = body.mileage / Math.max(sampleAvg, 1);
+      if (milesVsSample >= 1.6) { mult *= 0.90; adjustments.push({ label: "Well above comparable mileage", impactPct: -10 }); }
+      else if (milesVsSample >= 1.3) { mult *= 0.95; adjustments.push({ label: "Above comparable mileage", impactPct: -5 }); }
+      else if (milesVsSample <= 0.6 && body.mileage < 60000) { mult *= 1.07; adjustments.push({ label: "Well below comparable mileage", impactPct: 7 }); }
+      else if (milesVsSample <= 0.8) { mult *= 1.03; adjustments.push({ label: "Below comparable mileage", impactPct: 3 }); }
 
-      // --- MOT corrosion / failures ---
-      if (corrosionMatches >= 2) { mult *= 0.82; adjustments.push({ label: `Multiple corrosion advisories (${corrosionMatches})`, impactPct: -18 }); }
-      else if (corrosionMatches === 1) { mult *= 0.90; adjustments.push({ label: "Corrosion advisory on MOT", impactPct: -10 }); }
-      if (recentFailCount >= 1) { mult *= 0.92; adjustments.push({ label: `Recent MOT failure(s)`, impactPct: -8 }); }
-      if (totalAdvisoryCount >= 6) { mult *= 0.95; adjustments.push({ label: `${totalAdvisoryCount} advisories on file`, impactPct: -5 }); }
+      // --- MOT corrosion / failures (real DVSA signals) ---
+      if (corrosionMatches >= 2) { mult *= 0.84; adjustments.push({ label: `Multiple corrosion advisories (${corrosionMatches})`, impactPct: -16 }); }
+      else if (corrosionMatches === 1) { mult *= 0.92; adjustments.push({ label: "Corrosion advisory on MOT", impactPct: -8 }); }
+      if (recentFailCount >= 1) { mult *= 0.94; adjustments.push({ label: "Recent MOT failure(s)", impactPct: -6 }); }
+      if (totalAdvisoryCount >= 6) { mult *= 0.97; adjustments.push({ label: `${totalAdvisoryCount} current advisories`, impactPct: -3 }); }
 
-      // --- Service history ---
-      if (hasStrongHistory) { mult *= 1.04; adjustments.push({ label: "Full service history", impactPct: 4 }); }
-      else if (hasPartialHistory) { mult *= 0.93; adjustments.push({ label: "Partial service history", impactPct: -7 }); }
-      else if (noHistory) { mult *= 0.88; adjustments.push({ label: "No service history", impactPct: -12 }); }
+      // --- Service history (stronger positive, fair negative) ---
+      if (hasStrongHistory) { mult *= 1.06; adjustments.push({ label: "Full service history", impactPct: 6 }); }
+      else if (hasPartialHistory) { mult *= 0.95; adjustments.push({ label: "Partial service history", impactPct: -5 }); }
+      else if (noHistory) { mult *= 0.90; adjustments.push({ label: "No service history", impactPct: -10 }); }
+
+      // --- Recent major mechanical work — strong positive lever ---
+      if (recentMajorWork) { mult *= 1.05; adjustments.push({ label: "Recent major mechanical work", impactPct: 5 }); }
+
+      // --- Desirability (spec, options, ownership) ---
+      if (desirableSpec) { mult *= 1.03; adjustments.push({ label: "Desirable spec / options", impactPct: 3 }); }
+      if (enthusiast && body.mileage < 50000) { mult *= 1.03; adjustments.push({ label: "Sought-after enthusiast spec", impactPct: 3 }); }
 
       // --- Other condition flags from notes ---
       if (needsWork && !corrosionMatches) { mult *= 0.96; adjustments.push({ label: "Issues noted in description", impactPct: -4 }); }
 
-      // --- Condition score adjustment (lighter — most penalties already applied above) ---
-      const conditionAdj = 1 + (score - 7.0) * 0.025;
-      mult *= clamp(conditionAdj, 0.92, 1.08);
+      // --- Condition score (MAJOR lever now — was previously ±8%, now ±18%) ---
+      // 7.0 is neutral. Each point above adds ~6%, each below removes ~7%.
+      let conditionAdj = 1.0;
+      if (score >= 9.0) conditionAdj = 1.12;
+      else if (score >= 8.5) conditionAdj = 1.08;
+      else if (score >= 8.0) conditionAdj = 1.05;
+      else if (score >= 7.5) conditionAdj = 1.02;
+      else if (score >= 7.0) conditionAdj = 1.00;
+      else if (score >= 6.5) conditionAdj = 0.97;
+      else if (score >= 6.0) conditionAdj = 0.93;
+      else if (score >= 5.5) conditionAdj = 0.88;
+      else if (score >= 5.0) conditionAdj = 0.83;
+      else conditionAdj = 0.78;
+      mult *= conditionAdj;
+      const conditionPct = Math.round((conditionAdj - 1) * 100);
+      if (conditionPct !== 0) {
+        adjustments.push({
+          label: conditionPct > 0
+            ? `${ai.conditionLabel || "Strong"} visible condition (${score.toFixed(1)}/10)`
+            : `Condition deductions (${score.toFixed(1)}/10)`,
+          impactPct: conditionPct,
+        });
+      }
 
-      mult = clamp(mult, 0.45, 1.18);
+      // Cap total swing — wider upside than before, still a sensible floor.
+      mult = clamp(mult, 0.55, 1.28);
 
       // Use the mileage-weighted live-listings anchor when available; otherwise fall back to the wider median.
       const anchor = anchorMedian > 0 ? anchorMedian : mc.median;
       let dealerRetail = roundToGrain(anchor * mult);
 
-      // Sanity floor for ultra-rare cars: never publish a number below ~70% of
-      // the lower exotic anchor, even if MarketCheck noise suggests otherwise.
+      // Sanity floor for ultra-rare cars
       if (ultraRare && exoticAnchor && dealerRetail < exoticAnchor.low * 0.7) {
         dealerRetail = roundToGrain(exoticAnchor.low * 0.85);
         adjustments.push({ label: "Adjusted toward known exotic floor (sparse market data)", impactPct: 0 });
       }
 
-      const privateSale = roundToGrain(dealerRetail * 0.90);
-      const dealerTradeIn = roundToGrain(dealerRetail * 0.76);
+      // Private-sale ratio — clean cars achieve closer to dealer asking than the old 0.90 assumed.
+      // Tune by condition: outstanding cars 0.95, good 0.93, average 0.91, poor 0.88.
+      let privateRatio = 0.92;
+      if (score >= 8.5) privateRatio = 0.95;
+      else if (score >= 7.5) privateRatio = 0.93;
+      else if (score >= 6.5) privateRatio = 0.91;
+      else privateRatio = 0.88;
+      if (hasStrongHistory) privateRatio += 0.01;
+      if (recentMajorWork) privateRatio += 0.01;
+      privateRatio = clamp(privateRatio, 0.86, 0.97);
 
-      // Range — wider when there are negatives or when the car is rare
+      const privateSale = roundToGrain(dealerRetail * privateRatio);
+      const dealerTradeIn = roundToGrain(dealerRetail * 0.78);
+
+      // Range — tighter for strong cars, wider for problem cars
       const negativeCount = adjustments.filter((a) => a.impactPct < 0).length;
-      let spread = negativeCount >= 3 ? 0.14 : negativeCount >= 1 ? 0.10 : 0.07;
+      const positiveCount = adjustments.filter((a) => a.impactPct > 0).length;
+      let spread = negativeCount >= 3 ? 0.12 : negativeCount >= 1 ? 0.08 : 0.06;
+      if (positiveCount >= 3 && negativeCount === 0) spread = 0.05;
       if (ultraRare) spread = Math.max(spread, 0.20);
-      rangeLow = roundToGrain(privateSale * (1 - spread));
-      rangeHigh = roundToGrain(privateSale * (1 + spread * 0.7));
+      rangeLow = roundToGrain(privateSale * (1 - spread * 0.8));
+      rangeHigh = roundToGrain(privateSale * (1 + spread));
 
       // --- Confidence reasoning (short, model-specific) ---
-      const isOutlierMileage = body.mileage >= 100000 || (mc.avgMiles && Math.abs(body.mileage - mc.avgMiles) > 30000);
+      const isOutlierMileage = milesVsSample >= 1.5 || milesVsSample <= 0.5;
       const carName = `${body.make} ${body.model}${body.variant ? ` ${body.variant}` : ""}`.trim();
       const shortName = body.variant ? `${body.model} ${body.variant}` : body.model;
       const mileageDescriptor = body.mileage >= 100000 ? "high-mileage " : body.mileage <= 30000 ? "low-mileage " : "";
@@ -1048,7 +1094,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         confidenceReason = `Plenty of comparable ${shortName}s on the market right now, and most signals on this car are positive.`;
       } else if (mc.count >= 50 && !isOutlierMileage && negativeCount <= 3) {
         confidence = "Medium";
-        confidenceReason = `Reasonable number of similar ${shortName}s for sale. A few things pulled the price down, but the figure is solid.`;
+        confidenceReason = `Reasonable number of similar ${shortName}s for sale. We've weighed each factor carefully — this figure is well-supported.`;
       } else if (mc.count >= 10) {
         confidence = "Low";
         confidenceReason = `Not many ${mileageDescriptor}${shortName}s like yours on the market right now, so treat this as a useful guide rather than an exact price.`;
@@ -1063,15 +1109,24 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         source: "MarketCheck UK",
         sampleSize: mc.count,
         baseDealerRetail: baseRetail,
-        basePrivateSale: roundToGrain(baseRetail * 0.90),
-        baseTradeIn: roundToGrain(baseRetail * 0.76),
+        basePrivateSale: roundToGrain(baseRetail * 0.92),
+        baseTradeIn: roundToGrain(baseRetail * 0.78),
         netAdjustmentPct: Math.round((mult - 1) * 100),
       };
-      const negSummary = adjustments.filter(a => a.impactPct < 0).map(a => a.label).slice(0, 2).join(" and ");
-      pricingReasoning = negSummary
-        ? `Main things affecting the price: ${negSummary.toLowerCase()}.`
-        : `Based on what similar ${shortName}s are selling for.`;
+      // Build a transparent reasoning string that highlights both sides.
+      const topPositives = adjustments.filter(a => a.impactPct > 0).sort((a,b)=>b.impactPct-a.impactPct).slice(0,2).map(a => a.label.toLowerCase());
+      const topNegatives = adjustments.filter(a => a.impactPct < 0).sort((a,b)=>a.impactPct-b.impactPct).slice(0,2).map(a => a.label.toLowerCase());
+      if (topPositives.length && topNegatives.length) {
+        pricingReasoning = `Lifted by ${topPositives.join(" and ")}; offset by ${topNegatives.join(" and ")}.`;
+      } else if (topPositives.length) {
+        pricingReasoning = `Lifted by ${topPositives.join(" and ")} — pricing reflects a clean example of this ${shortName}.`;
+      } else if (topNegatives.length) {
+        pricingReasoning = `Main things affecting the price: ${topNegatives.join(" and ")}.`;
+      } else {
+        pricingReasoning = `Based on what similar ${shortName}s are selling for in the UK right now.`;
+      }
       dataSource = "marketcheck";
+
     } else if (badMarketData) {
       valuationUnavailable = true;
       values = { dealerTradeIn: 0, privateSale: 0, dealerRetail: 0 };
