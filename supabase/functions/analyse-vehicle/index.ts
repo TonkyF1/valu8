@@ -629,6 +629,35 @@ function hash(s: string) {
   return Math.abs(h);
 }
 
+// Stable fingerprint of every input that should change the valuation.
+// Normalise whitespace/case so cosmetic edits to service notes don't bust the lock.
+export function computeInputsHash(input: {
+  make: string;
+  model: string;
+  variant?: string;
+  year: number;
+  mileage: number;
+  registration?: string;
+  motExpiry?: string;
+  serviceNotes?: string;
+  photoRefs: string[];
+}): string {
+  const norm = (s: string | undefined | null) => (s ?? "").toString().trim().toLowerCase().replace(/\s+/g, " ");
+  const photos = [...(input.photoRefs ?? [])].map(norm).sort().join("|");
+  const payload = [
+    norm(input.make),
+    norm(input.model),
+    norm(input.variant),
+    String(input.year ?? ""),
+    String(input.mileage ?? ""),
+    norm(input.registration),
+    norm(input.motExpiry),
+    norm(input.serviceNotes),
+    photos,
+  ].join("::");
+  return hash(payload).toString(36);
+}
+
 const SYSTEM_PROMPT = `You are a senior UK car valuer who advises PRIVATE sellers — not dealers. You speak clearly, plainly, and with the confidence of someone who values cars every day.
 
 YOUR JOB: produce a REALISTIC private-sale figure that a well-presented car can genuinely achieve within 3–4 weeks. Not the rock-bottom trade figure. Not the optimistic dealer-asking screenshot. The honest mid-point of what private buyers actually pay for a car of this exact condition, history and spec.
