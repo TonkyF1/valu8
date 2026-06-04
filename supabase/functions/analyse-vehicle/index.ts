@@ -918,6 +918,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         ],
         tools: [TOOL],
         tool_choice: { type: "function", function: { name: "valu8_report" } },
+        // Determinism: same inputs -> same output. Gemini honours all three.
+        temperature: 0,
+        top_p: 0,
+        seed,
       }),
     });
     const aiLatency = Date.now() - aiStart;
