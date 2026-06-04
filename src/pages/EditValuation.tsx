@@ -125,6 +125,38 @@ export default function EditValuation() {
       const newUrls = await uploadNewPhotos();
       const allPhotos = [...existingPhotos, ...newUrls];
 
+      // ---- Input-change detection ----------------------------------------
+      // Same inputs => same report. We don't burn AI credits or risk drift
+      // from the live MarketCheck sample when nothing about the car changed.
+      const nextInputs = {
+        make: make || row.make,
+        model: composedModel || row.model,
+        variant: variant.trim() || undefined,
+        year: Number(year) || row.year,
+        mileage: Number(mileage) || row.mileage,
+        registration: registration || undefined,
+        motExpiry: motExpiry || undefined,
+        serviceNotes: serviceNotes || undefined,
+        photoRefs: allPhotos,
+      };
+      const prevInputs = {
+        make: row.make,
+        model: row.model,
+        variant: undefined as string | undefined,
+        year: row.year,
+        mileage: row.mileage,
+        registration: row.registration ?? undefined,
+        motExpiry: row.mot_expiry ?? undefined,
+        serviceNotes: row.service_notes ?? undefined,
+        photoRefs: Array.isArray(row.photo_urls) ? (row.photo_urls as string[]) : [],
+      };
+      const changes = describeInputChanges(prevInputs, nextInputs);
+      if (changes.length === 0) {
+        toast.info("Nothing has changed — valuation is locked. Edit a field or add a photo to refresh.");
+        setRegenerating(false);
+        return;
+      }
+
       const previousVersions = Array.isArray(row.report?.previousVersions) ? row.report.previousVersions : [];
       const snapshot = {
         savedAt: new Date().toISOString(),
@@ -141,14 +173,14 @@ export default function EditValuation() {
 
       const { data: aiData, error: aiErr } = await supabase.functions.invoke("analyse-vehicle", {
         body: {
-          make: make || row.make,
+          make: nextInputs.make,
           model: model || row.model.split(" · ")[0],
-          variant: variant.trim() || undefined,
-          year: Number(year) || row.year,
-          mileage: Number(mileage) || row.mileage,
-          registration: registration || undefined,
-          motExpiry: motExpiry || undefined,
-          serviceNotes: serviceNotes || undefined,
+          variant: nextInputs.variant,
+          year: nextInputs.year,
+          mileage: nextInputs.mileage,
+          registration: nextInputs.registration,
+          motExpiry: nextInputs.motExpiry,
+          serviceNotes: nextInputs.serviceNotes,
           photoUrls: allPhotos,
         },
       });
@@ -162,6 +194,7 @@ export default function EditValuation() {
         ...report,
         edited: true,
         lastEditedAt: new Date().toISOString(),
+        regenerationReason: `Refreshed because ${changes.join(", ")}.`,
         previousVersions: [snapshot, ...previousVersions].slice(0, 10),
       };
 
