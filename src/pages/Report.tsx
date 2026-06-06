@@ -711,7 +711,7 @@ export default function Report() {
 
         {/* Per-photo AI feedback — our moat made visible */}
         {r.photoInsights && r.photoInsights.length > 0 && v.photo_urls.length > 0 && (
-          <PhotoFeedback insights={r.photoInsights} photoUrls={v.photo_urls} onSelectPhoto={setActivePhoto} />
+          <PhotoFeedback insights={r.photoInsights} photoUrls={v.photo_urls} onSelectPhoto={setActivePhoto} onOpenLightbox={setLightboxIndex} />
         )}
 
         {/* What If Simulator — toggle fixable issues to see the upside */}
