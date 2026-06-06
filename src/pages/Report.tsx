@@ -232,6 +232,31 @@ export default function Report() {
           </div>
         </div>
 
+        {/* Hero Verdict — first thing the user sees */}
+        {!valuationUnavailable && (() => {
+          const verdict =
+            r.conditionScore >= 8
+              ? { label: "Strong position to sell", tone: "primary" as const, sub: "Quality examples like this move fast." }
+              : r.conditionScore >= 6.5
+              ? { label: "Good value — sell privately", tone: "primary" as const, sub: "Price honestly and lead with photos + history." }
+              : { label: "Needs attention before listing", tone: "amber" as const, sub: "A few tidy-ups will lift your sale price." };
+          return (
+            <div className={cn(
+              "mb-4 inline-flex items-center gap-2.5 rounded-full border px-3.5 py-1.5 animate-fade-in-up backdrop-blur-sm",
+              verdict.tone === "primary"
+                ? "border-primary/35 bg-primary/10 text-primary"
+                : "border-amber-500/35 bg-amber-500/10 text-amber-300",
+            )}>
+              <span className={cn(
+                "h-1.5 w-1.5 rounded-full animate-pulse",
+                verdict.tone === "primary" ? "bg-primary" : "bg-amber-400",
+              )} />
+              <span className="text-[11px] uppercase tracking-[0.16em] font-semibold">Verdict: {verdict.label}</span>
+              <span className="hidden sm:inline text-[11px] text-foreground/70 font-normal normal-case tracking-normal">· {verdict.sub}</span>
+            </div>
+          );
+        })()}
+
         {/* Title */}
         <div className="mb-6 animate-fade-in-up">
           <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold mb-1.5">Valuation Report</div>
