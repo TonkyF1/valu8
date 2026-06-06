@@ -146,32 +146,33 @@ export default function Report() {
   if (r.rareCarWarning) rarityReasons.push("of its rare specification or trim");
   if (aiConfidence === "Very Low") rarityReasons.push("our AI flagged it as a harder-than-average car to price");
 
-  // Trigger specialist ONLY when the car is genuinely difficult to price.
-  // A modest MarketCheck count alone is NOT enough — common cars often sit in
-  // a "Low" tier for a specific year/variant and should still use market data.
+  // Trigger expert overlay ONLY when the car is genuinely difficult to price.
+  // Require a strong signal stacked with at least one rarity reason, OR three
+  // independent rarity reasons. A modest MarketCheck count alone is never enough.
   const strongSingleSignal =
-    (liveCount != null && liveCount < 5) ||
+    (liveCount != null && liveCount < 3) ||
     !!r.rareCarWarning ||
     aiConfidence === "Very Low";
-  const showSpecialistBadge = strongSingleSignal || rarityReasons.length >= 3;
+  const showSpecialistBadge =
+    (strongSingleSignal && rarityReasons.length >= 1) || rarityReasons.length >= 3;
 
   const liveConfidenceLine =
     liveTier === "High"
-      ? "Priced using a deep pool of live UK listings — this is a well-supported valuation."
+      ? "Priced from a deep pool of live UK listings — a well-supported valuation."
       : liveTier === "Medium"
       ? "Based on a healthy sample of similar cars on the market right now."
-      : "Fewer similar cars are listed right now, so treat this as a strong estimate rather than a precise figure.";
+      : "Fewer live comparables right now — treat this as a strong estimate rather than a precise figure.";
 
   const specialistExplanation = (() => {
     if (!showSpecialistBadge) return null;
     const top = rarityReasons.slice(0, 2);
     if (top.length === 0) {
-      return "We've applied careful specialist analysis on top of live market data to give you a confident figure on a harder-than-average car to price.";
+      return "We've layered expert analysis on top of live market data to give you a confident figure on a harder-than-average car to price.";
     }
     if (top.length === 1) {
-      return `Because ${top[0]}, we've layered specialist analysis on top of live market data to give you a confident figure.`;
+      return `Because ${top[0]}, we've layered expert analysis on top of live market data to give you a confident figure.`;
     }
-    return `Because ${top[0]} and ${top[1]}, we've layered specialist analysis on top of live market data to give you a confident figure.`;
+    return `Because ${top[0]} and ${top[1]}, we've layered expert analysis on top of live market data to give you a confident figure.`;
   })();
 
   const share = async () => {
