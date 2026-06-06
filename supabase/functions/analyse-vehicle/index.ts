@@ -333,17 +333,18 @@ function clamp(num: number, min: number, max: number) {
   return Math.max(min, Math.min(max, num));
 }
 
-function sanitizeNarrativeYears(text: string | undefined, vehicleYear: number, currentYear = CURRENT_YEAR) {
+function sanitizeNarrativeYears(text: string | undefined, vehicleYear: number, currentYear = CURRENT_YEAR, extraAllowed: number[] = []) {
   if (!text) return "";
+  const allowed = new Set<number>([vehicleYear, currentYear, currentYear + 1, ...extraAllowed]);
   return text.replace(/\b(19|20)\d{2}\b/g, (match) => {
     const parsed = Number(match);
-    if (parsed === vehicleYear || parsed === currentYear) return match;
+    if (allowed.has(parsed)) return match;
     return String(vehicleYear);
   });
 }
 
-function sanitizeNarrativeList(items: string[] | undefined, vehicleYear: number, currentYear = CURRENT_YEAR) {
-  return (items ?? []).map((item) => sanitizeNarrativeYears(item, vehicleYear, currentYear));
+function sanitizeNarrativeList(items: string[] | undefined, vehicleYear: number, currentYear = CURRENT_YEAR, extraAllowed: number[] = []) {
+  return (items ?? []).map((item) => sanitizeNarrativeYears(item, vehicleYear, currentYear, extraAllowed));
 }
 
 function isEnthusiastCar(make: string, model: string, variant?: string) {
