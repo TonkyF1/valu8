@@ -136,22 +136,24 @@ export default function Report() {
   const photoInsightCount = Array.isArray(r.photoInsights) ? r.photoInsights.length : 0;
 
   const rarityReasons: string[] = [];
-  if (liveCount != null && liveCount < 80) rarityReasons.push("few comparable cars are listed in the UK right now");
-  if (carAge >= 20) rarityReasons.push("its age puts it into modern-classic territory");
-  if (carAge <= 1 && liveCount != null && liveCount < 200) rarityReasons.push("it's a very recent model with limited resale data");
-  if (mileageRatio < 0.45) rarityReasons.push("it has exceptionally low mileage for its age");
-  if (mileageRatio > 2.2) rarityReasons.push("it has an unusually high mileage profile");
+  // Only count *genuinely* thin markets — common cars routinely sit in the 25–80 range
+  // for a specific year/model and should NOT trigger the specialist treatment.
+  if (liveCount != null && liveCount < 15) rarityReasons.push("very few comparable cars are listed in the UK right now");
+  if (carAge >= 25) rarityReasons.push("its age puts it into modern-classic territory");
+  if (carAge <= 0 && liveCount != null && liveCount < 60) rarityReasons.push("it's a brand-new model with very limited resale data");
+  if (mileageRatio < 0.25) rarityReasons.push("it has exceptionally low mileage for its age");
+  if (mileageRatio > 2.8) rarityReasons.push("it has an unusually high mileage profile");
   if (r.rareCarWarning) rarityReasons.push("of its rare specification or trim");
-  if (aiConfidence === "Low" || aiConfidence === "Very Low") rarityReasons.push("our AI flagged it as a harder-than-average car to price");
-  if (photoInsightCount > 0 && photoInsightCount < 2) rarityReasons.push("of limited photo evidence to verify condition");
+  if (aiConfidence === "Very Low") rarityReasons.push("our AI flagged it as a harder-than-average car to price");
 
-  // Trigger specialist if we have 2+ signals, OR a very strong single signal.
-  // A low MarketCheck count alone is NOT enough — that was the old bug.
+  // Trigger specialist ONLY when the car is genuinely difficult to price.
+  // A modest MarketCheck count alone is NOT enough — common cars often sit in
+  // a "Low" tier for a specific year/variant and should still use market data.
   const strongSingleSignal =
-    (liveCount != null && liveCount < 25) ||
+    (liveCount != null && liveCount < 5) ||
     !!r.rareCarWarning ||
     aiConfidence === "Very Low";
-  const showSpecialistBadge = strongSingleSignal || rarityReasons.length >= 2;
+  const showSpecialistBadge = strongSingleSignal || rarityReasons.length >= 3;
 
   const liveConfidenceLine =
     liveTier === "High"

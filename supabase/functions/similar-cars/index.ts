@@ -104,34 +104,43 @@ Deno.serve(async (req) => {
       return json({ error: "make, model and year are required" }, 400);
     }
 
-    // 1) MarketCheck UK — fetch wide, then rank by closeness in year, mileage, spec.
+    // 1) MarketCheck UK — fetch in tiers (tight → wide) so common cars always
+    // surface a healthy set of comparables before we fall back to AI listings.
     let listings: Listing[] = [];
     let fallback = false;
+    let matchMode: "exact" | "widened-year" | "widened-broad" | "model-only" = "exact";
+    let matchNote: string | undefined;
     const MC_KEY = Deno.env.get("MARKETCHECK_API_KEY");
+
+    const fetchTier = async (yearSpread: number, rows: number) => {
+      const params = new URLSearchParams({
+        api_key: MC_KEY!,
+        car_type: "used",
+        make: body.make,
+        model: body.model,
+        year_range: `${body.year - yearSpread}-${body.year + yearSpread}`,
+        rows: String(rows),
+        sort_by: "miles",
+        sort_order: "asc",
+      });
+      const resp = await fetch(`https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`);
+      if (!resp.ok) {
+        console.error("MarketCheck error", resp.status, (await resp.text()).slice(0, 200));
+        return [] as any[];
+      }
+      const j = await resp.json();
+      return (j?.listings ?? []) as any[];
+    };
+
     if (MC_KEY) {
       try {
-        const params = new URLSearchParams({
-          api_key: MC_KEY,
-          car_type: "used",
-          make: body.make,
-          model: body.model,
-          year_range: `${body.year - 3}-${body.year + 3}`,
-          rows: "40",
-          sort_by: "miles",
-          sort_order: "asc",
-        });
-        const mcResp = await fetch(
-          `https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`
-        );
-        if (mcResp.ok) {
-          const mcJson = await mcResp.json();
-          const items: any[] = mcJson?.listings ?? [];
-          const variantWords = (body.variant || "")
-            .toLowerCase()
-            .split(/\s+/)
-            .filter((w) => w.length > 1);
+        const variantWords = (body.variant || "")
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((w) => w.length > 1);
 
-          const allScored = items
+        const scoreItems = (items: any[], yearSpread: number) =>
+          items
             .filter((it) => it?.price && it?.build?.year && it?.miles)
             .map((it) => {
               const year = Number(it.build.year);
@@ -146,42 +155,79 @@ Deno.serve(async (req) => {
               const score = yearDelta * 7500 + mileDelta - variantBonus;
 
               let relevance: "very-similar" | "good-match" | "broad" = "broad";
-              if (yearDelta <= 2 && milePct <= 0.15 && trimScore >= 0.5) {
+              if (yearDelta <= 2 && milePct <= 0.2 && trimScore >= 0.4) {
                 relevance = "very-similar";
-              } else if (yearDelta <= 4 && milePct <= 0.35) {
+              } else if (yearDelta <= Math.max(4, yearSpread) && milePct <= 0.4) {
                 relevance = "good-match";
               }
               return { it, score, relevance };
             })
             .sort((a, b) => a.score - b.score);
 
-          const tier1 = allScored.filter((s) => s.relevance === "very-similar");
-          const tier2 = allScored.filter((s) => s.relevance === "good-match");
-          const tier3 = allScored.filter((s) => s.relevance === "broad");
-          const scored = [...tier1, ...tier2, ...tier3].slice(0, 6);
+        // Tier A — tight (±3 years).
+        let items = await fetchTier(3, 40);
+        let scored = scoreItems(items, 3);
 
-          listings = scored.map(({ it, relevance }): Listing => ({
-            title: it.heading || `${it.build.year} ${it.build.make} ${it.build.model}`,
-            year: Number(it.build.year),
-            make: String(it.build.make || body.make),
-            model: String(it.build.model || body.model),
-            variant: it.build.trim || undefined,
-            colour: it.exterior_color || it.build.exterior_color || "Silver",
-            mileage: Number(it.miles || 0),
-            price: Math.round(Number(it.price)),
-            source: it.source || "MarketCheck",
-            url: it.vdp_url || undefined,
-            location: it.dealer?.city || it.dealer?.county || undefined,
-            relevance,
-          }));
-        } else {
-          console.error("MarketCheck error", mcResp.status, (await mcResp.text()).slice(0, 200));
+        // Tier B — widen to ±5 years if we don't have enough good comparables.
+        if (scored.filter((s) => s.relevance !== "broad").length < 4) {
+          const wider = await fetchTier(5, 50);
+          const seen = new Set(items.map((it: any) => it.vdp_url || it.id));
+          for (const it of wider) {
+            const k = it.vdp_url || it.id;
+            if (!seen.has(k)) { items.push(it); seen.add(k); }
+          }
+          const rescored = scoreItems(items, 5);
+          if (rescored.length > scored.length) {
+            scored = rescored;
+            matchMode = "widened-year";
+            matchNote = "Widened to ±5 years to surface enough comparables.";
+          }
         }
+
+        // Tier C — broadest pass (±8 years) only if still thin.
+        if (scored.length < 3) {
+          const broad = await fetchTier(8, 60);
+          const seen = new Set(items.map((it: any) => it.vdp_url || it.id));
+          for (const it of broad) {
+            const k = it.vdp_url || it.id;
+            if (!seen.has(k)) { items.push(it); seen.add(k); }
+          }
+          const rescored = scoreItems(items, 8);
+          if (rescored.length > scored.length) {
+            scored = rescored;
+            matchMode = "widened-broad";
+            matchNote = "Showing the closest examples across a wider year range due to limited exact matches.";
+          }
+        }
+
+        const tier1 = scored.filter((s) => s.relevance === "very-similar");
+        const tier2 = scored.filter((s) => s.relevance === "good-match");
+        const tier3 = scored.filter((s) => s.relevance === "broad");
+        const final = [...tier1, ...tier2, ...tier3].slice(0, 6);
+
+        listings = final.map(({ it, relevance }): Listing => ({
+          title: it.heading || `${it.build.year} ${it.build.make} ${it.build.model}`,
+          year: Number(it.build.year),
+          make: String(it.build.make || body.make),
+          model: String(it.build.model || body.model),
+          variant: it.build.trim || undefined,
+          colour: it.exterior_color || it.build.exterior_color || "Silver",
+          mileage: Number(it.miles || 0),
+          price: Math.round(Number(it.price)),
+          source: it.source || "MarketCheck",
+          url: it.vdp_url || undefined,
+          location: it.dealer?.city || it.dealer?.county || undefined,
+          relevance,
+        }));
       } catch (e) {
         console.error("MarketCheck fetch error", e);
       }
     }
-    if (listings.length === 0) fallback = true;
+    if (listings.length === 0) {
+      fallback = true;
+      matchMode = "model-only";
+      matchNote = "Limited live listings — showing AI-generated indicative comparables.";
+    }
 
     // 2) Fallback: AI-generated plausible listings if MarketCheck returned nothing.
     if (listings.length === 0) {
@@ -270,7 +316,7 @@ Return ONLY a JSON object: { "listings": Listing[] }.`;
       })
     );
 
-    return json({ listings: withImages, fallback });
+    return json({ listings: withImages, fallback, matchMode, matchNote });
   } catch (err) {
     console.error(err);
     return json({ error: (err as Error).message }, 500);
