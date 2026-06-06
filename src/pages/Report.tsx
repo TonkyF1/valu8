@@ -973,14 +973,6 @@ export default function Report() {
 
         {!valuationUnavailable && (
           <>
-            <SimilarCars
-              make={v.make}
-              model={v.model.split(" · ")[0]}
-              variant={v.model.includes(" · ") ? v.model.split(" · ")[1] : undefined}
-              year={v.year}
-              mileage={v.mileage}
-              valuation={Math.round(r.values?.privateSale || r.recommendations?.listingPrice || 0)}
-            />
 
 
             <AdvertCreator
