@@ -1364,20 +1364,37 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const marketContext = sanitizeNarrativeYears(ai.marketContext ?? "", body.year);
     const sellerTip = sanitizeNarrativeYears(ai.sellerTip ?? "", body.year);
 
-    // ----- Build MOT history payload (real DVSA where available, simulated fallback) -----
+    // ----- Build MOT history payload — REAL DVSA only. Never invent. -----
+    // If a registration was supplied, we either show genuine DVSA history or
+    // nothing at all. Simulated history is only ever used as a clearly-labelled
+    // illustration when no registration was given.
     let motHistory: any[] = [];
-    let motSource: "dvsa" | "simulated" = "simulated";
+    let motSource: "dvsa" | "simulated" | "unavailable" = "unavailable";
     let motNotice: string | undefined;
     if (motEntries.length > 0) {
       motHistory = motEntries;
       motSource = "dvsa";
     } else if (body.registration && body.registration.trim().length >= 2) {
-      motNotice = (dvsa as any).error ?? "No MOT records returned by DVSA.";
-      motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
+      // Reg provided but DVSA returned nothing — show no history at all rather
+      // than fabricate dates/expiry years that would mislead the seller.
+      motHistory = [];
+      motSource = "unavailable";
+      motNotice = (dvsa as any).error
+        ?? "We couldn't retrieve real MOT history for this registration. This may be a new import, a very new vehicle, or a vehicle exempt from MOT.";
     } else {
-      motNotice = "No registration provided — showing illustrative MOT history.";
-      motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
+      motNotice = "No registration provided — MOT history not available.";
+      motHistory = [];
+      motSource = "unavailable";
     }
+
+    // Years that are legitimately allowed to appear in narrative text
+    // (vehicle year, current year, current+1 by default, plus the real MOT
+    // expiry year when we have one from DVSA or the user).
+    const allowedNarrativeYears: number[] = [];
+    const motExpiryYearFromDvsa = motEntries[0]?.expiryDate ? Number(String(motEntries[0].expiryDate).slice(0, 4)) : undefined;
+    const motExpiryYearFromUser = body.motExpiry ? Number(String(body.motExpiry).slice(0, 4)) : undefined;
+    if (Number.isFinite(motExpiryYearFromDvsa)) allowedNarrativeYears.push(motExpiryYearFromDvsa as number);
+    if (Number.isFinite(motExpiryYearFromUser)) allowedNarrativeYears.push(motExpiryYearFromUser as number);
 
     const report = {
       conditionScore: Math.round(score * 10) / 10,
