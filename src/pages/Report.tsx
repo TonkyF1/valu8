@@ -1280,8 +1280,7 @@ function PhotoFeedback({
                     <button
                       type="button"
                       onClick={() => {
-                        onSelectPhoto(idx);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
+                        onOpenLightbox?.(idx);
                       }}
                       className="relative block w-full aspect-[4/3] overflow-hidden bg-muted"
                       aria-label={`View ${SLOT_LABELS[slotKey] ?? "photo"} full size`}
