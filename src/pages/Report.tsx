@@ -483,47 +483,48 @@ export default function Report() {
                 We'd rather be honest than give you a number that could be way off.
               </p>
             ) : (
-              <div className="mt-4 space-y-3 max-w-[44ch]">
-                {/* Paragraph 1 — AI headline or fallback */}
-                <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8]">
-                  {r.headline ? (
-                    r.headline
-                  ) : (
-                    <>
-                      Based on live UK market data, a realistic private sale figure for this {v.year} {v.make} {v.model} sits around{" "}
-                      <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>. Price honestly and your car will move; over-price it and it'll sit.
-                    </>
-                  )}
-                </p>
-
-                {/* Paragraph 2 — market context from AI or live confidence */}
-                <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
-                  {r.marketContext || liveConfidenceLine}
-                </p>
-
-                {/* Paragraph 3 — factors affecting price (AI-driven, fall back to deterministic) */}
-                {(() => {
-                  const positives = (r.factorsUp && r.factorsUp.length > 0)
-                    ? r.factorsUp
-                    : (r.priceAdjustments?.filter(a => a.impactPct > 0).map(a => a.label) ?? []);
-                  const negatives = (r.factorsDown && r.factorsDown.length > 0)
-                    ? r.factorsDown
-                    : (r.priceAdjustments?.filter(a => a.impactPct < 0).map(a => a.label) ?? []);
-                  if (positives.length === 0 && negatives.length === 0) {
-                    return r.valueReasoning ? (
-                      <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">{r.valueReasoning}</p>
-                    ) : null;
-                  }
-                  const join = (arr: string[]) =>
-                    arr.length <= 1 ? (arr[0] ?? "") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
-                  return (
-                    <p className="text-sm leading-[1.65] text-[#E8E8E8]/85">
-                      {positives.length > 0 && <>{join(positives)} {positives.length > 1 ? "all push" : "pushes"} the value up. </>}
-                      {negatives.length > 0 && <>We've nudged it down to account for {join(negatives)} — buyers will likely use these to negotiate.</>}
-                    </p>
-                  );
-                })()}
-              </div>
+              <details className="mt-4 group max-w-[44ch]">
+                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] font-semibold text-primary/90 hover:text-primary">
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                  Why this price
+                </summary>
+                <div className="mt-3 space-y-3">
+                  <p className="text-sm leading-[1.6] text-[#E8E8E8]">
+                    {r.headline ? (
+                      r.headline
+                    ) : (
+                      <>
+                        Based on live UK market data, a realistic figure for this {v.year} {v.make} {v.model} sits around{" "}
+                        <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>.
+                      </>
+                    )}
+                  </p>
+                  <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">
+                    {r.marketContext || liveConfidenceLine}
+                  </p>
+                  {(() => {
+                    const positives = (r.factorsUp && r.factorsUp.length > 0)
+                      ? r.factorsUp
+                      : (r.priceAdjustments?.filter(a => a.impactPct > 0).map(a => a.label) ?? []);
+                    const negatives = (r.factorsDown && r.factorsDown.length > 0)
+                      ? r.factorsDown
+                      : (r.priceAdjustments?.filter(a => a.impactPct < 0).map(a => a.label) ?? []);
+                    if (positives.length === 0 && negatives.length === 0) {
+                      return r.valueReasoning ? (
+                        <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">{r.valueReasoning}</p>
+                      ) : null;
+                    }
+                    const join = (arr: string[]) =>
+                      arr.length <= 1 ? (arr[0] ?? "") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
+                    return (
+                      <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">
+                        {positives.length > 0 && <>{join(positives)} {positives.length > 1 ? "all push" : "pushes"} the value up. </>}
+                        {negatives.length > 0 && <>We've nudged it down for {join(negatives)}.</>}
+                      </p>
+                    );
+                  })()}
+                </div>
+              </details>
             )}
 
             {/* Suggested Asking Price — with visual price band */}
