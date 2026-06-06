@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ConditionGauge } from "@/components/ConditionGauge";
 import { AdvertCreator } from "@/components/AdvertCreator";
 import { WhatIfSimulator } from "@/components/WhatIfSimulator";
-import { SimilarCars } from "@/components/SimilarCars";
+
 import type { ValuationReport, PhotoInsight } from "@/lib/valuation";
 import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
@@ -629,33 +629,6 @@ export default function Report() {
                 Valued using AI market analysis — fewer live comparables available for this model right now.
               </p>
             )}
-            {!valuationUnavailable && r.comparableListings && r.comparableListings.length > 0 && (
-              <div className="mt-4 max-w-xl">
-                <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/80 mb-2">
-                  Live listings used to anchor this price
-                </div>
-                <ul className="space-y-1.5">
-                  {r.comparableListings.slice(0, 3).map((l, i) => {
-                    const inner = (
-                      <div className="flex items-baseline justify-between gap-3 text-xs">
-                        <span className="text-foreground/80 truncate">
-                          {l.year} · {l.mileage.toLocaleString()} mi{l.trim ? ` · ${l.trim}` : ""}{l.location ? ` · ${l.location}` : ""}
-                        </span>
-                        <span className="tabular-nums font-medium text-foreground/95 shrink-0">£{l.price.toLocaleString()}</span>
-                      </div>
-                    );
-                    return (
-                      <li key={i} className="rounded-md border border-border/40 bg-card/40 px-3 py-2 hover:border-border/70 transition-colors">
-                        {l.url ? <a href={l.url} target="_blank" rel="noopener noreferrer">{inner}</a> : inner}
-                      </li>
-                    );
-                  })}
-                </ul>
-                <p className="text-[10px] text-muted-foreground/60 mt-2">
-                  Real active UK listings (MarketCheck). Closest to your car's mileage.
-                </p>
-              </div>
-            )}
             {!valuationUnavailable && (
               <div className="grid grid-cols-2 gap-2 mt-5 pt-5 border-t border-border/60">
                 <MiniTier label="Trade-in" tag="Quick" tip="What a dealer pays you today. Fastest, lowest." value={r.values.dealerTradeIn} />
@@ -973,14 +946,6 @@ export default function Report() {
 
         {!valuationUnavailable && (
           <>
-            <SimilarCars
-              make={v.make}
-              model={v.model.split(" · ")[0]}
-              variant={v.model.includes(" · ") ? v.model.split(" · ")[1] : undefined}
-              year={v.year}
-              mileage={v.mileage}
-              valuation={Math.round(r.values?.privateSale || r.recommendations?.listingPrice || 0)}
-            />
 
 
             <AdvertCreator
