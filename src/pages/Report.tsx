@@ -14,7 +14,7 @@ import { format } from "date-fns";
 import {
   Share2, Download, Check, ShieldCheck, AlertTriangle, ArrowLeft,
   Star, Pencil, ChevronDown, MoreHorizontal, Sparkles, Camera, TrendingUp, TrendingDown, Minus,
-  Megaphone, FileCheck2,
+  Megaphone, FileCheck2, X, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -39,7 +39,8 @@ export default function Report() {
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
-  
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
   const [showOldAdvisories, setShowOldAdvisories] = useState(false);
   const [liveCount, setLiveCount] = useState<number | null>(null);
 
@@ -76,6 +77,20 @@ export default function Report() {
       .finally(() => clearTimeout(timer));
     return () => { clearTimeout(timer); ctrl.abort(); };
   }, [v]);
+
+  // Lightbox keyboard navigation
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!v) return;
+      const max = v.photo_urls.length - 1;
+      if (e.key === "Escape") setLightboxIndex(null);
+      if (e.key === "ArrowLeft" && lightboxIndex > 0) setLightboxIndex(lightboxIndex - 1);
+      if (e.key === "ArrowRight" && lightboxIndex < max) setLightboxIndex(lightboxIndex + 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxIndex, v]);
 
   if (loading) {
     return (
@@ -368,13 +383,17 @@ export default function Report() {
         {/* Photo gallery */}
         {v.photo_urls.length > 0 && (
           <section className="premium-card p-2 mb-4 animate-fade-in-up">
-            <div className="aspect-[16/9] rounded-md overflow-hidden bg-muted">
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(activePhoto)}
+              className="block w-full aspect-[16/9] rounded-md overflow-hidden bg-muted"
+            >
               <img src={v.photo_urls[activePhoto]} alt={`${v.make} ${v.model}`} className="w-full h-full object-cover" />
-            </div>
+            </button>
             {v.photo_urls.length > 1 && (
               <div className="grid grid-cols-6 gap-1 mt-1.5">
                 {v.photo_urls.map((u, i) => (
-                  <button key={u} onClick={() => setActivePhoto(i)}
+                  <button key={u} onClick={() => { setActivePhoto(i); setLightboxIndex(i); }}
                     className={cn(
                       "aspect-[4/3] rounded overflow-hidden border-2 transition-all",
                       activePhoto === i ? "border-primary" : "border-transparent opacity-50 hover:opacity-100"
@@ -692,7 +711,7 @@ export default function Report() {
 
         {/* Per-photo AI feedback — our moat made visible */}
         {r.photoInsights && r.photoInsights.length > 0 && v.photo_urls.length > 0 && (
-          <PhotoFeedback insights={r.photoInsights} photoUrls={v.photo_urls} onSelectPhoto={setActivePhoto} />
+          <PhotoFeedback insights={r.photoInsights} photoUrls={v.photo_urls} onSelectPhoto={setActivePhoto} onOpenLightbox={setLightboxIndex} />
         )}
 
         {/* What If Simulator — toggle fixable issues to see the upside */}
@@ -969,6 +988,61 @@ export default function Report() {
         </footer>
       </main>
       <Footer />
+
+      {/* Fullscreen photo lightbox */}
+      {lightboxIndex !== null && v && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+          onClick={() => setLightboxIndex(null)}
+        >
+          {/* Close */}
+          <button
+            type="button"
+            onClick={() => setLightboxIndex(null)}
+            className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center transition-colors"
+            aria-label="Close fullscreen photo"
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+
+          {/* Prev */}
+          {lightboxIndex > 0 && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
+              className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center transition-colors"
+              aria-label="Previous photo"
+            >
+              <ChevronLeft className="h-5 w-5 text-white" />
+            </button>
+          )}
+
+          {/* Next */}
+          {lightboxIndex < v.photo_urls.length - 1 && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
+              className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center transition-colors"
+              aria-label="Next photo"
+            >
+              <ChevronRight className="h-5 w-5 text-white" />
+            </button>
+          )}
+
+          {/* Image */}
+          <img
+            src={v.photo_urls[lightboxIndex]}
+            alt={`${v.make} ${v.model} photo ${lightboxIndex + 1}`}
+            className="max-h-[85vh] max-w-[92vw] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Counter */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[11px] uppercase tracking-[0.14em] text-white/70 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
+            {lightboxIndex + 1} / {v.photo_urls.length}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1118,10 +1192,12 @@ function PhotoFeedback({
   insights,
   photoUrls,
   onSelectPhoto,
+  onOpenLightbox,
 }: {
   insights: PhotoInsight[];
   photoUrls: string[];
   onSelectPhoto: (i: number) => void;
+  onOpenLightbox?: (i: number) => void;
 }) {
   // Group insights by photoIndex (fall back to grouping by slot when index missing)
   const grouped = new Map<number, PhotoInsight[]>();
@@ -1259,8 +1335,7 @@ function PhotoFeedback({
                     <button
                       type="button"
                       onClick={() => {
-                        onSelectPhoto(idx);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
+                        onOpenLightbox?.(idx);
                       }}
                       className="relative block w-full aspect-[4/3] overflow-hidden bg-muted"
                       aria-label={`View ${SLOT_LABELS[slotKey] ?? "photo"} full size`}
