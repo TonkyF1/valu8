@@ -335,7 +335,7 @@ export default function Report() {
                   <li className="flex gap-2.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
-                      Market: <strong className="text-foreground">{showSpecialistBadge ? "Specialist applied" : `${liveTier} confidence`}</strong>
+                      Market: <strong className="text-foreground">{showSpecialistBadge ? "Expert insight" : `${liveTier} confidence`}</strong>
                       {liveCount != null && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
                     </span>
                   </li>
@@ -402,7 +402,7 @@ export default function Report() {
               {!valuationUnavailable && (
                 showSpecialistBadge ? (
                   <span className="inline-flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] px-2.5 py-1 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
-                    <ShieldCheck className="h-3 w-3" /> Specialist applied
+                    <ShieldCheck className="h-3 w-3" /> Expert insight
                   </span>
                 ) : (
                   <span className={cn(
@@ -463,7 +463,7 @@ export default function Report() {
                     </div>
                     <div className="min-w-0">
                       <div className="text-[10.5px] uppercase tracking-[0.16em] text-primary font-semibold mb-1">
-                        Specialist Valuation Applied
+                        Expert Insight Applied
                       </div>
                       <p className="text-[12.5px] leading-[1.55] text-foreground/85">
                         {specialistExplanation}
