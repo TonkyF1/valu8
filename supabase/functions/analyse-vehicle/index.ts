@@ -1369,8 +1369,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       })
       .filter(Boolean)
       .slice(0, 18);
-    const marketContext = sanitizeNarrativeYears(ai.marketContext ?? "", body.year);
-    const sellerTip = sanitizeNarrativeYears(ai.sellerTip ?? "", body.year);
+    const marketContext = sanitizeNarrativeYears(ai.marketContext ?? "", body.year, CURRENT_YEAR, allowedNarrativeYears);
+    const sellerTip = sanitizeNarrativeYears(ai.sellerTip ?? "", body.year, CURRENT_YEAR, allowedNarrativeYears);
 
     // ----- Build MOT history payload — REAL DVSA only. Never invent. -----
     // If a registration was supplied, we either show genuine DVSA history or
@@ -1394,15 +1394,6 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       motHistory = [];
       motSource = "unavailable";
     }
-
-    // Years that are legitimately allowed to appear in narrative text
-    // (vehicle year, current year, current+1 by default, plus the real MOT
-    // expiry year when we have one from DVSA or the user).
-    const allowedNarrativeYears: number[] = [];
-    const motExpiryYearFromDvsa = motEntries[0]?.expiryDate ? Number(String(motEntries[0].expiryDate).slice(0, 4)) : undefined;
-    const motExpiryYearFromUser = body.motExpiry ? Number(String(body.motExpiry).slice(0, 4)) : undefined;
-    if (Number.isFinite(motExpiryYearFromDvsa)) allowedNarrativeYears.push(motExpiryYearFromDvsa as number);
-    if (Number.isFinite(motExpiryYearFromUser)) allowedNarrativeYears.push(motExpiryYearFromUser as number);
 
     const report = {
       conditionScore: Math.round(score * 10) / 10,
