@@ -1330,11 +1330,21 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const rawInsights = Array.isArray(ai.photoInsights) ? ai.photoInsights : [];
     const photoInsights = rawInsights
       .map((ins) => {
-        const slot = (VALID_SLOTS.includes(ins?.slot as PhotoSlot) ? ins!.slot : "other") as PhotoSlot;
         const observation = sanitizeNarrativeYears(String(ins?.observation ?? "").trim(), body.year).slice(0, 140);
         if (!observation) return null;
+        // Photo index is the authoritative anchor — it ties the AI's words to the
+        // exact image it actually looked at, regardless of any user slot label.
+        const rawIndex = Number(ins?.photoIndex);
+        const photoIndex = Number.isFinite(rawIndex) && rawIndex >= 1 && rawIndex <= labeledPhotos.length
+          ? Math.floor(rawIndex) - 1
+          : -1;
+        // Trust the AI's detected slot first; fall back to the user-labelled slot
+        // for that image; finally to "other". Never re-derive slot from labelled list
+        // because the user labels may be wrong.
+        const aiSlot = VALID_SLOTS.includes(ins?.slot as PhotoSlot) ? (ins!.slot as PhotoSlot) : null;
+        const labeledSlot = photoIndex >= 0 ? labeledPhotos[photoIndex].slot : null;
+        const slot: PhotoSlot = (aiSlot ?? labeledSlot ?? "other") as PhotoSlot;
         const severity = (["positive","neutral","minor","notable"].includes(String(ins?.severity)) ? ins!.severity : "neutral") as "positive"|"neutral"|"minor"|"notable";
-        const photoIndex = labeledPhotos.findIndex((p) => p.slot === slot);
         const priceImpact = Number.isFinite(Number(ins?.priceImpact)) && Number(ins?.priceImpact) !== 0 ? Math.round(Number(ins!.priceImpact)) : undefined;
         const fixCost = Number.isFinite(Number(ins?.fixCost)) && Number(ins?.fixCost) > 0 ? Math.round(Number(ins!.fixCost)) : undefined;
         const fixable = typeof ins?.fixable === "boolean" ? ins!.fixable : undefined;
