@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
@@ -35,7 +35,9 @@ interface Valuation {
 
 export default function Report() {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
+  const isShared = location.pathname.startsWith("/shared/");
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
@@ -46,6 +48,19 @@ export default function Report() {
 
   useEffect(() => {
     if (!id) return;
+    if (isShared) {
+      // Public share view: fetch via edge function which signs photo URLs server-side.
+      supabase.functions.invoke("get-shared-valuation", { body: { id } })
+        .then(({ data, error }) => {
+          if (!error && data && !(data as any).error) {
+            const d = data as any;
+            setV({ ...d, photo_urls: Array.isArray(d.photo_urls) ? d.photo_urls.filter(Boolean) : [], report: d.report as ValuationReport });
+            document.title = `${d.year} ${d.make} ${d.model} — Valu8`;
+          }
+          setLoading(false);
+        });
+      return;
+    }
     supabase.from("valuations").select("*").eq("id", id).maybeSingle()
       .then(async ({ data }) => {
         if (data) {
@@ -57,7 +72,7 @@ export default function Report() {
         }
         setLoading(false);
       });
-  }, [id]);
+  }, [id, isShared]);
 
   useEffect(() => {
     if (!v) return;
@@ -191,11 +206,12 @@ export default function Report() {
   })();
 
   const share = async () => {
+    const shareUrl = `${window.location.origin}/shared/${v?.id ?? id}`;
     try {
-      await navigator.share?.({ title: `${v.year} ${v.make} ${v.model} — Valu8`, url: window.location.href });
+      await navigator.share?.({ title: `${v?.year} ${v?.make} ${v?.model} — Valu8`, url: shareUrl });
     } catch {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied");
+      navigator.clipboard.writeText(shareUrl);
+      toast.success("Share link copied");
     }
   };
 
@@ -205,9 +221,15 @@ export default function Report() {
       <Header />
       <main className="flex-1 container py-6 md:py-8 max-w-5xl">
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> All valuations</Link>
-          </Button>
+          {isShared ? (
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/"><ArrowLeft className="h-4 w-4" /> Valu8</Link>
+            </Button>
+          ) : (
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> All valuations</Link>
+            </Button>
+          )}
           <div className="flex items-center gap-2">
             <Button
               variant="premium"
@@ -229,23 +251,26 @@ export default function Report() {
             >
               <Download className="h-4 w-4" /> PDF
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="More actions">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem onClick={() => navigate(`/valuation/${v.id}/edit`)}>
-                  <Pencil className="h-4 w-4" /> Edit valuation
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={share}>
-                  <Share2 className="h-4 w-4" /> Share link
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!isShared && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="More actions">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => navigate(`/valuation/${v.id}/edit`)}>
+                    <Pencil className="h-4 w-4" /> Edit valuation
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={share}>
+                    <Share2 className="h-4 w-4" /> Share link
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
+
 
         {/* Hero Verdict — first thing the user sees */}
         {!valuationUnavailable && (() => {

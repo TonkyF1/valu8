@@ -1,1 +1,7 @@
 project_id = "rmdaeltradwukimbzxor"
+
+[functions.get-shared-valuation]
+verify_jwt = false
+
+[functions.marketcheck-count]
+verify_jwt = false
