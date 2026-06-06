@@ -35,7 +35,12 @@ export default function Auth() {
 
   useEffect(() => { document.title = "Sign in — Valu8"; }, []);
 
-  if (!loading && user) return <Navigate to="/dashboard" replace />;
+  const hasPendingIntent = () => {
+    try { return !!sessionStorage.getItem("valu8_pending_intent"); } catch { return false; }
+  };
+  const postAuthPath = () => (hasPendingIntent() ? "/" : "/dashboard");
+
+  if (!loading && user) return <Navigate to={postAuthPath()} replace />;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
