@@ -967,7 +967,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     ];
 
     const aiStart = Date.now();
-    const aiModel = "google/gemini-2.5-pro";
+    const aiModel = "google/gemini-2.5-flash";
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
