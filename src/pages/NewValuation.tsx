@@ -399,7 +399,7 @@ export default function NewValuation() {
             <button
               type="button"
               className="text-[11px] text-muted-foreground/60 hover:text-primary transition-colors hover:underline underline-offset-4"
-              onClick={() => { setLookup({ registration: "" }); setEditing(true); }}
+              onClick={handleManualEntry}
             >
               Don't have your reg? Enter details manually
             </button>
