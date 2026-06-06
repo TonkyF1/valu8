@@ -333,17 +333,18 @@ function clamp(num: number, min: number, max: number) {
   return Math.max(min, Math.min(max, num));
 }
 
-function sanitizeNarrativeYears(text: string | undefined, vehicleYear: number, currentYear = CURRENT_YEAR) {
+function sanitizeNarrativeYears(text: string | undefined, vehicleYear: number, currentYear = CURRENT_YEAR, extraAllowed: number[] = []) {
   if (!text) return "";
+  const allowed = new Set<number>([vehicleYear, currentYear, currentYear + 1, ...extraAllowed]);
   return text.replace(/\b(19|20)\d{2}\b/g, (match) => {
     const parsed = Number(match);
-    if (parsed === vehicleYear || parsed === currentYear) return match;
+    if (allowed.has(parsed)) return match;
     return String(vehicleYear);
   });
 }
 
-function sanitizeNarrativeList(items: string[] | undefined, vehicleYear: number, currentYear = CURRENT_YEAR) {
-  return (items ?? []).map((item) => sanitizeNarrativeYears(item, vehicleYear, currentYear));
+function sanitizeNarrativeList(items: string[] | undefined, vehicleYear: number, currentYear = CURRENT_YEAR, extraAllowed: number[] = []) {
+  return (items ?? []).map((item) => sanitizeNarrativeYears(item, vehicleYear, currentYear, extraAllowed));
 }
 
 function isEnthusiastCar(make: string, model: string, variant?: string) {
@@ -716,16 +717,37 @@ REQUIRED NEW FIELDS:
 - sellerTip: ONE personal sentence of advice (e.g. "List at £X, expect offers around £X–£X. Lead with the service history.").
 - negotiationBuffer: integer GBP, typically 3–5% of privateSaleValue, rounded to £50.
 
-PER-PHOTO ANALYSIS — OUR MOAT, BE SPECIFIC:
-For EVERY photo, return 1–3 observations. Each must be:
-- SHORT and CONCRETE (max ~80 chars), referencing what is visibly in THAT photo. NEVER generic.
-- Good examples: "Kerbed nearside front alloy — typical refurb", "Tyre tread on rear looks marginal", "Stone chips on bonnet — age-typical", "Odometer confirms 47,213 miles", "Driver bolster wear consistent with mileage", "Engine bay clean, no leaks visible".
+PER-PHOTO ANALYSIS — OUR MOAT, BE SPECIFIC AND VISUALLY HONEST:
+The user message gives you a numbered list of photos ("Photo 1 — slot=front", "Photo 2 — slot=rear", ...). The images are sent in the SAME ORDER as that list. The slot label is the user's HINT — it may be WRONG because they uploaded photos in any order. You MUST look at each image and describe what is ACTUALLY in it.
+
+For EVERY photo you analyse:
+- Set photoIndex to the 1-based number of the image you are looking at (Photo 1, Photo 2, ...). This is non-negotiable — if you talk about seat wear, photoIndex must point at the image that actually shows seats.
+- Set slot to what you ACTUALLY see (front / rear / side / interior / odometer / engine / other). If the user labelled an image "interior" but it's clearly the rear bumper, set slot="rear" and describe the rear.
+- Never describe something that isn't in that photo. If a photo shows the rear of the car, do NOT mention seat wear in that observation — write it against the interior photo instead.
+
+DAMAGE vs SHADOW vs REFLECTION — be careful:
+- A dark line that follows a body crease, panel gap or curve in even light is almost always a SHADOW or reflection, not a scratch. Do not flag it.
+- A reflection of the sky, a building or the photographer on glossy paint is not paint damage. Do not flag it.
+- Real scratches usually break panel reflections, sit at odd angles to body lines, catch light along their length, or expose primer/metal.
+- Real dents distort reflections in a localised oval/round pattern; shadows from overhead light do not.
+- Kerb damage on alloys shows as missing lacquer/silver flecks on the rim outer edge, not as a dark arc following the rim.
+- If you are not confident something is real damage, either say "possible light mark — worth checking in person" (severity: minor, no priceImpact) or skip it. Do NOT invent defects.
+- Equally, do not miss obvious real wear: kerbed alloys with visible silver gouges, cracked bumpers, scuffs across body lines, missing trim, tyre cords showing, cracked screens, ripped seats, water staining, warning lights on the dash.
+
+Each observation must be SHORT and CONCRETE (max ~80 chars) and reference what is visibly in THAT photo. NEVER generic.
+- Good examples: "Kerbed nearside front alloy — visible silver gouges", "Odometer reads 47,213 miles — matches declared", "Driver bolster shows light leather creasing", "Engine bay tidy, no obvious leaks or corrosion".
 - severity: "positive" | "neutral" | "minor" | "notable".
-- priceImpact: GBP integer (negative = deduction, positive = uplift). Omit if truly zero.
+- priceImpact: GBP integer (negative = deduction, positive = uplift). Omit if truly zero or if you flagged something as merely "possible".
 - fixCost: GBP integer for realistic remedy cost. Omit for positive/neutral.
 - fixable: true if a private seller can sensibly fix before listing.
-- slot: must match the slot label given for that photo.
-Aim for 4–10 total insights. If a photo is clean, return a positive note rather than inventing problems.
+
+Aim for 1–2 observations per photo and 4–10 total. If a photo is clean, return a positive note rather than inventing problems.
+
+IMPORTED / GREY-IMPORT / JDM / EU-SPEC CARS:
+The vehicle may be a Japanese (JDM), American, or European import — especially R32/R33/R34 Skyline, Supra, Evo, Integra Type R, RX-7, Hilux Surf, Land Cruiser, S2000, NSX, AMG variants not officially sold in the UK, US muscle, Singer/restomod work, etc. Take import status into account in marketContext (UK MOT-able imports often command a premium over UK-spec equivalents for sought-after JDM, but lose value if mileage in km has been converted poorly or paperwork is patchy). Never claim "not sold in the UK so unvaluable" — give your best honest figure based on imported-car private listings and auction results.
+
+MOT — STRICT HONESTY RULE:
+Only mention MOT facts that are explicitly present in the MOT HISTORY block of the user message or in the provided MOT expiry field. NEVER invent MOT dates, test years, expiry years or phrases like "long MOT until [year]". If the user message does not give you an MOT expiry, say "MOT status not confirmed in records provided" — do not guess.
 
 Always reply by calling the valu8_report function. Never write JSON in plain text.`;
 
@@ -755,14 +777,15 @@ const TOOL = {
           items: {
             type: "object",
             properties: {
-              slot: { type: "string", enum: ["front","rear","side","interior","odometer","engine","other"], description: "Which photo this observation refers to." },
-              observation: { type: "string", description: "Short, concrete observation (max ~80 chars)." },
+              photoIndex: { type: "number", description: "1-based index of the photo this observation is about. MUST match the 'Photo N' number from the slot map in the user message — this is how we know which image you are describing." },
+              slot: { type: "string", enum: ["front","rear","side","interior","odometer","engine","other"], description: "What this photo ACTUALLY shows, as you see it. If the labelled slot looks wrong (e.g. labelled 'interior' but it's clearly the rear of the car), override it with what you genuinely see." },
+              observation: { type: "string", description: "Short, concrete observation about what is visibly in THIS specific photo (max ~80 chars). Must describe THIS image — never describe a different photo." },
               severity: { type: "string", enum: ["positive","neutral","minor","notable"] },
               priceImpact: { type: "number", description: "GBP impact on value. Negative = deduction, positive = uplift. Omit if zero." },
               fixCost: { type: "number", description: "GBP estimate to remedy. Omit for positive/neutral." },
               fixable: { type: "boolean", description: "Whether a private seller can sensibly fix this before listing." },
             },
-            required: ["slot", "observation", "severity"],
+            required: ["photoIndex", "slot", "observation", "severity"],
             additionalProperties: false,
           },
         },
@@ -845,6 +868,14 @@ Deno.serve(async (req) => {
     const motEntries = dvsa.entries ?? [];
     const latestTest = motEntries[0];
     const latestAdvisories = latestTest?.advisories ?? [];
+
+    // Years legitimately allowed in narrative output: vehicle year, current
+    // year, current+1, plus the real MOT expiry year (DVSA or user-provided).
+    const motExpiryYearFromDvsa = latestTest?.expiryDate ? Number(String(latestTest.expiryDate).slice(0, 4)) : undefined;
+    const motExpiryYearFromUser = body.motExpiry ? Number(String(body.motExpiry).slice(0, 4)) : undefined;
+    const allowedNarrativeYears: number[] = [];
+    if (Number.isFinite(motExpiryYearFromDvsa)) allowedNarrativeYears.push(motExpiryYearFromDvsa as number);
+    if (Number.isFinite(motExpiryYearFromUser)) allowedNarrativeYears.push(motExpiryYearFromUser as number);
     const latestFailures = latestTest?.failures ?? [];
     const allFailures = motEntries.flatMap((m) => m.failures ?? []);
     const latestAdvisoryText = latestAdvisories.join(" ").toLowerCase();
@@ -921,9 +952,8 @@ ONLY consider advisories and failures from the LATEST test when pricing and writ
 - Service notes: ${body.serviceNotes || "none provided"}
 - Photos attached: ${photoUrls.length}
 ${labeledPhotos.length > 0 ? `
-PHOTO SLOT MAP — use these EXACT slot keys in your photoInsights output:
-${labeledPhotos.map((p, i) => `  Photo ${i + 1} — slot="${p.slot}" (${SLOT_LABELS[p.slot]})`).join("\n")}
-The images below are sent in the same order as this list.` : ""}
+PHOTO LIST — the images below are sent in this exact order. Use the Photo N number as photoIndex in every photoInsight:
+${labeledPhotos.map((p, i) => `  Photo ${i + 1} — user-labelled "${p.slot}" (${SLOT_LABELS[p.slot]}). The label is a HINT only — describe what you actually see in this image and set slot to what you see.`).join("\n")}` : ""}
 
 ${marketBlock}
 
@@ -1154,16 +1184,17 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         adjustments.push({ label: "Adjusted toward known exotic floor (sparse market data)", impactPct: 0 });
       }
 
-      // Private-sale ratio — clean cars achieve closer to dealer asking than the old 0.90 assumed.
-      // Tune by condition: outstanding cars 0.95, good 0.93, average 0.91, poor 0.88.
-      let privateRatio = 0.92;
-      if (score >= 8.5) privateRatio = 0.95;
-      else if (score >= 7.5) privateRatio = 0.93;
-      else if (score >= 6.5) privateRatio = 0.91;
-      else privateRatio = 0.88;
+      // Private-sale ratio — clean cars achieve close to dealer asking. Lift the
+      // baseline a touch so we stop under-selling well-presented private cars.
+      // Tune by condition: outstanding 0.97, good 0.95, average 0.92, poor 0.89.
+      let privateRatio = 0.94;
+      if (score >= 8.5) privateRatio = 0.97;
+      else if (score >= 7.5) privateRatio = 0.95;
+      else if (score >= 6.5) privateRatio = 0.92;
+      else privateRatio = 0.89;
       if (hasStrongHistory) privateRatio += 0.01;
       if (recentMajorWork) privateRatio += 0.01;
-      privateRatio = clamp(privateRatio, 0.86, 0.97);
+      privateRatio = clamp(privateRatio, 0.88, 0.98);
 
       const privateSale = roundToGrain(dealerRetail * privateRatio);
       const dealerTradeIn = roundToGrain(dealerRetail * 0.78);
@@ -1297,23 +1328,33 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const aiUp = (ai.factorsUp ?? []).map((s) => String(s).trim()).filter(Boolean).slice(0, 4);
     const aiDown = (ai.factorsDown ?? []).map((s) => String(s).trim()).filter(Boolean).slice(0, 4);
     const factorsUp = aiUp.length > 0
-      ? sanitizeNarrativeList(aiUp, body.year)
+      ? sanitizeNarrativeList(aiUp, body.year, CURRENT_YEAR, allowedNarrativeYears)
       : adjustments.filter((a) => a.impactPct > 0).map((a) => a.label).slice(0, 4);
     const factorsDown = aiDown.length > 0
-      ? sanitizeNarrativeList(aiDown, body.year)
+      ? sanitizeNarrativeList(aiDown, body.year, CURRENT_YEAR, allowedNarrativeYears)
       : adjustments.filter((a) => a.impactPct < 0).map((a) => a.label).slice(0, 4);
 
-    const headline = sanitizeNarrativeYears(ai.headline ?? "", body.year);
+    const headline = sanitizeNarrativeYears(ai.headline ?? "", body.year, CURRENT_YEAR, allowedNarrativeYears);
 
     // Sanitize per-photo insights and attach the matching photoIndex.
     const rawInsights = Array.isArray(ai.photoInsights) ? ai.photoInsights : [];
     const photoInsights = rawInsights
       .map((ins) => {
-        const slot = (VALID_SLOTS.includes(ins?.slot as PhotoSlot) ? ins!.slot : "other") as PhotoSlot;
-        const observation = sanitizeNarrativeYears(String(ins?.observation ?? "").trim(), body.year).slice(0, 140);
+        const observation = sanitizeNarrativeYears(String(ins?.observation ?? "").trim(), body.year, CURRENT_YEAR, allowedNarrativeYears).slice(0, 140);
         if (!observation) return null;
+        // Photo index is the authoritative anchor — it ties the AI's words to the
+        // exact image it actually looked at, regardless of any user slot label.
+        const rawIndex = Number(ins?.photoIndex);
+        const photoIndex = Number.isFinite(rawIndex) && rawIndex >= 1 && rawIndex <= labeledPhotos.length
+          ? Math.floor(rawIndex) - 1
+          : -1;
+        // Trust the AI's detected slot first; fall back to the user-labelled slot
+        // for that image; finally to "other". Never re-derive slot from labelled list
+        // because the user labels may be wrong.
+        const aiSlot = VALID_SLOTS.includes(ins?.slot as PhotoSlot) ? (ins!.slot as PhotoSlot) : null;
+        const labeledSlot = photoIndex >= 0 ? labeledPhotos[photoIndex].slot : null;
+        const slot: PhotoSlot = (aiSlot ?? labeledSlot ?? "other") as PhotoSlot;
         const severity = (["positive","neutral","minor","notable"].includes(String(ins?.severity)) ? ins!.severity : "neutral") as "positive"|"neutral"|"minor"|"notable";
-        const photoIndex = labeledPhotos.findIndex((p) => p.slot === slot);
         const priceImpact = Number.isFinite(Number(ins?.priceImpact)) && Number(ins?.priceImpact) !== 0 ? Math.round(Number(ins!.priceImpact)) : undefined;
         const fixCost = Number.isFinite(Number(ins?.fixCost)) && Number(ins?.fixCost) > 0 ? Math.round(Number(ins!.fixCost)) : undefined;
         const fixable = typeof ins?.fixable === "boolean" ? ins!.fixable : undefined;
@@ -1329,22 +1370,30 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       })
       .filter(Boolean)
       .slice(0, 18);
-    const marketContext = sanitizeNarrativeYears(ai.marketContext ?? "", body.year);
-    const sellerTip = sanitizeNarrativeYears(ai.sellerTip ?? "", body.year);
+    const marketContext = sanitizeNarrativeYears(ai.marketContext ?? "", body.year, CURRENT_YEAR, allowedNarrativeYears);
+    const sellerTip = sanitizeNarrativeYears(ai.sellerTip ?? "", body.year, CURRENT_YEAR, allowedNarrativeYears);
 
-    // ----- Build MOT history payload (real DVSA where available, simulated fallback) -----
+    // ----- Build MOT history payload — REAL DVSA only. Never invent. -----
+    // If a registration was supplied, we either show genuine DVSA history or
+    // nothing at all. Simulated history is only ever used as a clearly-labelled
+    // illustration when no registration was given.
     let motHistory: any[] = [];
-    let motSource: "dvsa" | "simulated" = "simulated";
+    let motSource: "dvsa" | "simulated" | "unavailable" = "unavailable";
     let motNotice: string | undefined;
     if (motEntries.length > 0) {
       motHistory = motEntries;
       motSource = "dvsa";
     } else if (body.registration && body.registration.trim().length >= 2) {
-      motNotice = (dvsa as any).error ?? "No MOT records returned by DVSA.";
-      motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
+      // Reg provided but DVSA returned nothing — show no history at all rather
+      // than fabricate dates/expiry years that would mislead the seller.
+      motHistory = [];
+      motSource = "unavailable";
+      motNotice = (dvsa as any).error
+        ?? "We couldn't retrieve real MOT history for this registration. This may be a new import, a very new vehicle, or a vehicle exempt from MOT.";
     } else {
-      motNotice = "No registration provided — showing illustrative MOT history.";
-      motHistory = simulateMotHistory(body.year, body.mileage, seed).map(m => ({ ...m, source: "simulated" as const }));
+      motNotice = "No registration provided — MOT history not available.";
+      motHistory = [];
+      motSource = "unavailable";
     }
 
     const report = {
@@ -1352,7 +1401,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       conditionLabel: ai.conditionLabel,
       values,
       valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
-      valueReasoning: sanitizeNarrativeYears(valuationUnavailable ? pricingReasoning : ai.valueReasoning, body.year),
+      valueReasoning: sanitizeNarrativeYears(valuationUnavailable ? pricingReasoning : ai.valueReasoning, body.year, CURRENT_YEAR, allowedNarrativeYears),
       marketConfidence: confidence,
       marketConfidenceReason: confidenceReason,
       pricingSource: dataSource,
@@ -1363,19 +1412,19 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       marketAnchor: valuationUnavailable ? undefined : (anchorMedian > 0 ? Math.round(anchorMedian) : undefined),
       rareCarWarning,
       valuationUnavailable,
-      honestAnalysis: sanitizeNarrativeYears(valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis, body.year),
-      marketPositioning: sanitizeNarrativeYears(valuationUnavailable ? "This type of car needs a specialist's eye. A marque specialist or auction house will give you a proper appraisal." : ai.marketPositioning, body.year),
-      photoObservations: sanitizeNarrativeYears(ai.photoObservations, body.year),
+      honestAnalysis: sanitizeNarrativeYears(valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis, body.year, CURRENT_YEAR, allowedNarrativeYears),
+      marketPositioning: sanitizeNarrativeYears(valuationUnavailable ? "This type of car needs a specialist's eye. A marque specialist or auction house will give you a proper appraisal." : ai.marketPositioning, body.year, CURRENT_YEAR, allowedNarrativeYears),
+      photoObservations: sanitizeNarrativeYears(ai.photoObservations, body.year, CURRENT_YEAR, allowedNarrativeYears),
       photoInsights,
-      strengths: sanitizeNarrativeList(ai.strengths, body.year),
-      watchPoints: sanitizeNarrativeList(ai.watchPoints, body.year),
+      strengths: sanitizeNarrativeList(ai.strengths, body.year, CURRENT_YEAR, allowedNarrativeYears),
+      watchPoints: sanitizeNarrativeList(ai.watchPoints, body.year, CURRENT_YEAR, allowedNarrativeYears),
       recommendations: {
         listingPrice,
         recommendedAskingPrice,
         negotiationBuffer,
-        whereToSell: sanitizeNarrativeList(ai.recommendations?.whereToSell, body.year),
-        highlights: sanitizeNarrativeList(ai.recommendations?.highlights, body.year),
-        documents: sanitizeNarrativeList(ai.recommendations?.documents, body.year),
+        whereToSell: sanitizeNarrativeList(ai.recommendations?.whereToSell, body.year, CURRENT_YEAR, allowedNarrativeYears),
+        highlights: sanitizeNarrativeList(ai.recommendations?.highlights, body.year, CURRENT_YEAR, allowedNarrativeYears),
+        documents: sanitizeNarrativeList(ai.recommendations?.documents, body.year, CURRENT_YEAR, allowedNarrativeYears),
       },
       headline,
       marketContext,
