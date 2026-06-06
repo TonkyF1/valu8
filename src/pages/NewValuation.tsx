@@ -36,7 +36,7 @@ interface LookupResult {
 const finalSchema = z.object({
   make: z.string().min(1),
   model: z.string().min(1).max(80),
-  year: z.coerce.number().int().min(1950).max(2026),
+  year: z.coerce.number().int().min(1950).max(new Date().getFullYear() + 1),
   mileage: z.coerce.number().int().min(0).max(500000),
 });
 
