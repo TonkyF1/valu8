@@ -70,12 +70,27 @@ export default function NewValuation() {
 
   useEffect(() => { document.title = "New valuation — Valu8"; }, []);
 
-  async function handleLookup() {
-    const cleaned = reg.replace(/\s+/g, "").toUpperCase();
-    if (cleaned.length < 2) {
-      toast.error("Enter a valid UK registration");
-      return;
-    }
+  // Restore pending intent after sign-in/up
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const raw = sessionStorage.getItem("valu8_pending_intent");
+      if (!raw) return;
+      sessionStorage.removeItem("valu8_pending_intent");
+      const intent = JSON.parse(raw) as { kind: "lookup" | "manual"; reg?: string };
+      if (intent.kind === "lookup" && intent.reg) {
+        setReg(intent.reg);
+        // Trigger lookup on next tick so state is set
+        setTimeout(() => { runLookup(intent.reg!); }, 0);
+      } else if (intent.kind === "manual") {
+        setLookup({ registration: "" });
+        setEditing(true);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  async function runLookup(cleaned: string) {
     setLooking(true);
     try {
       const { data, error } = await supabase.functions.invoke("lookup-vehicle", {
@@ -93,12 +108,41 @@ export default function NewValuation() {
       toast.success("Vehicle found");
     } catch (err: any) {
       toast.error(err.message || "Lookup failed — you can enter details manually");
-      // Allow manual entry path
       setLookup({ registration: cleaned });
       setEditing(true);
     } finally {
       setLooking(false);
     }
+  }
+
+  async function handleLookup() {
+    const cleaned = reg.replace(/\s+/g, "").toUpperCase();
+    if (cleaned.length < 2) {
+      toast.error("Enter a valid UK registration");
+      return;
+    }
+    if (!user) {
+      try {
+        sessionStorage.setItem("valu8_pending_intent", JSON.stringify({ kind: "lookup", reg: cleaned }));
+      } catch {}
+      toast.message("Sign in to get your valuation", { description: "We'll pick up right where you left off." });
+      navigate("/auth");
+      return;
+    }
+    await runLookup(cleaned);
+  }
+
+  function handleManualEntry() {
+    if (!user) {
+      try {
+        sessionStorage.setItem("valu8_pending_intent", JSON.stringify({ kind: "manual" }));
+      } catch {}
+      toast.message("Sign in to get your valuation", { description: "We'll pick up right where you left off." });
+      navigate("/auth");
+      return;
+    }
+    setLookup({ registration: "" });
+    setEditing(true);
   }
 
   function resetLookup() {
