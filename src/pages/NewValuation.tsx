@@ -113,15 +113,27 @@ export default function NewValuation() {
     e.preventDefault();
     if (!user) return navigate("/auth");
 
-    const parsed = finalSchema.safeParse({ make, model, year, mileage });
+    const labels: Record<string, string> = { make: "Make", model: "Model", year: "Year", mileage: "Mileage" };
+    const parsed = finalSchema.safeParse({
+      make: make.trim(),
+      model: model.trim(),
+      year: year.toString().trim(),
+      mileage: mileage.toString().replace(/[,\s]/g, "").trim(),
+    });
     if (!parsed.success) {
       const fe: Record<string, string> = {};
+      const missing: string[] = [];
       for (const i of parsed.error.issues) {
         const k = String(i.path[0] ?? "");
-        if (k && !fe[k]) fe[k] = i.message || "Required";
+        if (k && !fe[k]) {
+          fe[k] = i.message || "Required";
+          missing.push(labels[k] || k);
+        }
       }
       setErrors(fe);
-      toast.error("Please complete the highlighted fields");
+      // Auto-open edit mode so user can see/fix the fields
+      if (missing.some((m) => ["Make", "Model", "Year"].includes(m))) setEditing(true);
+      toast.error(`Please check: ${missing.join(", ")}`);
       return;
     }
     setErrors({});
