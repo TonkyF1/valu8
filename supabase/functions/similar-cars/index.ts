@@ -316,7 +316,7 @@ Return ONLY a JSON object: { "listings": Listing[] }.`;
       })
     );
 
-    return json({ listings: withImages, fallback });
+    return json({ listings: withImages, fallback, matchMode, matchNote });
   } catch (err) {
     console.error(err);
     return json({ error: (err as Error).message }, 500);
