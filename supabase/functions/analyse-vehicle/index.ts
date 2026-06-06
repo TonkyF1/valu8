@@ -954,8 +954,8 @@ ONLY consider advisories and failures from the LATEST test when pricing and writ
 - Service notes: ${body.serviceNotes || "none provided"}
 - Photos attached: ${photoUrls.length}
 ${labeledPhotos.length > 0 ? `
-PHOTO LIST — the images below are sent in this exact order. Use the Photo N number as photoIndex in every photoInsight:
-${labeledPhotos.map((p, i) => `  Photo ${i + 1} — user-labelled "${p.slot}" (${SLOT_LABELS[p.slot]}). The label is a HINT only — describe what you actually see in this image and set slot to what you see.`).join("\n")}` : ""}
+PHOTO LIST — the images below are sent in this exact order. Use the Photo N number as photoIndex in every photoInsight. There are NO slot labels — look at each image and set the slot purely from what you actually see:
+${labeledPhotos.map((_, i) => `  Photo ${i + 1} — determine what this image shows by looking at it.`).join("\n")}` : ""}
 
 ${marketBlock}
 
