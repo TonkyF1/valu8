@@ -48,6 +48,8 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fallback, setFallback] = useState(false);
+  const [matchNote, setMatchNote] = useState<string | null>(null);
+  const [matchMode, setMatchMode] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,6 +64,8 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
         else {
           setListings((data as any)?.listings ?? []);
           setFallback(Boolean((data as any)?.fallback));
+          setMatchNote((data as any)?.matchNote ?? null);
+          setMatchMode((data as any)?.matchMode ?? null);
         }
       })
       .finally(() => !cancelled && setLoading(false));
@@ -81,8 +85,8 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
     el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: "smooth" });
   };
 
-  // Hide the entire section when we don't have enough trustworthy data.
-  if (!loading && (error || !listings || listings.length < 3)) {
+  // Hide only when we have absolutely nothing useful to show.
+  if (!loading && (error || !listings || listings.length < 2)) {
     return null;
   }
 
