@@ -755,14 +755,15 @@ const TOOL = {
           items: {
             type: "object",
             properties: {
-              slot: { type: "string", enum: ["front","rear","side","interior","odometer","engine","other"], description: "Which photo this observation refers to." },
-              observation: { type: "string", description: "Short, concrete observation (max ~80 chars)." },
+              photoIndex: { type: "number", description: "1-based index of the photo this observation is about. MUST match the 'Photo N' number from the slot map in the user message — this is how we know which image you are describing." },
+              slot: { type: "string", enum: ["front","rear","side","interior","odometer","engine","other"], description: "What this photo ACTUALLY shows, as you see it. If the labelled slot looks wrong (e.g. labelled 'interior' but it's clearly the rear of the car), override it with what you genuinely see." },
+              observation: { type: "string", description: "Short, concrete observation about what is visibly in THIS specific photo (max ~80 chars). Must describe THIS image — never describe a different photo." },
               severity: { type: "string", enum: ["positive","neutral","minor","notable"] },
               priceImpact: { type: "number", description: "GBP impact on value. Negative = deduction, positive = uplift. Omit if zero." },
               fixCost: { type: "number", description: "GBP estimate to remedy. Omit for positive/neutral." },
               fixable: { type: "boolean", description: "Whether a private seller can sensibly fix this before listing." },
             },
-            required: ["slot", "observation", "severity"],
+            required: ["photoIndex", "slot", "observation", "severity"],
             additionalProperties: false,
           },
         },
