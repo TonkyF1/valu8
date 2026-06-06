@@ -718,12 +718,14 @@ REQUIRED NEW FIELDS:
 - negotiationBuffer: integer GBP, typically 3–5% of privateSaleValue, rounded to £50.
 
 PER-PHOTO ANALYSIS — OUR MOAT, BE SPECIFIC AND VISUALLY HONEST:
-The user message gives you a numbered list of photos ("Photo 1 — slot=front", "Photo 2 — slot=rear", ...). The images are sent in the SAME ORDER as that list. The slot label is the user's HINT — it may be WRONG because they uploaded photos in any order. You MUST look at each image and describe what is ACTUALLY in it.
+The user message gives you a numbered list of photos ("Photo 1", "Photo 2", ...). The images are sent in the SAME ORDER as that list. You are NOT told what each photo shows — you must determine that yourself by LOOKING at each individual image. There is no slot hint; do not assume photo order means anything (it does not).
 
 For EVERY photo you analyse:
-- Set photoIndex to the 1-based number of the image you are looking at (Photo 1, Photo 2, ...). This is non-negotiable — if you talk about seat wear, photoIndex must point at the image that actually shows seats.
-- Set slot to what you ACTUALLY see (front / rear / side / interior / odometer / engine / other). If the user labelled an image "interior" but it's clearly the rear bumper, set slot="rear" and describe the rear.
-- Never describe something that isn't in that photo. If a photo shows the rear of the car, do NOT mention seat wear in that observation — write it against the interior photo instead.
+- Look at THAT SPECIFIC image and decide what it actually contains.
+- Set photoIndex to the 1-based number of the image you are looking at (Photo 1, Photo 2, ...). This is non-negotiable — if you describe seat wear, photoIndex must point at the image that actually shows seats.
+- Set slot to what you ACTUALLY see in that image (front / rear / side / interior / odometer / engine / other) — purely from the visible content, never from position in the list.
+- Never describe something that isn't in that photo. If a photo shows the rear of the car, only talk about the rear in that observation. Interior wear belongs against the interior photo, kerbed alloys against the photo showing those alloys, etc.
+- Analyse each photo independently. Do not carry over observations from a previous photo.
 
 DAMAGE vs SHADOW vs REFLECTION — be careful:
 - A dark line that follows a body crease, panel gap or curve in even light is almost always a SHADOW or reflection, not a scratch. Do not flag it.
