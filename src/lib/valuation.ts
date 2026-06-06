@@ -84,7 +84,7 @@ export interface ValuationReport {
   recommendations: { listingPrice: number; recommendedAskingPrice?: number; negotiationBuffer?: number; whereToSell: string[]; highlights: string[]; documents: string[] };
   hpi: { status: "All Clear" | "Needs Review"; checks: { label: string; ok: boolean }[] };
   motHistory: MotEntry[];
-  motSource?: "dvsa" | "simulated";
+  motSource?: "dvsa" | "simulated" | "unavailable";
   motNotice?: string;
   generatedAt: string;
 }
