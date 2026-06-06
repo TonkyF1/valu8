@@ -988,6 +988,61 @@ export default function Report() {
         </footer>
       </main>
       <Footer />
+
+      {/* Fullscreen photo lightbox */}
+      {lightboxIndex !== null && v && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+          onClick={() => setLightboxIndex(null)}
+        >
+          {/* Close */}
+          <button
+            type="button"
+            onClick={() => setLightboxIndex(null)}
+            className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center transition-colors"
+            aria-label="Close fullscreen photo"
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+
+          {/* Prev */}
+          {lightboxIndex > 0 && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
+              className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center transition-colors"
+              aria-label="Previous photo"
+            >
+              <ChevronLeft className="h-5 w-5 text-white" />
+            </button>
+          )}
+
+          {/* Next */}
+          {lightboxIndex < v.photo_urls.length - 1 && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
+              className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center transition-colors"
+              aria-label="Next photo"
+            >
+              <ChevronRight className="h-5 w-5 text-white" />
+            </button>
+          )}
+
+          {/* Image */}
+          <img
+            src={v.photo_urls[lightboxIndex]}
+            alt={`${v.make} ${v.model} photo ${lightboxIndex + 1}`}
+            className="max-h-[85vh] max-w-[92vw] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Counter */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[11px] uppercase tracking-[0.14em] text-white/70 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
+            {lightboxIndex + 1} / {v.photo_urls.length}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
