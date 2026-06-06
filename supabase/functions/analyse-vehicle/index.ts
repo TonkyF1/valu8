@@ -868,6 +868,14 @@ Deno.serve(async (req) => {
     const motEntries = dvsa.entries ?? [];
     const latestTest = motEntries[0];
     const latestAdvisories = latestTest?.advisories ?? [];
+
+    // Years legitimately allowed in narrative output: vehicle year, current
+    // year, current+1, plus the real MOT expiry year (DVSA or user-provided).
+    const motExpiryYearFromDvsa = latestTest?.expiryDate ? Number(String(latestTest.expiryDate).slice(0, 4)) : undefined;
+    const motExpiryYearFromUser = body.motExpiry ? Number(String(body.motExpiry).slice(0, 4)) : undefined;
+    const allowedNarrativeYears: number[] = [];
+    if (Number.isFinite(motExpiryYearFromDvsa)) allowedNarrativeYears.push(motExpiryYearFromDvsa as number);
+    if (Number.isFinite(motExpiryYearFromUser)) allowedNarrativeYears.push(motExpiryYearFromUser as number);
     const latestFailures = latestTest?.failures ?? [];
     const allFailures = motEntries.flatMap((m) => m.failures ?? []);
     const latestAdvisoryText = latestAdvisories.join(" ").toLowerCase();
