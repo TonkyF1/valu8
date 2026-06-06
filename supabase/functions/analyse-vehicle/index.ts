@@ -716,16 +716,37 @@ REQUIRED NEW FIELDS:
 - sellerTip: ONE personal sentence of advice (e.g. "List at £X, expect offers around £X–£X. Lead with the service history.").
 - negotiationBuffer: integer GBP, typically 3–5% of privateSaleValue, rounded to £50.
 
-PER-PHOTO ANALYSIS — OUR MOAT, BE SPECIFIC:
-For EVERY photo, return 1–3 observations. Each must be:
-- SHORT and CONCRETE (max ~80 chars), referencing what is visibly in THAT photo. NEVER generic.
-- Good examples: "Kerbed nearside front alloy — typical refurb", "Tyre tread on rear looks marginal", "Stone chips on bonnet — age-typical", "Odometer confirms 47,213 miles", "Driver bolster wear consistent with mileage", "Engine bay clean, no leaks visible".
+PER-PHOTO ANALYSIS — OUR MOAT, BE SPECIFIC AND VISUALLY HONEST:
+The user message gives you a numbered list of photos ("Photo 1 — slot=front", "Photo 2 — slot=rear", ...). The images are sent in the SAME ORDER as that list. The slot label is the user's HINT — it may be WRONG because they uploaded photos in any order. You MUST look at each image and describe what is ACTUALLY in it.
+
+For EVERY photo you analyse:
+- Set photoIndex to the 1-based number of the image you are looking at (Photo 1, Photo 2, ...). This is non-negotiable — if you talk about seat wear, photoIndex must point at the image that actually shows seats.
+- Set slot to what you ACTUALLY see (front / rear / side / interior / odometer / engine / other). If the user labelled an image "interior" but it's clearly the rear bumper, set slot="rear" and describe the rear.
+- Never describe something that isn't in that photo. If a photo shows the rear of the car, do NOT mention seat wear in that observation — write it against the interior photo instead.
+
+DAMAGE vs SHADOW vs REFLECTION — be careful:
+- A dark line that follows a body crease, panel gap or curve in even light is almost always a SHADOW or reflection, not a scratch. Do not flag it.
+- A reflection of the sky, a building or the photographer on glossy paint is not paint damage. Do not flag it.
+- Real scratches usually break panel reflections, sit at odd angles to body lines, catch light along their length, or expose primer/metal.
+- Real dents distort reflections in a localised oval/round pattern; shadows from overhead light do not.
+- Kerb damage on alloys shows as missing lacquer/silver flecks on the rim outer edge, not as a dark arc following the rim.
+- If you are not confident something is real damage, either say "possible light mark — worth checking in person" (severity: minor, no priceImpact) or skip it. Do NOT invent defects.
+- Equally, do not miss obvious real wear: kerbed alloys with visible silver gouges, cracked bumpers, scuffs across body lines, missing trim, tyre cords showing, cracked screens, ripped seats, water staining, warning lights on the dash.
+
+Each observation must be SHORT and CONCRETE (max ~80 chars) and reference what is visibly in THAT photo. NEVER generic.
+- Good examples: "Kerbed nearside front alloy — visible silver gouges", "Odometer reads 47,213 miles — matches declared", "Driver bolster shows light leather creasing", "Engine bay tidy, no obvious leaks or corrosion".
 - severity: "positive" | "neutral" | "minor" | "notable".
-- priceImpact: GBP integer (negative = deduction, positive = uplift). Omit if truly zero.
+- priceImpact: GBP integer (negative = deduction, positive = uplift). Omit if truly zero or if you flagged something as merely "possible".
 - fixCost: GBP integer for realistic remedy cost. Omit for positive/neutral.
 - fixable: true if a private seller can sensibly fix before listing.
-- slot: must match the slot label given for that photo.
-Aim for 4–10 total insights. If a photo is clean, return a positive note rather than inventing problems.
+
+Aim for 1–2 observations per photo and 4–10 total. If a photo is clean, return a positive note rather than inventing problems.
+
+IMPORTED / GREY-IMPORT / JDM / EU-SPEC CARS:
+The vehicle may be a Japanese (JDM), American, or European import — especially R32/R33/R34 Skyline, Supra, Evo, Integra Type R, RX-7, Hilux Surf, Land Cruiser, S2000, NSX, AMG variants not officially sold in the UK, US muscle, Singer/restomod work, etc. Take import status into account in marketContext (UK MOT-able imports often command a premium over UK-spec equivalents for sought-after JDM, but lose value if mileage in km has been converted poorly or paperwork is patchy). Never claim "not sold in the UK so unvaluable" — give your best honest figure based on imported-car private listings and auction results.
+
+MOT — STRICT HONESTY RULE:
+Only mention MOT facts that are explicitly present in the MOT HISTORY block of the user message or in the provided MOT expiry field. NEVER invent MOT dates, test years, expiry years or phrases like "long MOT until [year]". If the user message does not give you an MOT expiry, say "MOT status not confirmed in records provided" — do not guess.
 
 Always reply by calling the valu8_report function. Never write JSON in plain text.`;
 
