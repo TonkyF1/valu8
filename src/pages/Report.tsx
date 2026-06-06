@@ -206,11 +206,12 @@ export default function Report() {
   })();
 
   const share = async () => {
+    const shareUrl = `${window.location.origin}/shared/${v?.id ?? id}`;
     try {
-      await navigator.share?.({ title: `${v.year} ${v.make} ${v.model} — Valu8`, url: window.location.href });
+      await navigator.share?.({ title: `${v?.year} ${v?.make} ${v?.model} — Valu8`, url: shareUrl });
     } catch {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied");
+      navigator.clipboard.writeText(shareUrl);
+      toast.success("Share link copied");
     }
   };
 
