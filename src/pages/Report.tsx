@@ -776,7 +776,7 @@ export default function Report() {
               <CollapsibleSection
                 title="Watch Points"
                 icon={AlertTriangle}
-                defaultOpen={currentAdvisories.length > 0}
+                defaultOpen={currentAdvisories.length >= 3 || !!r.motHistory?.some((m: any) => m.result === "Fail")}
                 badge={
                   currentAdvisories.length > 0 ? (
                     <span className="text-[10px] font-medium text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-full px-2 py-0.5">
