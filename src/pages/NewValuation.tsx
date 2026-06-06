@@ -252,7 +252,7 @@ export default function NewValuation() {
             </div>
 
             <h1 className="text-[2rem] md:text-[2.85rem] font-semibold tracking-tight text-gradient leading-[1.05] animate-fade-in-up">
-              Know exactly what
+              Know exactly what{" "}
               <br className="hidden sm:block" />
               your car is worth
             </h1>
