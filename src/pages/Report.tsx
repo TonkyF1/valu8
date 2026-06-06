@@ -1137,10 +1137,12 @@ function PhotoFeedback({
   insights,
   photoUrls,
   onSelectPhoto,
+  onOpenLightbox,
 }: {
   insights: PhotoInsight[];
   photoUrls: string[];
   onSelectPhoto: (i: number) => void;
+  onOpenLightbox?: (i: number) => void;
 }) {
   // Group insights by photoIndex (fall back to grouping by slot when index missing)
   const grouped = new Map<number, PhotoInsight[]>();
