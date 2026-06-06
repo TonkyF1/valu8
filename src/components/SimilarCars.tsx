@@ -137,7 +137,7 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
         </div>
       )}
 
-      {!loading && listings && listings.length >= 3 && (
+      {!loading && listings && listings.length >= 2 && (
         <>
           <div
             ref={scrollerRef}
