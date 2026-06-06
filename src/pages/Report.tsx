@@ -602,22 +602,26 @@ export default function Report() {
 
             {/* Pro Tip — negotiation guidance */}
             {!valuationUnavailable && (
-              <div className="mt-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.05] px-4 py-3 flex gap-2.5">
-                <span className="text-amber-300 mt-0.5 leading-none" aria-hidden>💡</span>
+              <details className="mt-3 group">
+                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] font-semibold text-amber-300/90 hover:text-amber-300">
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                  💡 Pro tip — listing & offers
+                </summary>
                 {(() => {
                   const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  // Honest list price ≈ asking; small head-room only, not an upsell.
                   const listAt = Math.round((base * 1.015) / 50) * 50;
                   const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
                   const offerLow = Math.max(Math.round(r.values.privateSale * 0.95 / 50) * 50, Math.round((listAt - buffer * 1.6) / 50) * 50);
                   const offerHigh = Math.max(r.values.privateSale, Math.round((listAt - buffer * 0.7) / 50) * 50);
                   return (
-                    <p className="text-[13px] leading-[1.55] text-[#E8E8E8]">
-                      <span className="font-semibold text-amber-300">Pro Tip:</span> Listing around <strong className="tabular-nums">£{listAt.toLocaleString()}</strong> gives you a little head-room without scaring buyers off. Realistic offers will come in between <strong className="tabular-nums">£{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}</strong>. Don't drop below <strong className="tabular-nums">£{r.values.privateSale.toLocaleString()}</strong> unless you need a fast sale.
-                    </p>
+                    <ul className="mt-3 space-y-1.5 text-[13px] leading-[1.55] text-[#E8E8E8]">
+                      <li>• List at <strong className="tabular-nums">£{listAt.toLocaleString()}</strong> — small head-room without scaring buyers.</li>
+                      <li>• Expect offers between <strong className="tabular-nums">£{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}</strong>.</li>
+                      <li>• Don't drop below <strong className="tabular-nums">£{r.values.privateSale.toLocaleString()}</strong> unless you need a fast sale.</li>
+                    </ul>
                   );
                 })()}
-              </div>
+              </details>
             )}
 
             {!valuationUnavailable && liveCount == null && (
