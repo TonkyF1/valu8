@@ -1184,16 +1184,17 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         adjustments.push({ label: "Adjusted toward known exotic floor (sparse market data)", impactPct: 0 });
       }
 
-      // Private-sale ratio — clean cars achieve closer to dealer asking than the old 0.90 assumed.
-      // Tune by condition: outstanding cars 0.95, good 0.93, average 0.91, poor 0.88.
-      let privateRatio = 0.92;
-      if (score >= 8.5) privateRatio = 0.95;
-      else if (score >= 7.5) privateRatio = 0.93;
-      else if (score >= 6.5) privateRatio = 0.91;
-      else privateRatio = 0.88;
+      // Private-sale ratio — clean cars achieve close to dealer asking. Lift the
+      // baseline a touch so we stop under-selling well-presented private cars.
+      // Tune by condition: outstanding 0.97, good 0.95, average 0.92, poor 0.89.
+      let privateRatio = 0.94;
+      if (score >= 8.5) privateRatio = 0.97;
+      else if (score >= 7.5) privateRatio = 0.95;
+      else if (score >= 6.5) privateRatio = 0.92;
+      else privateRatio = 0.89;
       if (hasStrongHistory) privateRatio += 0.01;
       if (recentMajorWork) privateRatio += 0.01;
-      privateRatio = clamp(privateRatio, 0.86, 0.97);
+      privateRatio = clamp(privateRatio, 0.88, 0.98);
 
       const privateSale = roundToGrain(dealerRetail * privateRatio);
       const dealerTradeIn = roundToGrain(dealerRetail * 0.78);
