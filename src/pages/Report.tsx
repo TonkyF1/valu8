@@ -78,6 +78,20 @@ export default function Report() {
     return () => { clearTimeout(timer); ctrl.abort(); };
   }, [v]);
 
+  // Lightbox keyboard navigation
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!v) return;
+      const max = v.photo_urls.length - 1;
+      if (e.key === "Escape") setLightboxIndex(null);
+      if (e.key === "ArrowLeft" && lightboxIndex > 0) setLightboxIndex(lightboxIndex - 1);
+      if (e.key === "ArrowRight" && lightboxIndex < max) setLightboxIndex(lightboxIndex + 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxIndex, v]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
