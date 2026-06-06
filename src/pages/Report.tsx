@@ -753,7 +753,6 @@ export default function Report() {
               <CollapsibleSection
                 title="Strengths"
                 icon={Star}
-                defaultOpen
                 badge={
                   <span className="text-[10px] font-medium text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
                     {r.strengths.length}
