@@ -35,7 +35,9 @@ interface Valuation {
 
 export default function Report() {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
+  const isShared = location.pathname.startsWith("/shared/");
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
@@ -46,6 +48,19 @@ export default function Report() {
 
   useEffect(() => {
     if (!id) return;
+    if (isShared) {
+      // Public share view: fetch via edge function which signs photo URLs server-side.
+      supabase.functions.invoke("get-shared-valuation", { body: { id } })
+        .then(({ data, error }) => {
+          if (!error && data && !(data as any).error) {
+            const d = data as any;
+            setV({ ...d, photo_urls: Array.isArray(d.photo_urls) ? d.photo_urls.filter(Boolean) : [], report: d.report as ValuationReport });
+            document.title = `${d.year} ${d.make} ${d.model} — Valu8`;
+          }
+          setLoading(false);
+        });
+      return;
+    }
     supabase.from("valuations").select("*").eq("id", id).maybeSingle()
       .then(async ({ data }) => {
         if (data) {
@@ -57,7 +72,7 @@ export default function Report() {
         }
         setLoading(false);
       });
-  }, [id]);
+  }, [id, isShared]);
 
   useEffect(() => {
     if (!v) return;
