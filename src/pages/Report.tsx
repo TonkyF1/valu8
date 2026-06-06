@@ -383,13 +383,17 @@ export default function Report() {
         {/* Photo gallery */}
         {v.photo_urls.length > 0 && (
           <section className="premium-card p-2 mb-4 animate-fade-in-up">
-            <div className="aspect-[16/9] rounded-md overflow-hidden bg-muted">
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(activePhoto)}
+              className="block w-full aspect-[16/9] rounded-md overflow-hidden bg-muted"
+            >
               <img src={v.photo_urls[activePhoto]} alt={`${v.make} ${v.model}`} className="w-full h-full object-cover" />
-            </div>
+            </button>
             {v.photo_urls.length > 1 && (
               <div className="grid grid-cols-6 gap-1 mt-1.5">
                 {v.photo_urls.map((u, i) => (
-                  <button key={u} onClick={() => setActivePhoto(i)}
+                  <button key={u} onClick={() => { setActivePhoto(i); setLightboxIndex(i); }}
                     className={cn(
                       "aspect-[4/3] rounded overflow-hidden border-2 transition-all",
                       activePhoto === i ? "border-primary" : "border-transparent opacity-50 hover:opacity-100"
