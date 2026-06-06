@@ -1327,19 +1327,19 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const aiUp = (ai.factorsUp ?? []).map((s) => String(s).trim()).filter(Boolean).slice(0, 4);
     const aiDown = (ai.factorsDown ?? []).map((s) => String(s).trim()).filter(Boolean).slice(0, 4);
     const factorsUp = aiUp.length > 0
-      ? sanitizeNarrativeList(aiUp, body.year)
+      ? sanitizeNarrativeList(aiUp, body.year, CURRENT_YEAR, allowedNarrativeYears)
       : adjustments.filter((a) => a.impactPct > 0).map((a) => a.label).slice(0, 4);
     const factorsDown = aiDown.length > 0
-      ? sanitizeNarrativeList(aiDown, body.year)
+      ? sanitizeNarrativeList(aiDown, body.year, CURRENT_YEAR, allowedNarrativeYears)
       : adjustments.filter((a) => a.impactPct < 0).map((a) => a.label).slice(0, 4);
 
-    const headline = sanitizeNarrativeYears(ai.headline ?? "", body.year);
+    const headline = sanitizeNarrativeYears(ai.headline ?? "", body.year, CURRENT_YEAR, allowedNarrativeYears);
 
     // Sanitize per-photo insights and attach the matching photoIndex.
     const rawInsights = Array.isArray(ai.photoInsights) ? ai.photoInsights : [];
     const photoInsights = rawInsights
       .map((ins) => {
-        const observation = sanitizeNarrativeYears(String(ins?.observation ?? "").trim(), body.year).slice(0, 140);
+        const observation = sanitizeNarrativeYears(String(ins?.observation ?? "").trim(), body.year, CURRENT_YEAR, allowedNarrativeYears).slice(0, 140);
         if (!observation) return null;
         // Photo index is the authoritative anchor — it ties the AI's words to the
         // exact image it actually looked at, regardless of any user slot label.
