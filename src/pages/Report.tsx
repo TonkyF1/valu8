@@ -702,7 +702,6 @@ export default function Report() {
             <CollapsibleSection
               title="Honest Analysis"
               icon={Sparkles}
-              defaultOpen
               preview={bullets[0]}
             >
               <ul className="space-y-2">
