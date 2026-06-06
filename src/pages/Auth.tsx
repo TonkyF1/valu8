@@ -57,15 +57,15 @@ export default function Auth() {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+          options: { emailRedirectTo: `${window.location.origin}${postAuthPath()}` },
         });
         if (error) throw error;
         toast.success("Welcome to Valu8");
-        navigate("/dashboard");
+        navigate(postAuthPath());
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/dashboard");
+        navigate(postAuthPath());
       }
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
