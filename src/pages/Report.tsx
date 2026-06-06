@@ -146,32 +146,33 @@ export default function Report() {
   if (r.rareCarWarning) rarityReasons.push("of its rare specification or trim");
   if (aiConfidence === "Very Low") rarityReasons.push("our AI flagged it as a harder-than-average car to price");
 
-  // Trigger specialist ONLY when the car is genuinely difficult to price.
-  // A modest MarketCheck count alone is NOT enough — common cars often sit in
-  // a "Low" tier for a specific year/variant and should still use market data.
+  // Trigger expert overlay ONLY when the car is genuinely difficult to price.
+  // Require a strong signal stacked with at least one rarity reason, OR three
+  // independent rarity reasons. A modest MarketCheck count alone is never enough.
   const strongSingleSignal =
-    (liveCount != null && liveCount < 5) ||
+    (liveCount != null && liveCount < 3) ||
     !!r.rareCarWarning ||
     aiConfidence === "Very Low";
-  const showSpecialistBadge = strongSingleSignal || rarityReasons.length >= 3;
+  const showSpecialistBadge =
+    (strongSingleSignal && rarityReasons.length >= 1) || rarityReasons.length >= 3;
 
   const liveConfidenceLine =
     liveTier === "High"
-      ? "Priced using a deep pool of live UK listings — this is a well-supported valuation."
+      ? "Priced from a deep pool of live UK listings — a well-supported valuation."
       : liveTier === "Medium"
       ? "Based on a healthy sample of similar cars on the market right now."
-      : "Fewer similar cars are listed right now, so treat this as a strong estimate rather than a precise figure.";
+      : "Fewer live comparables right now — treat this as a strong estimate rather than a precise figure.";
 
   const specialistExplanation = (() => {
     if (!showSpecialistBadge) return null;
     const top = rarityReasons.slice(0, 2);
     if (top.length === 0) {
-      return "We've applied careful specialist analysis on top of live market data to give you a confident figure on a harder-than-average car to price.";
+      return "We've layered expert analysis on top of live market data to give you a confident figure on a harder-than-average car to price.";
     }
     if (top.length === 1) {
-      return `Because ${top[0]}, we've layered specialist analysis on top of live market data to give you a confident figure.`;
+      return `Because ${top[0]}, we've layered expert analysis on top of live market data to give you a confident figure.`;
     }
-    return `Because ${top[0]} and ${top[1]}, we've layered specialist analysis on top of live market data to give you a confident figure.`;
+    return `Because ${top[0]} and ${top[1]}, we've layered expert analysis on top of live market data to give you a confident figure.`;
   })();
 
   const share = async () => {
@@ -230,6 +231,31 @@ export default function Report() {
             </DropdownMenu>
           </div>
         </div>
+
+        {/* Hero Verdict — first thing the user sees */}
+        {!valuationUnavailable && (() => {
+          const verdict =
+            r.conditionScore >= 8
+              ? { label: "Strong position to sell", tone: "primary" as const, sub: "Quality examples like this move fast." }
+              : r.conditionScore >= 6.5
+              ? { label: "Good value — sell privately", tone: "primary" as const, sub: "Price honestly and lead with photos + history." }
+              : { label: "Needs attention before listing", tone: "amber" as const, sub: "A few tidy-ups will lift your sale price." };
+          return (
+            <div className={cn(
+              "mb-4 inline-flex items-center gap-2.5 rounded-full border px-3.5 py-1.5 animate-fade-in-up backdrop-blur-sm",
+              verdict.tone === "primary"
+                ? "border-primary/35 bg-primary/10 text-primary"
+                : "border-amber-500/35 bg-amber-500/10 text-amber-300",
+            )}>
+              <span className={cn(
+                "h-1.5 w-1.5 rounded-full animate-pulse",
+                verdict.tone === "primary" ? "bg-primary" : "bg-amber-400",
+              )} />
+              <span className="text-[11px] uppercase tracking-[0.16em] font-semibold">Verdict: {verdict.label}</span>
+              <span className="hidden sm:inline text-[11px] text-foreground/70 font-normal normal-case tracking-normal">· {verdict.sub}</span>
+            </div>
+          );
+        })()}
 
         {/* Title */}
         <div className="mb-6 animate-fade-in-up">
@@ -309,7 +335,7 @@ export default function Report() {
                   <li className="flex gap-2.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
-                      Market: <strong className="text-foreground">{showSpecialistBadge ? "Specialist applied" : `${liveTier} confidence`}</strong>
+                      Market: <strong className="text-foreground">{showSpecialistBadge ? "Expert insight" : `${liveTier} confidence`}</strong>
                       {liveCount != null && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
                     </span>
                   </li>
@@ -376,7 +402,7 @@ export default function Report() {
               {!valuationUnavailable && (
                 showSpecialistBadge ? (
                   <span className="inline-flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] px-2.5 py-1 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
-                    <ShieldCheck className="h-3 w-3" /> Specialist applied
+                    <ShieldCheck className="h-3 w-3" /> Expert insight
                   </span>
                 ) : (
                   <span className={cn(
@@ -437,7 +463,7 @@ export default function Report() {
                     </div>
                     <div className="min-w-0">
                       <div className="text-[10.5px] uppercase tracking-[0.16em] text-primary font-semibold mb-1">
-                        Specialist Valuation Applied
+                        Expert Insight Applied
                       </div>
                       <p className="text-[12.5px] leading-[1.55] text-foreground/85">
                         {specialistExplanation}
@@ -727,7 +753,6 @@ export default function Report() {
               <CollapsibleSection
                 title="Strengths"
                 icon={Star}
-                defaultOpen
                 badge={
                   <span className="text-[10px] font-medium text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
                     {r.strengths.length}

@@ -735,6 +735,7 @@ DAMAGE vs SHADOW vs REFLECTION — be careful:
 - Kerb damage on alloys shows as missing lacquer/silver flecks on the rim outer edge, not as a dark arc following the rim.
 - If you are not confident something is real damage, either say "possible light mark — worth checking in person" (severity: minor, no priceImpact) or skip it. Do NOT invent defects.
 - Equally, do not miss obvious real wear: kerbed alloys with visible silver gouges, cracked bumpers, scuffs across body lines, missing trim, tyre cords showing, cracked screens, ripped seats, water staining, warning lights on the dash.
+- BEFORE flagging anything as "notable" damage, sanity-check: is the mark visible from more than one angle, does it break a reflection, and would a reasonable buyer notice it standing 2m away? If not, downgrade to "minor" or skip.
 
 Each observation must be SHORT and CONCRETE (max ~80 chars) and reference what is visibly in THAT photo. NEVER generic.
 - Good examples: "Kerbed nearside front alloy — visible silver gouges", "Odometer reads 47,213 miles — matches declared", "Driver bolster shows light leather creasing", "Engine bay tidy, no obvious leaks or corrosion".
