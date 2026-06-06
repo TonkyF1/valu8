@@ -221,9 +221,15 @@ export default function Report() {
       <Header />
       <main className="flex-1 container py-6 md:py-8 max-w-5xl">
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> All valuations</Link>
-          </Button>
+          {isShared ? (
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/"><ArrowLeft className="h-4 w-4" /> Valu8</Link>
+            </Button>
+          ) : (
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> All valuations</Link>
+            </Button>
+          )}
           <div className="flex items-center gap-2">
             <Button
               variant="premium"
@@ -245,23 +251,26 @@ export default function Report() {
             >
               <Download className="h-4 w-4" /> PDF
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="More actions">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem onClick={() => navigate(`/valuation/${v.id}/edit`)}>
-                  <Pencil className="h-4 w-4" /> Edit valuation
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={share}>
-                  <Share2 className="h-4 w-4" /> Share link
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!isShared && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="More actions">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => navigate(`/valuation/${v.id}/edit`)}>
+                    <Pencil className="h-4 w-4" /> Edit valuation
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={share}>
+                    <Share2 className="h-4 w-4" /> Share link
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
+
 
         {/* Hero Verdict — first thing the user sees */}
         {!valuationUnavailable && (() => {
