@@ -109,6 +109,12 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
               Ranked by closeness to your year, mileage and spec.
             </p>
           )}
+          {matchNote && matchMode && matchMode !== "exact" && (
+            <p className="text-[11px] text-amber-400/90 mt-1 inline-flex items-center gap-1">
+              <Info className="h-3 w-3" />
+              {matchNote}
+            </p>
+          )}
         </div>
         {listings && listings.length > 2 && (
           <div className="hidden sm:flex items-center gap-1">
