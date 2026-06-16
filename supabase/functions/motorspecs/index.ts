@@ -281,7 +281,7 @@ const JSON_CT = "application/json";
 
 const ENDPOINTS: Record<string, { path: string; ct: string; normalise: (r: any) => any }> = {
   identity:           { path: "/identity/lookup",         ct: VND("identity"),         normalise: normaliseIdentity },
-  "identity-specs":   { path: "/identity-specs/lookup",   ct: VND("identity-specs"),   normalise: normaliseIdentity },
+  "identity-specs":   { path: "/identity-specs/lookup",   ct: VND("identity-specs"),   normalise: normaliseIdentitySpecs },
   provenance:         { path: "/provenance/check",        ct: VND("provenance"),       normalise: normaliseProvenance },
   valuation:          { path: "/valuation/value",         ct: VND("valuation"),        normalise: normaliseValuation },
   "valuation-brego":  { path: "/valuation-brego/value",   ct: VND("valuation-brego"),  normalise: normaliseValuation },
