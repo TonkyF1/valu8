@@ -100,6 +100,26 @@ export default function Report() {
     return () => { clearTimeout(timer); ctrl.abort(); };
   }, [v]);
 
+  // MotorSpecs — previous-ads market history (real ad history for this VRM)
+  useEffect(() => {
+    if (!v?.registration) { setMarketHistory(null); return; }
+    let cancelled = false;
+    supabase.functions
+      .invoke("motorspecs", {
+        body: { registration: v.registration, endpoints: ["previous-ads"] },
+      })
+      .then(({ data, error }) => {
+        if (cancelled || error) return;
+        const r = (data as any)?.results?.["previous-ads"];
+        if (r?.ok && r?.normalised && Array.isArray(r.normalised.ads) && r.normalised.ads.length > 0) {
+          setMarketHistory(r.normalised);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [v?.registration]);
+
+
   // Lightbox keyboard navigation
   useEffect(() => {
     if (lightboxIndex === null) return;
