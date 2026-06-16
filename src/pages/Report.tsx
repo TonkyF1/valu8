@@ -791,6 +791,82 @@ export default function Report() {
           </CollapsibleSection>
         )}
 
+        {/* Recent Market History — real previous ads for this VRM (MotorSpecs) */}
+        {marketHistory && marketHistory.ads.length > 0 && (() => {
+          const ads = [...marketHistory.ads].sort((a, b) =>
+            (b.lastSeen ?? "").localeCompare(a.lastSeen ?? "")
+          );
+          const soldCount = ads.filter(a => a.sold).length;
+          const fmtGBP = (n?: number) =>
+            typeof n === "number" ? `£${n.toLocaleString()}` : "—";
+          const fmtDate = (iso?: string) => {
+            if (!iso) return "—";
+            try { return format(new Date(iso), "MMM yyyy"); } catch { return iso.slice(0, 10); }
+          };
+          return (
+            <CollapsibleSection
+              title="Recent Market History"
+              icon={History}
+              defaultOpen
+              badge={
+                <span className="text-[10px] font-medium text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
+                  {ads.length} {ads.length === 1 ? "listing" : "listings"}
+                </span>
+              }
+              preview={
+                <>
+                  Previously advertised{" "}
+                  {soldCount > 0 ? <>— {soldCount} sold</> : <>— none confirmed sold</>}
+                </>
+              }
+            >
+              <div className="space-y-3">
+                <p className="text-[11px] text-muted-foreground">
+                  Real ad history for <span className="font-mono">{v.registration}</span> from MotorSpecs
+                  {marketHistory.make && marketHistory.model && (
+                    <> — matched as {marketHistory.make} {marketHistory.model}{marketHistory.trim ? ` ${marketHistory.trim}` : ""}</>
+                  )}
+                </p>
+                <ul className="space-y-2">
+                  {ads.map((a, i) => {
+                    const dropped = typeof a.originalPrice === "number" && typeof a.price === "number" && a.originalPrice > a.price;
+                    return (
+                      <li key={i} className="rounded-xl border border-border/50 bg-background/40 px-4 py-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-base font-semibold text-foreground">{fmtGBP(a.price)}</span>
+                              {dropped && (
+                                <span className="text-[10px] text-muted-foreground line-through">{fmtGBP(a.originalPrice)}</span>
+                              )}
+                              {a.sold ? (
+                                <span className="text-[10px] font-medium text-emerald-300 bg-emerald-400/10 border border-emerald-400/30 rounded-full px-2 py-0.5">Sold</span>
+                              ) : (
+                                <span className="text-[10px] font-medium text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-full px-2 py-0.5">Withdrawn / unsold</span>
+                              )}
+                            </div>
+                            <div className="mt-1 text-[11px] text-muted-foreground">
+                              {fmtDate(a.firstSeen)} → {fmtDate(a.lastSeen)}
+                              {typeof a.mileage === "number" && <> · {a.mileage.toLocaleString()} mi</>}
+                              {a.dealerType && <> · {a.dealerType}</>}
+                              {a.businessName && <> · {a.businessName}</>}
+                            </div>
+                            {a.adText && a.adText.trim() && (
+                              <p className="mt-1.5 text-[12px] leading-snug text-foreground/80 italic">"{a.adText.trim()}"</p>
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </CollapsibleSection>
+          );
+        })()}
+
+
+
 
         {/* Strengths + Watch Points — collapsible */}
         {!valuationUnavailable && (() => {
