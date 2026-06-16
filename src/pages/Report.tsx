@@ -45,6 +45,13 @@ export default function Report() {
 
   const [showOldAdvisories, setShowOldAdvisories] = useState(false);
   const [liveCount, setLiveCount] = useState<number | null>(null);
+  const [marketHistory, setMarketHistory] = useState<{
+    make?: string; model?: string; trim?: string;
+    ads: Array<{
+      sold: boolean; mileage?: number; price?: number; originalPrice?: number;
+      firstSeen?: string; lastSeen?: string; dealerType?: string; businessName?: string | null; adText?: string;
+    }>;
+  } | null>(null);
 
   useEffect(() => {
     if (!id) return;
