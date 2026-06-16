@@ -135,15 +135,19 @@ function normalisePreviousAds(raw: any) {
   };
 }
 
-// Map our endpoint key → { path, vendorService, normaliser }
-const ENDPOINTS: Record<string, { path: string; service: string; normalise: (r: any) => any }> = {
-  identity:       { path: "/identity/lookup",        service: "identity",        normalise: normaliseIdentity },
-  "identity-specs": { path: "/identity-specs/lookup", service: "identity-specs", normalise: normaliseIdentity },
-  provenance:     { path: "/provenance/check",       service: "provenance",      normalise: normaliseProvenance },
-  "valuation-brego":  { path: "/valuation-brego/value",  service: "valuation-brego",  normalise: normaliseValuation },
-  "valuation-cazana": { path: "/valuation-cazana/value", service: "valuation-cazana", normalise: normaliseValuation },
-  valuation:      { path: "/valuation/value",        service: "valuation",       normalise: normaliseValuation },
-  "previous-ads": { path: "/previous-ads/check",     service: "previous-ads",    normalise: normalisePreviousAds },
+// Per-endpoint mapping. `ct` is the Content-Type required by that service.
+const VND = (s: string) => `application/vnd.${s}.v1+json`;
+const JSON_CT = "application/json";
+
+const ENDPOINTS: Record<string, { path: string; ct: string; normalise: (r: any) => any }> = {
+  identity:           { path: "/identity/lookup",         ct: VND("identity"),         normalise: normaliseIdentity },
+  "identity-specs":   { path: "/identity-specs/lookup",   ct: VND("identity-specs"),   normalise: normaliseIdentity },
+  provenance:         { path: "/provenance/check",        ct: VND("provenance"),       normalise: normaliseProvenance },
+  valuation:          { path: "/valuation/value",         ct: VND("valuation"),        normalise: normaliseValuation },
+  "valuation-brego":  { path: "/valuation-brego/value",   ct: VND("valuation-brego"),  normalise: normaliseValuation },
+  "valuation-cazana": { path: "/valuation-cazana/value",  ct: VND("valuation-cazana"), normalise: normaliseValuation },
+  // previous-ads is the only service confirmed to require plain application/json
+  "previous-ads":     { path: "/previous-ads/check",      ct: JSON_CT,                 normalise: normalisePreviousAds },
 };
 
 Deno.serve(async (req) => {
