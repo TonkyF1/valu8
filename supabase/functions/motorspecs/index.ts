@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
     for (const key of requested) {
       const cfg = ENDPOINTS[key];
       if (!cfg) { results[key] = { error: "Unknown endpoint" }; continue; }
-      const res = await callEndpoint(cfg.path, cfg.service, reg);
+      const res = await callEndpoint(cfg.path, cfg.ct, reg);
       results[key] = {
         status: res.status,
         ok: res.ok,
