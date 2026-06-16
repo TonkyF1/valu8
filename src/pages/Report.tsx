@@ -822,7 +822,7 @@ export default function Report() {
             ["Previous keepers", fmt(specs.keepers?.numberOfPrevious)],
             ["Current keeper since", specs.keepers?.currentSince ?? null],
             ["Segment", specs.localSegment ?? specs.globalSegment ?? null],
-          ].filter(([, val]) => val !== null && val !== undefined && val !== "");
+          ].filter(([, val]) => val !== null && val !== undefined && val !== "") as Array<[string, string]>;
           return (
             <CollapsibleSection
               title="Verified Vehicle Specification"
