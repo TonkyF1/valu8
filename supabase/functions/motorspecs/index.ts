@@ -42,12 +42,16 @@ interface CallResult {
 
 /**
  * Call a MotorSpecs endpoint.
- * The API uses Apigility-style vendor media types:
- *   Content-Type: application/vnd.<service>.v1+json
- *   Accept:       application/hal+json
+ * The API is Apigility (Laminas API Tools). Accept is always application/hal+json.
+ * Content-Type is either the vendor media type `application/vnd.<service>.v1+json`
+ * or plain `application/json` depending on the endpoint.
  * Body is JSON with `registration` (not `vrm`).
  */
-async function callEndpoint(path: string, vendorService: string, registration: string): Promise<CallResult> {
+async function callEndpoint(
+  path: string,
+  contentType: string,
+  registration: string,
+): Promise<CallResult> {
   const token = await getToken();
   const url = `${BASE}${path}`;
   const resp = await fetch(url, {
@@ -55,13 +59,13 @@ async function callEndpoint(path: string, vendorService: string, registration: s
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/hal+json",
-      "Content-Type": `application/vnd.${vendorService}.v1+json`,
+      "Content-Type": contentType,
     },
     body: JSON.stringify({ registration }),
   });
   const ct = resp.headers.get("content-type") ?? "";
   const body = ct.includes("json") ? await resp.json().catch(() => null) : await resp.text();
-  return { status: resp.status, ok: resp.ok, body, url, vendorService };
+  return { status: resp.status, ok: resp.ok, body, url, vendorService: contentType };
 }
 
 // ---- Normalisers (best-effort, pass raw through too) ----
