@@ -12,71 +12,142 @@ async function getToken(): Promise<string> {
   const clientSecret = Deno.env.get("MOTORSPECS_CLIENT_SECRET");
   if (!clientId || !clientSecret) throw new Error("MotorSpecs credentials not configured");
 
-  // Try HTTP Basic auth (standard OAuth2 client_credentials)
-  const basic = btoa(`${clientId}:${clientSecret}`);
-  let resp = await fetch(TOKEN_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
-      Authorization: `Basic ${basic}`,
+  const attempts: Array<{ name: string; init: RequestInit }> = [
+    {
+      name: "basic+form",
+      init: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+          Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+        },
+        body: new URLSearchParams({ grant_type: "client_credentials" }),
+      },
     },
-    body: new URLSearchParams({ grant_type: "client_credentials" }),
-  });
+    {
+      name: "form-body",
+      init: {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+        body: new URLSearchParams({
+          grant_type: "client_credentials",
+          client_id: clientId,
+          client_secret: clientSecret,
+        }),
+      },
+    },
+    {
+      name: "json-body",
+      init: {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          grant_type: "client_credentials",
+          client_id: clientId,
+          client_secret: clientSecret,
+        }),
+      },
+    },
+  ];
 
-  if (!resp.ok) {
-    const t1 = await resp.text();
-    console.log("MotorSpecs Basic auth failed", resp.status, t1.slice(0, 200), "— trying body credentials");
-    resp = await fetch(TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-      body: new URLSearchParams({
-        grant_type: "client_credentials",
-        client_id: clientId,
-        client_secret: clientSecret,
-      }),
-    });
-  }
-
-  if (!resp.ok) {
-    const t2 = await resp.text();
-    console.log("MotorSpecs form body failed", resp.status, t2.slice(0, 200), "— trying JSON body");
-    resp = await fetch(TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret }),
-    });
-  }
-
-
-  if (!resp.ok) {
+  let lastErr = "";
+  for (const attempt of attempts) {
+    const resp = await fetch(TOKEN_URL, attempt.init);
     const text = await resp.text();
-    throw new Error(`MotorSpecs token error ${resp.status}: ${text.slice(0, 300)}`);
+    if (resp.ok) {
+      const json = JSON.parse(text);
+      const token = json.access_token ?? json.token ?? json.accessToken;
+      const expiresIn = Number(json.expires_in ?? json.expiresIn ?? 3600);
+      if (!token) throw new Error(`MotorSpecs token missing: ${text.slice(0, 300)}`);
+      cachedToken = { token, expiresAt: Date.now() + expiresIn * 1000 };
+      console.log(`MotorSpecs auth ok via ${attempt.name} (expires_in=${expiresIn})`);
+      return token;
+    }
+    lastErr = `${attempt.name} → ${resp.status} ${text.slice(0, 200)}`;
+    console.log(`MotorSpecs auth attempt ${attempt.name} failed: ${resp.status} ${text.slice(0, 200)}`);
   }
-  const json = await resp.json();
-  const token = json.access_token ?? json.token ?? json.accessToken;
-  const expiresIn = Number(json.expires_in ?? json.expiresIn ?? 3600);
-  if (!token) throw new Error(`MotorSpecs token missing in response: ${JSON.stringify(json).slice(0, 300)}`);
-  cachedToken = { token, expiresAt: Date.now() + expiresIn * 1000 };
-  return token;
+  throw new Error(`MotorSpecs token error. Last: ${lastErr}`);
 }
 
-async function callEndpoint(path: string, vrm: string) {
+interface CallResult {
+  status: number;
+  ok: boolean;
+  body: unknown;
+  url: string;
+}
+
+async function callEndpoint(path: string, payload?: unknown): Promise<CallResult> {
   const token = await getToken();
-  const url = `${BASE}${path}?vrm=${encodeURIComponent(vrm)}`;
+  const url = `${BASE}${path}`;
   const resp = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload ?? {}),
   });
-  const contentType = resp.headers.get("content-type") ?? "";
-  const body = contentType.includes("application/json") ? await resp.json() : await resp.text();
-  return { status: resp.status, ok: resp.ok, body };
+  const ct = resp.headers.get("content-type") ?? "";
+  const body = ct.includes("application/json") ? await resp.json().catch(() => null) : await resp.text();
+  return { status: resp.status, ok: resp.ok, body, url };
+}
+
+// Normalisation helpers — best-effort, pass through raw too.
+function normaliseIdentity(raw: any) {
+  if (!raw || typeof raw !== "object") return null;
+  const r: any = raw.data ?? raw.result ?? raw.vehicle ?? raw;
+  return {
+    vrm: r.vrm ?? r.registration ?? r.reg,
+    vin: r.vin ?? r.VIN,
+    make: r.make ?? r.manufacturer,
+    model: r.model,
+    variant: r.variant ?? r.derivative ?? r.trim,
+    year: Number(r.year ?? r.modelYear ?? r.yearOfManufacture) || undefined,
+    fuelType: r.fuelType ?? r.fuel,
+    transmission: r.transmission,
+    bodyStyle: r.bodyStyle ?? r.bodyType,
+    doors: Number(r.doors ?? r.numberOfDoors) || undefined,
+    colour: r.colour ?? r.color,
+    engineCapacity: Number(r.engineCapacity ?? r.engineCc) || undefined,
+    co2: Number(r.co2 ?? r.co2Emissions) || undefined,
+    raw,
+  };
+}
+
+function normaliseProvenance(raw: any) {
+  if (!raw || typeof raw !== "object") return null;
+  const r: any = raw.data ?? raw.result ?? raw;
+  const flag = (...keys: string[]) =>
+    keys.reduce<any>((acc, k) => acc ?? r[k] ?? r?.checks?.[k], undefined);
+  return {
+    outstandingFinance: !!flag("outstandingFinance", "finance", "hasFinance"),
+    writeOff: !!flag("writeOff", "insuranceWriteOff", "writtenOff"),
+    stolen: !!flag("stolen", "stolenMarker"),
+    mileageDiscrepancy: !!flag("mileageDiscrepancy", "mileageAnomaly"),
+    plateChanges: r.plateChanges ?? r.previousPlates ?? [],
+    keeperChanges: Number(r.keeperChanges ?? r.numberOfKeepers) || undefined,
+    raw,
+  };
+}
+
+function normaliseValuation(raw: any) {
+  if (!raw || typeof raw !== "object") return null;
+  const r: any = raw.data ?? raw.result ?? raw.valuation ?? raw;
+  return {
+    tradeIn: Number(r.tradeIn ?? r.trade ?? r.dealerTradeIn) || undefined,
+    privateSale: Number(r.privateSale ?? r.private ?? r.privateValue) || undefined,
+    dealerRetail: Number(r.dealerRetail ?? r.retail ?? r.forecourt) || undefined,
+    raw,
+  };
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { registration, endpoints } = await req.json().catch(() => ({}));
+    const { registration, endpoints, checkId, valueId, calculatorId } = await req.json().catch(() => ({}));
     const reg = String(registration ?? "").replace(/\s+/g, "").toUpperCase();
     if (!reg || reg.length < 2 || reg.length > 8) {
       return new Response(JSON.stringify({ error: "Invalid registration" }), {
@@ -84,29 +155,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Default: just identity. Pass `endpoints: ["identity","provenance","finance","specs","mot"]` for more.
     const list: string[] = Array.isArray(endpoints) && endpoints.length
-      ? endpoints
+      ? endpoints.map((e: string) => e.toLowerCase())
       : ["identity"];
 
-    const pathMap: Record<string, string> = {
-      identity: "/v2/Identity",
-      identityspecs: "/v2/IdentitySpecs",
-      specs: "/v2/Specs",
-      finance: "/v2/Finance",
-      provenance: "/v2/Provenance",
-      mot: "/v2/MOT",
-    };
+    const results: Record<string, any> = {};
 
-    const results: Record<string, unknown> = {};
-    for (const name of list) {
-      const path = pathMap[name.toLowerCase()];
-      if (!path) { results[name] = { error: "Unknown endpoint" }; continue; }
-      try {
-        results[name] = await callEndpoint(path, reg);
-      } catch (e: any) {
-        results[name] = { error: e?.message ?? String(e) };
-      }
+    if (list.includes("identity")) {
+      const res = await callEndpoint(`/identity/lookup/${encodeURIComponent(reg)}`);
+      results.identity = { ...res, normalised: res.ok ? normaliseIdentity(res.body) : null };
+    }
+    if (list.includes("provenance")) {
+      const id = checkId ?? reg;
+      const res = await callEndpoint(`/provenance/check/${encodeURIComponent(id)}`, { vrm: reg });
+      results.provenance = { ...res, normalised: res.ok ? normaliseProvenance(res.body) : null };
+    }
+    if (list.includes("valuation")) {
+      const id = valueId ?? reg;
+      const res = await callEndpoint(`/valuation-vip/value/${encodeURIComponent(id)}`, { vrm: reg });
+      results.valuation = { ...res, normalised: res.ok ? normaliseValuation(res.body) : null };
+    }
+    if (list.includes("finance")) {
+      const id = calculatorId ?? reg;
+      const res = await callEndpoint(`/finance/calculator/${encodeURIComponent(id)}`, { vrm: reg });
+      results.finance = res;
     }
 
     return new Response(JSON.stringify({ registration: reg, results }, null, 2), {
