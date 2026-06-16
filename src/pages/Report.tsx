@@ -52,6 +52,7 @@ export default function Report() {
       firstSeen?: string; lastSeen?: string; dealerType?: string; businessName?: string | null; adText?: string;
     }>;
   } | null>(null);
+  const [specs, setSpecs] = useState<any | null>(null);
 
   useEffect(() => {
     if (!id) return;
