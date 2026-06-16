@@ -101,20 +101,23 @@ export default function Report() {
     return () => { clearTimeout(timer); ctrl.abort(); };
   }, [v]);
 
-  // MotorSpecs — previous-ads market history (real ad history for this VRM)
+  // MotorSpecs — previous-ads + identity-specs in one call
   useEffect(() => {
-    if (!v?.registration) { setMarketHistory(null); return; }
+    if (!v?.registration) { setMarketHistory(null); setSpecs(null); return; }
     let cancelled = false;
     supabase.functions
       .invoke("motorspecs", {
-        body: { registration: v.registration, endpoints: ["previous-ads"] },
+        body: { registration: v.registration, endpoints: ["previous-ads", "identity-specs"] },
       })
       .then(({ data, error }) => {
         if (cancelled || error) return;
-        const r = (data as any)?.results?.["previous-ads"];
-        if (r?.ok && r?.normalised && Array.isArray(r.normalised.ads) && r.normalised.ads.length > 0) {
-          setMarketHistory(r.normalised);
+        const results = (data as any)?.results ?? {};
+        const ads = results["previous-ads"];
+        if (ads?.ok && ads?.normalised && Array.isArray(ads.normalised.ads) && ads.normalised.ads.length > 0) {
+          setMarketHistory(ads.normalised);
         }
+        const id = results["identity-specs"];
+        if (id?.ok && id?.normalised) setSpecs(id.normalised);
       })
       .catch(() => {});
     return () => { cancelled = true; };
