@@ -795,6 +795,74 @@ export default function Report() {
           </CollapsibleSection>
         )}
 
+        {/* Verified Vehicle Specification — MotorSpecs identity-specs (DVLA + MVRIS + JATO) */}
+        {specs && (() => {
+          const fmt = (n: any, suffix = "") =>
+            n === undefined || n === null || n === "" ? null : `${typeof n === "number" ? n.toLocaleString() : n}${suffix}`;
+          const rows: Array<[string, string | null]> = [
+            ["Make / Model", [specs.make, specs.model].filter(Boolean).join(" ") || null],
+            ["Version", specs.version ?? specs.trim ?? null],
+            ["Generation", specs.generation ? `Mk${specs.generation}${specs.series ? ` (${specs.series})` : ""}` : specs.series ?? null],
+            ["Year", fmt(specs.year)],
+            ["First registered", specs.regDate ?? null],
+            ["Body", [specs.bodyStyle, specs.doors ? `${specs.doors}dr` : null, specs.seats ? `${specs.seats} seats` : null].filter(Boolean).join(" · ") || null],
+            ["Engine", [specs.engineCC ? `${specs.engineCC}cc` : null, specs.fuelType, specs.fuelDelivery].filter(Boolean).join(" · ") || null],
+            ["Power", specs.powerBHP ? `${specs.powerBHP} bhp${specs.powerKW ? ` (${specs.powerKW} kW)` : ""}` : null],
+            ["Torque", fmt(specs.torqueNm, " Nm")],
+            ["Transmission", [specs.transmission, specs.gears ? `${specs.gears}-spd` : null, specs.driveType].filter(Boolean).join(" · ") || null],
+            ["Economy (combined)", fmt(specs.combinedMpg, " mpg")],
+            ["0–60 mph", fmt(specs.zeroToSixtyS, " s")],
+            ["Top speed", fmt(specs.topSpeedMph, " mph")],
+            ["CO₂", fmt(specs.co2, " g/km")],
+            ["Euro status", fmt(specs.euroStatus)],
+            ["Kerb weight", fmt(specs.kerbWeightKg, " kg")],
+            ["Colour", specs.colour ?? null],
+            ["VIN", specs.vin ?? null],
+            ["Origin", specs.origin ?? null],
+            ["Previous keepers", fmt(specs.keepers?.numberOfPrevious)],
+            ["Current keeper since", specs.keepers?.currentSince ?? null],
+            ["Segment", specs.localSegment ?? specs.globalSegment ?? null],
+          ].filter(([, val]) => val !== null && val !== undefined && val !== "");
+          return (
+            <CollapsibleSection
+              title="Verified Vehicle Specification"
+              icon={ShieldCheck}
+              defaultOpen
+              badge={
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
+                  DVLA + MVRIS
+                </span>
+              }
+            >
+              <p className="text-xs text-muted-foreground mb-4">
+                Sourced live from MotorSpecs for <span className="font-mono font-semibold text-foreground">{specs.vrm ?? v.registration}</span>
+                {specs.desirabilityScore ? <> · Desirability score <span className="text-foreground font-semibold">{specs.desirabilityScore}</span></> : null}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                {rows.map(([label, val]) => (
+                  <div key={label} className="flex justify-between gap-3 border-b border-border/40 py-1.5">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="text-foreground font-medium text-right">{val}</span>
+                  </div>
+                ))}
+              </div>
+              {Array.isArray(specs.similarVehicles) && specs.similarVehicles.length > 0 && (
+                <div className="mt-5">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Similar variants ({specs.similarVehicles.length})</div>
+                  <ul className="space-y-1.5 text-sm">
+                    {specs.similarVehicles.slice(0, 6).map((s: any) => (
+                      <li key={s.id} className="flex justify-between gap-3 border-b border-border/30 py-1.5">
+                        <span className="text-foreground">{s.year} {s.make} {s.model} <span className="text-muted-foreground">— {s.version}</span></span>
+                        <span className="text-muted-foreground text-xs">{s.transmissionDescription ?? s.transmission}{s.powerBHP ? ` · ${s.powerBHP}bhp` : ""}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CollapsibleSection>
+          );
+        })()}
+
         {/* Recent Market History — real previous ads for this VRM (MotorSpecs) */}
         {marketHistory && marketHistory.ads.length > 0 && (() => {
           const ads = [...marketHistory.ads].sort((a, b) =>
