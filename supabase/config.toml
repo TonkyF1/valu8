@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.marketcheck-count]
 verify_jwt = false
+
+[functions.motorspecs]
+verify_jwt = false
