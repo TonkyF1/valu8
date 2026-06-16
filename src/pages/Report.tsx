@@ -796,8 +796,15 @@ export default function Report() {
           const ads = [...marketHistory.ads].sort((a, b) =>
             (b.lastSeen ?? "").localeCompare(a.lastSeen ?? "")
           );
-          const soldCount = ads.filter(a => a.sold).length;
-          const fmtGBP = (n?: number) =>
+          const soldAds = ads.filter(a => a.sold);
+          const listedAds = ads.filter(a => !a.sold);
+          const pricesWith = (xs: typeof ads) => xs.map(a => a.price).filter((n): n is number => typeof n === "number");
+          const soldPrices = pricesWith(soldAds);
+          const listedPrices = pricesWith(listedAds);
+          const avg = (xs: number[]) => xs.length ? Math.round(xs.reduce((s, n) => s + n, 0) / xs.length) : null;
+          const avgSold = avg(soldPrices);
+          const avgListed = avg(listedPrices);
+          const fmtGBP = (n?: number | null) =>
             typeof n === "number" ? `£${n.toLocaleString()}` : "—";
           const fmtDate = (iso?: string) => {
             if (!iso) return "—";
@@ -809,57 +816,118 @@ export default function Report() {
               icon={History}
               defaultOpen
               badge={
-                <span className="text-[10px] font-medium text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
-                  {ads.length} {ads.length === 1 ? "listing" : "listings"}
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
+                  Verified data
                 </span>
               }
               preview={
                 <>
-                  Previously advertised{" "}
-                  {soldCount > 0 ? <>— {soldCount} sold</> : <>— none confirmed sold</>}
+                  {ads.length} previous {ads.length === 1 ? "listing" : "listings"}
+                  {soldAds.length > 0 && <> · {soldAds.length} sold</>}
+                  {avgSold && <> · avg {fmtGBP(avgSold)}</>}
                 </>
               }
             >
-              <div className="space-y-3">
-                <p className="text-[11px] text-muted-foreground">
-                  Real ad history for <span className="font-mono">{v.registration}</span> from MotorSpecs
-                  {marketHistory.make && marketHistory.model && (
-                    <> — matched as {marketHistory.make} {marketHistory.model}{marketHistory.trim ? ` ${marketHistory.trim}` : ""}</>
-                  )}
-                </p>
-                <ul className="space-y-2">
+              <div className="space-y-4">
+                <div className="rounded-xl bg-primary/[0.06] border border-primary/20 px-4 py-2.5">
+                  <p className="text-[11px] leading-relaxed text-foreground/80">
+                    <span className="font-semibold text-primary">Based on previous listings for this exact registration</span>
+                    {" "}<span className="font-mono uppercase">{v.registration}</span>
+                    {marketHistory.make && marketHistory.model && (
+                      <> — matched as {marketHistory.make} {marketHistory.model}{marketHistory.trim ? ` ${marketHistory.trim}` : ""}</>
+                    )}.
+                  </p>
+                </div>
+
+                {/* Summary stats */}
+                {(avgSold || avgListed) && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-xl border border-border/60 bg-background/40 px-3 py-2.5">
+                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Listings</div>
+                      <div className="text-lg font-bold text-foreground mt-0.5">{ads.length}</div>
+                    </div>
+                    <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/[0.06] px-3 py-2.5">
+                      <div className="text-[9px] uppercase tracking-wider text-emerald-300/90 font-semibold">Avg sold</div>
+                      <div className="text-lg font-bold text-emerald-200 mt-0.5">{fmtGBP(avgSold)}</div>
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-background/40 px-3 py-2.5">
+                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Avg asked</div>
+                      <div className="text-lg font-bold text-foreground mt-0.5">{fmtGBP(avgListed)}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Timeline of listings */}
+                <ol className="relative space-y-2.5 pl-4 before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-px before:bg-border/60">
                   {ads.map((a, i) => {
                     const dropped = typeof a.originalPrice === "number" && typeof a.price === "number" && a.originalPrice > a.price;
+                    const drop = dropped ? (a.originalPrice! - a.price!) : 0;
                     return (
-                      <li key={i} className="rounded-xl border border-border/50 bg-background/40 px-4 py-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-base font-semibold text-foreground">{fmtGBP(a.price)}</span>
-                              {dropped && (
-                                <span className="text-[10px] text-muted-foreground line-through">{fmtGBP(a.originalPrice)}</span>
-                              )}
-                              {a.sold ? (
-                                <span className="text-[10px] font-medium text-emerald-300 bg-emerald-400/10 border border-emerald-400/30 rounded-full px-2 py-0.5">Sold</span>
-                              ) : (
-                                <span className="text-[10px] font-medium text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-full px-2 py-0.5">Withdrawn / unsold</span>
-                              )}
+                      <li key={i} className="relative">
+                        <span className={cn(
+                          "absolute -left-4 top-3 h-2.5 w-2.5 rounded-full border-2",
+                          a.sold
+                            ? "bg-emerald-400 border-emerald-300/40 shadow-[0_0_8px_hsl(152_70%_55%/0.6)]"
+                            : "bg-muted-foreground/40 border-border"
+                        )} />
+                        <div className={cn(
+                          "rounded-xl border px-4 py-3 transition-colors",
+                          a.sold
+                            ? "border-emerald-400/25 bg-emerald-400/[0.04]"
+                            : "border-border/60 bg-background/40"
+                        )}>
+                          <div className="flex items-start justify-between gap-3 flex-wrap">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-baseline gap-2 flex-wrap">
+                                <span className="text-xl font-bold text-foreground tabular-nums">{fmtGBP(a.price)}</span>
+                                {dropped && (
+                                  <>
+                                    <span className="text-xs text-muted-foreground line-through tabular-nums">{fmtGBP(a.originalPrice)}</span>
+                                    <span className="text-[10px] font-semibold text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded px-1.5 py-0.5 inline-flex items-center gap-1">
+                                      <TrendingDown className="h-2.5 w-2.5" /> −£{drop.toLocaleString()}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                              <div className="mt-1.5 text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                                <span className="text-foreground/70 font-medium">
+                                  {fmtDate(a.firstSeen)}
+                                  {a.lastSeen && a.lastSeen !== a.firstSeen && <> → {fmtDate(a.lastSeen)}</>}
+                                </span>
+                                {typeof a.mileage === "number" && (
+                                  <><span>·</span><span>{a.mileage.toLocaleString()} mi</span></>
+                                )}
+                                {a.dealerType && (
+                                  <><span>·</span><span className="capitalize">{a.dealerType}</span></>
+                                )}
+                                {a.businessName && (
+                                  <><span>·</span><span className="truncate max-w-[180px]">{a.businessName}</span></>
+                                )}
+                              </div>
                             </div>
-                            <div className="mt-1 text-[11px] text-muted-foreground">
-                              {fmtDate(a.firstSeen)} → {fmtDate(a.lastSeen)}
-                              {typeof a.mileage === "number" && <> · {a.mileage.toLocaleString()} mi</>}
-                              {a.dealerType && <> · {a.dealerType}</>}
-                              {a.businessName && <> · {a.businessName}</>}
-                            </div>
-                            {a.adText && a.adText.trim() && (
-                              <p className="mt-1.5 text-[12px] leading-snug text-foreground/80 italic">"{a.adText.trim()}"</p>
-                            )}
+                            <span className={cn(
+                              "text-[10px] font-semibold uppercase tracking-wider rounded-full px-2 py-0.5 border shrink-0",
+                              a.sold
+                                ? "text-emerald-200 bg-emerald-400/15 border-emerald-400/40"
+                                : "text-muted-foreground bg-muted/30 border-border/60"
+                            )}>
+                              {a.sold ? "Sold" : "Withdrawn"}
+                            </span>
                           </div>
+                          {a.adText && a.adText.trim() && (
+                            <p className="mt-2 text-[12px] leading-snug text-foreground/70 italic border-l-2 border-border/60 pl-2.5">
+                              "{a.adText.trim()}"
+                            </p>
+                          )}
                         </div>
                       </li>
                     );
                   })}
-                </ul>
+                </ol>
+
+                <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                  Source: MotorSpecs ad-history database. Past prices are a strong indicator but not a guarantee of current market value.
+                </p>
               </div>
             </CollapsibleSection>
           );
