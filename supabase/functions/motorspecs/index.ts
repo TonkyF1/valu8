@@ -12,28 +12,42 @@ async function getToken(): Promise<string> {
   const clientSecret = Deno.env.get("MOTORSPECS_CLIENT_SECRET");
   if (!clientId || !clientSecret) throw new Error("MotorSpecs credentials not configured");
 
-  // Try standard OAuth2 client_credentials form-encoded first
-  const formBody = new URLSearchParams({
-    grant_type: "client_credentials",
-    client_id: clientId,
-    client_secret: clientSecret,
-  });
-
+  // Try HTTP Basic auth (standard OAuth2 client_credentials)
+  const basic = btoa(`${clientId}:${clientSecret}`);
   let resp = await fetch(TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-    body: formBody,
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+      Authorization: `Basic ${basic}`,
+    },
+    body: new URLSearchParams({ grant_type: "client_credentials" }),
   });
 
-  // Fallback: JSON body
   if (!resp.ok) {
-    console.log("MotorSpecs token form failed", resp.status, "— trying JSON body");
+    const t1 = await resp.text();
+    console.log("MotorSpecs Basic auth failed", resp.status, t1.slice(0, 200), "— trying body credentials");
+    resp = await fetch(TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+      body: new URLSearchParams({
+        grant_type: "client_credentials",
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
+  }
+
+  if (!resp.ok) {
+    const t2 = await resp.text();
+    console.log("MotorSpecs form body failed", resp.status, t2.slice(0, 200), "— trying JSON body");
     resp = await fetch(TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret }),
     });
   }
+
 
   if (!resp.ok) {
     const text = await resp.text();
