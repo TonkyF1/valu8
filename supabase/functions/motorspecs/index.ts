@@ -51,6 +51,7 @@ async function callEndpoint(
   path: string,
   contentType: string,
   registration: string,
+  extra?: Record<string, unknown>,
 ): Promise<CallResult> {
   const token = await getToken();
   const url = `${BASE}${path}`;
@@ -61,7 +62,7 @@ async function callEndpoint(
       Accept: "application/hal+json",
       "Content-Type": contentType,
     },
-    body: JSON.stringify({ registration }),
+    body: JSON.stringify({ registration, ...(extra ?? {}) }),
   });
   const ct = resp.headers.get("content-type") ?? "";
   const body = ct.includes("json") ? await resp.json().catch(() => null) : await resp.text();
@@ -145,16 +146,18 @@ const ENDPOINTS: Record<string, { path: string; ct: string; normalise: (r: any) 
   provenance:         { path: "/provenance/check",        ct: VND("provenance"),       normalise: normaliseProvenance },
   valuation:          { path: "/valuation/value",         ct: VND("valuation"),        normalise: normaliseValuation },
   "valuation-brego":  { path: "/valuation-brego/value",   ct: VND("valuation-brego"),  normalise: normaliseValuation },
-  "valuation-cazana": { path: "/valuation-cazana/value",  ct: VND("valuation-cazana"), normalise: normaliseValuation },
+  "valuation-cazana":     { path: "/valuation-cazana/value",     ct: VND("valuation-cazana"),     normalise: normaliseValuation },
+  "valuation-autotrader": { path: "/valuation-autotrader/value", ct: VND("valuation-autotrader"), normalise: normaliseValuation },
   // previous-ads is the only service confirmed to require plain application/json
-  "previous-ads":     { path: "/previous-ads/check",      ct: JSON_CT,                 normalise: normalisePreviousAds },
+  "previous-ads":         { path: "/previous-ads/check",         ct: JSON_CT,                     normalise: normalisePreviousAds },
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { registration, endpoints } = await req.json().catch(() => ({}));
+    const { registration, endpoints, currentMiles, mileage } = await req.json().catch(() => ({}));
+    const miles = Number(currentMiles ?? mileage) || undefined;
     const reg = String(registration ?? "").replace(/\s+/g, "").toUpperCase();
     if (!reg || reg.length < 2 || reg.length > 8) {
       return new Response(JSON.stringify({ error: "Invalid registration" }), {
@@ -170,7 +173,8 @@ Deno.serve(async (req) => {
     for (const key of requested) {
       const cfg = ENDPOINTS[key];
       if (!cfg) { results[key] = { error: "Unknown endpoint" }; continue; }
-      const res = await callEndpoint(cfg.path, cfg.ct, reg);
+      const extra = key.startsWith("valuation") && miles ? { currentMiles: miles } : undefined;
+      const res = await callEndpoint(cfg.path, cfg.ct, reg, extra);
       results[key] = {
         status: res.status,
         ok: res.ok,
