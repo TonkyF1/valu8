@@ -91,6 +91,145 @@ function normaliseIdentity(raw: any) {
   };
 }
 
+/**
+ * Normalises the rich /identity-specs/lookup response.
+ * Source shape: { registration, vehicleId, vehicle: { dvla, mvris, keepers, combined }, specsVehicle, similarVehicles }
+ */
+function normaliseIdentitySpecs(raw: any) {
+  if (!raw || typeof raw !== "object") return null;
+  const dvla = raw.vehicle?.dvla ?? {};
+  const mvris = raw.vehicle?.mvris ?? {};
+  const keepers = raw.vehicle?.keepers ?? {};
+  const combined = raw.vehicle?.combined ?? {};
+  const sv = raw.specsVehicle ?? {};
+  const sims: any[] = Array.isArray(raw.similarVehicles) ? raw.similarVehicles : [];
+
+  const pick = <T,>(...vals: (T | null | undefined | "" | 0)[]): T | undefined =>
+    vals.find((v) => v !== null && v !== undefined && v !== "" && v !== 0) as T | undefined;
+  const num = (...vals: any[]): number | undefined => {
+    for (const v of vals) {
+      const n = Number(v);
+      if (Number.isFinite(n) && n !== 0) return n;
+    }
+    return undefined;
+  };
+
+  const regDate: string | undefined = pick(combined.regDate, dvla.regDate, mvris.regDate);
+  const year =
+    num(sv.modelYear, combined.year) ??
+    (regDate ? Number(regDate.slice(0, 4)) : undefined);
+
+  return {
+    // Core identifiers
+    vrm: pick(raw.registration, combined.registration, combined.id),
+    vin: pick(combined.vin, dvla.vin),
+    vehicleId: raw.vehicleId,
+
+    // Make / model / trim (prefer specsVehicle for properly cased model + trim)
+    make: pick(sv.make, combined.make, mvris.make, dvla.make),
+    model: pick(sv.model, combined.model, mvris.model),
+    version: pick(sv.version, combined.version, mvris.modelVariantName, dvla.model),
+    trim: sv.trim,
+    generation: sv.modelGeneration,
+    series: mvris.vehicleSeries,
+
+    // Dates
+    year,
+    regDate,
+    v5cDate: dvla.v5cDate,
+    introDate: sv.introDate,
+    concludeDate: sv.concludeDate,
+
+    // Body / drivetrain
+    bodyStyle: pick(sv.body, combined.body, mvris.bodyDesc, dvla.body),
+    doors: num(sv.doors, combined.doors, mvris.doorCount),
+    seats: num(mvris.seatCount, dvla.seatingCapacity),
+    transmission: pick(sv.transmission, combined.transmission, mvris.gearboxType),
+    transmissionDescription: sv.transmissionDescription,
+    gears: num(mvris.gearsCount),
+    driveType: pick(mvris.driveType, mvris.driveAxle),
+    powertrain: sv.powertrain,
+
+    // Engine
+    fuelType: pick(sv.fuel, combined.fuel, mvris.fuel, dvla.fuel),
+    engineCC: num(sv.engineCC, combined.cc, mvris.cc, dvla.cc),
+    engineCode: dvla.engineCode ?? mvris.engineDescription,
+    engineMake: mvris.engineMake,
+    powerBHP: num(sv.powerBHP, combined.powerBHP, mvris.bhpCount),
+    powerKW: num(sv.powerKW, combined.powerKW, mvris.powerKw, dvla.maxPower),
+    torqueNm: num(mvris.torqueNm),
+    cylinders: num(mvris.cylinderCount),
+    valves: num(mvris.valveCount),
+    fuelDelivery: mvris.fuelDelivery,
+    euroStatus: num(mvris.euroStatus),
+
+    // Performance / economy
+    topSpeedMph: num(mvris.maxSpeedMph),
+    zeroToSixtyS: num(mvris.accelerationMph),
+    combinedMpg: num(mvris.combinedMpg),
+    urbanMpg: num(mvris.urbanColdMpg),
+    extraUrbanMpg: num(mvris.extraUrbanMpg),
+
+    // Dimensions / weight
+    lengthMm: num(mvris.vehicleLength),
+    widthMm: num(mvris.vehicleWidth),
+    heightMm: num(mvris.vehicleHeight),
+    kerbWeightKg: num(mvris.kerbWeight),
+    grossWeightKg: num(dvla.grossWeight, mvris.vehicleGrossWeight),
+
+    // Emissions
+    co2: num(mvris.vehicleCo2, dvla.co2),
+
+    // Identity colour / origin
+    colour: pick(combined.colour, dvla.colour),
+    origin: pick(combined.origin, mvris.vehicleOrigin, dvla.source),
+    imported: !!(combined.imported || dvla.imported),
+    exported: !!dvla.exported,
+
+    // Keepers / mileage (useful for HPI + desirability scoring)
+    keepers: {
+      numberOfPrevious: num(keepers.numberOfPrevious),
+      currentSince: keepers.startDate,
+      previousAcquired: keepers.previousAcquire,
+      previousDisposed: keepers.previousDispose,
+    },
+    currentMiles: num(combined.currentMiles),
+    annualMiles: num(combined.annualMiles),
+
+    // Market segmentation (useful for similar-cars and pricing context)
+    globalSegment: sv.globalSegment,
+    localSegment: sv.localSegment,
+    desirabilityScore: num(sv.score),
+
+    // Similar variants (same generation/spec family)
+    similarVehicles: sims.slice(0, 10).map((s) => ({
+      id: s.id,
+      make: s.make,
+      model: s.model,
+      year: s.modelYear,
+      generation: s.modelGeneration,
+      version: s.version,
+      trim: s.trim,
+      bodyStyle: s.body,
+      doors: s.doors,
+      fuelType: s.fuel,
+      transmission: s.transmission,
+      transmissionDescription: s.transmissionDescription,
+      engineCC: s.engineCC,
+      powerBHP: s.powerBHP,
+      powerKW: s.powerKW,
+      score: s.score,
+      introDate: s.introDate,
+      concludeDate: s.concludeDate,
+    })),
+
+    // Raw source pointers so the UI can fall back if needed
+    sources: { dvla: !!raw.vehicle?.dvla, mvris: !!raw.vehicle?.mvris, specs: !!raw.specsVehicle },
+  };
+}
+
+
+
 function normaliseProvenance(raw: any) {
   if (!raw || typeof raw !== "object") return null;
   const r: any = raw.data ?? raw.result ?? raw;
@@ -142,7 +281,7 @@ const JSON_CT = "application/json";
 
 const ENDPOINTS: Record<string, { path: string; ct: string; normalise: (r: any) => any }> = {
   identity:           { path: "/identity/lookup",         ct: VND("identity"),         normalise: normaliseIdentity },
-  "identity-specs":   { path: "/identity-specs/lookup",   ct: VND("identity-specs"),   normalise: normaliseIdentity },
+  "identity-specs":   { path: "/identity-specs/lookup",   ct: VND("identity-specs"),   normalise: normaliseIdentitySpecs },
   provenance:         { path: "/provenance/check",        ct: VND("provenance"),       normalise: normaliseProvenance },
   valuation:          { path: "/valuation/value",         ct: VND("valuation"),        normalise: normaliseValuation },
   "valuation-brego":  { path: "/valuation-brego/value",   ct: VND("valuation-brego"),  normalise: normaliseValuation },
