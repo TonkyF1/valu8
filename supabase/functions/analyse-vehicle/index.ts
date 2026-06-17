@@ -207,7 +207,134 @@ async function fetchMarketCheckPricing(
   return r;
 }
 
-interface AnalyseRequest {
+// ----- MotorSpecs previous-ads — real prior sales/listings for THIS exact VRM -----
+interface PreviousAd {
+  sold: boolean;
+  mileage?: number;
+  price?: number;
+  originalPrice?: number;
+  firstSeen?: string;
+  lastSeen?: string;
+}
+interface PreviousAdsResult {
+  ads: PreviousAd[];
+  make?: string;
+  model?: string;
+  trim?: string;
+}
+
+async function fetchMotorSpecsPreviousAds(registration: string): Promise<PreviousAdsResult | null> {
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+  if (!SUPABASE_URL || !ANON) return null;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/motorspecs`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${ANON}`,
+        apikey: ANON,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ registration, endpoints: ["previous-ads"] }),
+    });
+    if (!r.ok) {
+      console.error("motorspecs previous-ads", r.status, (await r.text()).slice(0, 200));
+      return null;
+    }
+    const json: any = await r.json();
+    const prev = json?.results?.["previous-ads"];
+    if (!prev?.ok || !prev?.normalised) return null;
+    return prev.normalised as PreviousAdsResult;
+  } catch (e) {
+    console.error("motorspecs previous-ads fetch error", e);
+    return null;
+  }
+}
+
+/**
+ * Build a price anchor from previous-ads for THIS exact VRM, normalising each
+ * historical price to TODAY's market for THIS car (same VRM, same lineage)
+ * by adjusting for mileage drift and elapsed time since the listing.
+ *
+ * Returns null if there isn't enough usable data.
+ */
+function buildPreviousAdsAnchor(opts: {
+  ads: PreviousAd[];
+  currentMileage: number;
+  year: number;
+}): {
+  anchor: number;
+  sample: number;
+  soldCount: number;
+  newestDate?: string;
+  oldestDate?: string;
+} | null {
+  const today = new Date();
+  const carAge = Math.max(1, CURRENT_YEAR - opts.year);
+  // Depreciation: newer cars lose ~12%/yr, older settle to ~5%/yr.
+  const annualDeprec = carAge <= 3 ? 0.12 : carAge <= 7 ? 0.09 : carAge <= 12 ? 0.07 : 0.05;
+  // Mileage penalty: ~£0.06 per extra mile for premium-ish band, scaled by car value tier later.
+  // We'll express it as % of price per 10k miles: ~3% per 10k miles (band 1.5-4.5%).
+
+  const adjusted: { price: number; sold: boolean; weight: number }[] = [];
+
+  for (const ad of opts.ads) {
+    const price = Number(ad.price);
+    if (!Number.isFinite(price) || price < 300) continue;
+    const ts = ad.lastSeen || ad.firstSeen;
+    if (!ts) continue;
+    const seen = new Date(ts);
+    if (Number.isNaN(seen.getTime())) continue;
+    const yearsAgo = Math.max(0, (today.getTime() - seen.getTime()) / (365.25 * 24 * 3600 * 1000));
+    if (yearsAgo > 6) continue; // too stale
+
+    // Time decay — what would this listing be worth today?
+    const timeFactor = Math.pow(1 - annualDeprec, yearsAgo);
+
+    // Mileage adjustment — if the car has driven more since the ad, deduct
+    // ~3% per 10k extra miles. If the ad mileage > current (rare/wrong),
+    // clamp the upward correction.
+    let mileageFactor = 1;
+    if (typeof ad.mileage === "number" && ad.mileage > 0) {
+      const deltaMiles = opts.currentMileage - ad.mileage; // positive = drove more since ad
+      const pctPer10k = 0.03;
+      const adj = -(deltaMiles / 10000) * pctPer10k;
+      mileageFactor = Math.max(0.6, Math.min(1.25, 1 + adj));
+    }
+
+    const todayPrice = price * timeFactor * mileageFactor;
+
+    // Weight: sold > listed, newer > older, with mileage data > without
+    let w = ad.sold ? 1.4 : 1.0;
+    w *= Math.max(0.4, 1 - yearsAgo * 0.18); // newer = stronger signal
+    if (typeof ad.mileage === "number") w *= 1.15;
+
+    adjusted.push({ price: todayPrice, sold: !!ad.sold, weight: w });
+  }
+
+  if (adjusted.length === 0) return null;
+
+  // Weighted median
+  adjusted.sort((a, b) => a.price - b.price);
+  const totalW = adjusted.reduce((s, x) => s + x.weight, 0);
+  let acc = 0;
+  let anchor = adjusted[adjusted.length - 1].price;
+  for (const x of adjusted) {
+    acc += x.weight;
+    if (acc >= totalW / 2) { anchor = x.price; break; }
+  }
+
+  const dates = opts.ads.map((a) => a.lastSeen || a.firstSeen).filter(Boolean) as string[];
+  dates.sort();
+
+  return {
+    anchor: Math.round(anchor),
+    sample: adjusted.length,
+    soldCount: adjusted.filter((a) => a.sold).length,
+    oldestDate: dates[0],
+    newestDate: dates[dates.length - 1],
+  };
+}
   make: string;
   model: string;
   variant?: string;
