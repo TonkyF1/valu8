@@ -335,6 +335,8 @@ function buildPreviousAdsAnchor(opts: {
     newestDate: dates[dates.length - 1],
   };
 }
+
+interface AnalyseRequest {
   make: string;
   model: string;
   variant?: string;
