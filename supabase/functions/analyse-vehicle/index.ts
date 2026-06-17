@@ -986,7 +986,7 @@ Deno.serve(async (req) => {
     // Fetch MOT history + MarketCheck pricing in parallel BEFORE calling the AI,
     // so we can feed real signals (corrosion advisories, fails, etc.) into the prompt.
     const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
-    const [mc, dvsa] = await Promise.all([
+    const [mc, dvsa, prevAds] = await Promise.all([
       fetchMarketCheckPricing(body.make, body.model, body.year, body.mileage, body.variant),
       body.registration && body.registration.trim().length >= 2
         ? fetchDvsaMotHistory(body.registration).catch((e) => {
@@ -994,7 +994,18 @@ Deno.serve(async (req) => {
             return { entries: [], error: "MOT service temporarily unavailable" } as const;
           })
         : Promise.resolve({ entries: [] as MotEntryOut[] }),
+      body.registration && body.registration.trim().length >= 2
+        ? fetchMotorSpecsPreviousAds(body.registration.replace(/\s+/g, "").toUpperCase())
+        : Promise.resolve(null),
     ]);
+
+    // Real previous sales/listings for THIS exact VRM — strongest possible anchor.
+    const prevAdsAnchor = prevAds && Array.isArray(prevAds.ads) && prevAds.ads.length > 0
+      ? buildPreviousAdsAnchor({ ads: prevAds.ads, currentMileage: body.mileage, year: body.year })
+      : null;
+    if (prevAdsAnchor) {
+      console.log(`previous-ads anchor: £${prevAdsAnchor.anchor} (sample=${prevAdsAnchor.sample}, sold=${prevAdsAnchor.soldCount})`);
+    }
 
     // Extract MOT signals — ONLY use the latest test for pricing / watchPoints
     const motEntries = dvsa.entries ?? [];
