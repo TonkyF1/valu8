@@ -1228,6 +1228,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const enthusiast = isEnthusiastCar(body.make, body.model, body.variant);
     let rareCarWarning: string | undefined;
     let valuationUnavailable = false;
+    let prevAdsBlendWeightOut = 0;
 
     // Decide whether MarketCheck data is actually usable. For ultra-rare cars
     // the public UK active-listings feed is almost always too thin/noisy to
