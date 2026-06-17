@@ -207,15 +207,19 @@ export default function Report() {
   if (r.rareCarWarning) rarityReasons.push("of its rare specification or trim");
   if (aiConfidence === "Very Low") rarityReasons.push("our AI flagged it as a harder-than-average car to price");
 
-  // Trigger expert overlay ONLY when the car is genuinely difficult to price.
-  // Require a strong signal stacked with at least one rarity reason, OR three
-  // independent rarity reasons. A modest MarketCheck count alone is never enough.
+  // Trigger expert overlay ONLY when the car is genuinely difficult to price,
+  // OR when we have real previous-ads anchored data for this exact VRM (which
+  // is the strongest, most defensible signal — show it off).
+  const hasPrevAdsAnchor = typeof r.previousAdsAnchor === "number" && (r.previousAdsCount ?? 0) >= 1;
   const strongSingleSignal =
     (liveCount != null && liveCount < 3) ||
     !!r.rareCarWarning ||
     aiConfidence === "Very Low";
   const showSpecialistBadge =
-    (strongSingleSignal && rarityReasons.length >= 1) || rarityReasons.length >= 3;
+    !!r.expertInsight?.shown ||
+    hasPrevAdsAnchor ||
+    (strongSingleSignal && rarityReasons.length >= 1) ||
+    rarityReasons.length >= 3;
 
   const liveConfidenceLine =
     liveTier === "High"
@@ -226,6 +230,11 @@ export default function Report() {
 
   const specialistExplanation = (() => {
     if (!showSpecialistBadge) return null;
+    // Prefer the server-provided reason — it knows exactly which data sources fed the valuation.
+    if (r.expertInsight?.reason) return r.expertInsight.reason;
+    if (hasPrevAdsAnchor) {
+      return `Anchored to ${r.previousAdsCount} real prior listing${r.previousAdsCount === 1 ? "" : "s"} for this exact registration${(r.previousAdsSoldCount ?? 0) > 0 ? ` (including ${r.previousAdsSoldCount} sold)` : ""}, time- and mileage-adjusted to today.`;
+    }
     const top = rarityReasons.slice(0, 2);
     if (top.length === 0) {
       return "We've layered expert analysis on top of live market data to give you a confident figure on a harder-than-average car to price.";
@@ -543,6 +552,16 @@ export default function Report() {
                       <p className="text-[12.5px] leading-[1.55] text-foreground/85">
                         {specialistExplanation}
                       </p>
+                      {Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
+                        <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                          {r.expertInsight!.sources.map((s, i) => (
+                            <li key={i} className="inline-flex items-center gap-1.5">
+                              <Check className="h-3 w-3 text-primary/80" />
+                              <span>{s}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
                 )}
@@ -827,7 +846,6 @@ export default function Report() {
             <CollapsibleSection
               title="Verified Vehicle Specification"
               icon={ShieldCheck}
-              defaultOpen
               badge={
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
                   DVLA + MVRIS
@@ -886,7 +904,6 @@ export default function Report() {
             <CollapsibleSection
               title="Recent Market History"
               icon={History}
-              defaultOpen
               badge={
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
                   Verified data
