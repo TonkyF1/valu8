@@ -552,6 +552,16 @@ export default function Report() {
                       <p className="text-[12.5px] leading-[1.55] text-foreground/85">
                         {specialistExplanation}
                       </p>
+                      {Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
+                        <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                          {r.expertInsight!.sources.map((s, i) => (
+                            <li key={i} className="inline-flex items-center gap-1.5">
+                              <Check className="h-3 w-3 text-primary/80" />
+                              <span>{s}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
                 )}
