@@ -1327,6 +1327,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       const mcAnchorRaw = anchorMedian > 0 ? anchorMedian : mc.median;
       let anchor = mcAnchorRaw;
       let prevAdsBlendWeight = 0;
+      // (assigned below; mirrored into outer prevAdsBlendWeightOut for the report payload)
       if (prevAdsAnchor) {
         // Stronger weight when we have multiple sold ads; lighter when only
         // listed (withdrawn) prices are available.
