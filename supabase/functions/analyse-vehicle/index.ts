@@ -1344,6 +1344,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
           impactPct: Math.round(((anchor - mcAnchorRaw) / Math.max(1, mcAnchorRaw)) * 100),
         });
       }
+      prevAdsBlendWeightOut = prevAdsBlendWeight;
       let dealerRetail = roundToGrain(anchor * mult);
 
       // Sanity floor for ultra-rare cars
