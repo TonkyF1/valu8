@@ -827,7 +827,6 @@ export default function Report() {
             <CollapsibleSection
               title="Verified Vehicle Specification"
               icon={ShieldCheck}
-              defaultOpen
               badge={
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
                   DVLA + MVRIS
