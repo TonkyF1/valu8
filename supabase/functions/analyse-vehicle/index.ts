@@ -1579,6 +1579,29 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       marketBaseline,
       comparableListings: valuationUnavailable ? [] : exampleListings,
       marketAnchor: valuationUnavailable ? undefined : (anchorMedian > 0 ? Math.round(anchorMedian) : undefined),
+      previousAdsAnchor: prevAdsAnchor?.anchor,
+      previousAdsCount: prevAdsAnchor?.sample,
+      previousAdsSoldCount: prevAdsAnchor?.soldCount,
+      previousAdsBlendWeight: prevAdsBlendWeightOut > 0 ? Math.round(prevAdsBlendWeightOut * 100) / 100 : undefined,
+      expertInsight: (() => {
+        const sources: string[] = [];
+        if (mc?.count) sources.push(`${mc.count.toLocaleString()} live UK listings (MarketCheck)`);
+        if (prevAdsAnchor) sources.push(`${prevAdsAnchor.sample} prior ad${prevAdsAnchor.sample === 1 ? "" : "s"} for this exact registration${prevAdsAnchor.soldCount > 0 ? ` (${prevAdsAnchor.soldCount} sold)` : ""}`);
+        if (motEntries.length > 0) sources.push(`${motEntries.length} DVSA MOT records`);
+        if (photoUrls.length > 0) sources.push(`${photoUrls.length}-photo Vision AI condition scan`);
+        const usesPrev = !!prevAdsAnchor && prevAdsBlendWeightOut > 0;
+        const isRare = ultraRare || (mc && mc.count < 15);
+        const shown = usesPrev || isRare || valuationUnavailable;
+        let reason = "";
+        if (usesPrev && !isRare) {
+          reason = `Anchored to ${prevAdsAnchor!.sample} real prior listing${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact VRM${prevAdsAnchor!.soldCount > 0 ? ` (including ${prevAdsAnchor!.soldCount} sold)` : ""}, time- and mileage-adjusted to today, then cross-checked against ${mc?.count ?? "live"} comparable UK listings.`;
+        } else if (usesPrev && isRare) {
+          reason = `Few comparable cars on the market, so we've leaned on ${prevAdsAnchor!.sample} real prior listing${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact VRM and our own UK private-market knowledge.`;
+        } else if (isRare) {
+          reason = `Limited live market data for this car — figure stress-tested against multiple data sources before being shown.`;
+        }
+        return { shown, reason, sources };
+      })(),
       rareCarWarning,
       valuationUnavailable,
       honestAnalysis: sanitizeNarrativeYears(valuationUnavailable ? LIMITED_DATA_MESSAGE : ai.honestAnalysis, body.year, CURRENT_YEAR, allowedNarrativeYears),
