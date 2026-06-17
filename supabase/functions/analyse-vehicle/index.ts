@@ -1317,8 +1317,31 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       // Cap total swing — wider upside than before, still a sensible floor.
       mult = clamp(mult, 0.55, 1.28);
 
-      // Use the mileage-weighted live-listings anchor when available; otherwise fall back to the wider median.
-      const anchor = anchorMedian > 0 ? anchorMedian : mc.median;
+      // ---- Anchor selection ----
+      // The marketcheck anchor is mileage-matched to the live market. When we
+      // ALSO have real previous-ads for THIS exact VRM, blend them in heavily —
+      // those are real prior transactions/listings for this very car, time- and
+      // mileage-adjusted to today. Sold ads with multiple data points are the
+      // strongest signal we have.
+      const mcAnchorRaw = anchorMedian > 0 ? anchorMedian : mc.median;
+      let anchor = mcAnchorRaw;
+      let prevAdsBlendWeight = 0;
+      if (prevAdsAnchor) {
+        // Stronger weight when we have multiple sold ads; lighter when only
+        // listed (withdrawn) prices are available.
+        const soldBoost = Math.min(0.35, prevAdsAnchor.soldCount * 0.12);
+        const sampleBoost = Math.min(0.20, prevAdsAnchor.sample * 0.05);
+        prevAdsBlendWeight = Math.min(0.70, 0.30 + soldBoost + sampleBoost);
+        // Sanity guard: if previous-ads anchor is wildly off the live market
+        // (>40% deviation), pull back its weight — likely a stale or wrong record.
+        const deviation = Math.abs(prevAdsAnchor.anchor - mcAnchorRaw) / Math.max(1, mcAnchorRaw);
+        if (deviation > 0.4) prevAdsBlendWeight = Math.min(prevAdsBlendWeight, 0.25);
+        anchor = Math.round(prevAdsAnchor.anchor * prevAdsBlendWeight + mcAnchorRaw * (1 - prevAdsBlendWeight));
+        adjustments.push({
+          label: `Anchored to ${prevAdsAnchor.sample} real prior ${prevAdsAnchor.soldCount > 0 ? `sale${prevAdsAnchor.soldCount === 1 ? "" : "s"}/listing${prevAdsAnchor.sample === 1 ? "" : "s"}` : "listings"} for this exact car`,
+          impactPct: Math.round(((anchor - mcAnchorRaw) / Math.max(1, mcAnchorRaw)) * 100),
+        });
+      }
       let dealerRetail = roundToGrain(anchor * mult);
 
       // Sanity floor for ultra-rare cars
