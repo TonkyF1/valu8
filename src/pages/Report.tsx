@@ -565,6 +565,24 @@ export default function Report() {
                     </div>
                   </div>
                 )}
+
+                {/* Always-on "Data used" strip for the common, well-supported case
+                    where no Expert Insight badge is shown. Keeps transparency. */}
+                {!showSpecialistBadge && Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
+                  <div className="mt-4 rounded-xl border border-border/60 bg-card/40 px-4 py-3">
+                    <div className="text-[10.5px] uppercase tracking-[0.16em] text-muted-foreground font-semibold mb-1.5">
+                      Data used for this valuation
+                    </div>
+                    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-foreground/75">
+                      {r.expertInsight!.sources.map((s, i) => (
+                        <li key={i} className="inline-flex items-center gap-1.5">
+                          <Check className="h-3 w-3 text-primary/70" />
+                          <span>{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
             {r.rareCarWarning && (
