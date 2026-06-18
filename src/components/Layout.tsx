@@ -7,10 +7,8 @@ import { cn } from "@/lib/utils";
 
 export function TestModeBanner() {
   return (
-    <div className="w-full h-6 flex items-center justify-center bg-muted/40 border-b border-border/60 text-muted-foreground text-[10.5px] tracking-[0.12em] uppercase">
-      <span className="font-medium text-foreground/70">Powered by live UK market data</span>
-      <span className="mx-2 opacity-40">·</span>
-      <span>Guidance only, not financial advice</span>
+    <div className="w-full h-6 flex items-center justify-center bg-muted/30 border-b border-border/40 text-muted-foreground/70 text-[10px] tracking-[0.14em] uppercase">
+      <span className="font-medium">Powered by live UK market data</span>
     </div>
   );
 }

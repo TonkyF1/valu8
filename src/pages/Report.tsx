@@ -359,8 +359,8 @@ export default function Report() {
               {(r as any).regenerationReason}
             </p>
           )}
-          <p className="mt-3 text-[11px] text-muted-foreground max-w-[60ch]">
-            Guidance only — this is an AI-assisted estimate, not a regulated valuation or financial advice.
+          <p className="mt-3 text-[10px] text-muted-foreground/60 max-w-[60ch]">
+            AI-assisted estimate. See full disclaimers below.
           </p>
         </div>
 
@@ -416,7 +416,7 @@ export default function Report() {
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
                       Market: <strong className="text-foreground">{showSpecialistBadge ? "Expert insight" : `${liveTier} confidence`}</strong>
-                      {liveCount != null && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
+                      {liveCount != null && liveCount > 0 && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
                     </span>
                   </li>
                   <li className="flex gap-2.5">
@@ -1285,9 +1285,11 @@ export default function Report() {
           </>
         )}
 
-        <footer className="mt-10 pt-8 border-t border-border text-xs text-muted-foreground space-y-2">
-          <p><strong className="text-foreground/80">Data sources:</strong> Live UK market pricing from MarketCheck UK, official MOT history from DVSA, and AI condition analysis from your photos.</p>
-          <p><strong className="text-foreground/80">Disclaimer:</strong> Valuations are estimates for guidance only and do not constitute financial advice or a guaranteed sale price. Always verify HPI and MOT data through official sources before transacting.</p>
+        <footer className="mt-12 pt-6 border-t border-border/40">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60 font-semibold mb-2">Legal</div>
+          <p className="text-[11px] leading-relaxed text-muted-foreground/70">
+            Sources: MarketCheck UK, DVSA MOT history, AI photo analysis. Estimates are for guidance only — not financial advice or a guaranteed sale price. Always verify HPI and MOT independently before transacting.
+          </p>
         </footer>
       </main>
       <Footer />
