@@ -1335,29 +1335,48 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       mult = clamp(mult, 0.55, 1.28);
 
       // ---- Anchor selection ----
-      // The marketcheck anchor is mileage-matched to the live market. When we
-      // ALSO have real previous-ads for THIS exact VRM, blend them in heavily —
-      // those are real prior transactions/listings for this very car, time- and
-      // mileage-adjusted to today. Sold ads with multiple data points are the
-      // strongest signal we have.
+      // PRIMARY signal: real previous ads for THIS exact VRM (time- and
+      // mileage-adjusted to today). They are real transactions/listings for
+      // this very car, so when we have decent coverage we lean on them
+      // heavily and use MarketCheck only as a sanity cross-check.
       const mcAnchorRaw = anchorMedian > 0 ? anchorMedian : mc.median;
       let anchor = mcAnchorRaw;
       let prevAdsBlendWeight = 0;
-      // (assigned below; mirrored into outer prevAdsBlendWeightOut for the report payload)
       if (prevAdsAnchor) {
-        // Stronger weight when we have multiple sold ads; lighter when only
-        // listed (withdrawn) prices are available.
-        const soldBoost = Math.min(0.35, prevAdsAnchor.soldCount * 0.12);
-        const sampleBoost = Math.min(0.20, prevAdsAnchor.sample * 0.05);
-        prevAdsBlendWeight = Math.min(0.70, 0.30 + soldBoost + sampleBoost);
-        // Sanity guard: if previous-ads anchor is wildly off the live market
-        // (>40% deviation), pull back its weight — likely a stale or wrong record.
+        // Base weight ladder driven by sample quality:
+        //   1 ad (listed)           → 0.55
+        //   1 sold ad               → 0.70
+        //   2+ ads, no sold         → 0.75
+        //   2+ ads incl. 1 sold     → 0.85
+        //   3+ ads incl. 2+ sold    → 0.92
+        //   4+ ads incl. 2+ sold    → 0.95
+        let w = 0.55;
+        if (prevAdsAnchor.soldCount >= 1) w = 0.70;
+        if (prevAdsAnchor.sample >= 2) w = Math.max(w, 0.75);
+        if (prevAdsAnchor.sample >= 2 && prevAdsAnchor.soldCount >= 1) w = 0.85;
+        if (prevAdsAnchor.sample >= 3 && prevAdsAnchor.soldCount >= 2) w = 0.92;
+        if (prevAdsAnchor.sample >= 4 && prevAdsAnchor.soldCount >= 2) w = 0.95;
+
+        // Stale data penalty — if the newest ad is more than ~2y old, fade weight.
+        if (prevAdsAnchor.newestYearsAgo > 2) {
+          const stalePenalty = Math.min(0.35, (prevAdsAnchor.newestYearsAgo - 2) * 0.12);
+          w = Math.max(0.30, w - stalePenalty);
+        }
+
+        // Sanity guard: only pull back if MarketCheck has a healthy sample
+        // AND the previous-ads anchor is wildly off. Otherwise trust the
+        // car-specific history over a thin live sample.
         const deviation = Math.abs(prevAdsAnchor.anchor - mcAnchorRaw) / Math.max(1, mcAnchorRaw);
-        if (deviation > 0.4) prevAdsBlendWeight = Math.min(prevAdsBlendWeight, 0.25);
-        anchor = Math.round(prevAdsAnchor.anchor * prevAdsBlendWeight + mcAnchorRaw * (1 - prevAdsBlendWeight));
+        if (mc.count >= 30 && deviation > 0.4) {
+          w = Math.min(w, 0.40);
+        }
+
+        prevAdsBlendWeight = w;
+        anchor = Math.round(prevAdsAnchor.anchor * w + mcAnchorRaw * (1 - w));
+        const impactPct = Math.round(((anchor - mcAnchorRaw) / Math.max(1, mcAnchorRaw)) * 100);
         adjustments.push({
-          label: `Anchored to ${prevAdsAnchor.sample} real prior ${prevAdsAnchor.soldCount > 0 ? `sale${prevAdsAnchor.soldCount === 1 ? "" : "s"}/listing${prevAdsAnchor.sample === 1 ? "" : "s"}` : "listings"} for this exact car`,
-          impactPct: Math.round(((anchor - mcAnchorRaw) / Math.max(1, mcAnchorRaw)) * 100),
+          label: `Primary anchor: ${prevAdsAnchor.sample} prior ${prevAdsAnchor.soldCount > 0 ? `listing${prevAdsAnchor.sample === 1 ? "" : "s"} (${prevAdsAnchor.soldCount} sold)` : `listing${prevAdsAnchor.sample === 1 ? "" : "s"}`} for this exact car — weighted ${Math.round(w * 100)}%`,
+          impactPct,
         });
       }
       prevAdsBlendWeightOut = prevAdsBlendWeight;
