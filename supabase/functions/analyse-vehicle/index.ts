@@ -1642,13 +1642,22 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         if (motEntries.length > 0) sources.push(`${motEntries.length} DVSA MOT record${motEntries.length === 1 ? "" : "s"}`);
 
         const isRare = ultraRare || (mc && mc.count < 15);
-        const shown = usesPrev || isRare || valuationUnavailable;
+        // Trigger criteria — only show when the car is genuinely hard to price
+        // or when we've leveraged car-specific history. A standard car with
+        // plenty of live comparables and a clean condition score shouldn't
+        // need an "Expert Insight" overlay.
+        const conditionScore = Number(ai.conditionScore ?? 7);
+        const majorConditionIssue = conditionScore < 6;
+        const veryThinMarket = !!mc && mc.count < 10;
+        const shown = usesPrev || isRare || valuationUnavailable || majorConditionIssue || veryThinMarket;
         let reason = "";
         if (usesPrev && prevAdsBlendWeightOut >= 0.75) {
           reason = `Price is built primarily from ${prevAdsAnchor!.sample} real prior listing${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact VRM${prevAdsAnchor!.soldCount > 0 ? ` (${prevAdsAnchor!.soldCount} sold)` : ""}, each adjusted for time elapsed and miles driven since, then sanity-checked against ${mc?.count ?? "live"} comparable UK listings.`;
         } else if (usesPrev) {
           reason = `Blended ${prevAdsAnchor!.sample} prior listing${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact VRM with ${mc?.count ?? "the"} live UK comparables. The car-specific history was given ${Math.round(prevAdsBlendWeightOut * 100)}% weight after time- and mileage-adjustment.`;
-        } else if (isRare) {
+        } else if (majorConditionIssue) {
+          reason = `Condition signals from your photos (${conditionScore.toFixed(1)}/10) materially affect this car's value, so we've adjusted away from the headline market figure of ${mc?.count?.toLocaleString() ?? "live"} comparable UK listings.`;
+        } else if (isRare || veryThinMarket) {
           reason = `Limited live market data for this car — figure stress-tested against multiple data sources before being shown.`;
         }
         return { shown, reason, sources };
