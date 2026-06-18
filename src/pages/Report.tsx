@@ -416,7 +416,7 @@ export default function Report() {
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
                       Market: <strong className="text-foreground">{showSpecialistBadge ? "Expert insight" : `${liveTier} confidence`}</strong>
-                      {liveCount != null && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
+                      {liveCount != null && liveCount > 0 && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
                     </span>
                   </li>
                   <li className="flex gap-2.5">
