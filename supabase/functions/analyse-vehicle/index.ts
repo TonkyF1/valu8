@@ -1409,6 +1409,13 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       let spread = negativeCount >= 3 ? 0.12 : negativeCount >= 1 ? 0.08 : 0.06;
       if (positiveCount >= 3 && negativeCount === 0) spread = 0.05;
       if (ultraRare) spread = Math.max(spread, 0.20);
+      // When we anchored on real previous ads, blend their actual price spread
+      // into the range so it reflects real-world variance rather than a guess.
+      if (prevAdsAnchor && prevAdsBlendWeight >= 0.5) {
+        const realSpread = prevAdsAnchor.spreadPct;
+        spread = realSpread * prevAdsBlendWeight + spread * (1 - prevAdsBlendWeight);
+        spread = clamp(spread, 0.04, 0.18);
+      }
       rangeLow = roundToGrain(privateSale * (1 - spread * 0.8));
       rangeHigh = roundToGrain(privateSale * (1 + spread));
 
