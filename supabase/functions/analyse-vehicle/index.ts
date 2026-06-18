@@ -1627,18 +1627,27 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       previousAdsBlendWeight: prevAdsBlendWeightOut > 0 ? Math.round(prevAdsBlendWeightOut * 100) / 100 : undefined,
       expertInsight: (() => {
         const sources: string[] = [];
-        if (mc?.count) sources.push(`${mc.count.toLocaleString()} live UK listings (MarketCheck)`);
-        if (prevAdsAnchor) sources.push(`${prevAdsAnchor.sample} prior ad${prevAdsAnchor.sample === 1 ? "" : "s"} for this exact registration${prevAdsAnchor.soldCount > 0 ? ` (${prevAdsAnchor.soldCount} sold)` : ""}`);
-        if (motEntries.length > 0) sources.push(`${motEntries.length} DVSA MOT records`);
-        if (photoUrls.length > 0) sources.push(`${photoUrls.length}-photo Vision AI condition scan`);
         const usesPrev = !!prevAdsAnchor && prevAdsBlendWeightOut > 0;
+        // Order sources by their actual influence on the final figure.
+        if (usesPrev) {
+          const pct = Math.round(prevAdsBlendWeightOut * 100);
+          const newest = prevAdsAnchor!.newestDate ? ` (most recent ${prevAdsAnchor!.newestDate.slice(0,7)})` : "";
+          sources.push(`${prevAdsAnchor!.sample} prior ad${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact registration${prevAdsAnchor!.soldCount > 0 ? `, ${prevAdsAnchor!.soldCount} sold` : ""}${newest} — weighted ${pct}%`);
+        }
+        if (mc?.count) {
+          const mcWeight = usesPrev ? Math.round((1 - prevAdsBlendWeightOut) * 100) : 100;
+          sources.push(`${mc.count.toLocaleString()} live UK listings via MarketCheck — weighted ${mcWeight}%`);
+        }
+        if (photoUrls.length > 0) sources.push(`${photoUrls.length}-photo Vision AI condition scan (${(ai.conditionScore ?? 0).toFixed(1)}/10)`);
+        if (motEntries.length > 0) sources.push(`${motEntries.length} DVSA MOT record${motEntries.length === 1 ? "" : "s"}`);
+
         const isRare = ultraRare || (mc && mc.count < 15);
         const shown = usesPrev || isRare || valuationUnavailable;
         let reason = "";
-        if (usesPrev && !isRare) {
-          reason = `Anchored to ${prevAdsAnchor!.sample} real prior listing${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact VRM${prevAdsAnchor!.soldCount > 0 ? ` (including ${prevAdsAnchor!.soldCount} sold)` : ""}, time- and mileage-adjusted to today, then cross-checked against ${mc?.count ?? "live"} comparable UK listings.`;
-        } else if (usesPrev && isRare) {
-          reason = `Few comparable cars on the market, so we've leaned on ${prevAdsAnchor!.sample} real prior listing${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact VRM and our own UK private-market knowledge.`;
+        if (usesPrev && prevAdsBlendWeightOut >= 0.75) {
+          reason = `Price is built primarily from ${prevAdsAnchor!.sample} real prior listing${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact VRM${prevAdsAnchor!.soldCount > 0 ? ` (${prevAdsAnchor!.soldCount} sold)` : ""}, each adjusted for time elapsed and miles driven since, then sanity-checked against ${mc?.count ?? "live"} comparable UK listings.`;
+        } else if (usesPrev) {
+          reason = `Blended ${prevAdsAnchor!.sample} prior listing${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact VRM with ${mc?.count ?? "the"} live UK comparables. The car-specific history was given ${Math.round(prevAdsBlendWeightOut * 100)}% weight after time- and mileage-adjustment.`;
         } else if (isRare) {
           reason = `Limited live market data for this car — figure stress-tested against multiple data sources before being shown.`;
         }
