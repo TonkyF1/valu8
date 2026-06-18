@@ -359,8 +359,8 @@ export default function Report() {
               {(r as any).regenerationReason}
             </p>
           )}
-          <p className="mt-3 text-[11px] text-muted-foreground max-w-[60ch]">
-            Guidance only — this is an AI-assisted estimate, not a regulated valuation or financial advice.
+          <p className="mt-3 text-[10px] text-muted-foreground/60 max-w-[60ch]">
+            AI-assisted estimate. See full disclaimers below.
           </p>
         </div>
 
