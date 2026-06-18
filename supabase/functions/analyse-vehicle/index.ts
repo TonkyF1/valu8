@@ -268,15 +268,19 @@ function buildPreviousAdsAnchor(opts: {
   soldCount: number;
   newestDate?: string;
   oldestDate?: string;
+  /** Adjusted prices (today-normalised) used to derive the anchor. */
+  adjustedPrices: number[];
+  /** Inter-quartile spread as a fraction of the anchor (e.g. 0.08 = ±8%). */
+  spreadPct: number;
+  /** Newest ad's age in years — used to gauge data freshness. */
+  newestYearsAgo: number;
 } | null {
   const today = new Date();
   const carAge = Math.max(1, CURRENT_YEAR - opts.year);
   // Depreciation: newer cars lose ~12%/yr, older settle to ~5%/yr.
   const annualDeprec = carAge <= 3 ? 0.12 : carAge <= 7 ? 0.09 : carAge <= 12 ? 0.07 : 0.05;
-  // Mileage penalty: ~£0.06 per extra mile for premium-ish band, scaled by car value tier later.
-  // We'll express it as % of price per 10k miles: ~3% per 10k miles (band 1.5-4.5%).
 
-  const adjusted: { price: number; sold: boolean; weight: number }[] = [];
+  const adjusted: { price: number; sold: boolean; weight: number; yearsAgo: number }[] = [];
 
   for (const ad of opts.ads) {
     const price = Number(ad.price);
@@ -288,15 +292,11 @@ function buildPreviousAdsAnchor(opts: {
     const yearsAgo = Math.max(0, (today.getTime() - seen.getTime()) / (365.25 * 24 * 3600 * 1000));
     if (yearsAgo > 6) continue; // too stale
 
-    // Time decay — what would this listing be worth today?
     const timeFactor = Math.pow(1 - annualDeprec, yearsAgo);
 
-    // Mileage adjustment — if the car has driven more since the ad, deduct
-    // ~3% per 10k extra miles. If the ad mileage > current (rare/wrong),
-    // clamp the upward correction.
     let mileageFactor = 1;
     if (typeof ad.mileage === "number" && ad.mileage > 0) {
-      const deltaMiles = opts.currentMileage - ad.mileage; // positive = drove more since ad
+      const deltaMiles = opts.currentMileage - ad.mileage;
       const pctPer10k = 0.03;
       const adj = -(deltaMiles / 10000) * pctPer10k;
       mileageFactor = Math.max(0.6, Math.min(1.25, 1 + adj));
@@ -304,17 +304,17 @@ function buildPreviousAdsAnchor(opts: {
 
     const todayPrice = price * timeFactor * mileageFactor;
 
-    // Weight: sold > listed, newer > older, with mileage data > without
-    let w = ad.sold ? 1.4 : 1.0;
-    w *= Math.max(0.4, 1 - yearsAgo * 0.18); // newer = stronger signal
+    // Weight: sold > listed; newer ads weighted MUCH higher (recent market truth).
+    let w = ad.sold ? 1.6 : 1.0;
+    // Aggressive recency: <6m = 1.0, ~1y = 0.65, ~2y = 0.42, ~3y = 0.27, ~5y = 0.11
+    w *= Math.max(0.10, Math.exp(-yearsAgo * 0.45));
     if (typeof ad.mileage === "number") w *= 1.15;
 
-    adjusted.push({ price: todayPrice, sold: !!ad.sold, weight: w });
+    adjusted.push({ price: todayPrice, sold: !!ad.sold, weight: w, yearsAgo });
   }
 
   if (adjusted.length === 0) return null;
 
-  // Weighted median
   adjusted.sort((a, b) => a.price - b.price);
   const totalW = adjusted.reduce((s, x) => s + x.weight, 0);
   let acc = 0;
@@ -324,8 +324,21 @@ function buildPreviousAdsAnchor(opts: {
     if (acc >= totalW / 2) { anchor = x.price; break; }
   }
 
+  // Spread from real data (IQR / median). Single ad → small assumed spread.
+  const prices = adjusted.map((a) => a.price);
+  let spreadPct = 0.06;
+  if (prices.length >= 4) {
+    const p25 = percentile(prices, 25);
+    const p75 = percentile(prices, 75);
+    spreadPct = Math.max(0.04, Math.min(0.18, (p75 - p25) / 2 / Math.max(1, anchor)));
+  } else if (prices.length >= 2) {
+    const range = (prices[prices.length - 1] - prices[0]) / Math.max(1, anchor);
+    spreadPct = Math.max(0.05, Math.min(0.15, range / 2));
+  }
+
   const dates = opts.ads.map((a) => a.lastSeen || a.firstSeen).filter(Boolean) as string[];
   dates.sort();
+  const newestYearsAgo = Math.min(...adjusted.map((a) => a.yearsAgo));
 
   return {
     anchor: Math.round(anchor),
@@ -333,6 +346,9 @@ function buildPreviousAdsAnchor(opts: {
     soldCount: adjusted.filter((a) => a.sold).length,
     oldestDate: dates[0],
     newestDate: dates[dates.length - 1],
+    adjustedPrices: prices.map((p) => Math.round(p)),
+    spreadPct,
+    newestYearsAgo,
   };
 }
 
