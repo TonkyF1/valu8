@@ -11,6 +11,7 @@ import {
   sanitizeNarrativeYears, sanitizeNarrativeList, isEnthusiastCar, getExoticAnchor,
   isClearlyBadMarketData, computeMarketRange, type ConfidenceLevel,
 } from "../_shared/valuation-math.ts";
+import { motStatus, motAdjustment, sanitizeMotClaim, isFalseLongMotClaim } from "../_shared/mot.ts";
 
 const PHOTO_BUCKET = "vehicle-photos";
 // 1h is plenty — the AI vision call completes in seconds.
@@ -730,7 +731,7 @@ ONLY consider advisories and failures from the LATEST test when pricing and writ
 - ${body.year} ${body.make} ${body.model}${body.variant ? ` — ${body.variant}` : ""}
 - Mileage: ${body.mileage.toLocaleString()} miles
 - Registration: ${body.registration || "not provided"}
-- MOT expiry: ${body.motExpiry || "not provided"}
+- MOT expiry: ${(() => { const e = body.motExpiry || motEntries[0]?.expiryDate; if (!e) return "not provided"; const st = motStatus(e); return `${e} (${st.label}${st.kind === "due_soon" || st.kind === "expired" ? " — NOT a long MOT; do not describe it as long, fresh or a selling point" : ""})`; })()}
 - Service notes: ${body.serviceNotes || "none provided"}
 - Modifications / extras: ${body.modifications || "none provided"}
 - Colour: ${body.colour || "not provided"}
@@ -840,6 +841,25 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       negotiationBuffer?: number;
       recommendations: { whereToSell: string[]; highlights: string[]; documents: string[] };
     };
+
+    // Strip "long MOT" claims the AI may make when the MOT is actually due soon/expired.
+    {
+      const exp = body.motExpiry || motEntries[0]?.expiryDate;
+      const fix = (t?: string) => (t ? sanitizeMotClaim(t, exp) : t);
+      const fixList = (l?: string[]) => (Array.isArray(l) ? l.filter((x) => !isFalseLongMotClaim(x, exp)) : l);
+      ai.honestAnalysis = fix(ai.honestAnalysis) as string;
+      ai.valueReasoning = fix(ai.valueReasoning) as string;
+      ai.marketPositioning = fix(ai.marketPositioning) as string;
+      ai.headline = fix(ai.headline);
+      ai.sellerTip = fix(ai.sellerTip);
+      ai.marketContext = fix(ai.marketContext);
+      ai.strengths = fixList(ai.strengths) ?? [];
+      ai.factorsUp = fixList(ai.factorsUp);
+      if (ai.recommendations) {
+        ai.recommendations.highlights = fixList(ai.recommendations.highlights) ?? [];
+        ai.recommendations.documents = (ai.recommendations.documents ?? []).map((d) => fix(d) as string);
+      }
+    }
 
     // ----- Pricing engine: MarketCheck-anchored, with strong deterministic deductions -----
     const score = Math.max(1, Math.min(10, ai.conditionScore));
@@ -967,14 +987,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       }
 
       // --- MOT expiry (user-entered or DVSA) — previously ignored in this path ---
-      const motExpiryStr = body.motExpiry || latestTest?.expiryDate;
-      if (motExpiryStr) {
-        const days = (new Date(motExpiryStr).getTime() - Date.now()) / 86400000;
-        if (Number.isFinite(days)) {
-          if (days < 0) { mult *= 0.95; adjustments.push({ label: "MOT expired", impactPct: -5 }); }
-          else if (days < 60) { mult *= 0.98; adjustments.push({ label: "MOT due within 2 months", impactPct: -2 }); }
-        }
-      }
+      // parseMotDate handles ISO, DVSA "YYYY.MM.DD" and UK "DD/MM/YYYY" (new Date() returned NaN for the latter).
+      const motAdj = motAdjustment(body.motExpiry || latestTest?.expiryDate);
+      if (motAdj) { mult *= motAdj.mult; adjustments.push({ label: motAdj.label, impactPct: motAdj.impactPct }); }
 
       // --- Mileage consistency vs DVSA odometer readings (possible clocking) ---
       const maxRecordedMiles = motEntries.reduce((m, e) => Math.max(m, Number(e.mileage) || 0), 0);
@@ -1248,7 +1263,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       expertInsight: (() => {
         const sources: string[] = [];
         if (mc?.count) {
-          sources.push(`${mc.count.toLocaleString()} live UK listings via MarketCheck`);
+          sources.push(`Priced from the ${mc.count.toLocaleString()} closest-matching UK listings (MarketCheck)`);
         }
         if (photoUrls.length > 0) sources.push(`${photoUrls.length}-photo Vision AI condition scan (${(ai.conditionScore ?? 0).toFixed(1)}/10)`);
         if (motEntries.length > 0) sources.push(`${motEntries.length} DVSA MOT record${motEntries.length === 1 ? "" : "s"}`);

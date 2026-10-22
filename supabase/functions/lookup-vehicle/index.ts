@@ -1,4 +1,5 @@
 // Valu8 — UK vehicle lookup by registration (DVSA MOT History API)
+import { motDaysRemaining } from "../_shared/mot.ts";
 import { corsHeaders, guard } from "../_shared/guard.ts";
 
 interface LookupResponse {
@@ -178,7 +179,7 @@ Deno.serve(async (req) => {
       dvsaColour = data?.primaryColour ? String(data.primaryColour) : undefined;
 
       motExpiry = latest?.expiryDate ? String(latest.expiryDate).slice(0, 10) : undefined;
-      motStatus = motExpiry ? (new Date(motExpiry) >= new Date() ? "Valid" : "Expired") : "Unknown";
+      { const d = motDaysRemaining(motExpiry); motStatus = d == null ? "Unknown" : d >= 0 ? "Valid" : "Expired"; }
       const passes = tests.filter(t => String(t?.testResult ?? "").toUpperCase() === "PASSED").length;
       const fails = tests.filter(t => String(t?.testResult ?? "").toUpperCase() !== "PASSED").length;
       motSummary = `${tests.length} tests on record · ${passes} pass${passes === 1 ? "" : "es"}, ${fails} fail${fails === 1 ? "" : "s"}`;
