@@ -20,6 +20,12 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Disclaimers from "./pages/Disclaimers";
 import NotFound from "./pages/NotFound";
+import Landing from "./pages/Landing";
+import Buyer from "./pages/Buyer";
+import Compare from "./pages/Compare";
+import Admin from "./pages/Admin";
+import Pricing from "./pages/Pricing";
+import { CookieConsent } from "@/components/CookieConsent";
 
 const queryClient = new QueryClient();
 
@@ -33,11 +39,16 @@ const App = () => (
         <AuthProvider>
           <PostHogTracker />
           <Routes>
-            <Route path="/" element={<NewValuation />} />
+            <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/valuation/new" element={<ProtectedRoute><NewValuation /></ProtectedRoute>} />
+            {/* Unprotected so anonymous visitors can enter a reg; NewValuation stores the intent and sends them to /auth. */}
+            <Route path="/valuation/new" element={<NewValuation />} />
+            <Route path="/buyer" element={<Buyer />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/compare" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/valuation/:id/analysing" element={<ProtectedRoute><Analysing /></ProtectedRoute>} />
             <Route path="/valuation/:id" element={<ProtectedRoute><ReportErrorBoundary><Report /></ReportErrorBoundary></ProtectedRoute>} />
             <Route path="/shared/:id" element={<ReportErrorBoundary><Report /></ReportErrorBoundary>} />
@@ -48,6 +59,7 @@ const App = () => (
             <Route path="/disclaimers" element={<Disclaimers />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <CookieConsent />
         </AuthProvider>
       </BrowserRouter>
       </ConfirmProvider>
