@@ -16,7 +16,7 @@ export default function NotFound() {
       <header className="container py-6">
         <Link to="/" aria-label="Valu8 home"><Logo /></Link>
       </header>
-      <main className="flex-1 grid place-items-center px-4 pb-16">
+      <main id="main" className="flex-1 grid place-items-center px-4 pb-16">
         <div className="text-center max-w-md animate-fade-in-up">
           <div className="inline-flex h-14 w-14 rounded-2xl bg-primary/15 text-primary items-center justify-center mb-6">
             <Compass className="h-7 w-7" />

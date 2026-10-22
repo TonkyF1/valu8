@@ -8,7 +8,7 @@ export default function Disclaimers() {
   return (
     <div className="min-h-screen flex flex-col">
       <TestModeBanner /><Header />
-      <main className="flex-1 container max-w-3xl py-12 md:py-16">
+      <main id="main" className="flex-1 container max-w-3xl py-12 md:py-16">
         <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Transparency</div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gradient mb-6">Disclaimers &amp; Data Sources</h1>
         <p className="text-base text-muted-foreground mb-10">Honest small print so you know exactly what a Valu8 report is — and isn't.</p>

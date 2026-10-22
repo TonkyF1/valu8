@@ -46,7 +46,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main className="flex-1 grid place-items-center px-4 py-12 hero-glow">
+      <main id="main" className="flex-1 grid place-items-center px-4 py-12 hero-glow">
         <div className="w-full max-w-md animate-fade-in-up">
           <div className="text-center mb-8">
             <div className="inline-flex h-12 w-12 rounded-2xl bg-gradient-primary items-center justify-center shadow-glow mb-4">

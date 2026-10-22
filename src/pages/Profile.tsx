@@ -123,7 +123,7 @@ export default function Profile() {
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main className="flex-1 container max-w-3xl py-8 md:py-12">
+      <main id="main" className="flex-1 container max-w-3xl py-8 md:py-12">
         <div className="flex items-start justify-between gap-4 mb-8 animate-fade-in-up">
           <div>
             <Button asChild variant="ghost" size="sm" className="mb-4 -ml-3">
