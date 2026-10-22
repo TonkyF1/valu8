@@ -209,22 +209,6 @@ async function fetchMarketCheckPricing(
   return r;
 }
 
-// ----- MotorSpecs previous-ads — real prior sales/listings for THIS exact VRM -----
-interface PreviousAd {
-  sold: boolean;
-  mileage?: number;
-  price?: number;
-  originalPrice?: number;
-  firstSeen?: string;
-  lastSeen?: string;
-}
-interface PreviousAdsResult {
-  ads: PreviousAd[];
-  make?: string;
-  model?: string;
-  trim?: string;
-}
-
 // True if `re` matches a clause of `text` that is NOT negated earlier in the
 // same clause ("no issues", "never had rust", "without any leaks", "isn't due").
 const NEGATION_RE = /\b(no|not|never|without|none|nothing|zero|nil|free of|free from)\b|n't\b/i;
@@ -242,135 +226,6 @@ function mentionsUnnegated(re: RegExp, text: string): boolean {
   return false;
 }
 
-async function fetchMotorSpecsPreviousAds(registration: string, userAuth?: string): Promise<PreviousAdsResult | null> {
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
-  if (!SUPABASE_URL || !ANON) return null;
-  try {
-    const r = await fetch(`${SUPABASE_URL}/functions/v1/motorspecs`, {
-      method: "POST",
-      headers: {
-        // Forward the end user's JWT: motorspecs now requires an authenticated user.
-        Authorization: userAuth || `Bearer ${ANON}`,
-        apikey: ANON,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ registration, endpoints: ["previous-ads"] }),
-    });
-    if (!r.ok) {
-      console.error("motorspecs previous-ads", r.status, (await r.text()).slice(0, 200));
-      return null;
-    }
-    const json: any = await r.json();
-    const prev = json?.results?.["previous-ads"];
-    if (!prev?.ok || !prev?.normalised) return null;
-    return prev.normalised as PreviousAdsResult;
-  } catch (e) {
-    console.error("motorspecs previous-ads fetch error", e);
-    return null;
-  }
-}
-
-/**
- * Build a price anchor from previous-ads for THIS exact VRM, normalising each
- * historical price to TODAY's market for THIS car (same VRM, same lineage)
- * by adjusting for mileage drift and elapsed time since the listing.
- *
- * Returns null if there isn't enough usable data.
- */
-function buildPreviousAdsAnchor(opts: {
-  ads: PreviousAd[];
-  currentMileage: number;
-  year: number;
-}): {
-  anchor: number;
-  sample: number;
-  soldCount: number;
-  newestDate?: string;
-  oldestDate?: string;
-  /** Adjusted prices (today-normalised) used to derive the anchor. */
-  adjustedPrices: number[];
-  /** Inter-quartile spread as a fraction of the anchor (e.g. 0.08 = ±8%). */
-  spreadPct: number;
-  /** Newest ad's age in years — used to gauge data freshness. */
-  newestYearsAgo: number;
-} | null {
-  const today = new Date();
-  const carAge = Math.max(1, CURRENT_YEAR - opts.year);
-  // Depreciation: newer cars lose ~12%/yr, older settle to ~5%/yr.
-  const annualDeprec = carAge <= 3 ? 0.12 : carAge <= 7 ? 0.09 : carAge <= 12 ? 0.07 : 0.05;
-
-  const adjusted: { price: number; sold: boolean; weight: number; yearsAgo: number }[] = [];
-
-  for (const ad of opts.ads) {
-    const price = Number(ad.price);
-    if (!Number.isFinite(price) || price < 300) continue;
-    const ts = ad.lastSeen || ad.firstSeen;
-    if (!ts) continue;
-    const seen = new Date(ts);
-    if (Number.isNaN(seen.getTime())) continue;
-    const yearsAgo = Math.max(0, (today.getTime() - seen.getTime()) / (365.25 * 24 * 3600 * 1000));
-    if (yearsAgo > 6) continue; // too stale
-
-    const timeFactor = Math.pow(1 - annualDeprec, yearsAgo);
-
-    let mileageFactor = 1;
-    if (typeof ad.mileage === "number" && ad.mileage > 0) {
-      const deltaMiles = opts.currentMileage - ad.mileage;
-      const pctPer10k = 0.03;
-      const adj = -(deltaMiles / 10000) * pctPer10k;
-      mileageFactor = Math.max(0.6, Math.min(1.25, 1 + adj));
-    }
-
-    const todayPrice = price * timeFactor * mileageFactor;
-
-    // Weight: sold > listed; newer ads weighted MUCH higher (recent market truth).
-    let w = ad.sold ? 1.6 : 1.0;
-    // Aggressive recency: <6m = 1.0, ~1y = 0.65, ~2y = 0.42, ~3y = 0.27, ~5y = 0.11
-    w *= Math.max(0.10, Math.exp(-yearsAgo * 0.45));
-    if (typeof ad.mileage === "number") w *= 1.15;
-
-    adjusted.push({ price: todayPrice, sold: !!ad.sold, weight: w, yearsAgo });
-  }
-
-  if (adjusted.length === 0) return null;
-
-  adjusted.sort((a, b) => a.price - b.price);
-  const totalW = adjusted.reduce((s, x) => s + x.weight, 0);
-  let acc = 0;
-  let anchor = adjusted[adjusted.length - 1].price;
-  for (const x of adjusted) {
-    acc += x.weight;
-    if (acc >= totalW / 2) { anchor = x.price; break; }
-  }
-
-  // Spread from real data (IQR / median). Single ad → small assumed spread.
-  const prices = adjusted.map((a) => a.price);
-  let spreadPct = 0.06;
-  if (prices.length >= 4) {
-    const p25 = percentile(prices, 25);
-    const p75 = percentile(prices, 75);
-    spreadPct = Math.max(0.04, Math.min(0.18, (p75 - p25) / 2 / Math.max(1, anchor)));
-  } else if (prices.length >= 2) {
-    const range = (prices[prices.length - 1] - prices[0]) / Math.max(1, anchor);
-    spreadPct = Math.max(0.05, Math.min(0.15, range / 2));
-  }
-
-  const dates = opts.ads.map((a) => a.lastSeen || a.firstSeen).filter(Boolean) as string[];
-  dates.sort();
-  const newestYearsAgo = Math.min(...adjusted.map((a) => a.yearsAgo));
-
-  return {
-    anchor: Math.round(anchor),
-    sample: adjusted.length,
-    soldCount: adjusted.filter((a) => a.sold).length,
-    oldestDate: dates[0],
-    newestDate: dates[dates.length - 1],
-    adjustedPrices: prices.map((p) => Math.round(p)),
-    spreadPct,
-    newestYearsAgo,
-  };
-}
 
 interface AnalyseRequest {
   make: string;
@@ -1045,7 +900,7 @@ Deno.serve(async (req) => {
     // Fetch MOT history + MarketCheck pricing in parallel BEFORE calling the AI,
     // so we can feed real signals (corrosion advisories, fails, etc.) into the prompt.
     const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
-    const [mc, dvsa, prevAds] = await Promise.all([
+    const [mc, dvsa] = await Promise.all([
       fetchMarketCheckPricing(body.make, body.model, body.year, body.mileage, body.variant),
       body.registration && body.registration.trim().length >= 2
         ? fetchDvsaMotHistory(body.registration).catch((e) => {
@@ -1053,18 +908,7 @@ Deno.serve(async (req) => {
             return { entries: [], error: "MOT service temporarily unavailable" } as const;
           })
         : Promise.resolve({ entries: [] as MotEntryOut[] }),
-      body.registration && body.registration.trim().length >= 2
-        ? fetchMotorSpecsPreviousAds(body.registration.replace(/\s+/g, "").toUpperCase(), req.headers.get("Authorization") ?? undefined)
-        : Promise.resolve(null),
     ]);
-
-    // Real previous sales/listings for THIS exact VRM — strongest possible anchor.
-    const prevAdsAnchor = prevAds && Array.isArray(prevAds.ads) && prevAds.ads.length > 0
-      ? buildPreviousAdsAnchor({ ads: prevAds.ads, currentMileage: body.mileage, year: body.year })
-      : null;
-    if (prevAdsAnchor) {
-      console.log(`previous-ads anchor: £${prevAdsAnchor.anchor} (sample=${prevAdsAnchor.sample}, sold=${prevAdsAnchor.soldCount})`);
-    }
 
     // Extract MOT signals — ONLY use the latest test for pricing / watchPoints
     const motEntries: MotEntryOut[] = [...(dvsa.entries ?? [])];
@@ -1300,7 +1144,6 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const enthusiast = isEnthusiastCar(body.make, body.model, body.variant);
     let rareCarWarning: string | undefined;
     let valuationUnavailable = false;
-    let prevAdsBlendWeightOut = 0;
 
     // Decide whether MarketCheck data is actually usable. For ultra-rare cars
     // the public UK active-listings feed is almost always too thin/noisy to
@@ -1409,7 +1252,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         const v = Number(p?.priceImpact);
         return Number.isFinite(v) ? sum + v : sum;
       }, 0);
-      const photoImpactAnchor = Math.max(1, prevAdsAnchor?.anchor ?? (anchorMedian > 0 ? anchorMedian : mc.median) ?? 1);
+      const photoImpactAnchor = Math.max(1, (anchorMedian > 0 ? anchorMedian : mc.median) || 1);
       // Condition score already captures general condition; only add specific
       // damage beyond it, capped to ±8% so one misread can't dominate.
       const photoImpactPct = clamp(photoImpactGbp / photoImpactAnchor, -0.08, 0.04);
@@ -1422,51 +1265,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       mult = clamp(mult, 0.55, 1.28);
 
       // ---- Anchor selection ----
-      // PRIMARY signal: real previous ads for THIS exact VRM (time- and
-      // mileage-adjusted to today). They are real transactions/listings for
-      // this very car, so when we have decent coverage we lean on them
-      // heavily and use MarketCheck only as a sanity cross-check.
+      // Anchor on live MarketCheck UK comparables (median of matched listings).
       const mcAnchorRaw = anchorMedian > 0 ? anchorMedian : mc.median;
       let anchor = mcAnchorRaw;
-      let prevAdsBlendWeight = 0;
-      if (prevAdsAnchor) {
-        // Base weight ladder driven by sample quality:
-        //   1 ad (listed)           → 0.55
-        //   1 sold ad               → 0.70
-        //   2+ ads, no sold         → 0.75
-        //   2+ ads incl. 1 sold     → 0.85
-        //   3+ ads incl. 2+ sold    → 0.92
-        //   4+ ads incl. 2+ sold    → 0.95
-        let w = 0.55;
-        if (prevAdsAnchor.soldCount >= 1) w = 0.70;
-        if (prevAdsAnchor.sample >= 2) w = Math.max(w, 0.75);
-        if (prevAdsAnchor.sample >= 2 && prevAdsAnchor.soldCount >= 1) w = 0.85;
-        if (prevAdsAnchor.sample >= 3 && prevAdsAnchor.soldCount >= 2) w = 0.92;
-        if (prevAdsAnchor.sample >= 4 && prevAdsAnchor.soldCount >= 2) w = 0.95;
-
-        // Stale data penalty — if the newest ad is more than ~2y old, fade weight.
-        if (prevAdsAnchor.newestYearsAgo > 2) {
-          const stalePenalty = Math.min(0.35, (prevAdsAnchor.newestYearsAgo - 2) * 0.12);
-          w = Math.max(0.30, w - stalePenalty);
-        }
-
-        // Sanity guard: only pull back if MarketCheck has a healthy sample
-        // AND the previous-ads anchor is wildly off. Otherwise trust the
-        // car-specific history over a thin live sample.
-        const deviation = Math.abs(prevAdsAnchor.anchor - mcAnchorRaw) / Math.max(1, mcAnchorRaw);
-        if (mc.count >= 30 && deviation > 0.4) {
-          w = Math.min(w, 0.40);
-        }
-
-        prevAdsBlendWeight = w;
-        anchor = Math.round(prevAdsAnchor.anchor * w + mcAnchorRaw * (1 - w));
-        const impactPct = Math.round(((anchor - mcAnchorRaw) / Math.max(1, mcAnchorRaw)) * 100);
-        adjustments.push({
-          label: `Primary anchor: ${prevAdsAnchor.sample} prior ${prevAdsAnchor.soldCount > 0 ? `listing${prevAdsAnchor.sample === 1 ? "" : "s"} (${prevAdsAnchor.soldCount} sold)` : `listing${prevAdsAnchor.sample === 1 ? "" : "s"}`} for this exact car — weighted ${Math.round(w * 100)}%`,
-          impactPct,
-        });
-      }
-      prevAdsBlendWeightOut = prevAdsBlendWeight;
       let dealerRetail = roundToGrain(anchor * mult);
 
       // Sanity floor for ultra-rare cars
@@ -1503,13 +1304,6 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       let spread = negativeCount >= 3 ? 0.12 : negativeCount >= 1 ? 0.08 : 0.06;
       if (positiveCount >= 3 && negativeCount === 0) spread = 0.05;
       if (ultraRare) spread = Math.max(spread, 0.20);
-      // When we anchored on real previous ads, blend their actual price spread
-      // into the range so it reflects real-world variance rather than a guess.
-      if (prevAdsAnchor && prevAdsBlendWeight >= 0.5) {
-        const realSpread = prevAdsAnchor.spreadPct;
-        spread = realSpread * prevAdsBlendWeight + spread * (1 - prevAdsBlendWeight);
-        spread = clamp(spread, 0.04, 0.18);
-      }
       rangeLow = roundToGrain(privateSale * (1 - spread * 0.8));
       rangeHigh = roundToGrain(privateSale * (1 + spread));
 
@@ -1715,22 +1509,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       marketBaseline,
       comparableListings: valuationUnavailable ? [] : exampleListings,
       marketAnchor: valuationUnavailable ? undefined : (anchorMedian > 0 ? Math.round(anchorMedian) : undefined),
-      previousAdsAnchor: prevAdsAnchor?.anchor,
-      previousAdsCount: prevAdsAnchor?.sample,
-      previousAdsSoldCount: prevAdsAnchor?.soldCount,
-      previousAdsBlendWeight: prevAdsBlendWeightOut > 0 ? Math.round(prevAdsBlendWeightOut * 100) / 100 : undefined,
       expertInsight: (() => {
         const sources: string[] = [];
-        const usesPrev = !!prevAdsAnchor && prevAdsBlendWeightOut > 0;
-        // Order sources by their actual influence on the final figure.
-        if (usesPrev) {
-          const pct = Math.round(prevAdsBlendWeightOut * 100);
-          const newest = prevAdsAnchor!.newestDate ? ` (most recent ${prevAdsAnchor!.newestDate.slice(0,7)})` : "";
-          sources.push(`${prevAdsAnchor!.sample} prior ad${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact registration${prevAdsAnchor!.soldCount > 0 ? `, ${prevAdsAnchor!.soldCount} sold` : ""}${newest} — weighted ${pct}%`);
-        }
         if (mc?.count) {
-          const mcWeight = usesPrev ? Math.round((1 - prevAdsBlendWeightOut) * 100) : 100;
-          sources.push(`${mc.count.toLocaleString()} live UK listings via MarketCheck — weighted ${mcWeight}%`);
+          sources.push(`${mc.count.toLocaleString()} live UK listings via MarketCheck`);
         }
         if (photoUrls.length > 0) sources.push(`${photoUrls.length}-photo Vision AI condition scan (${(ai.conditionScore ?? 0).toFixed(1)}/10)`);
         if (motEntries.length > 0) sources.push(`${motEntries.length} DVSA MOT record${motEntries.length === 1 ? "" : "s"}`);
@@ -1743,13 +1525,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         const conditionScore = Number(ai.conditionScore ?? 7);
         const majorConditionIssue = conditionScore < 6;
         const veryThinMarket = !!mc && mc.count < 10;
-        const shown = usesPrev || isRare || valuationUnavailable || majorConditionIssue || veryThinMarket;
+        const shown = isRare || valuationUnavailable || majorConditionIssue || veryThinMarket;
         let reason = "";
-        if (usesPrev && prevAdsBlendWeightOut >= 0.75) {
-          reason = `Price is built primarily from ${prevAdsAnchor!.sample} real prior listing${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact VRM${prevAdsAnchor!.soldCount > 0 ? ` (${prevAdsAnchor!.soldCount} sold)` : ""}, each adjusted for time elapsed and miles driven since, then sanity-checked against ${mc?.count ?? "live"} comparable UK listings.`;
-        } else if (usesPrev) {
-          reason = `Blended ${prevAdsAnchor!.sample} prior listing${prevAdsAnchor!.sample === 1 ? "" : "s"} for this exact VRM with ${mc?.count ?? "the"} live UK comparables. The car-specific history was given ${Math.round(prevAdsBlendWeightOut * 100)}% weight after time- and mileage-adjustment.`;
-        } else if (majorConditionIssue) {
+        if (majorConditionIssue) {
           reason = `Condition signals from your photos (${conditionScore.toFixed(1)}/10) materially affect this car's value, so we've adjusted away from the headline market figure of ${mc?.count?.toLocaleString() ?? "live"} comparable UK listings.`;
         } else if (isRare || veryThinMarket) {
           reason = `Limited live market data for this car — figure stress-tested against multiple data sources before being shown.`;

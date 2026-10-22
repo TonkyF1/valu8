@@ -45,14 +45,6 @@ export default function Report() {
 
   const [showOldAdvisories, setShowOldAdvisories] = useState(false);
   const [liveCount, setLiveCount] = useState<number | null>(null);
-  const [marketHistory, setMarketHistory] = useState<{
-    make?: string; model?: string; trim?: string;
-    ads: Array<{
-      sold: boolean; mileage?: number; price?: number; originalPrice?: number;
-      firstSeen?: string; lastSeen?: string; dealerType?: string; businessName?: string | null; adText?: string;
-    }>;
-  } | null>(null);
-  const [specs, setSpecs] = useState<any | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -101,27 +93,6 @@ export default function Report() {
     return () => { clearTimeout(timer); ctrl.abort(); };
   }, [v]);
 
-  // MotorSpecs — previous-ads + identity-specs in one call
-  useEffect(() => {
-    if (!v?.registration) { setMarketHistory(null); setSpecs(null); return; }
-    let cancelled = false;
-    supabase.functions
-      .invoke("motorspecs", {
-        body: { registration: v.registration, endpoints: ["previous-ads", "identity-specs"] },
-      })
-      .then(({ data, error }) => {
-        if (cancelled || error) return;
-        const results = (data as any)?.results ?? {};
-        const ads = results["previous-ads"];
-        if (ads?.ok && ads?.normalised && Array.isArray(ads.normalised.ads) && ads.normalised.ads.length > 0) {
-          setMarketHistory(ads.normalised);
-        }
-        const id = results["identity-specs"];
-        if (id?.ok && id?.normalised) setSpecs(id.normalised);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [v?.registration]);
 
 
   // Lightbox keyboard navigation
@@ -207,17 +178,13 @@ export default function Report() {
   if (r.rareCarWarning) rarityReasons.push("of its rare specification or trim");
   if (aiConfidence === "Very Low") rarityReasons.push("our AI flagged it as a harder-than-average car to price");
 
-  // Trigger expert overlay ONLY when the car is genuinely difficult to price,
-  // OR when we have real previous-ads anchored data for this exact VRM (which
-  // is the strongest, most defensible signal — show it off).
-  const hasPrevAdsAnchor = typeof r.previousAdsAnchor === "number" && (r.previousAdsCount ?? 0) >= 1;
+  // Trigger expert overlay ONLY when the car is genuinely difficult to price.
   const strongSingleSignal =
     (liveCount != null && liveCount < 3) ||
     !!r.rareCarWarning ||
     aiConfidence === "Very Low";
   const showSpecialistBadge =
     !!r.expertInsight?.shown ||
-    hasPrevAdsAnchor ||
     (strongSingleSignal && rarityReasons.length >= 1) ||
     rarityReasons.length >= 3;
 
@@ -232,9 +199,6 @@ export default function Report() {
     if (!showSpecialistBadge) return null;
     // Prefer the server-provided reason — it knows exactly which data sources fed the valuation.
     if (r.expertInsight?.reason) return r.expertInsight.reason;
-    if (hasPrevAdsAnchor) {
-      return `Anchored to ${r.previousAdsCount} real prior listing${r.previousAdsCount === 1 ? "" : "s"} for this exact registration${(r.previousAdsSoldCount ?? 0) > 0 ? ` (including ${r.previousAdsSoldCount} sold)` : ""}, time- and mileage-adjusted to today.`;
-    }
     const top = rarityReasons.slice(0, 2);
     if (top.length === 0) {
       return "We've layered expert analysis on top of live market data to give you a confident figure on a harder-than-average car to price.";
@@ -832,213 +796,6 @@ export default function Report() {
           </CollapsibleSection>
         )}
 
-        {/* Verified Vehicle Specification — MotorSpecs identity-specs (DVLA + MVRIS + JATO) */}
-        {specs && (() => {
-          const fmt = (n: any, suffix = "") =>
-            n === undefined || n === null || n === "" ? null : `${typeof n === "number" ? n.toLocaleString() : n}${suffix}`;
-          const rows: Array<[string, string | null]> = [
-            ["Make / Model", [specs.make, specs.model].filter(Boolean).join(" ") || null],
-            ["Version", specs.version ?? specs.trim ?? null],
-            ["Generation", specs.generation ? `Mk${specs.generation}${specs.series ? ` (${specs.series})` : ""}` : specs.series ?? null],
-            ["Year", fmt(specs.year)],
-            ["First registered", specs.regDate ?? null],
-            ["Body", [specs.bodyStyle, specs.doors ? `${specs.doors}dr` : null, specs.seats ? `${specs.seats} seats` : null].filter(Boolean).join(" · ") || null],
-            ["Engine", [specs.engineCC ? `${specs.engineCC}cc` : null, specs.fuelType, specs.fuelDelivery].filter(Boolean).join(" · ") || null],
-            ["Power", specs.powerBHP ? `${specs.powerBHP} bhp${specs.powerKW ? ` (${specs.powerKW} kW)` : ""}` : null],
-            ["Torque", fmt(specs.torqueNm, " Nm")],
-            ["Transmission", [specs.transmission, specs.gears ? `${specs.gears}-spd` : null, specs.driveType].filter(Boolean).join(" · ") || null],
-            ["Economy (combined)", fmt(specs.combinedMpg, " mpg")],
-            ["0–60 mph", fmt(specs.zeroToSixtyS, " s")],
-            ["Top speed", fmt(specs.topSpeedMph, " mph")],
-            ["CO₂", fmt(specs.co2, " g/km")],
-            ["Euro status", fmt(specs.euroStatus)],
-            ["Kerb weight", fmt(specs.kerbWeightKg, " kg")],
-            ["Colour", specs.colour ?? null],
-            ["VIN", specs.vin ?? null],
-            ["Origin", specs.origin ?? null],
-            ["Previous keepers", fmt(specs.keepers?.numberOfPrevious)],
-            ["Current keeper since", specs.keepers?.currentSince ?? null],
-            ["Segment", specs.localSegment ?? specs.globalSegment ?? null],
-          ].filter(([, val]) => val !== null && val !== undefined && val !== "") as Array<[string, string]>;
-          return (
-            <CollapsibleSection
-              title="Verified Vehicle Specification"
-              icon={ShieldCheck}
-              badge={
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
-                  DVLA + MVRIS
-                </span>
-              }
-            >
-              <p className="text-xs text-muted-foreground mb-4">
-                Sourced live from MotorSpecs for <span className="font-mono font-semibold text-foreground">{specs.vrm ?? v.registration}</span>
-                {specs.desirabilityScore ? <> · Desirability score <span className="text-foreground font-semibold">{specs.desirabilityScore}</span></> : null}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                {rows.map(([label, val]) => (
-                  <div key={label} className="flex justify-between gap-3 border-b border-border/40 py-1.5">
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="text-foreground font-medium text-right">{val}</span>
-                  </div>
-                ))}
-              </div>
-              {Array.isArray(specs.similarVehicles) && specs.similarVehicles.length > 0 && (
-                <div className="mt-5">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Similar variants ({specs.similarVehicles.length})</div>
-                  <ul className="space-y-1.5 text-sm">
-                    {specs.similarVehicles.slice(0, 6).map((s: any) => (
-                      <li key={s.id} className="flex justify-between gap-3 border-b border-border/30 py-1.5">
-                        <span className="text-foreground">{s.year} {s.make} {s.model} <span className="text-muted-foreground">— {s.version}</span></span>
-                        <span className="text-muted-foreground text-xs">{s.transmissionDescription ?? s.transmission}{s.powerBHP ? ` · ${s.powerBHP}bhp` : ""}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </CollapsibleSection>
-          );
-        })()}
-
-        {/* Recent Market History — real previous ads for this VRM (MotorSpecs) */}
-        {marketHistory && marketHistory.ads.length > 0 && (() => {
-          const ads = [...marketHistory.ads].sort((a, b) =>
-            (b.lastSeen ?? "").localeCompare(a.lastSeen ?? "")
-          );
-          const soldAds = ads.filter(a => a.sold);
-          const listedAds = ads.filter(a => !a.sold);
-          const pricesWith = (xs: typeof ads) => xs.map(a => a.price).filter((n): n is number => typeof n === "number");
-          const soldPrices = pricesWith(soldAds);
-          const listedPrices = pricesWith(listedAds);
-          const avg = (xs: number[]) => xs.length ? Math.round(xs.reduce((s, n) => s + n, 0) / xs.length) : null;
-          const avgSold = avg(soldPrices);
-          const avgListed = avg(listedPrices);
-          const fmtGBP = (n?: number | null) =>
-            typeof n === "number" ? `£${n.toLocaleString()}` : "—";
-          const fmtDate = (iso?: string) => {
-            if (!iso) return "—";
-            try { return format(new Date(iso), "MMM yyyy"); } catch { return iso.slice(0, 10); }
-          };
-          return (
-            <CollapsibleSection
-              title="Recent Market History"
-              icon={History}
-              badge={
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
-                  Verified data
-                </span>
-              }
-              preview={
-                <>
-                  {ads.length} previous {ads.length === 1 ? "listing" : "listings"}
-                  {soldAds.length > 0 && <> · {soldAds.length} sold</>}
-                  {avgSold && <> · avg {fmtGBP(avgSold)}</>}
-                </>
-              }
-            >
-              <div className="space-y-4">
-                <div className="rounded-xl bg-primary/[0.06] border border-primary/20 px-4 py-2.5">
-                  <p className="text-[11px] leading-relaxed text-foreground/80">
-                    <span className="font-semibold text-primary">Based on previous listings for this exact registration</span>
-                    {" "}<span className="font-mono uppercase">{v.registration}</span>
-                    {marketHistory.make && marketHistory.model && (
-                      <> — matched as {marketHistory.make} {marketHistory.model}{marketHistory.trim ? ` ${marketHistory.trim}` : ""}</>
-                    )}.
-                  </p>
-                </div>
-
-                {/* Summary stats */}
-                {(avgSold || avgListed) && (
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-xl border border-border/60 bg-background/40 px-3 py-2.5">
-                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Listings</div>
-                      <div className="text-lg font-bold text-foreground mt-0.5">{ads.length}</div>
-                    </div>
-                    <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/[0.06] px-3 py-2.5">
-                      <div className="text-[9px] uppercase tracking-wider text-emerald-300/90 font-semibold">Avg sold</div>
-                      <div className="text-lg font-bold text-emerald-200 mt-0.5">{fmtGBP(avgSold)}</div>
-                    </div>
-                    <div className="rounded-xl border border-border/60 bg-background/40 px-3 py-2.5">
-                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Avg asked</div>
-                      <div className="text-lg font-bold text-foreground mt-0.5">{fmtGBP(avgListed)}</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Timeline of listings */}
-                <ol className="relative space-y-2.5 pl-4 before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-px before:bg-border/60">
-                  {ads.map((a, i) => {
-                    const dropped = typeof a.originalPrice === "number" && typeof a.price === "number" && a.originalPrice > a.price;
-                    const drop = dropped ? (a.originalPrice! - a.price!) : 0;
-                    return (
-                      <li key={i} className="relative">
-                        <span className={cn(
-                          "absolute -left-4 top-3 h-2.5 w-2.5 rounded-full border-2",
-                          a.sold
-                            ? "bg-emerald-400 border-emerald-300/40 shadow-[0_0_8px_hsl(152_70%_55%/0.6)]"
-                            : "bg-muted-foreground/40 border-border"
-                        )} />
-                        <div className={cn(
-                          "rounded-xl border px-4 py-3 transition-colors",
-                          a.sold
-                            ? "border-emerald-400/25 bg-emerald-400/[0.04]"
-                            : "border-border/60 bg-background/40"
-                        )}>
-                          <div className="flex items-start justify-between gap-3 flex-wrap">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-baseline gap-2 flex-wrap">
-                                <span className="text-xl font-bold text-foreground tabular-nums">{fmtGBP(a.price)}</span>
-                                {dropped && (
-                                  <>
-                                    <span className="text-xs text-muted-foreground line-through tabular-nums">{fmtGBP(a.originalPrice)}</span>
-                                    <span className="text-[10px] font-semibold text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded px-1.5 py-0.5 inline-flex items-center gap-1">
-                                      <TrendingDown className="h-2.5 w-2.5" /> −£{drop.toLocaleString()}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                              <div className="mt-1.5 text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                                <span className="text-foreground/70 font-medium">
-                                  {fmtDate(a.firstSeen)}
-                                  {a.lastSeen && a.lastSeen !== a.firstSeen && <> → {fmtDate(a.lastSeen)}</>}
-                                </span>
-                                {typeof a.mileage === "number" && (
-                                  <><span>·</span><span>{a.mileage.toLocaleString()} mi</span></>
-                                )}
-                                {a.dealerType && (
-                                  <><span>·</span><span className="capitalize">{a.dealerType}</span></>
-                                )}
-                                {a.businessName && (
-                                  <><span>·</span><span className="truncate max-w-[180px]">{a.businessName}</span></>
-                                )}
-                              </div>
-                            </div>
-                            <span className={cn(
-                              "text-[10px] font-semibold uppercase tracking-wider rounded-full px-2 py-0.5 border shrink-0",
-                              a.sold
-                                ? "text-emerald-200 bg-emerald-400/15 border-emerald-400/40"
-                                : "text-muted-foreground bg-muted/30 border-border/60"
-                            )}>
-                              {a.sold ? "Sold" : "Withdrawn"}
-                            </span>
-                          </div>
-                          {a.adText && a.adText.trim() && (
-                            <p className="mt-2 text-[12px] leading-snug text-foreground/70 italic border-l-2 border-border/60 pl-2.5">
-                              "{a.adText.trim()}"
-                            </p>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ol>
-
-                <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
-                  Source: MotorSpecs ad-history database. Past prices are a strong indicator but not a guarantee of current market value.
-                </p>
-              </div>
-            </CollapsibleSection>
-          );
-        })()}
 
 
 

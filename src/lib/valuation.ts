@@ -66,11 +66,6 @@ export interface ValuationReport {
     url?: string;
   }[];
   marketAnchor?: number;
-  // Previous real ads for this exact registration (MotorSpecs)
-  previousAdsAnchor?: number;
-  previousAdsCount?: number;
-  previousAdsSoldCount?: number;
-  previousAdsBlendWeight?: number; // 0..1 — how much the final anchor leans on previous ads
   expertInsight?: {
     shown: boolean;
     reason: string;
