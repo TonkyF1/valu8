@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
+import { resetConsent } from "@/lib/consent";
 
 export function Footer() {
   return (
@@ -7,14 +8,16 @@ export function Footer() {
       <div className="container py-6 flex flex-col items-center text-center gap-4">
         <Logo size="sm" />
         <p className="text-[11px] text-muted-foreground/70 max-w-sm leading-relaxed">
-          Premium AI car valuations, built for UK private sellers. Test mode — all features free.
+          AI car valuations for UK private sellers and buyers. All features are free during early access.
         </p>
-        <nav className="flex items-center gap-4 text-[11px] text-muted-foreground/80">
+        <nav aria-label="Legal" className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground/80">
           <Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
           <span className="opacity-30">·</span>
           <Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
           <span className="opacity-30">·</span>
           <Link to="/disclaimers" className="hover:text-primary transition-colors">Disclaimers</Link>
+          <span className="opacity-30">·</span>
+          <button type="button" onClick={resetConsent} className="hover:text-primary transition-colors">Cookie settings</button>
         </nav>
         <div className="text-[10px] text-muted-foreground/50">
           <p>© {new Date().getFullYear()} Valu8</p>

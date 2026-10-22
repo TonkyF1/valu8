@@ -2,6 +2,7 @@ import { Component, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
+import { captureError } from "@/lib/sentry";
 import { Header, TestModeBanner } from "@/components/Layout";
 
 interface Props { children: ReactNode }
@@ -16,6 +17,7 @@ export class ReportErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: unknown) {
     console.error("Report render error:", error, info);
+    captureError(error);
   }
 
   render() {
