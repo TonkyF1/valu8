@@ -2,8 +2,8 @@
 // Posts $ai_generation events to PostHog's EU /capture endpoint so they show
 // up in PostHog's LLM Observability product.
 
-const POSTHOG_KEY = "phc_CPtsdMVYmduf4Uk92SPeCwXgUyxieWp5GvrqcDDzRUNz";
-const POSTHOG_HOST = "https://eu.i.posthog.com";
+const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") ?? "";
+const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://eu.i.posthog.com";
 
 interface AiGenerationEvent {
   distinctId?: string | null;
@@ -38,6 +38,7 @@ export async function capturePosthogAiGeneration(evt: AiGenerationEvent): Promis
       ...(evt.extra ?? {}),
     };
 
+    if (!POSTHOG_KEY) return; // analytics disabled when POSTHOG_KEY unset
     await fetch(`${POSTHOG_HOST}/i/v0/e/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

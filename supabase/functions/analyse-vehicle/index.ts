@@ -1,6 +1,6 @@
 // Valu8 — AI vehicle analysis edge function
 // Pulls live UK market pricing from MarketCheck UK as the valuation anchor,
-// then uses Lovable AI Gateway (Gemini 2.5 Pro vision) to adjust the figure
+// then uses Lovable AI Gateway (Gemini 2.5 Flash vision, provider configurable via AI_GATEWAY_URL/AI_API_KEY/AI_MODEL) to adjust the figure
 // based on photos, mileage, history, MOT advisories and modifications.
 
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
@@ -27,13 +27,15 @@ function extractPhotoPath(value: string | null | undefined): string | null {
   }
 }
 
-async function signPhotoRefsForAi(refs: string[]): Promise<string[]> {
+async function signPhotoRefsForAi(refs: string[], ownerId: string | null): Promise<string[]> {
   if (!refs.length) return [];
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!SUPABASE_URL || !SERVICE_ROLE) return refs; // best-effort fallback
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-  const paths = refs.map(extractPhotoPath);
+  // Only sign objects inside the authenticated caller's own folder ("<uid>/...").
+  // Without this, any caller could ask the service role to sign anyone's photos.
+  const paths = refs.map(extractPhotoPath).map((p) => (p && ownerId && p.startsWith(`${ownerId}/`) ? p : null));
   const unique = Array.from(new Set(paths.filter((p): p is string => !!p)));
   if (unique.length === 0) return refs.map(() => "");
   const { data, error } = await admin.storage
@@ -223,7 +225,24 @@ interface PreviousAdsResult {
   trim?: string;
 }
 
-async function fetchMotorSpecsPreviousAds(registration: string): Promise<PreviousAdsResult | null> {
+// True if `re` matches a clause of `text` that is NOT negated earlier in the
+// same clause ("no issues", "never had rust", "without any leaks", "isn't due").
+const NEGATION_RE = /\b(no|not|never|without|none|nothing|zero|nil|free of|free from)\b|n't\b/i;
+function mentionsUnnegated(re: RegExp, text: string): boolean {
+  const flags = re.flags.includes("g") ? re.flags : re.flags + "g";
+  for (const clause of text.split(/[.;,!?\n]+|\bbut\b/i)) {
+    const g = new RegExp(re.source, flags);
+    let m: RegExpExecArray | null;
+    while ((m = g.exec(clause))) {
+      const before = clause.slice(0, m.index);
+      if (!NEGATION_RE.test(before)) return true;
+      if (m[0].length === 0) g.lastIndex++;
+    }
+  }
+  return false;
+}
+
+async function fetchMotorSpecsPreviousAds(registration: string, userAuth?: string): Promise<PreviousAdsResult | null> {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
   if (!SUPABASE_URL || !ANON) return null;
@@ -231,7 +250,8 @@ async function fetchMotorSpecsPreviousAds(registration: string): Promise<Previou
     const r = await fetch(`${SUPABASE_URL}/functions/v1/motorspecs`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${ANON}`,
+        // Forward the end user's JWT: motorspecs now requires an authenticated user.
+        Authorization: userAuth || `Bearer ${ANON}`,
         apikey: ANON,
         "Content-Type": "application/json",
       },
@@ -361,6 +381,10 @@ interface AnalyseRequest {
   registration?: string;
   motExpiry?: string;
   serviceNotes?: string;
+  modifications?: string;
+  colour?: string;
+  fuelType?: string;
+  motAdvisories?: string[];
   photoUrls: string[];
   photos?: { slot: string; url: string }[];
 }
@@ -545,7 +569,7 @@ function computeMarketRange(params: {
   const mileageRatio = mileage / Math.max(expectedMileage, 1);
   const serviceText = `${serviceNotes ?? ""}`.toLowerCase();
   const hasStrongHistory = /(full service|fsh|main dealer|specialist|major service|timing belt|timing chain|clutch|ceramic|recent service|full history)/i.test(serviceText);
-  const needsWork = /(needs|due|overdue|warning light|smoke|fault|damage|dent|scuff|scratch|leak|issue)/i.test(serviceText);
+  const needsWork = mentionsUnnegated(/(needs|due|overdue|warning light|smoke|fault|damage|dent|scuff|scratch|leak|issue)/i, serviceText);
   const enthusiast = isEnthusiastCar(make, model, variant);
   const exoticAnchor = getExoticAnchor(make, model, variant);
   const motSoon = !!motExpiry && (() => {
@@ -581,9 +605,11 @@ function computeMarketRange(params: {
   else if (mileageRatio >= 1.25) center *= 0.90;
   else if (mileageRatio >= 1.1) center *= 0.96;
   if (motSoon) center *= 0.98;
+  // NOTE: the AI privateSaleValue already reflects condition (see prompt), so only
+  // apply a light correction here. Order fixed: the <=5.5 branch was unreachable.
   if (conditionScore >= 8.8) center *= 1.02;
-  else if (conditionScore <= 6.5) center *= 0.92;
-  else if (conditionScore <= 5.5) center *= 0.82;
+  else if (conditionScore <= 5.5) center *= 0.92;
+  else if (conditionScore <= 6.5) center *= 0.96;
 
   if (enthusiast) rangeSpread += 0.01;
   if (photoCount < 4) rangeSpread += 0.025;
@@ -754,7 +780,7 @@ function simulateMotHistory(year: number, currentMileage: number, seed: number) 
     "Anti-roll bar bush has slight play",
   ];
   for (let i = 0; i < yearsToShow; i++) {
-    const yr = 2025 - i;
+    const yr = new Date().getFullYear() - i;
     mi = Math.max(1000, mi - annualMiles + Math.round((rand() - 0.5) * 1500));
     const month = String(1 + Math.floor(rand() * 12)).padStart(2, "0");
     const day = String(1 + Math.floor(rand() * 27)).padStart(2, "0");
@@ -971,8 +997,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const AI_API_KEY = Deno.env.get("AI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+    if (!AI_API_KEY) {
+      return new Response(JSON.stringify({ error: "AI provider not configured (set AI_API_KEY or LOVABLE_API_KEY)" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const AI_GATEWAY_URL = Deno.env.get("AI_GATEWAY_URL") || "https://ai.gateway.lovable.dev/v1/chat/completions";
+
+    // Resolve the caller from their JWT (never trust body.userId for access control).
+    let callerId: string | null = null;
+    try {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const token = authHeader.replace(/^Bearer\s+/i, "");
+      const SU = Deno.env.get("SUPABASE_URL"); const SR = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (token && SU && SR) {
+        const { data } = await createClient(SU, SR).auth.getUser(token);
+        callerId = data?.user?.id ?? null;
+      }
+    } catch (e) { console.warn("Could not resolve caller", e); }
 
     // Build labeled photo list (slot + ref). Accepts either storage paths
     // (new private-bucket clients) or legacy public URLs. All refs are then
@@ -993,7 +1036,7 @@ Deno.serve(async (req) => {
         ref: url,
       }));
     })();
-    const signed = await signPhotoRefsForAi(rawLabeled.map((p) => p.ref));
+    const signed = await signPhotoRefsForAi(rawLabeled.map((p) => p.ref), callerId);
     const labeledPhotos: { slot: PhotoSlot; url: string }[] = rawLabeled
       .map((p, i) => ({ slot: p.slot, url: signed[i] }))
       .filter((p) => !!p.url);
@@ -1011,7 +1054,7 @@ Deno.serve(async (req) => {
           })
         : Promise.resolve({ entries: [] as MotEntryOut[] }),
       body.registration && body.registration.trim().length >= 2
-        ? fetchMotorSpecsPreviousAds(body.registration.replace(/\s+/g, "").toUpperCase())
+        ? fetchMotorSpecsPreviousAds(body.registration.replace(/\s+/g, "").toUpperCase(), req.headers.get("Authorization") ?? undefined)
         : Promise.resolve(null),
     ]);
 
@@ -1024,7 +1067,7 @@ Deno.serve(async (req) => {
     }
 
     // Extract MOT signals — ONLY use the latest test for pricing / watchPoints
-    const motEntries = dvsa.entries ?? [];
+    const motEntries: MotEntryOut[] = [...(dvsa.entries ?? [])];
     const latestTest = motEntries[0];
     const latestAdvisories = latestTest?.advisories ?? [];
 
@@ -1079,7 +1122,7 @@ ${mc.avgMiles ? `- Avg mileage of comparable listings: ${Math.round(mc.avgMiles)
 CLOSEST 3 LIVE EXAMPLES TO THIS CAR:
 ${examplesText}
 
-These are REAL cars currently for sale in the UK. Use the anchor above as the dealer-asking benchmark for this exact car. Private sale typically lands 8-12% below dealer asking.`
+These are REAL cars currently for sale in the UK. Use the anchor above as the dealer-asking benchmark for this exact car. Private sale typically lands 4-8% below dealer asking.`
       : `(No live MarketCheck listings returned for this exact spec — fall back on your own UK private market knowledge and stay conservative.)`;
 
     const motBlock = motEntries.length > 0
@@ -1109,6 +1152,9 @@ ONLY consider advisories and failures from the LATEST test when pricing and writ
 - Registration: ${body.registration || "not provided"}
 - MOT expiry: ${body.motExpiry || "not provided"}
 - Service notes: ${body.serviceNotes || "none provided"}
+- Modifications / extras: ${body.modifications || "none provided"}
+- Colour: ${body.colour || "not provided"}
+- Fuel: ${body.fuelType || "not provided"}${!(dvsa.entries ?? []).length && body.motAdvisories?.length ? `\n- Latest MOT advisories (from lookup): ${body.motAdvisories.join("; ")}` : ""}
 - Photos attached: ${photoUrls.length}
 ${labeledPhotos.length > 0 ? `
 PHOTO LIST — the images below are sent in this exact order. Use the Photo N number as photoIndex in every photoInsight. There are NO slot labels — look at each image and set the slot purely from what you actually see:
@@ -1124,10 +1170,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     ];
 
     const aiStart = Date.now();
-    const aiModel = "google/gemini-2.5-flash";
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiModel = Deno.env.get("AI_MODEL") || "google/gemini-2.5-flash";
+    const aiResp = await fetch(AI_GATEWAY_URL, {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${AI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: aiModel,
         messages: [
@@ -1150,16 +1196,16 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       capturePosthogAiGeneration({
         model: aiModel, latencyMs: aiLatency, httpStatus: aiResp.status,
         isError: true, errorMessage: txt.slice(0, 300), feature: "analyse-vehicle",
-        distinctId: (body as any).userId ?? null,
+        distinctId: callerId,
       });
       const message = aiResp.status === 429
         ? "AI service is busy right now — please try again in a moment."
         : aiResp.status === 402
-          ? "AI credits exhausted. Please top up Lovable AI credits in workspace settings to generate new valuations."
+          ? "AI credits exhausted on the configured AI provider."
           : "AI analysis is temporarily unavailable. Please try again shortly.";
       return new Response(
         JSON.stringify({ error: message, fallback: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        { status: aiResp.status === 429 ? 429 : 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -1170,7 +1216,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       outputTokens: aiData?.usage?.completion_tokens,
       totalTokens: aiData?.usage?.total_tokens,
       feature: "analyse-vehicle",
-      distinctId: (body as any).userId ?? null,
+      distinctId: callerId,
       extra: { make: body.make, model: body.model, year: body.year, photoCount: photoUrls.length },
     });
     const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
@@ -1179,7 +1225,15 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       throw new Error("AI did not return a structured report");
     }
 
-    const ai = JSON.parse(toolCall.function.arguments) as {
+    let parsedArgs: unknown;
+    try { parsedArgs = JSON.parse(toolCall.function.arguments); }
+    catch (e) {
+      console.error("AI returned malformed tool arguments", e);
+      return new Response(JSON.stringify({ error: "AI returned an unreadable report. Please try again." }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const ai = parsedArgs as {
       conditionScore: number;
       conditionLabel: string;
       privateSaleValue: number;
@@ -1196,6 +1250,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         priceImpact?: number;
         fixCost?: number;
         fixable?: boolean;
+        photoIndex?: number;
       }>;
       headline?: string;
       marketContext?: string;
@@ -1230,14 +1285,15 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const age = Math.max(0, CURRENT_YEAR - body.year);
     const expectedMileage = age <= 0 ? 3000 : age * 8000;
     const mileageRatio = body.mileage / Math.max(expectedMileage, 1);
-    const serviceText = `${body.serviceNotes ?? ""}`.toLowerCase();
+    // Only seller-written text is keyword-scanned; colour/fuel/MOT data are passed as structured fields.
+    const serviceText = `${body.serviceNotes ?? ""}\n${body.modifications ?? ""}`.toLowerCase();
     const hasStrongHistory = /(full service history|fsh|main dealer|marque specialist|specialist serviced|full history|complete service history|every service|all stamps|stamped book)/i.test(serviceText);
     const hasPartialHistory = /(partial|part service|patchy|some history|limited history|few stamps)/i.test(serviceText);
     const noHistory = /(no history|no service history|missing history|no records|history lost)/i.test(serviceText);
     // Recent major mechanical work — strong positive signal for private buyers
     const recentMajorWork = /(cambelt|timing belt|timing chain|new clutch|clutch replaced|subframe|new turbo|turbo replaced|new dpf|dpf replaced|new battery|hybrid battery|injectors replaced|gearbox rebuilt|suspension overhaul|new shocks|new dampers|coilovers fitted|full respray|new tyres all round|four new tyres|brake discs and pads|new brakes|recently serviced|just serviced|fresh service|fresh mot)/i.test(serviceText);
     const desirableSpec = /(manual|alcantara|carbon|ceramic|sports exhaust|akrapovic|milltek|panoramic|sunroof|heads.?up|hud|adaptive cruise|matrix led|night vision|comfort access|harman|bang.?olufsen|burmester|bowers|pan roof|extended leather|nappa|m sport plus|black pack|tech pack|premium plus|sport plus|launch edition|first edition|limited edition|low owners?|one owner|two owners|sole owner|original paint|garaged|never tracked|non.?smoker|pet.?free)/i.test(serviceText);
-    const needsWork = /(needs|due|overdue|warning light|smoke|fault|damage|dent|scuff|scratch|leak|issue|rust|corrosion)/i.test(serviceText);
+    const needsWork = mentionsUnnegated(/(needs|due|overdue|warning light|smoke|fault|damage|dent|scuff|scratch|leak|issue|rust|corrosion)/i, serviceText);
 
     const ultraRare = isUltraRare(body.make, body.model, body.variant);
     const exoticAnchor = getExoticAnchor(body.make, body.model, body.variant);
@@ -1331,6 +1387,37 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         });
       }
 
+      // --- MOT expiry (user-entered or DVSA) — previously ignored in this path ---
+      const motExpiryStr = body.motExpiry || latestTest?.expiryDate;
+      if (motExpiryStr) {
+        const days = (new Date(motExpiryStr).getTime() - Date.now()) / 86400000;
+        if (Number.isFinite(days)) {
+          if (days < 0) { mult *= 0.95; adjustments.push({ label: "MOT expired", impactPct: -5 }); }
+          else if (days < 60) { mult *= 0.98; adjustments.push({ label: "MOT due within 2 months", impactPct: -2 }); }
+        }
+      }
+
+      // --- Mileage consistency vs DVSA odometer readings (possible clocking) ---
+      const maxRecordedMiles = motEntries.reduce((m, e) => Math.max(m, Number(e.mileage) || 0), 0);
+      if (maxRecordedMiles > 0 && body.mileage + 500 < maxRecordedMiles) {
+        mult *= 0.85;
+        adjustments.push({ label: `Declared mileage below MOT record (${maxRecordedMiles.toLocaleString()} mi)`, impactPct: -15 });
+      }
+
+      // --- Photo-level damage findings from the AI (priceImpact in £) ---
+      const photoImpactGbp = (ai.photoInsights ?? []).reduce((sum, p) => {
+        const v = Number(p?.priceImpact);
+        return Number.isFinite(v) ? sum + v : sum;
+      }, 0);
+      const photoImpactAnchor = Math.max(1, prevAdsAnchor?.anchor ?? (anchorMedian > 0 ? anchorMedian : mc.median) ?? 1);
+      // Condition score already captures general condition; only add specific
+      // damage beyond it, capped to ±8% so one misread can't dominate.
+      const photoImpactPct = clamp(photoImpactGbp / photoImpactAnchor, -0.08, 0.04);
+      if (Math.abs(photoImpactPct) >= 0.005) {
+        mult *= 1 + photoImpactPct;
+        adjustments.push({ label: "Specific issues seen in photos", impactPct: Math.round(photoImpactPct * 100) });
+      }
+
       // Cap total swing — wider upside than before, still a sensible floor.
       mult = clamp(mult, 0.55, 1.28);
 
@@ -1400,7 +1487,14 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       if (recentMajorWork) privateRatio += 0.01;
       privateRatio = clamp(privateRatio, 0.88, 0.98);
 
-      const privateSale = roundToGrain(dealerRetail * privateRatio);
+      let privateSale = roundToGrain(dealerRetail * privateRatio);
+      // Blend in the AI's holistic private-sale figure (it saw the photos and the
+      // full notes) at a modest weight, only when it is plausibly close to the
+      // market-derived figure. Previously the AI value was discarded entirely here.
+      const aiPv = Number(ai.privateSaleValue);
+      if (Number.isFinite(aiPv) && aiPv > 0 && Math.abs(aiPv - privateSale) / privateSale <= 0.25) {
+        privateSale = roundToGrain(privateSale * 0.8 + aiPv * 0.2);
+      }
       const dealerTradeIn = roundToGrain(dealerRetail * 0.78);
 
       // Range — tighter for strong cars, wider for problem cars
@@ -1487,7 +1581,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         year: body.year,
         mileage: body.mileage,
         motExpiry: body.motExpiry,
-        serviceNotes: body.serviceNotes,
+        serviceNotes: [body.serviceNotes, body.modifications].filter(Boolean).join("\n"),
         photoCount: photoUrls.length,
         conditionScore: score,
         aiPrivateValue: aiPrivate > fallback * 0.25 ? aiPrivate : fallback,
@@ -1686,14 +1780,19 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       negotiationBuffer,
       recommendedAskingPrice,
       hpi: {
-        status: "All Clear" as const,
+        // No HPI/provenance provider is integrated, so we must not claim "All Clear".
+        // Only the mileage check is real (derived from DVSA odometer readings).
+        status: "Not Checked" as const,
         checks: [
-          { label: "Outstanding finance", ok: true },
-          { label: "Insurance write-off", ok: true },
-          { label: "Stolen marker", ok: true },
-          { label: "Mileage discrepancy", ok: true },
-          { label: "Plate transfers", ok: true },
-          { label: "VIN integrity", ok: true },
+          { label: "Outstanding finance — not checked (get a full HPI check)", ok: false },
+          { label: "Insurance write-off — not checked", ok: false },
+          { label: "Stolen marker — not checked", ok: false },
+          (() => {
+            const maxMi = motEntries.reduce((m, e) => Math.max(m, Number(e.mileage) || 0), 0);
+            if (!maxMi) return { label: "Mileage vs MOT history — no MOT data", ok: false };
+            const ok = body.mileage + 500 >= maxMi;
+            return { label: ok ? "Mileage consistent with MOT history" : `Mileage LOWER than MOT record (${maxMi.toLocaleString()} mi)`, ok };
+          })(),
         ],
       },
       motHistory,

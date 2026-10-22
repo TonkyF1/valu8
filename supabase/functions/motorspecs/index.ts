@@ -1,7 +1,9 @@
 // Valu8 — MotorSpecs API proxy (OAuth2 client credentials + Apigility-style vendor media types)
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
-const BASE = "https://staging.motorspecs.com";
+// Was hard-coded to the STAGING host. Set MOTORSPECS_BASE_URL to the production host you are licensed for.
+const BASE = Deno.env.get("MOTORSPECS_BASE_URL") || "https://staging.motorspecs.com";
 const TOKEN_URL = `${BASE}/oauth`;
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
@@ -293,6 +295,18 @@ const ENDPOINTS: Record<string, { path: string; ct: string; normalise: (r: any) 
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Require a signed-in user: this proxies a paid API.
+  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const SU = Deno.env.get("SUPABASE_URL"); const SR = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const { data: authData } = token && SU && SR
+    ? await createClient(SU, SR).auth.getUser(token).catch(() => ({ data: null }))
+    : { data: null };
+  if (!authData?.user) {
+    return new Response(JSON.stringify({ error: "Sign in required" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const { registration, endpoints, currentMiles, mileage } = await req.json().catch(() => ({}));
