@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Turnstile, turnstileEnabled, turnstileHeaders } from "@/components/Turnstile";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +46,8 @@ const finalSchema = z.object({
 
 export default function NewValuation() {
   const { user } = useAuth();
+  const [tsToken, setTsToken] = useState<string | null>(null);
+  const [tsKey, setTsKey] = useState(0);
   const navigate = useNavigate();
 
   // Lookup state
@@ -244,7 +247,10 @@ export default function NewValuation() {
           photos: photos_labeled,
           userId: user.id,
         },
+        headers: turnstileHeaders(tsToken),
       });
+      // Turnstile tokens are single-use; get a fresh one for any retry.
+      setTsToken(null); setTsKey((k) => k + 1);
 
       if (aiErr) {
         // Non-2xx responses carry the server's friendly message in the body.
@@ -310,7 +316,7 @@ export default function NewValuation() {
       <TestModeBanner />
       <Header />
 
-      <main className="flex-1 flex flex-col items-center">
+      <main id="main" className="flex-1 flex flex-col items-center">
         {/* Hero */}
         <section className="relative overflow-hidden w-full">
           {/* Ambient glow */}
@@ -352,6 +358,8 @@ export default function NewValuation() {
 
               <Input
                 id="reg-main"
+                aria-label="Vehicle registration number"
+                autoComplete="off"
                 value={reg}
                 onChange={(e) => setReg(e.target.value.toUpperCase())}
                 placeholder="AB12 CDE"
@@ -539,11 +547,12 @@ export default function NewValuation() {
               </div>
 
               {/* Submit */}
+              <Turnstile key={tsKey} onToken={setTsToken} action="analyse" />
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
                 <p className="text-xs text-muted-foreground max-w-md">
                   We'll combine your reg lookup, details and photos to generate a realistic private sale price.
                 </p>
-                <Button type="submit" variant="hero" size="xl" disabled={busy}>
+                <Button type="submit" variant="hero" size="xl" disabled={busy || (turnstileEnabled() && !tsToken)}>
                   {busy ? "Working…" : <>Get my valuation <ArrowRight className="h-4 w-4" /></>}
                 </Button>
               </div>

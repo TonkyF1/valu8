@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Turnstile, turnstileEnabled } from "@/components/Turnstile";
 import { Navigate, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +39,12 @@ export default function Auth() {
   const hasPendingIntent = () => {
     try { return !!sessionStorage.getItem("valu8_pending_intent"); } catch { return false; }
   };
-  const postAuthPath = () => (hasPendingIntent() ? "/" : "/dashboard");
+  // Supabase Auth bot protection: only enforced once enabled in the Supabase
+  // dashboard (Auth > Attack Protection > Turnstile). Harmless otherwise.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const resetCaptcha = () => { setCaptchaToken(null); setCaptchaKey((k) => k + 1); };
+  const postAuthPath = () => (hasPendingIntent() ? "/valuation/new" : "/dashboard");
 
   if (!loading && user) return <Navigate to={postAuthPath()} replace />;
 
@@ -57,13 +63,15 @@ export default function Auth() {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: `${window.location.origin}${postAuthPath()}` },
+          options: { emailRedirectTo: `${window.location.origin}${postAuthPath()}`, captchaToken: captchaToken ?? undefined },
         });
+        resetCaptcha();
         if (error) throw error;
         toast.success("Welcome to Valu8");
         navigate(postAuthPath());
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken: captchaToken ?? undefined } });
+        resetCaptcha();
         if (error) throw error;
         navigate(postAuthPath());
       }
@@ -79,8 +87,9 @@ export default function Auth() {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+        options: { emailRedirectTo: `${window.location.origin}/dashboard`, captchaToken: captchaToken ?? undefined },
       });
+      resetCaptcha();
       if (error) throw error;
       toast.success("Check your inbox for a magic link");
     } catch (err: any) {
@@ -122,7 +131,7 @@ export default function Auth() {
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main className="flex-1 grid place-items-center px-4 py-12 hero-glow">
+      <main id="main" className="flex-1 grid place-items-center px-4 py-12 hero-glow">
         <div className="w-full max-w-md animate-fade-in-up">
           <div className="text-center mb-8">
             <div className="inline-flex h-12 w-12 rounded-2xl bg-gradient-primary items-center justify-center shadow-glow mb-4">
@@ -198,7 +207,8 @@ export default function Auth() {
                   {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
                 </div>
 
-                <Button type="submit" variant="hero" size="lg" className="w-full" disabled={busy}>
+                <Turnstile key={captchaKey} onToken={setCaptchaToken} action="auth" />
+                <Button type="submit" variant="hero" size="lg" className="w-full" disabled={busy || (turnstileEnabled() && !captchaToken)}>
                   {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
                 </Button>
 
