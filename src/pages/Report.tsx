@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signPhotoUrls } from "@/lib/photos";
+import { cleanReportText, marketCountLine } from "@/lib/reportText";
 
 interface Valuation {
   id: string; make: string; model: string; year: number; mileage: number;
@@ -149,7 +150,11 @@ export default function Report() {
     );
   }
 
-  const r = v.report;
+  // Latest DVSA expiry wins over the seller-entered field.
+  const motExpiryForText = (v.report as any)?.motHistory?.[0]?.expiryDate ?? v.mot_expiry;
+  const r = cleanReportText(v.report, motExpiryForText);
+  const sampleSize = (r as any).marketSampleSize ?? (r as any).marketBaseline?.sampleSize ?? null;
+  const countLine = marketCountLine(liveCount, sampleSize);
   const valuationUnavailable = !!r.valuationUnavailable;
 
   // Live market confidence derived from MarketCheck total count.
@@ -381,7 +386,7 @@ export default function Report() {
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
                       Market: <strong className="text-foreground">{showSpecialistBadge ? "Expert insight" : `${liveTier} confidence`}</strong>
-                      {liveCount != null && liveCount > 0 && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} live UK listings</span>}
+                      {liveCount != null && liveCount > 0 && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} similar cars for sale in the UK</span>}
                     </span>
                   </li>
                   <li className="flex gap-2.5">
@@ -498,8 +503,7 @@ export default function Report() {
                         <span className="absolute inset-0 rounded-full bg-primary opacity-75 animate-ping" />
                         <span className="relative h-1.5 w-1.5 rounded-full bg-primary" />
                       </span>
-                      <span className="font-medium text-foreground/85 tabular-nums">{liveCount.toLocaleString()}</span>
-                      <span>comparable cars listed live in the UK</span>
+                      <span>{countLine}</span>
                     </span>
                   </div>
                 )}
@@ -990,7 +994,7 @@ export default function Report() {
                           )}>{m.result}</span>
                           <span className="font-medium text-sm">{format(new Date(m.date), "d MMM yyyy")}</span>
                           {m.expiryDate && m.result !== "Fail" && (
-                            <span className="text-[11px] text-muted-foreground">· Expires {format(new Date(m.expiryDate), "d MMM yyyy")}</span>
+                            <span className="text-[11px] text-muted-foreground">· Expires {new Date(m.expiryDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</span>
                           )}
                         </div>
                         {m.mileage > 0 && (

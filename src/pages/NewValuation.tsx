@@ -466,7 +466,7 @@ export default function NewValuation() {
                   <SummaryItem label="Colour" value={lookup?.colour || "—"} />
                   <SummaryItem
                     label="MOT"
-                    value={lookup?.motExpiry ? new Date(lookup.motExpiry).toLocaleDateString("en-GB") : "—"}
+                    value={lookup?.motExpiry ? new Date(lookup.motExpiry).toLocaleDateString("en-GB", { timeZone: "UTC" }) : "—"}
                     statusColor={
                       lookup?.motStatus === "Valid" ? "text-emerald-500"
                       : lookup?.motStatus === "Expired" ? "text-destructive"
