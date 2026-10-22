@@ -95,7 +95,7 @@ export default function Dashboard() {
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main className="flex-1 container max-w-5xl py-8 md:py-12">
+      <main id="main" className="flex-1 container max-w-5xl py-8 md:py-12">
         {/* Welcome header */}
         <div className="mb-10 animate-fade-in-up">
           <div className="text-[10px] uppercase tracking-[0.22em] text-primary font-semibold mb-2">{greeting}</div>

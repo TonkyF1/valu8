@@ -50,7 +50,7 @@ export default function Analysing() {
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main className="flex-1 grid place-items-center px-4 py-12 sm:py-16 hero-glow">
+      <main id="main" className="flex-1 grid place-items-center px-4 py-12 sm:py-16 hero-glow">
         <div className="w-full max-w-md text-center animate-fade-in-up premium-card p-7 sm:p-9 relative overflow-hidden">
           <div className="absolute -top-32 -right-24 w-72 h-72 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-32 -left-24 w-72 h-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
