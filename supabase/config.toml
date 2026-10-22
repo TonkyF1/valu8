@@ -6,3 +6,5 @@ verify_jwt = false
 [functions.marketcheck-count]
 verify_jwt = false
 
+[functions.stripe-webhook]
+verify_jwt = false
