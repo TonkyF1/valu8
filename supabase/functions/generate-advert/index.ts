@@ -1,5 +1,5 @@
 // Valu8 — Generates ready-to-post car adverts using Lovable AI
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { corsHeaders, guard } from "../_shared/guard.ts";
 import { capturePosthogAiGeneration } from "../_shared/posthog.ts";
 
 
@@ -54,6 +54,10 @@ const TOOL = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  {
+    const g = await guard(req, { feature: "advert", requireUser: true, perMinute: 6, perDay: 40, ipPerHour: 60 });
+    if (g.response) return g.response;
+  }
   try {
     const body = (await req.json()) as AdvertRequest;
     if (!body?.make || !body?.model || !body?.year || !body?.price) {
