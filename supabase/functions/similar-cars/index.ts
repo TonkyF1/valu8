@@ -29,7 +29,7 @@ interface Listing {
   relevance?: "very-similar" | "good-match" | "broad";
 }
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const LOVABLE_API_KEY = (Deno.env.get("AI_API_KEY") || Deno.env.get("LOVABLE_API_KEY"))!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BUCKET = "vehicle-photos";
@@ -59,7 +59,7 @@ async function ensureCachedImage(l: Listing): Promise<string | null> {
   }, front three-quarter view, parked outdoors on a clean tarmac driveway in soft natural daylight, sharp focus, magazine-quality, accurate factory bodywork and trim, no text, no watermark, no people, 16:10 aspect.`;
 
   try {
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResp = await fetch(Deno.env.get("AI_GATEWAY_URL") || "https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -239,7 +239,7 @@ Listings should be plausible across AutoTrader, PistonHeads, Car & Classic, Moto
 
 Return ONLY a JSON object: { "listings": Listing[] }.`;
 
-      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const aiResp = await fetch(Deno.env.get("AI_GATEWAY_URL") || "https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -309,10 +309,9 @@ Return ONLY a JSON object: { "listings": Listing[] }.`;
     const withImages = await Promise.all(
       listings.map(async (l) => {
         const url = await ensureCachedImage(l);
-        const fb = `https://source.unsplash.com/featured/800x500/?${encodeURIComponent(
-          `${l.colour || ""} ${l.make} ${l.model} car`.trim()
-        )}`;
-        return { ...l, imageUrl: url || fb, imageFallbackUrl: fb };
+        // source.unsplash.com was shut down; the client shows its own placeholder
+        // when no image is available.
+        return { ...l, imageUrl: url || undefined, imageFallbackUrl: undefined };
       })
     );
 

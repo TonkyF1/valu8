@@ -28,6 +28,8 @@ async function fetchVdg(reg: string) {
   const key = Deno.env.get("VEHICLE_DATA_GLOBAL_API_KEY");
   if (!key) return null;
   try {
+    // VDG's r2 endpoint documents the key as a query parameter (no header auth
+    // confirmed). It is only ever used here, server-side; never log `url`.
     const url = `https://uk.api.vehicledataglobal.com/r2/lookup?packagename=VehicleDetails&apikey=${encodeURIComponent(key)}&vrm=${encodeURIComponent(reg)}`;
     const resp = await fetch(url);
     if (!resp.ok) {

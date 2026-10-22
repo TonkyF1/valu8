@@ -28,15 +28,18 @@ Deno.serve(async (req) => {
     const params = new URLSearchParams({
       make,
       model,
-      year_min: String(year - 1),
-      year_max: String(year + 1),
-      country: 'UK',
+      // UK endpoint (matches analyse-vehicle); the previous US endpoint +
+      // country=UK returned US inventory counts or nothing.
+      year_range: `${year - 1}-${year + 1}`,
       rows: '1',
       api_key: apiKey,
     });
 
-    const r = await fetch(`https://mc-api.marketcheck.com/v2/search/car/active?${params}`);
-    if (!r.ok) throw new Error(`marketcheck ${r.status}`);
+    const r = await fetch(`https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`);
+    if (!r.ok) {
+      console.error('marketcheck-count upstream error', r.status, (await r.text()).slice(0, 200));
+      throw new Error(`marketcheck ${r.status}`);
+    }
     const data = await r.json();
     const totalCount = Number(data?.num_found ?? data?.total ?? 0);
 
@@ -44,7 +47,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ totalCount: 0, error: String(e) }), {
+    return new Response(JSON.stringify({ totalCount: 0, error: 'Market count unavailable' }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
