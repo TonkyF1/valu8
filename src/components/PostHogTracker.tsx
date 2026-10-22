@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { initPostHog, posthog } from "@/lib/posthog";
+import { getConsent, onConsentChange } from "@/lib/consent";
 
 /**
  * Initialises PostHog once, identifies the signed-in user, and
@@ -13,8 +14,17 @@ export function PostHogTracker() {
   const identifiedRef = useRef<string | null>(null);
   const openedRef = useRef(false);
 
+  // Analytics only starts after explicit consent (see CookieConsent).
+  const [consented, setConsented] = useState(() => getConsent() === "granted");
+  useEffect(() => onConsentChange((v) => {
+    setConsented(v === "granted");
+    if (v !== "granted" && posthog.__loaded) posthog.opt_out_capturing();
+  }), []);
+
   useEffect(() => {
+    if (!consented) return;
     initPostHog();
+    if (posthog.__loaded && posthog.has_opted_out_capturing?.()) posthog.opt_in_capturing();
     if (!openedRef.current && posthog.__loaded) {
       posthog.capture("App Opened", {
         path: window.location.pathname,
@@ -22,7 +32,7 @@ export function PostHogTracker() {
       });
       openedRef.current = true;
     }
-  }, []);
+  }, [consented]);
 
 
   // Identify / reset on auth changes
@@ -35,7 +45,7 @@ export function PostHogTracker() {
       posthog.reset();
       identifiedRef.current = null;
     }
-  }, [user]);
+  }, [user, consented]);
 
   // SPA pageviews
   useEffect(() => {
@@ -44,7 +54,7 @@ export function PostHogTracker() {
       $current_url: window.location.href,
       path: location.pathname,
     });
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, consented]);
 
   return null;
 }

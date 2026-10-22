@@ -7,7 +7,7 @@ export default function Privacy() {
   return (
     <div className="min-h-screen flex flex-col">
       <TestModeBanner /><Header />
-      <main className="flex-1 container max-w-3xl py-12 md:py-16">
+      <main id="main" className="flex-1 container max-w-3xl py-12 md:py-16">
         <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Legal</div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gradient mb-6">Privacy Policy</h1>
         <p className="text-sm text-muted-foreground mb-10">Last updated: 16 May 2026</p>
@@ -44,7 +44,7 @@ export default function Privacy() {
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">7. Cookies</h2>
-            <p>We use only essential cookies required to keep you signed in. We do not use advertising or tracking cookies.</p>
+            <p>We use essential storage to keep you signed in. With your consent only, we use PostHog analytics (including session replay with text inputs masked) to understand how Valu8 is used and fix problems. Analytics does not load until you click "Accept analytics", and you can change your choice at any time via "Cookie settings" in the footer. We do not use advertising cookies.</p>
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">8. Contact</h2>
