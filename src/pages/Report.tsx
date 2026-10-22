@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ConditionGauge } from "@/components/ConditionGauge";
 import { AdvertCreator } from "@/components/AdvertCreator";
 import { WhatIfSimulator } from "@/components/WhatIfSimulator";
+import { VehicleInsights, SectionBoundary } from "@/components/VehicleInsights";
 
 import type { ValuationReport, PhotoInsight } from "@/lib/valuation";
 import { downloadValuationPdf } from "@/lib/pdf";
@@ -113,7 +114,7 @@ export default function Report() {
     return (
       <div className="min-h-screen flex flex-col">
         <TestModeBanner /><Header />
-        <main className="flex-1 container py-6 md:py-8 max-w-5xl">
+        <main id="main" className="flex-1 container py-6 md:py-8 max-w-5xl">
           <div className="flex items-center justify-between mb-5">
             <Skeleton className="h-8 w-32" />
             <Skeleton className="h-8 w-24" />
@@ -223,7 +224,7 @@ export default function Report() {
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main className="flex-1 container py-6 md:py-8 max-w-5xl">
+      <main id="main" className="flex-1 container py-6 md:py-8 max-w-5xl">
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           {isShared ? (
             <Button asChild variant="ghost" size="sm">
@@ -1024,6 +1025,14 @@ export default function Report() {
             </CollapsibleSection>
           );
         })()}
+
+        <SectionBoundary>
+          <VehicleInsights
+            report={r}
+            vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, mot_expiry: v.mot_expiry, service_notes: (v as any).service_notes ?? null }}
+            isShared={isShared}
+          />
+        </SectionBoundary>
 
         {!valuationUnavailable && (
           <>

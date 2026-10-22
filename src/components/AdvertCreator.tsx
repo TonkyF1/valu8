@@ -7,6 +7,7 @@ import { posthog } from "@/lib/posthog";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { MARKETPLACES, formatForMarketplace, type Marketplace } from "@/lib/marketplace";
 
 type Length = "short" | "medium" | "full";
 type Adverts = Record<Length, string>;
@@ -87,6 +88,17 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: P
     toast.success("Copied to clipboard");
   };
 
+  const copyFor = async (m: Marketplace) => {
+    const meta = MARKETPLACES.find((x) => x.key === m)!;
+    const body = (edited[meta.length] ?? adverts?.[meta.length] ?? text) as string;
+    const out = formatForMarketplace(m, body, {
+      make: vehicle.make, model: vehicle.model, year: vehicle.year, mileage: vehicle.mileage,
+      price: report.recommendations.listingPrice, location: location || undefined,
+    });
+    await navigator.clipboard.writeText(out);
+    toast.success(`Copied for ${meta.label}`);
+  };
+
   const download = () => {
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -125,6 +137,7 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: P
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="Your location (optional, e.g. Manchester)"
+            aria-label="Your location (optional)"
             className="flex-1 h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
@@ -142,14 +155,16 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: P
           <span className="h-7 w-7 rounded-lg bg-primary/15 text-primary grid place-items-center"><Sparkles className="h-3.5 w-3.5" /></span>
           <h2 className="text-base font-semibold">Selling Advert</h2>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => setOpen(false)}><X className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="sm" onClick={() => setOpen(false)} aria-label="Close advert"><X className="h-4 w-4" /></Button>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-4">
         {LENGTHS.map(l => (
           <button
             key={l.key}
+            type="button"
             onClick={() => setActive(l.key)}
+            aria-pressed={active === l.key}
             className={cn(
               "rounded-lg border px-2 py-2.5 text-left transition-all",
               active === l.key
@@ -171,6 +186,7 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: P
         onChange={(e) => setEdited(prev => ({ ...prev, [active]: e.target.value }))}
         rows={active === "full" ? 16 : active === "medium" ? 10 : 6}
         className="font-mono text-sm leading-relaxed bg-muted/20"
+        aria-label="Advert text"
       />
 
       <div className="flex flex-wrap gap-2 mt-3">
@@ -184,6 +200,19 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: P
           {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Bookmark className="h-4 w-4" />}
           Save advert
         </Button>
+      </div>
+      <div className="mt-4 pt-3 border-t border-border/50">
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Copy formatted for</div>
+        <div className="flex flex-wrap gap-2">
+          {MARKETPLACES.map((m) => (
+            <span key={m.key} className="inline-flex items-center">
+              <Button variant="outline" size="sm" onClick={() => copyFor(m.key)} disabled={!adverts}>
+                <Copy className="h-3.5 w-3.5" />{m.label}
+              </Button>
+              <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-primary px-2 hover:underline" aria-label={`Open ${m.label} in a new tab`}>Open ↗</a>
+            </span>
+          ))}
+        </div>
       </div>
       <p className="text-[11px] text-muted-foreground mt-3 flex items-center gap-1.5">
         <Check className="h-3 w-3 text-primary" />
