@@ -43,5 +43,5 @@ export async function verifyStripeSignature(payload: string, header: string | nu
 }
 
 export function siteUrl(req: Request): string {
-  return Deno.env.get("SITE_URL") || req.headers.get("origin") || "https://valu8.co.uk";
+  return Deno.env.get("SITE_URL") || req.headers.get("origin") || "https://valu8.lovable.app";
 }

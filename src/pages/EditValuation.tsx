@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Turnstile, turnstileEnabled, turnstileHeaders } from "@/components/Turnstile";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +43,8 @@ function describeInputChanges(prev: InputSnapshot, next: InputSnapshot): string[
 export default function EditValuation() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const [tsToken, setTsToken] = useState<string | null>(null);
+  const [tsKey, setTsKey] = useState(0);
   const { loading: pLoading } = useProfile();
   const navigate = useNavigate();
 
@@ -204,7 +207,9 @@ export default function EditValuation() {
           serviceNotes: nextInputs.serviceNotes,
           photoUrls: allPhotos,
         },
+        headers: turnstileHeaders(tsToken),
       });
+      setTsToken(null); setTsKey((k) => k + 1);
       if (aiErr) throw aiErr;
       if ((aiData as any)?.error) throw new Error((aiData as any).error);
       const report = (aiData as any)?.report;
@@ -254,7 +259,7 @@ export default function EditValuation() {
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main className="flex-1 container py-8 md:py-12 max-w-4xl">
+      <main id="main" className="flex-1 container py-8 md:py-12 max-w-4xl">
         <Link to={`/valuation/${row.id}`} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4">
           <ArrowLeft className="h-4 w-4" /> Back to report
         </Link>
@@ -381,6 +386,7 @@ export default function EditValuation() {
             <PhotoUploader photos={newPhotos} onChange={setNewPhotos} />
           </div>
 
+          <Turnstile key={tsKey} onToken={setTsToken} action="regenerate" />
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-border">
             <p className="text-xs text-muted-foreground max-w-sm">
               Saving keeps the current report. Regenerating creates a fresh AI report and keeps the original in history.
@@ -389,7 +395,7 @@ export default function EditValuation() {
               <Button variant="outline" onClick={saveOnly} disabled={busy || regenerating}>
                 <Save className="h-4 w-4" /> {busy ? "Saving…" : "Save changes"}
               </Button>
-              <Button variant="hero" onClick={regenerate} disabled={busy || regenerating}>
+              <Button variant="hero" onClick={regenerate} disabled={busy || regenerating || (turnstileEnabled() && !tsToken)}>
                 <RefreshCw className={`h-4 w-4 ${regenerating ? "animate-spin" : ""}`} />
                 {regenerating ? "Regenerating…" : "Regenerate report"}
               </Button>

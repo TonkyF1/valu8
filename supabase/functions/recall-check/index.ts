@@ -17,7 +17,7 @@ async function loadRecalls(): Promise<Recall[]> {
   inflight = (async () => {
     const res = await fetch(CSV_URL, {
       // The DVSA download rejects requests without a browser-like User-Agent.
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; Valu8/1.0; +https://valu8.co.uk)", Accept: "text/csv,*/*" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; Valu8/1.0; +https://valu8.lovable.app)", Accept: "text/csv,*/*" },
     });
     if (!res.ok) throw new Error(`Recalls download failed (${res.status})`);
     const buf = new Uint8Array(await res.arrayBuffer());
