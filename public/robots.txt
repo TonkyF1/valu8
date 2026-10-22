@@ -12,3 +12,11 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /admin
+Allow: /valuation/new
+Disallow: /valuation/
+Disallow: /shared/
+
+Sitemap: https://valu8.lovable.app/sitemap.xml
