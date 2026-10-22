@@ -26,6 +26,9 @@ interface LookupResult {
   year?: number;
   fuelType?: string;
   colour?: string;
+  firstRegistered?: string;
+  engineCapacity?: number;
+  co2Emissions?: number;
   motExpiry?: string;
   motStatus?: "Valid" | "Expired" | "Unknown";
   motSummary?: string;
@@ -252,6 +255,14 @@ export default function NewValuation() {
       if ((aiData as any)?.error) throw new Error((aiData as any).error);
       const report = (aiData as any)?.report;
       if (!report) throw new Error("AI did not return a report");
+
+      // Keep the vehicle facts the client needs for tax / ULEZ estimates.
+      report.vehicle = {
+        fuelType: lookup?.fuelType,
+        firstRegistered: lookup?.firstRegistered,
+        engineCapacity: lookup?.engineCapacity,
+        co2Emissions: lookup?.co2Emissions,
+      };
 
       setPhase("generating");
       const { data, error } = await supabase.from("valuations").insert({

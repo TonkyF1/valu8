@@ -1,7 +1,11 @@
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders, guard } from "../_shared/guard.ts";
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  {
+    const g = await guard(req, { feature: "mc-count", ipPerHour: 120 });
+    if (g.response) return g.response;
+  }
 
   try {
     const url = new URL(req.url);

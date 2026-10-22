@@ -1,8 +1,9 @@
 // Valu8 — UK vehicle lookup by registration (DVSA MOT History API)
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { corsHeaders, guard } from "../_shared/guard.ts";
 
 interface LookupResponse {
   registration: string;
+  firstRegistered?: string;
   make?: string;
   model?: string;
   variant?: string;
@@ -104,6 +105,10 @@ async function getDvsaToken(): Promise<string> {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  {
+    const g = await guard(req, { feature: "lookup", requireUser: true, perMinute: 8, perDay: 60, ipPerHour: 60 });
+    if (g.response) return g.response;
+  }
 
   try {
     const { registration } = await req.json();
@@ -155,6 +160,7 @@ Deno.serve(async (req) => {
     let dvsaModel: string | undefined;
     let dvsaFuel: string | undefined;
     let dvsaColour: string | undefined;
+    let dvsaFirstReg: string | undefined;
 
     if (data) {
       const tests: any[] = Array.isArray(data?.motTests) ? data.motTests : [];
@@ -165,6 +171,7 @@ Deno.serve(async (req) => {
       const firstUsed: string | undefined = data?.firstUsedDate || data?.registrationDate || data?.manufactureDate;
       const y = firstUsed ? Number(String(firstUsed).slice(0, 4)) : undefined;
       dvsaYear = Number.isFinite(y) ? y : undefined;
+      dvsaFirstReg = firstUsed ? String(firstUsed).slice(0, 10).replace(/\./g, "-") : undefined;
       dvsaMake = data?.make ? String(data.make).trim() : undefined;
       dvsaModel = data?.model ? String(data.model).trim() : undefined;
       dvsaFuel = data?.fuelType ? String(data.fuelType) : undefined;
@@ -192,6 +199,7 @@ Deno.serve(async (req) => {
       model: vdg?.model ?? dvsaModel,
       variant: vdg?.variant,
       year: vdg?.year ?? dvsaYear,
+      firstRegistered: dvsaFirstReg,
       fuelType: vdg?.fuelType ?? dvsaFuel,
       transmission: vdg?.transmission,
       engineCapacity: vdg?.engineCapacity,

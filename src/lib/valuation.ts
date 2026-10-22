@@ -91,6 +91,8 @@ export interface ValuationReport {
   motSource?: "dvsa" | "simulated" | "unavailable";
   motNotice?: string;
   generatedAt: string;
+  /** Vehicle facts from the reg lookup, used for tax/ULEZ estimates. */
+  vehicle?: { fuelType?: string; firstRegistered?: string; engineCapacity?: number; co2Emissions?: number; euroStatus?: string };
 }
 
 // The unused random mock generateValuation() was removed: all real valuations
