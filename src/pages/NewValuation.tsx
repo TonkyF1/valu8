@@ -221,9 +221,6 @@ export default function NewValuation() {
       const combinedNotes = [
         serviceNotes.trim(),
         modifications.trim() ? `Modifications / extras: ${modifications.trim()}` : "",
-        lookup?.colour ? `Colour: ${lookup.colour}` : "",
-        lookup?.fuelType ? `Fuel: ${lookup.fuelType}` : "",
-        lookup?.recentAdvisories?.length ? `Recent MOT advisories: ${lookup.recentAdvisories.join("; ")}` : "",
       ].filter(Boolean).join("\n");
 
       const { data: aiData, error: aiErr } = await supabase.functions.invoke("analyse-vehicle", {
@@ -235,14 +232,23 @@ export default function NewValuation() {
           mileage: parsed.data.mileage,
           registration: lookup?.registration || reg.replace(/\s+/g, "").toUpperCase() || undefined,
           motExpiry: lookup?.motExpiry || undefined,
-          serviceNotes: combinedNotes || undefined,
+          serviceNotes: serviceNotes.trim() || undefined,
+          modifications: modifications.trim() || undefined,
+          colour: lookup?.colour || undefined,
+          fuelType: lookup?.fuelType || undefined,
+          motAdvisories: lookup?.recentAdvisories?.length ? lookup.recentAdvisories : undefined,
           photoUrls,
           photos: photos_labeled,
           userId: user.id,
         },
       });
 
-      if (aiErr) throw aiErr;
+      if (aiErr) {
+        // Non-2xx responses carry the server's friendly message in the body.
+        let msg = aiErr.message;
+        try { const j = await (aiErr as any).context?.json?.(); if (j?.error) msg = j.error; } catch { /* ignore */ }
+        throw new Error(msg);
+      }
       if ((aiData as any)?.error) throw new Error((aiData as any).error);
       const report = (aiData as any)?.report;
       if (!report) throw new Error("AI did not return a report");

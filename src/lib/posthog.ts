@@ -3,12 +3,12 @@ import posthog from "posthog-js";
 /**
  * PostHog Project API key (publishable — safe to ship in the frontend).
  *
- * Paste your key here from PostHog → Settings → Project → Project API Key.
+ * Set VITE_POSTHOG_KEY (PostHog → Settings → Project → Project API Key).
  * It starts with `phc_`. Leave empty to disable analytics in this build.
  */
-const POSTHOG_KEY = "phc_CPtsdMVYmduf4Uk92SPeCwXgUyxieWp5GvrqcDDzRUNz";
+const POSTHOG_KEY: string = import.meta.env.VITE_POSTHOG_KEY ?? "";
 
-const POSTHOG_HOST = "https://eu.i.posthog.com";
+const POSTHOG_HOST: string = import.meta.env.VITE_POSTHOG_HOST || "https://eu.i.posthog.com";
 
 let initialised = false;
 
@@ -17,7 +17,7 @@ export function initPostHog() {
   if (!POSTHOG_KEY) {
     // No key configured — silently no-op so the app still works.
     if (import.meta.env.DEV) {
-      console.info("[PostHog] disabled: set POSTHOG_KEY in src/lib/posthog.ts");
+      console.info("[PostHog] disabled: set VITE_POSTHOG_KEY in your environment");
     }
     return;
   }

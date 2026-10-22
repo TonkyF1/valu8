@@ -1177,8 +1177,10 @@ export default function Report() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {r.hpi.checks.map(c => (
               <div key={c.label} className="flex items-center gap-2 text-sm rounded-lg bg-muted/30 px-3 py-2.5">
-                <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                <span className="truncate">{c.label}</span>
+                {c.ok
+                  ? <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                  : <span className="h-4 w-4 flex-shrink-0 text-center text-xs font-bold text-amber-500">!</span>}
+                <span className="truncate" title={c.label}>{c.label}</span>
               </div>
             ))}
           </div>
