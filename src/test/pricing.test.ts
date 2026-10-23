@@ -28,13 +28,24 @@ describe("comp mileage/age correction", () => {
 describe("private from dealer retail", () => {
   it("applies a dealer discount bigger on cheap cars", () => {
     expect(privateFromRetail(20_000, 50_000) / 20_000).toBeGreaterThan(privateFromRetail(4_000, 50_000) / 4_000);
-    expect(privateFromRetail(7_330, 80_000)).toBeCloseTo(5364, 0);
+    expect(privateFromRetail(7_330, 80_000)).toBeCloseTo(5317.4, 1);
   });
   it("prices private sale well below dealer retail (Prius YM15GJU / Mazda DG65JCZ)", () => {
     // Prius anchor £6,200 vs private ask £3,600; Mazda £6,400 vs £3,899.
-    expect(dealerToPrivate(6200)).toBe(4460);
-    expect(dealerToPrivate(6400)).toBe(4620);
+    expect(dealerToPrivate(6200)).toBeCloseTo(4436, 6);
+    expect(dealerToPrivate(6400)).toBeCloseTo(4592, 6);
     expect(dealerToPrivate(1500)).toBeCloseTo(1020, 5); // 0.68 floor on cheap cars
+  });
+  it("is monotonic in retail with a ratio that never falls as price rises", () => {
+    let prevP = 0, prevRatio = 0;
+    for (let r = 500; r <= 40_000; r += 250) {
+      const p = dealerToPrivate(r);
+      expect(p).toBeGreaterThan(prevP);
+      expect(p / r).toBeGreaterThanOrEqual(prevRatio - 1e-9);
+      prevP = p; prevRatio = p / r;
+    }
+    expect(dealerToPrivate(3000) / 3000).toBeCloseTo(0.68, 6); // floor binds below £4,000
+    expect(dealerToPrivate(20_000) / 20_000).toBeCloseTo(0.76, 6);
   });
   it("retailFromPrivate inverts dealerToPrivate", () => {
     for (const r of [1500, 3000, 6200, 15000]) expect(retailFromPrivate(dealerToPrivate(r))).toBeCloseTo(r, 6);

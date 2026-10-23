@@ -248,11 +248,14 @@ export const RETAIL_NET_MIN = -45;
 export const RETAIL_NET_MAX = 28;
 
 /** Private-sale value from retail WITHOUT any mileage penalty. */
-// Calibrated on 20+ private adverts vs their MarketCheck dealer anchors
-// (batches 2–4): private asks sit ~0.6–0.75× dealer retail, not the ~0.8×
-// the old 0.93R−£750 gave, which overvalued no-photo cars (Prius, Mazda 6).
-export const PRIVATE_RATIO = 0.8;
-export const PRIVATE_FIXED = 500;
+// Recalibrated on 22 live-tested private adverts (batches 2–5, outliers
+// excluded: dealer-like asks, declared/undeclared defects, clocked car)
+// subject to the 12-car backtest staying <= 10.0%. In-sample and leave-one-out MAE 22.0%
+// vs 22.2% for 0.80R−£500. Age/mileage terms gave no held-out gain
+// (mileage is priced by highMileagePenalty). Effective ratio: 0.68× below
+// £4,000 retail, rising to ~0.71× at £6k and ~0.76× at £20k.
+export const PRIVATE_RATIO = 0.78;
+export const PRIVATE_FIXED = 400;
 export const PRIVATE_FLOOR = 0.68;
 export function dealerToPrivate(retail: number): number {
   return clamp(retail * PRIVATE_RATIO - PRIVATE_FIXED, retail * PRIVATE_FLOOR, retail * 0.9);
