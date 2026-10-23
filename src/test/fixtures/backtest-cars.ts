@@ -3,7 +3,15 @@
 // engine inputs so the current engine can be recomputed deterministically.
 // Ledger items are derived mechanically from the stored reports using the
 // current rules (no per-car tuning): see docs/pricing-calibration.md.
-import type { LedgerItem } from "../../../supabase/functions/_shared/pricing";
+import { motPenaltyItems, type LedgerItem } from "../../../supabase/functions/_shared/pricing";
+
+// Real DVSA latest test for the i20 (from its stored report).
+const I20_MOT = [{ date: "2026-08-03", result: "Advisory", failures: [], advisories: [
+  "Nearside Rear Tyre worn close to legal limit/worn on edge (5.2.3 (e))", "Offside Front Inner Tyre worn close to legal limit/worn on edge (5.2.3 (e))",
+  "Offside Front Lower Suspension arm ball joint dust cover severely deteriorated (5.3.4 (b) (i))", "Rear Brake pad(s) wearing thin (1.1.13 (a) (ii))",
+  "Offside Front Brake pipe corroded, covered in grease or other material (1.1.11 (c))",
+  "Offside Rear Shock absorbers has slight external damage to the casing  corroded (5.3.2 (b))",
+  "Nearside Rear Shock absorbers has slight external damage to the casing  corroded (5.3.2 (b))"] }];
 
 export type BacktestCar = {
   name: string; make: string; year: number; miles: number; seller: "dealer" | "private"; ask: number;
@@ -47,5 +55,5 @@ export const BACKTEST_CARS: BacktestCar[] = [
     comps: { anchor: 4750, compMiles: 82249, compYear: 2016, compMedianMiles: 68000, items: [A("Higher mileage / older than comparables", -4)] } },
   // Advisory-count deduction no longer stacks on top of the corrosion advisories.
   { name: "Hyundai i20 2014", make: "Hyundai", year: 2014, miles: 64248, seller: "dealer", ask: 3499, oldPrivate: 1900, oldRetail: 2800, motValid: true, motMaxMiles: 62228,
-    comps: { anchor: 3550, compMiles: 64248, compYear: 2014, compMedianMiles: 63900, items: [R("Multiple corrosion advisories (3)", -16), R("Condition deductions (6.8/10)", -3)] } },
+    comps: { anchor: 3550, compMiles: 64248, compYear: 2014, compMedianMiles: 63900, items: [...motPenaltyItems(I20_MOT, "2026-10-01"), R("Condition deductions (6.8/10)", -3)] } },
 ];

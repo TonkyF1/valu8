@@ -384,3 +384,50 @@ export function filterCompsBySpec<T extends { fuelType?: string; transmission?: 
   }
   return { comps: out, matched };
 }
+
+// ---------------------------------------------------------------------------
+// MOT penalty (DVSA signals from the LATEST test + recent failures).
+// Calibrated on batches 3–4: routine "corroded but not seriously weakened"
+// advisories are near-universal on 10+ year-old UK cars and buyers barely
+// discount them, so they are mild. Serious/structural corrosion (seriously
+// weakened, excessive, perforated, within 30cm of a mounting) or corrosion on a
+// failure item stays strong, as does a failure in the last 12 months.
+// The total MOT deduction is capped.
+export const MOT_PENALTY_CAP = -15;
+const CORROSION_RE = /corro|rust/i;
+const SERIOUS_CORROSION_RE = /(?<!not\s)seriously\s+weakened|excessive(ly)?\s+(corro|rust)|perforat|structur|load[- ]bearing|within\s+30\s*cm|prescribed\s+area|severe(ly)?\s+(corro|rust)/i;
+
+export type MotTestLite = { date?: string; result?: string; advisories?: string[]; failures?: string[] };
+
+export function classifyCorrosion(advisories: string[], failures: string[] = []): { routine: number; serious: number } {
+  let routine = 0; let serious = 0;
+  for (const a of advisories) if (CORROSION_RE.test(a)) { if (SERIOUS_CORROSION_RE.test(a)) serious++; else routine++; }
+  for (const f of failures) if (CORROSION_RE.test(f)) serious++;
+  return { routine, serious };
+}
+
+/** Months between two ISO dates (b − a). */
+function monthsBetween(a: string, b: string): number {
+  const da = new Date(a).getTime(); const db = new Date(b).getTime();
+  return (db - da) / (1000 * 60 * 60 * 24 * 30.44);
+}
+
+export function motPenaltyItems(tests: MotTestLite[], today: string): LedgerItem[] {
+  const items: LedgerItem[] = [];
+  const latest = tests[0];
+  if (!latest) return items;
+  const adv = latest.advisories ?? [];
+  const { routine, serious } = classifyCorrosion(adv, latest.failures ?? []);
+  if (serious > 0) items.push({ label: `Serious corrosion on MOT (${serious})`, impactPct: -8 - 4 * Math.min(serious - 1, 2), scope: "retail" });
+  if (routine > 0) items.push({ label: routine > 1 ? `Minor corrosion advisories (${routine})` : "Minor corrosion advisory on MOT", impactPct: -Math.min(2 * routine, 5), scope: "retail" });
+  const recentFail = tests.slice(0, 3).some((t) => t.result === "Fail" && (!t.date || monthsBetween(t.date, today) <= 12));
+  if (recentFail) items.push({ label: "Recent MOT failure(s)", impactPct: -6, scope: "retail" });
+  if (adv.length >= 6) items.push({ label: `${adv.length} current advisories`, impactPct: -3, scope: "retail" });
+  const total = items.reduce((s, i) => s + i.impactPct, 0);
+  if (total < MOT_PENALTY_CAP) {
+    // Scale down proportionally so the listed items still sum to the cap.
+    const k = MOT_PENALTY_CAP / total; let acc = 0;
+    items.forEach((i, idx) => { i.impactPct = idx === items.length - 1 ? MOT_PENALTY_CAP - acc : Math.round(i.impactPct * k); acc += i.impactPct; });
+  }
+  return items;
+}

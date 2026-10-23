@@ -13,7 +13,7 @@ import {
 } from "../_shared/valuation-math.ts";
 import { motStatus, motAdjustment, sanitizeMotClaim, isFalseLongMotClaim, motDaysRemaining, motConsistentBullets } from "../_shared/mot.ts";
 import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts";
-import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, type LedgerItem } from "../_shared/pricing.ts";
+import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
 
 const PHOTO_BUCKET = "vehicle-photos";
@@ -482,8 +482,9 @@ CORE PRINCIPLES — INTERNALISE THESE:
 7. Low mileage for age on an enthusiast/premium car is a meaningful uplift (+4% to +9%), not a token bump.
 
 NEGATIVE FACTORS — apply when REAL, not by default:
-- Corrosion/rust on LATEST MOT advisory: -6% to -12% (multiple = -12% to -20%).
-- Recent MOT failures: -5% to -10% on top of repair cost.
+- Routine "corroded but not seriously weakened" advisories on the LATEST MOT: -1% to -5% total (very common on older cars).
+- Serious/structural corrosion (seriously weakened, excessive, perforated) or corrosion failures: -8% to -16%.
+- MOT failures in the last 12 months: -5% to -8% on top of repair cost. Total MOT-related deduction no more than -15%.
 - Visible accident damage / mismatched panel / clearly bad respray: -8% to -15%.
 - Patchy or unknown history on a premium car: -5% to -10%.
 - MOT expiring within 30 days with no recent test: -2% to -4%.
@@ -1009,10 +1010,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
 
       // --- MOT corrosion / failures (real DVSA signals). The advisory-count
       // deduction is skipped when corrosion already covers the advisories.
-      if (corrosionMatches >= 2) add(`Multiple corrosion advisories (${corrosionMatches})`, -16);
-      else if (corrosionMatches === 1) add("Corrosion advisory on MOT", -8);
-      if (recentFailCount >= 1) add("Recent MOT failure(s)", -6);
-      if (totalAdvisoryCount >= 6 && corrosionMatches === 0) add(`${totalAdvisoryCount} current advisories`, -3);
+      // Mild for routine "not seriously weakened" corrosion, strong for
+      // serious/structural corrosion and failures in the last 12 months, capped.
+      items.push(...motPenaltyItems(motEntries, new Date().toISOString().slice(0, 10)));
 
       if (hasStrongHistory) add("Full service history", 6);
       else if (hasPartialHistory) add("Partial service history", -5);
@@ -1034,6 +1034,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       else if (score >= 5.5) conditionPct = -12;
       else if (score >= 5.0) conditionPct = -17;
       else conditionPct = -22;
+      // No photos → the score is a guess, not an observation: don't price it.
+      if (photoUrls.length === 0) conditionPct = 0;
       if (conditionPct !== 0) {
         add(conditionPct > 0
           ? `${ai.conditionLabel || "Strong"} visible condition (${score.toFixed(1)}/10)`
