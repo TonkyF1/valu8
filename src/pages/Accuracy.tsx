@@ -24,12 +24,12 @@ function Stats({ s, title, note }: { s: AccuracySummary; title: string; note: st
     <section className="premium-card p-5 sm:p-6 mt-6">
       <h2 className="font-semibold">{title}</h2>
       <dl className="grid grid-cols-3 gap-3 mt-4 text-center">
-        <div><dt className="text-[11px] text-muted-foreground">Sales reported</dt><dd className="text-xl font-semibold tabular-nums">{s.count}</dd></div>
-        <div><dt className="text-[11px] text-muted-foreground">Median error</dt><dd className="text-xl font-semibold tabular-nums">{s.medianAbsPct ?? "–"}%</dd></div>
-        <div><dt className="text-[11px] text-muted-foreground">Within 10%</dt><dd className="text-xl font-semibold tabular-nums">{s.within10Pct ?? "–"}%</dd></div>
+        <div><dt className="text-xs text-muted-foreground">Sales reported</dt><dd className="text-xl font-semibold tabular-nums">{s.count}</dd></div>
+        <div><dt className="text-xs text-muted-foreground">Median error</dt><dd className="text-xl font-semibold tabular-nums">{s.medianAbsPct ?? "–"}%</dd></div>
+        <div><dt className="text-xs text-muted-foreground">Within 10%</dt><dd className="text-xl font-semibold tabular-nums">{s.within10Pct ?? "–"}%</dd></div>
       </dl>
       {s.meanSignedPct !== null && <p className="text-sm text-muted-foreground mt-3">On average cars sold {Math.abs(s.meanSignedPct)}% {s.meanSignedPct >= 0 ? "above" : "below"} our private-sale estimate.</p>}
-      <p className="text-[11px] text-muted-foreground mt-2">{note}</p>
+      <p className="text-xs text-muted-foreground mt-2">{note}</p>
     </section>
   );
 }
@@ -63,7 +63,7 @@ export default function Accuracy() {
       <TestModeBanner />
       <Header />
       <main id="main" className="flex-1 container max-w-2xl py-8 sm:py-10">
-        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flex items-center gap-2"><Target className="h-7 w-7 text-primary shrink-0" aria-hidden /> How accurate are we?</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2"><Target className="h-7 w-7 text-primary shrink-0" aria-hidden /> How accurate are we?</h1>
         <p className="text-sm text-muted-foreground mt-2">Most valuation sites never tell you. We compare our private-sale estimates with the prices our users actually sell for, and publish the results here.</p>
 
         {showPublic ? (
@@ -89,15 +89,15 @@ export default function Accuracy() {
                 <div key={t.car} className="rounded-xl border border-border bg-card/60 p-4">
                   <p className="font-medium">{t.car}</p>
                   <dl className="grid grid-cols-3 gap-2 mt-3 text-sm">
-                    <div><dt className="text-[11px] text-muted-foreground">Our private estimate</dt><dd className="font-semibold tabular-nums">{gbp(t.predicted)}</dd></div>
-                    <div><dt className="text-[11px] text-muted-foreground">Advert asking</dt><dd className="font-semibold tabular-nums">{gbp(t.asking)}</dd></div>
-                    <div><dt className="text-[11px] text-muted-foreground">Gap</dt><dd className="font-semibold tabular-nums">+{gap}%</dd></div>
+                    <div><dt className="text-xs text-muted-foreground">Our private estimate</dt><dd className="font-semibold tabular-nums">{gbp(t.predicted)}</dd></div>
+                    <div><dt className="text-xs text-muted-foreground">Advert asking</dt><dd className="font-semibold tabular-nums">{gbp(t.asking)}</dd></div>
+                    <div><dt className="text-xs text-muted-foreground">Gap</dt><dd className="font-semibold tabular-nums">+{gap}%</dd></div>
                   </dl>
                 </div>
               );
             })}
           </div>
-          <p className="text-[11px] text-muted-foreground mt-3">We'll replace these with confirmed sold prices as results come in.</p>
+          <p className="text-xs text-muted-foreground mt-3">We'll replace these with confirmed sold prices as results come in.</p>
         </section>
 
         <div className="mt-8 flex flex-col sm:flex-row gap-2">

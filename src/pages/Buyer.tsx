@@ -61,8 +61,8 @@ export default function Buyer() {
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main id="main" className="flex-1 container max-w-2xl py-10">
-        <h1 className="text-2xl font-semibold flex items-center gap-2"><Scale className="h-6 w-6 text-primary" aria-hidden /> Buyer fair-price check</h1>
+      <main id="main" className="flex-1 container max-w-2xl py-8 sm:py-10">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2"><Scale className="h-6 w-6 text-primary" aria-hidden /> Buyer fair-price check</h1>
         <p className="text-sm text-muted-foreground mt-2">See how an advert's asking price compares with similar cars listed for sale in the UK right now.</p>
 
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 mt-6">
@@ -84,15 +84,15 @@ export default function Buyer() {
             <p className="text-sm text-muted-foreground mt-1">{VERDICT[res.verdict].tip}</p>
             {res.verdict !== "unknown" && (
               <dl className="grid grid-cols-3 gap-3 mt-4 text-center">
-                <div><dt className="text-[11px] text-muted-foreground">Typical low</dt><dd className="font-semibold">{gbp(res.low)}</dd></div>
-                <div><dt className="text-[11px] text-muted-foreground">Typical (median)</dt><dd className="font-semibold">{gbp(res.mid)}</dd></div>
-                <div><dt className="text-[11px] text-muted-foreground">Typical high</dt><dd className="font-semibold">{gbp(res.high)}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">Typical low</dt><dd className="font-semibold">{gbp(res.low)}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">Typical (median)</dt><dd className="font-semibold">{gbp(res.mid)}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">Typical high</dt><dd className="font-semibold">{gbp(res.high)}</dd></div>
               </dl>
             )}
             {res.diffPct != null && (
               <p className="text-sm mt-4">Asking {gbp(res.asking)} is <strong>{Math.abs(res.diffPct)}% {res.diffPct >= 0 ? "above" : "below"}</strong> the median.</p>
             )}
-            <p className="text-[11px] text-muted-foreground mt-3">Based on {res.sample} listings ({res.basis}), mileage-adjusted. These are asking prices, not sold prices.</p>
+            <p className="text-xs text-muted-foreground mt-3">Based on {res.sample} listings ({res.basis}), mileage-adjusted. These are asking prices, not sold prices.</p>
           </section>
         )}
 

@@ -83,7 +83,7 @@ export default function Check() {
       <TestModeBanner />
       <Header />
       <main id="main" className="flex-1 container max-w-2xl py-8 sm:py-10">
-        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
           <SearchCheck className="h-7 w-7 text-primary shrink-0" aria-hidden /> Is this advert fair?
         </h1>
         <p className="text-sm text-muted-foreground mt-2">Found a car on AutoTrader, eBay, Gumtree or Facebook? Copy in the details and we'll check the asking price against our private-sale and dealer retail range.</p>
@@ -115,7 +115,7 @@ export default function Check() {
             <div className="flex items-center gap-3">
               <V.icon className={`h-7 w-7 ${V.cls}`} aria-hidden />
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Verdict</p>
+                <p className="text-xs font-medium text-muted-foreground">Verdict</p>
                 <p className={`text-2xl font-semibold ${V.cls}`}>{V.label}</p>
               </div>
             </div>
@@ -126,20 +126,20 @@ export default function Check() {
               <div className="absolute h-2 rounded-full bg-emerald-400/50" style={{ left: pos(res.privateLow), width: `calc(${pos(res.privateHigh)} - ${pos(res.privateLow)})` }} />
               <div className="absolute h-2 rounded-full bg-primary/50" style={{ left: pos(res.retailLow), width: `calc(${pos(res.retailHigh)} - ${pos(res.retailLow)})` }} />
               <div className="absolute -top-1.5 h-5 w-1 rounded bg-foreground" style={{ left: pos(res.asking) }} />
-              <span className="absolute top-4 text-[11px] -translate-x-1/2 whitespace-nowrap" style={{ left: pos(res.asking) }}>Asking</span>
+              <span className="absolute top-4 text-xs -translate-x-1/2 whitespace-nowrap" style={{ left: pos(res.asking) }}>Asking</span>
             </div>
 
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-xl border border-border p-3">
-                <dt className="text-[11px] text-muted-foreground">Private sale range</dt>
+                <dt className="text-xs text-muted-foreground">Private sale range</dt>
                 <dd className="font-semibold tabular-nums mt-1">{gbp(res.privateLow)} – {gbp(res.privateHigh)}</dd>
               </div>
               <div className="rounded-xl border border-border p-3">
-                <dt className="text-[11px] text-muted-foreground">Dealer retail range</dt>
+                <dt className="text-xs text-muted-foreground">Dealer retail range</dt>
                 <dd className="font-semibold tabular-nums mt-1">{gbp(res.retailLow)} – {gbp(res.retailHigh)}</dd>
               </div>
             </dl>
-            <p className="text-[11px] text-muted-foreground mt-3">Based on {res.sample} comparable listings ({res.basis}), mileage-adjusted. Private range is estimated from dealer asking prices. Doesn't account for this car's condition, spec or history.</p>
+            <p className="text-xs text-muted-foreground mt-3">Based on {res.sample} comparable listings ({res.basis}), mileage-adjusted. Private range is estimated from dealer asking prices. Doesn't account for this car's condition, spec or history.</p>
             <div className="mt-5 flex flex-col sm:flex-row gap-2">
               <Button asChild variant="outline" className="min-h-[44px]"><Link to="/valuation/new">Get a full report with MOT history</Link></Button>
               <Button variant="ghost" className="min-h-[44px]" onClick={() => { setRes(null); setF(EMPTY); }}>Check another advert</Button>
