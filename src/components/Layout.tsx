@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeftRight, LayoutDashboard, Plus, Scale, UserCircle2 } from "lucide-react";
+import { ArrowLeftRight, LayoutDashboard, Plus, SearchCheck, UserCircle2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 
@@ -66,8 +66,8 @@ export function Header() {
               >
                 <LayoutDashboard className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate("/buyer")} aria-current={path === "/buyer" ? "page" : undefined}>
-                <Scale className="h-4 w-4" aria-hidden /> Buyer check
+              <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate("/check")} aria-current={path === "/check" ? "page" : undefined}>
+                <SearchCheck className="h-4 w-4" aria-hidden /> Is this advert fair?
               </Button>
               <Button variant="ghost" size="sm" className="hidden md:inline-flex" onClick={() => navigate("/compare")} aria-current={path === "/compare" ? "page" : undefined}>
                 <ArrowLeftRight className="h-4 w-4" aria-hidden /> Compare
@@ -85,7 +85,9 @@ export function Header() {
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => navigate("/buyer")}>Buyers</Button>
+              <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => navigate("/check")} aria-current={path === "/check" ? "page" : undefined}>
+                <SearchCheck className="h-4 w-4" aria-hidden /> Check an advert
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>Sign in</Button>
               <Button variant="hero" size="sm" onClick={() => navigate("/auth")}>Get started</Button>
             </>

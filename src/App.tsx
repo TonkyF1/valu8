@@ -28,6 +28,8 @@ const Compare = lazy(() => import("./pages/Compare"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 import { CookieConsent } from "@/components/CookieConsent";
+const Check = lazy(() => import("./pages/Check"));
+const Accuracy = lazy(() => import("./pages/Accuracy"));
 const CarValue = lazy(() => import("./pages/CarValue"));
 const CarValuesIndex = lazy(() => import("./pages/CarValuesIndex"));
 
@@ -58,6 +60,8 @@ const App = () => (
             {/* Unprotected so anonymous visitors can enter a reg; NewValuation stores the intent and sends them to /auth. */}
             <Route path="/valuation/new" element={<NewValuation />} />
             <Route path="/buyer" element={<Buyer />} />
+            <Route path="/check" element={<Check />} />
+            <Route path="/accuracy" element={<Accuracy />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/compare" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
