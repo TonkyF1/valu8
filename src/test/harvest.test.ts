@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-// @ts-expect-error plain ESM script without types
 import { parseGumtreePage, merge, toCsv, parseCsv, mapEbayItem, fingerprint } from "../../scripts/harvest/collect.mjs";
 
 const ad = (id: number, price: string, seller = "Private") => ({
@@ -22,7 +21,9 @@ describe("harvest collector", () => {
   it("dedupes across sources and infers a sale price after 14 days unseen", () => {
     const g = parseGumtreePage(page([ad(1, "£1,000.00")])).ads;
     const e = { ...g[0], source: "ebay", listing_id: "999" };
-    let { rows, newBySource } = merge([], [...g, e], "2026-10-01");
+    const first = merge([], [...g, e], "2026-10-01");
+    let rows = first.rows;
+    const newBySource = first.newBySource;
     expect(rows.find((r: any) => r.source === "ebay").status).toBe("duplicate");
     expect(newBySource).toEqual({ gumtree: 1, ebay: 1 });
     ({ rows } = merge(rows, [], "2026-10-14"));
