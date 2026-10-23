@@ -235,7 +235,7 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   for (let i = 1; i <= pages; i++) {
     doc.setPage(i);
     doc.setFontSize(8); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
-    doc.text("AI-generated estimate. Not financial advice.  valu8.lovable.app", margin, pageH - 20);
+    doc.text("AI-generated estimate. Not financial advice.  valu8.uk", margin, pageH - 20);
     doc.text(`${i} / ${pages}`, pageW - margin, pageH - 20, { align: "right" });
   }
 
