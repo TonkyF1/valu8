@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { ArrowRight, BadgePoundSterling, Camera, FileCheck2, Gauge, Scale, ShieldAlert, Sparkles, Wind } from "lucide-react";
+import { ArrowRight, BadgePoundSterling, Camera, Check, FileCheck2, Gauge, SearchCheck, ShieldAlert, Sparkles, Target, Wind } from "lucide-react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -43,26 +43,34 @@ export default function Landing() {
       <main id="main" className="flex-1">
         <section className="relative overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 -top-32 h-96 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.18),transparent_60%)]" aria-hidden />
-          <div className="container relative pt-10 pb-10 md:pt-24 md:pb-14 text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-[11px] font-medium text-primary mb-5">
-              <Sparkles className="h-3 w-3" aria-hidden /> UK car valuations for private sellers and buyers
+          <div className="container relative pt-8 pb-8 sm:pt-12 md:pt-24 md:pb-14 text-center max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-[11px] font-medium text-primary mb-4 sm:mb-5">
+              <Sparkles className="h-3 w-3" aria-hidden /> Free UK car valuations for sellers and buyers
             </div>
-            <h1 className="text-[2.1rem] md:text-[3.2rem] font-semibold tracking-tight text-gradient leading-[1.05]">
+            <h1 className="text-[2.25rem] sm:text-[2.6rem] md:text-[3.2rem] font-semibold tracking-tight text-gradient leading-[1.05] text-balance">
               Know what your car is really worth
             </h1>
-            <p className="text-base md:text-lg text-muted-foreground mt-5 max-w-xl mx-auto leading-relaxed">
-              Enter a reg. Valu8 pulls the official DVSA record, checks live UK listings and reads your photos,
-              then gives you a price you can defend.
+            <p className="text-[15px] sm:text-base md:text-lg text-muted-foreground mt-4 sm:mt-5 max-w-xl mx-auto leading-relaxed text-pretty">
+              Enter a reg. We check the official DVSA record, live UK listings and your photos, then give you a price you can defend.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-              <Button asChild variant="hero" size="xl">
-                <Link to="/valuation/new">Value my car <ArrowRight className="h-4 w-4" aria-hidden /></Link>
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 justify-center max-w-sm sm:max-w-none mx-auto">
+              <Button asChild variant="hero" size="xl" className="w-full sm:w-auto min-h-[52px]">
+                <Link to="/valuation/new">Value my car free <ArrowRight className="h-4 w-4" aria-hidden /></Link>
               </Button>
-              <Button asChild variant="outline" size="xl">
-                <Link to="/buyer"><Scale className="h-4 w-4" aria-hidden /> Check an asking price</Link>
+              <Button asChild variant="outline" size="xl" className="w-full sm:w-auto min-h-[52px]">
+                <Link to="/check"><SearchCheck className="h-4 w-4" aria-hidden /> Is this advert fair?</Link>
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground/70 mt-4">Free during early access. No card needed.</p>
+            <ul className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+              {["Free during early access", "No card needed", "Official DVSA MOT data"].map((t) => (
+                <li key={t} className="inline-flex items-center gap-1"><Check className="h-3.5 w-3.5 text-primary" aria-hidden /> {t}</li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs">
+              <Link to="/accuracy" className="inline-flex items-center gap-1 text-primary/90 hover:text-primary underline-offset-2 hover:underline min-h-[32px]">
+                <Target className="h-3.5 w-3.5" aria-hidden /> See how accurate we are
+              </Link>
+            </p>
           </div>
         </section>
 

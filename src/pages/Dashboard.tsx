@@ -321,14 +321,14 @@ export default function Dashboard() {
           return (
             <div className="grid gap-3">
               {feedbackDue.length > 0 && (
-                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3">
+                <div className="rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 to-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center items-start gap-3 shadow-[0_0_40px_-12px_hsl(var(--primary)/0.45)]">
                   <HandCoins className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden />
                   <div className="flex-1 min-w-0 text-sm">
                     <p className="font-medium">Sold your {vehicleTitle({ year: feedbackDue[0].year, make: feedbackDue[0].make, model: feedbackDue[0].model })}?</p>
-                    <p className="text-muted-foreground mt-0.5">If you've sold {feedbackDue.length > 1 ? "any of these cars" : "it"}, telling us the price takes a few seconds and helps us make our valuations more accurate. Totally optional.</p>
+                    <p className="text-muted-foreground mt-0.5">If you've sold {feedbackDue.length > 1 ? "any of these cars" : "it"}, telling us the price takes a few seconds and helps us make our valuations more accurate. Totally optional. <Link to="/accuracy" className="text-primary underline underline-offset-2">See our accuracy results</Link>.</p>
                   </div>
-                  <Button asChild size="sm" variant="outline" className="shrink-0">
-                    <Link to={`/valuation/${feedbackDue[0].id}#sale-feedback`}>Add sale price</Link>
+                  <Button asChild size="sm" variant="hero" className="shrink-0 min-h-[44px] w-full sm:w-auto">
+                    <Link to={`/valuation/${feedbackDue[0].id}#sale-feedback`}>Tell us what it sold for</Link>
                   </Button>
                 </div>
               )}

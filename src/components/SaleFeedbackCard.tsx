@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Link } from "react-router-dom";
 import { HandCoins, Check, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -76,12 +77,12 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
   }
 
   return (
-    <section id="sale-feedback" className="premium-card p-5 sm:p-6 mt-6 scroll-mt-24" aria-label="Sale price feedback">
+    <section id="sale-feedback" className="relative rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-6 mt-6 scroll-mt-24 shadow-[0_0_40px_-12px_hsl(var(--primary)/0.45)]" aria-label="Sale price feedback">
       <div className="flex items-start gap-3 mb-4">
-        <div className="h-9 w-9 rounded-xl bg-primary/10 grid place-items-center ring-1 ring-primary/20 shrink-0"><HandCoins className="h-4 w-4 text-primary" aria-hidden /></div>
+        <div className="h-11 w-11 rounded-xl bg-primary/15 grid place-items-center ring-1 ring-primary/30 shrink-0"><HandCoins className="h-5 w-5 text-primary" aria-hidden /></div>
         <div>
-          <h3 className="font-semibold tracking-tight">Sold it? Tell us the price</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">Optional. Real sale prices help us check and improve our accuracy. Only you can see this — it's never shown on shared links.</p>
+          <h3 className="text-lg font-semibold tracking-tight">Sold it? Tell us what for</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Takes ten seconds. Real sale prices keep our valuations honest, and we publish the results on our <Link to="/accuracy" className="text-primary underline underline-offset-2">accuracy page</Link>. Your individual price is only visible to you and never shown on shared links.</p>
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
@@ -105,7 +106,7 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
       </div>
       {error && <p className="text-sm text-destructive mt-2" role="alert">{error}</p>}
       <div className="flex gap-2 mt-4">
-        <Button onClick={save} disabled={busy}>{busy ? "Saving…" : "Save sale price"}</Button>
+        <Button variant="hero" onClick={save} disabled={busy} className="min-h-[44px]">{busy ? "Saving…" : "Save sale price"}</Button>
         {existing && <Button variant="ghost" onClick={() => setEditing(false)} disabled={busy}>Cancel</Button>}
       </div>
     </section>

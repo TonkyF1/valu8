@@ -834,6 +834,18 @@ export default function Report() {
         })()}
 
 
+        {/* Sale feedback: placed high so owners see it; real sale prices power /accuracy */}
+        {!isShared && user && (v as any).user_id === user.id && (
+          <SectionBoundary>
+            <SaleFeedbackCard
+              valuationId={v.id}
+              report={v.report}
+              estimate={(v.report as any)?.valuationUnavailable ? null : v.report?.values?.privateSale ?? null}
+              onSaved={(next) => setV((prev) => (prev ? { ...prev, report: next as unknown as ValuationReport } : prev))}
+            />
+          </SectionBoundary>
+        )}
+
         {/* Transparency: how the number was built, from stored figures only */}
         {(() => {
           const ex = explainValuation(r, { year: v.year, mileage: v.mileage });
@@ -1086,16 +1098,6 @@ export default function Report() {
           );
         })()}
 
-        {!isShared && user && (v as any).user_id === user.id && (
-          <SectionBoundary>
-            <SaleFeedbackCard
-              valuationId={v.id}
-              report={v.report}
-              estimate={(v.report as any)?.valuationUnavailable ? null : v.report?.values?.privateSale ?? null}
-              onSaved={(next) => setV((prev) => (prev ? { ...prev, report: next as unknown as ValuationReport } : prev))}
-            />
-          </SectionBoundary>
-        )}
 
         <SectionBoundary>
           <VehicleInsights
