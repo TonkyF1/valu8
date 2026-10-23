@@ -91,6 +91,30 @@ export const GT_MODELS = [
   ["lexus", ["is", "rx", "ct"]], ["alfa romeo", ["giulietta", "mito"]], ["porsche", ["cayenne", "boxster", "911"]], ["subaru", ["impreza", "forester"]],
   ["smart", ["fortwo"]], ["chevrolet", ["spark", "cruze"]], ["jeep", ["renegade", "compass"]], ["tesla", ["model 3"]], ["mg", ["zs", "mg3"]], ["ds", ["ds 3"]],
 ];
+// Vans (Gumtree search_category=vans). Same parser; body type is kept so the engine can segment them.
+export const GT_VANS = [
+  ["ford", ["transit custom", "transit", "transit connect", "transit courier", "ranger"]],
+  ["volkswagen", ["transporter", "caddy", "crafter", "amarok"]], ["mercedes-benz", ["vito", "sprinter", "citan"]],
+  ["vauxhall", ["vivaro", "combo", "movano"]], ["renault", ["trafic", "master", "kangoo"]], ["peugeot", ["expert", "partner", "boxer"]],
+  ["citroen", ["dispatch", "berlingo", "relay"]], ["toyota", ["proace", "hilux"]], ["nissan", ["primastar", "nv200", "navara"]],
+  ["fiat", ["doblo", "ducato"]], ["iveco", ["daily"]], ["mitsubishi", ["l200"]], ["isuzu", ["d-max"]],
+];
+// Breadth: newer/pricier cars are thin in the seed (only ~100 rows 2021+), so add high-price bands and models.
+export const GT_MODELS_EXTRA = [
+  ["skoda", ["karoq", "kamiq", "scala", "enyaq"]], ["volkswagen", ["t-cross", "id.3", "id.4", "arteon", "touareg"]],
+  ["kia", ["xceed", "stonic", "ev6", "sorento"]], ["hyundai", ["ioniq", "santa fe", "bayon"]], ["toyota", ["rav4", "c-hr", "corolla"]],
+  ["ford", ["puma", "kuga", "focus"]], ["cupra", ["formentor", "born", "leon"]], ["mg", ["hs", "mg4"]], ["tesla", ["model y", "model s"]],
+  ["bmw", ["x1", "x2", "x4", "3 series", "1 series"]], ["audi", ["q2", "q3", "a3", "a5"]], ["mercedes-benz", ["gla class", "a class", "glc class", "glb class"]],
+  ["volvo", ["xc40", "xc60"]], ["land rover", ["defender", "range rover velar"]], ["nissan", ["qashqai", "juke"]], ["peugeot", ["2008", "3008", "208"]],
+];
+export const GT_BANDS_HI = [
+  { seller: "trade", min: 15000, max: 25000, pages: 2 }, { seller: "trade", min: 25000, max: 0, pages: 1 },
+  { seller: "private", min: 12000, max: 0, pages: 1 },
+];
+export const GT_VAN_BANDS = [
+  { seller: "private", min: 0, max: 8000, pages: 1 }, { seller: "private", min: 8000, max: 0, pages: 1 },
+  { seller: "trade", min: 0, max: 15000, pages: 1 }, { seller: "trade", min: 15000, max: 0, pages: 2 },
+];
 // Bands in priority order: cheap private cars first.
 export const GT_BANDS = [
   { seller: "private", min: 0, max: 3000, pages: 4 }, { seller: "private", min: 3000, max: 8000, pages: 2 },
@@ -149,20 +173,29 @@ export function parseGumtreePage(html) {
 // ORDER=priority (seed): every page of a band before the next band (cheap private first).
 // ORDER=interleave (default, daily): page 1 of every model x band first, then page 2, ... so dealers and
 // higher prices are covered every day too.
-export function gumtreeJobs(order = process.env.ORDER ?? "interleave") {
+// FOCUS=breadth: only the van + newer/high-price jobs (used for catch-up runs); default: everything.
+export function gumtreeJobs(order = process.env.ORDER ?? "interleave", focus = process.env.FOCUS ?? "all") {
   const jobs = [];
+  const extra = [];
+  for (const band of GT_VAN_BANDS) for (const [make, models] of GT_VANS) for (const model of models) for (let pg = 1; pg <= band.pages; pg++) extra.push({ band, make, model, pg, cat: "vans" });
+  for (const band of GT_BANDS_HI) for (const [make, models] of GT_MODELS_EXTRA) for (const model of models) for (let pg = 1; pg <= band.pages; pg++) extra.push({ band, make, model, pg });
+  extra.sort((a, b) => a.pg - b.pg);
+  if (focus === "breadth") return extra;
   const maxPg = Math.max(...GT_BANDS.map((b) => b.pages));
   if (order === "priority") { for (const band of GT_BANDS) for (const [make, models] of GT_MODELS) for (const model of models) for (let pg = 1; pg <= band.pages; pg++) jobs.push({ band, make, model, pg }); }
   else for (let pg = 1; pg <= maxPg; pg++) for (const band of GT_BANDS) if (band.pages >= pg) for (const [make, models] of GT_MODELS) for (const model of models) jobs.push({ band, make, model, pg });
-  return jobs;
+  // Breadth jobs are interleaved (1 in 4) so the daily budget always covers some vans/newer cars.
+  const out = []; let e = 0;
+  jobs.forEach((j, i) => { out.push(j); if (i % 3 === 2 && e < extra.length) out.push(extra[e++]); });
+  return out.concat(extra.slice(e));
 }
 async function* gumtree(budget) {
   let used = 0, challenges = 0; const done = new Set();
-  for (const { band, make, model, pg } of gumtreeJobs()) {
-    const key = `${make}|${model}|${band.seller}|${band.min}`;
+  for (const { band, make, model, pg, cat } of gumtreeJobs()) {
+    const key = `${cat ?? "cars"}|${make}|${model}|${band.seller}|${band.min}`;
     if (done.has(key)) continue;
     if (used >= budget || shouldStop()) return;
-    const q = new URLSearchParams({ search_category: "cars", vehicle_make: make.replace(/ /g, "-"), vehicle_model: model.replace(/ /g, "-"), seller_type: band.seller });
+    const q = new URLSearchParams({ search_category: cat ?? "cars", vehicle_make: make.replace(/ /g, "-"), vehicle_model: model.replace(/ /g, "-"), seller_type: band.seller });
     if (band.min) q.set("min_price", band.min); if (band.max) q.set("max_price", band.max); if (pg > 1) q.set("page", pg);
     used++;
     let html; try { html = await (await politeFetch("https://www.gumtree.com/search?" + q)).text(); } catch (e) { console.error("gumtree", e.message); if (e.blocked) return; continue; }

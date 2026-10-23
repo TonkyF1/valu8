@@ -26,6 +26,16 @@ kept with `status=duplicate` and excluded from training and from Supabase).
 | PistonHeads | OFF | robots.txt allows `/buy/...` pages, but the Terms of Use forbid scraping/data-mining Site Content ("you may not ... 'scrape,' data mine ..."), so it is skipped. |
 | AutoTrader | OFF | robots.txt disallows the parameters search needs (`?postcode=`, `?sort=`, `?year-from=`, `?radius=` ...), results are loaded client-side from a protected API, and the terms prohibit automated extraction. Not circumvented. |
 | Facebook Marketplace | OFF | Needs a logged-in session; handled manually, never automated. |
+| Motors.co.uk | OFF | robots.txt disallows `/car-*` and `/vehicle/*` (the listing pages) and the Acceptable Use Policy bans "use of automated means, including spiders, robots, crawlers ... to download data from the Site". Checked 2026-10-23. |
+| CarGurus UK | OFF | Terms of Use prohibit "systematic extraction of data ... by use of any automated mechanism" and limit content use to occasional personal, non-commercial viewing; cargurus.co.uk also serves a bot-verification wall. Checked 2026-10-23. |
+| Exchange and Mart | OFF | robots.txt disallows `/search/`, `/ad/`, `/classifieds*` and `/localsites/` for all user agents, i.e. every listing/search URL. Checked 2026-10-23. |
+| Retailer / dealer feeds & dealer-site sitemaps | OFF (manual opt-in only) | No public free feed found. Dealer sites are mostly hosted on platforms (e.g. AutoTrader/Motors/Cazoo dealer sites) whose terms forbid automated extraction; a dealer feed would need that dealer's written permission, so none are automated. |
+| Public auction results (BCA, Manheim, Aston Barclay, Copart) | OFF | Results/prices sit behind trade logins; terms restrict use to registered buyers. Not automated. |
+| eBay Motors UK (Browse API) | READY, keys pending | Collector is in `collect.mjs` and wired into the nightly workflow; it activates automatically once `EBAY_CLIENT_ID`/`EBAY_CLIENT_SECRET` repo secrets exist. |
+
+**Coverage additions (2026-10-23):** the Gumtree collector now also searches **vans** (`search_category=vans`, ~40 van/pick-up models
+x 4 price/seller bands) and a **breadth** set of newer/high-price cars (extra models + trade 15-25k / 25k+ and private 12k+ bands),
+interleaved 1-in-4 into the daily budget. `FOCUS=breadth node scripts/harvest/collect.mjs` runs only those jobs (catch-up runs).
 
 ## Schedule (.github/workflows/harvest.yml)
 
