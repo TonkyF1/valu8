@@ -122,8 +122,8 @@ export default function Dashboard() {
       <Header />
       <main id="main" className="flex-1 container max-w-5xl py-8 md:py-12">
         {/* Welcome header */}
-        <div className="mb-10 animate-fade-in-up">
-          <div className="text-[10px] uppercase tracking-[0.22em] text-primary font-semibold mb-2">{greeting}</div>
+        <div className="mb-8 animate-fade-in-up">
+          <p className="text-sm text-primary font-medium mb-1.5">{greeting}</p>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gradient">
             Welcome back, {firstName}.
           </h1>
@@ -133,17 +133,16 @@ export default function Dashboard() {
         </div>
 
         {/* Primary CTA + premium status */}
-        <section className="grid md:grid-cols-3 gap-3 mb-10">
+        <section className={`grid gap-3 mb-10 ${BILLING_ENABLED ? "md:grid-cols-3" : ""}`}>
           <Link
             to="/valuation/new"
-            className="md:col-span-2 group relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-7 transition-all hover:border-primary/60"
+            className={`${BILLING_ENABLED ? "md:col-span-2 " : ""}group relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-7 transition-all hover:border-primary/60`}
           >
             <div className="relative flex items-center justify-between gap-6">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.22em] text-primary font-medium mb-2">Start now</div>
-                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">New Valuation</h2>
+                                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">New valuation</h2>
                 <p className="text-sm text-muted-foreground mt-1.5 max-w-sm">
-                  60 seconds. Photo aware. Built around real 2026 UK private sale prices.
+                  About 60 seconds. Add photos for a condition-aware price. Free during early access.
                 </p>
               </div>
               <span className="hidden sm:grid h-12 w-12 rounded-2xl bg-primary text-primary-foreground place-items-center flex-shrink-0 group-hover:scale-105 transition-transform">
@@ -171,17 +170,7 @@ export default function Dashboard() {
               </Button>
             )}
           </div>
-          ) : (
-            <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-primary/5 p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-primary" aria-hidden />
-                <span className="text-sm font-medium">Free during early access</span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Everything included: reports, PDFs, share links and adverts. No card needed.
-              </p>
-            </div>
-          )}
+          ) : null}
         </section>
 
         {/* MOT revalue reminders */}
@@ -219,19 +208,12 @@ export default function Dashboard() {
           </section>
         )}
 
-        {/* Stats */}
-        <section className="grid grid-cols-3 gap-3 mb-8">
-          <StatCard icon={<Car className="h-3.5 w-3.5" />} label="Reports" value={String(total)} />
-          <StatCard icon={<TrendingUp className="h-3.5 w-3.5" />} label="Avg value" value={total ? `£${avg.toLocaleString()}` : "—"} />
-          <StatCard icon={<Activity className="h-3.5 w-3.5" />} label="Avg condition" value={avgCondition ? `${avgCondition}/10` : "—"} />
-        </section>
-
         {/* List header with search + sort */}
         <div className="flex items-end justify-between mb-4 gap-3">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">My Valuations</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {total} {total === 1 ? "report" : "reports"}
+            <h2 className="text-lg font-semibold tracking-tight">My valuations</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {total} {total === 1 ? "report" : "reports"}{total > 0 ? ` · average £${avg.toLocaleString("en-GB")}` : ""}{avgCondition ? ` · condition ${avgCondition}/10 avg` : ""}
             </p>
           </div>
         </div>
@@ -248,7 +230,7 @@ export default function Dashboard() {
               />
             </div>
             <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-              <SelectTrigger className="h-11 w-[180px] bg-card/60 border-border/70 rounded-xl">
+              <SelectTrigger className="h-11 w-full sm:w-[180px] bg-card/60 border-border/70 rounded-xl">
                 <div className="flex items-center gap-2">
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                   <SelectValue />
@@ -366,7 +348,7 @@ export default function Dashboard() {
                             {variant && <span className="text-muted-foreground font-medium"> · {variant}</span>}
                           </h3>
                           {r.report?.edited && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em]">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-semibold">
                               <Pencil className="h-2.5 w-2.5" /> Edited
                             </span>
                           )}
@@ -385,7 +367,7 @@ export default function Dashboard() {
                           <span className="opacity-30">•</span>
                           <span>{format(new Date(r.created_at), "d MMM yyyy")}</span>
                           {r.condition_score != null && hasPhotos(r.photo_urls) && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-semibold tabular-nums ml-0.5">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-semibold tabular-nums ml-0.5">
                               <Activity className="h-2.5 w-2.5" />
                               {Number(r.condition_score).toFixed(1)}/10
                             </span>
@@ -396,7 +378,7 @@ export default function Dashboard() {
                             const Icon = flat ? Minus : up ? TrendingUp : TrendingDown;
                             return (
                               <span
-                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ${flat ? "bg-muted text-muted-foreground" : up ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}
+                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${flat ? "bg-muted text-muted-foreground" : up ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}
                                 title={`Previous valuation £${t.previousValue.toLocaleString()} on ${format(new Date(t.previousDate), "d MMM yyyy")}`}
                               >
                                 <Icon className="h-2.5 w-2.5" aria-hidden />
@@ -410,7 +392,7 @@ export default function Dashboard() {
 
                       {/* Price */}
                       <div className="hidden sm:flex text-right flex-col justify-center flex-shrink-0">
-                        <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        <div className="text-xs text-muted-foreground font-medium">
                           {valuationUnavailable ? "Status" : "Private sale"}
                         </div>
                         {valuationUnavailable ? (
@@ -453,17 +435,6 @@ export default function Dashboard() {
         })()}
       </main>
       <Footer />
-    </div>
-  );
-}
-
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-border/70 bg-card p-4">
-      <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] uppercase tracking-[0.15em]">
-        <span className="text-primary">{icon}</span>{label}
-      </div>
-      <div className="text-xl sm:text-2xl font-bold mt-1.5 tabular-nums tracking-tight">{value}</div>
     </div>
   );
 }
