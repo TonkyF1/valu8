@@ -989,24 +989,6 @@ export default function Report() {
           </CollapsibleSection>
         )}
 
-        {/* HPI */}
-        <Section title="HPI Check Summary" right={
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted/40 border border-border/60 rounded-full px-2.5 py-1">
-            <ShieldCheck className="h-3 w-3 text-primary" /> {r.hpi.status}
-          </span>
-        }>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {r.hpi.checks.map(c => (
-              <div key={c.label} className="flex items-center gap-2 text-sm rounded-lg bg-muted/30 px-3 py-2.5">
-                {c.ok
-                  ? <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                  : <span className="h-4 w-4 flex-shrink-0 text-center text-xs font-bold text-amber-500">!</span>}
-                <span className="truncate" title={c.label}>{c.label}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-
         {/* MOT history */}
         {(() => {
           const latest = r.motHistory?.[0];
@@ -1132,7 +1114,7 @@ export default function Report() {
         <footer className="mt-12 pt-6 border-t border-border/40">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60 font-semibold mb-2">Legal</div>
           <p className="text-[11px] leading-relaxed text-muted-foreground/70">
-            Sources: MarketCheck UK, DVSA MOT history, AI photo analysis. Estimates are for guidance only — not financial advice or a guaranteed sale price. Always verify HPI and MOT independently before transacting.
+            Sources: MarketCheck UK, DVSA MOT history, AI photo analysis. Estimates are for guidance only — not financial advice or a guaranteed sale price. Always verify vehicle history and MOT independently before transacting.
           </p>
         </footer>
       </main>

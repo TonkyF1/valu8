@@ -205,11 +205,6 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
     y += 10;
   }
 
-  // HPI
-  ensureSpace(80);
-  y = section(doc, `HPI CHECK — ${r.hpi.status.toUpperCase()}`, y, margin, pageW);
-  r.hpi.checks.forEach(c => { y = bullet(doc, c.label, margin, y, pageW - margin * 2, TEAL); });
-  y += 10;
 
   // MOT
   if (r.motHistory.length > 0) {

@@ -23,7 +23,7 @@ export default function Disclaimers() {
             Live UK listing data is provided by MarketCheck (marketcheck.com). MOT history is retrieved from the official DVSA MOT History API. Where any provider is unavailable we fall back to a realistic estimate and label it clearly inside the report.
           </Card>
           <Card icon={<ShieldAlert className="h-4 w-4" />} title="Not financial advice">
-            Valu8 reports do not constitute financial, legal, or commercial advice. Always carry out an independent HPI check and arrange a viewing/inspection before transacting.
+            Valu8 reports do not constitute financial, legal, or commercial advice. Always carry out an independent vehicle history check and arrange a viewing/inspection before transacting.
           </Card>
           <Card icon={<Scale className="h-4 w-4" />} title="Liability">
             Valu8 accepts no liability for outcomes arising from reliance on a valuation. By using the service you acknowledge the indicative nature of the results.
