@@ -89,3 +89,27 @@ export function saleAccuracy(salePrice: number, estimate: number | null | undefi
   if (!estimate || estimate <= 0 || !(salePrice > 0)) return null;
   return Math.round(((salePrice - estimate) / estimate) * 1000) / 10;
 }
+
+export interface AccuracySummary { count: number; medianAbsPct: number | null; within10Pct: number | null; meanSignedPct: number | null }
+
+/** Aggregate predicted vs reported sale price across valuations that have sale feedback. */
+export function summariseSaleFeedback(rows: { report?: unknown; private_value?: number | null }[]): AccuracySummary {
+  const diffs: number[] = [];
+  for (const r of rows) {
+    const fb = getSaleFeedback(r.report);
+    if (!fb) continue;
+    const d = saleAccuracy(fb.salePrice, fb.estimateAtTime ?? r.private_value ?? null);
+    if (d !== null) diffs.push(d);
+  }
+  if (!diffs.length) return { count: 0, medianAbsPct: null, within10Pct: null, meanSignedPct: null };
+  const abs = diffs.map(Math.abs).sort((a, b) => a - b);
+  const mid = abs.length >> 1;
+  const median = abs.length % 2 ? abs[mid] : (abs[mid - 1] + abs[mid]) / 2;
+  const round1 = (n: number) => Math.round(n * 10) / 10;
+  return {
+    count: diffs.length,
+    medianAbsPct: round1(median),
+    within10Pct: Math.round((abs.filter((d) => d <= 10).length / abs.length) * 100),
+    meanSignedPct: round1(diffs.reduce((a, b) => a + b, 0) / diffs.length),
+  };
+}
