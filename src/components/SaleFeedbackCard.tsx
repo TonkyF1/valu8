@@ -60,7 +60,7 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
   if (existing && !editing) {
     const diff = saleAccuracy(existing.salePrice, existing.estimateAtTime ?? estimate);
     return (
-      <section id="sale-feedback" className="premium-card p-5 sm:p-6 mt-6 scroll-mt-24" aria-label="Sale price feedback">
+      <section id="sale-feedback" className="premium-card p-5 sm:p-6 mt-6 scroll-mt-44" aria-label="Sale price feedback">
         <div className="flex items-start gap-3">
           <div className="h-9 w-9 rounded-xl bg-primary/10 grid place-items-center ring-1 ring-primary/20 shrink-0"><Check className="h-4 w-4 text-primary" aria-hidden /></div>
           <div className="flex-1 min-w-0">
@@ -77,7 +77,7 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
   }
 
   return (
-    <section id="sale-feedback" className="relative rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-6 mt-6 scroll-mt-24 shadow-[0_0_40px_-12px_hsl(var(--primary)/0.45)]" aria-label="Sale price feedback">
+    <section id="sale-feedback" className="relative rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-6 mt-6 scroll-mt-44 shadow-[0_0_40px_-12px_hsl(var(--primary)/0.45)]" aria-label="Sale price feedback">
       <div className="flex items-start gap-3 mb-4">
         <div className="h-11 w-11 rounded-xl bg-primary/15 grid place-items-center ring-1 ring-primary/30 shrink-0"><HandCoins className="h-5 w-5 text-primary" aria-hidden /></div>
         <div>
