@@ -114,7 +114,7 @@ describe("vehicle text", () => {
   });
 });
 
-describe("backtest (6 live cars)", () => {
+describe("backtest (12 live cars)", () => {
   it("improves mean abs error vs ask and keeps each car within 20%", () => {
     let oldErr = 0, newErr = 0;
     for (const c of BACKTEST_CARS) {
