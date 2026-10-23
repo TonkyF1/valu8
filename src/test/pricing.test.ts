@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  dealerToPrivate, retailFromPrivate,
   askRange, calibrateAiPrivate, compAdjustedAnchor, compAdjustmentFactor, dedupeReportText, dedupeSentences,
   highMileagePenalty, privateFromRetail, privateRange, sumPhotoImpacts, tradeFrom,
 } from "../../supabase/functions/_shared/pricing";
@@ -27,7 +28,16 @@ describe("comp mileage/age correction", () => {
 describe("private from dealer retail", () => {
   it("applies a dealer discount bigger on cheap cars", () => {
     expect(privateFromRetail(20_000, 50_000) / 20_000).toBeGreaterThan(privateFromRetail(4_000, 50_000) / 4_000);
-    expect(privateFromRetail(7_330, 80_000)).toBeCloseTo(6067, 0);
+    expect(privateFromRetail(7_330, 80_000)).toBeCloseTo(5364, 0);
+  });
+  it("prices private sale well below dealer retail (Prius YM15GJU / Mazda DG65JCZ)", () => {
+    // Prius anchor £6,200 vs private ask £3,600; Mazda £6,400 vs £3,899.
+    expect(dealerToPrivate(6200)).toBe(4460);
+    expect(dealerToPrivate(6400)).toBe(4620);
+    expect(dealerToPrivate(1500)).toBeCloseTo(1020, 5); // 0.68 floor on cheap cars
+  });
+  it("retailFromPrivate inverts dealerToPrivate", () => {
+    for (const r of [1500, 3000, 6200, 15000]) expect(retailFromPrivate(dealerToPrivate(r))).toBeCloseTo(r, 6);
   });
   it("adds a high-mileage penalty above 140k", () => {
     expect(highMileagePenalty(120_000)).toBe(0);

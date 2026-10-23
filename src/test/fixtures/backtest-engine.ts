@@ -1,4 +1,4 @@
-import { askRange, calibrateAiPrivate, compAdjustmentFactor, finalisePricing, reconcileMileage } from "../../../supabase/functions/_shared/pricing";
+import { askRange, retailFromPrivate, calibrateAiPrivate, compAdjustmentFactor, finalisePricing, reconcileMileage } from "../../../supabase/functions/_shared/pricing";
 import { roundToGrain, roundTo50 } from "../../../supabase/functions/_shared/valuation-math";
 import type { BacktestCar } from "./backtest-cars";
 
@@ -20,7 +20,7 @@ export function recomputeCar(c: BacktestCar) {
   } else {
     const cal = calibrateAiPrivate({ aiPrivate: c.oldPrivate, make: c.make, year: c.year, miles, currentYear: BACKTEST_YEAR, motValid: c.motValid });
     privateSale = roundToGrain(cal.privateSale);
-    retail = roundToGrain((privateSale + 750) / 0.93);
+    retail = roundToGrain(retailFromPrivate(privateSale));
     notes.push(...cal.notes);
   }
   const buffer = roundTo50(privateSale * 0.04);

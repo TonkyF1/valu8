@@ -13,7 +13,7 @@ import {
 } from "../_shared/valuation-math.ts";
 import { motStatus, motAdjustment, sanitizeMotClaim, isFalseLongMotClaim, motDaysRemaining, motConsistentBullets } from "../_shared/mot.ts";
 import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts";
-import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, type LedgerItem } from "../_shared/pricing.ts";
+import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
 
 const PHOTO_BUCKET = "vehicle-photos";
@@ -1165,7 +1165,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       const fair = cal.privateSale;
       const calRatio = fair / Math.max(1, market.center);
       // Retail implied by the same dealer-cost model used on the comps path.
-      const impliedRetail = (fair / Math.max(0.5, 1 - highMileagePenalty(pricedMiles)) + 750) / 0.93;
+      const impliedRetail = retailFromPrivate(fair / Math.max(0.5, 1 - highMileagePenalty(pricedMiles)));
       values = {
         dealerTradeIn: roundToGrain(tradeFrom(impliedRetail, fair)),
         privateSale: roundToGrain(fair),

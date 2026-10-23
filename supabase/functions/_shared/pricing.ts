@@ -51,14 +51,13 @@ export function highMileagePenalty(miles: number): number {
 /**
  * Private-sale value from a dealer-retail figure. MarketCheck listings are
  * overwhelmingly dealer forecourt prices, which carry a roughly fixed cost
- * (prep, warranty, margin ≈ £750) plus a proportional margin (~7%). A fixed+
+ * (prep, warranty, margin ≈ £500) plus a proportional margin (~20%). A fixed+
  * proportional model naturally widens the gap on cheap cars, where dealer
  * margin is a bigger share of the price.
  */
 export function privateFromRetail(retail: number, miles: number): number {
   // Condition is already applied to retail via the condition multiplier.
-  let p = retail * 0.93 - 750;
-  p = clamp(p, retail * 0.68, retail * 0.9);
+  const p = dealerToPrivate(retail);
   return p * (1 - highMileagePenalty(miles));
 }
 
@@ -249,8 +248,18 @@ export const RETAIL_NET_MIN = -45;
 export const RETAIL_NET_MAX = 28;
 
 /** Private-sale value from retail WITHOUT any mileage penalty. */
+// Calibrated on 20+ private adverts vs their MarketCheck dealer anchors
+// (batches 2–4): private asks sit ~0.6–0.75× dealer retail, not the ~0.8×
+// the old 0.93R−£750 gave, which overvalued no-photo cars (Prius, Mazda 6).
+export const PRIVATE_RATIO = 0.8;
+export const PRIVATE_FIXED = 500;
+export const PRIVATE_FLOOR = 0.68;
 export function dealerToPrivate(retail: number): number {
-  return clamp(retail * 0.93 - 750, retail * 0.68, retail * 0.9);
+  return clamp(retail * PRIVATE_RATIO - PRIVATE_FIXED, retail * PRIVATE_FLOOR, retail * 0.9);
+}
+/** Inverse of dealerToPrivate (ignoring the 0.9 cap). */
+export function retailFromPrivate(privateSale: number): number {
+  return Math.min((privateSale + PRIVATE_FIXED) / PRIVATE_RATIO, privateSale / PRIVATE_FLOOR);
 }
 
 /**
