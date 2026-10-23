@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     if (!make || !model || !Number.isFinite(year) || !Number.isFinite(mileage) || !(asking > 0)) {
       return json({ error: "make, model, year, mileage and askingPrice are required" }, 400);
     }
-    const key = Deno.env.get("MARKETCHECK_API_KEY");
+    const key = (Deno.env.get("MARKETCHECK_ENABLED") ?? "false").toLowerCase() === "true" ? Deno.env.get("MARKETCHECK_API_KEY") : undefined;
     if (!key) return json({ error: "Market data is not configured." }, 503);
     let list = await comps(key, { make, model, year: String(year), miles_range: `${Math.max(0, mileage - 25000)}-${mileage + 25000}` });
     let basis = `${year} ${make} ${model}, similar mileage`;

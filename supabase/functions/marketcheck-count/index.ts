@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
         year = year || Number(body?.year);
       } catch { /* ignore */ }
     }
-    const apiKey = Deno.env.get('MARKETCHECK_API_KEY');
+    const apiKey = (Deno.env.get('MARKETCHECK_ENABLED') ?? 'false').toLowerCase() === 'true' ? Deno.env.get('MARKETCHECK_API_KEY') : undefined;
 
     if (!make || !model || !year || !apiKey) {
       return new Response(JSON.stringify({ totalCount: 0, error: 'missing params' }), {

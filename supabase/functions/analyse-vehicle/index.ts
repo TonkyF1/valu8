@@ -68,7 +68,10 @@ async function signPhotoRefsForAi(refs: string[], ownerId: string | null): Promi
 
 
 // ----- MarketCheck UK live pricing -----
-const MC_KEY = Deno.env.get("MARKETCHECK_API_KEY");
+// MarketCheck is switched off (owner decision 2026-10-23: slow/429-prone). Set env
+// MARKETCHECK_ENABLED=true to restore; pricing otherwise uses the AI-estimate fallback.
+const MARKETCHECK_ENABLED = (Deno.env.get("MARKETCHECK_ENABLED") ?? "false").toLowerCase() === "true";
+const MC_KEY = MARKETCHECK_ENABLED ? Deno.env.get("MARKETCHECK_API_KEY") : undefined;
 const CURRENT_YEAR = new Date().getUTCFullYear();
 
 export interface ComparableListing {
@@ -191,16 +194,16 @@ export function marketCheckRecentlyThrottled(now = Date.now()): boolean {
   return now - mcThrottledAt < 120_000;
 }
 
-async function fetchWithRetry(url: string, attempts = 4): Promise<Response> {
+async function fetchWithRetry(url: string, attempts = 2): Promise<Response> {
   let last: Response | undefined; let err: unknown;
   for (let i = 0; i < attempts; i++) {
     try {
-      last = await fetch(url);
+      last = await fetch(url, { signal: AbortSignal.timeout(5000) });
       if (last.ok || (last.status !== 429 && last.status < 500)) return last;
       console.warn("MarketCheck retryable status", last.status, "attempt", i + 1);
       if (i < attempts - 1) await last.body?.cancel();
     } catch (e) { err = e; console.warn("MarketCheck network error, attempt", i + 1, e); }
-    if (i < attempts - 1) await new Promise((res) => setTimeout(res, 1000 * 2 ** i + Math.floor(Math.random() * 400)));
+    if (i < attempts - 1) await new Promise((res) => setTimeout(res, 300 + Math.floor(Math.random() * 200)));
   }
   if (!last || last.status === 429 || last.status >= 500) mcThrottledAt = Date.now();
   if (last) return last;
@@ -1354,7 +1357,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       } else {
         confidence = "Low";
         confidenceReason = "We couldn't find enough similar cars for sale right now, so this is our best estimate without direct comparable sales.";
-        if (marketCheckRecentlyThrottled()) {
+        if (MARKETCHECK_ENABLED && marketCheckRecentlyThrottled()) {
           confidence = "Very Low";
           confidenceReason = "Live market data was temporarily unavailable, so this is a model estimate without comparable listings — try again in a few minutes for a market-backed figure.";
           debugInfo.marketCheckThrottled = true;

@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     let fallback = false;
     let matchMode: "exact" | "widened-year" | "widened-broad" | "model-only" = "exact";
     let matchNote: string | undefined;
-    const MC_KEY = Deno.env.get("MARKETCHECK_API_KEY");
+    const MC_KEY = (Deno.env.get("MARKETCHECK_ENABLED") ?? "false").toLowerCase() === "true" ? Deno.env.get("MARKETCHECK_API_KEY") : undefined;
 
     const fetchTier = async (yearSpread: number, rows: number) => {
       const params = new URLSearchParams({
