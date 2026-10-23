@@ -1,5 +1,5 @@
 import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
-import jsPDF from "jspdf";
+import type jsPDF from "jspdf";
 import type { ValuationReport } from "@/lib/valuation";
 import { format } from "date-fns";
 import { explainValuation } from "@/lib/valuationExplainer";
@@ -40,12 +40,16 @@ function triggerBlobDownload(blob: Blob, filename: string) {
 }
 
 export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, opts: { shareUrl?: string } = {}): Promise<void> {
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  // Loaded on demand (download click) so jspdf stays out of the report bundle.
+  const { default: JsPDF } = await import("jspdf");
+  const doc = new JsPDF({ unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 48;
   let y = margin;
   const valuationUnavailable = !!r.valuationUnavailable;
+  const isLiveListings = r.pricingSource === "marketcheck" || (!r.pricingSource && !!(r as any).marketBaseline);
+  const limitedData = valuationUnavailable && !isLiveListings && !r.rareCarWarning;
 
   const ensureSpace = (need: number) => {
     if (y + need > pageH - margin) { doc.addPage(); y = margin; }
@@ -69,9 +73,9 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   doc.text(valuationUnavailable ? "VALUATION STATUS" : "CONDITION", margin, y);
   if (valuationUnavailable) {
     doc.setFontSize(22); doc.setTextColor(...DARK);
-    doc.text("Unable to value accurately", margin, y + 30);
+    doc.text(limitedData ? "Limited data for this car" : "Unable to value accurately", margin, y + 30);
     doc.setFontSize(11); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
-    doc.text("Specialist appraisal recommended", margin, y + 46);
+    doc.text(limitedData ? "Live listings unavailable, try again later" : "Specialist appraisal recommended", margin, y + 46);
   } else {
     if (Array.isArray(v.photo_urls) && v.photo_urls.filter(Boolean).length > 0) {
       doc.setFontSize(28); doc.setTextColor(...TEAL);
@@ -116,7 +120,18 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   if (valuationUnavailable) {
     y = wrappedText(doc, r.valueReasoning || r.honestAnalysis, margin, y, pageW - margin * 2, 10, 14, MUTED);
     y += 8;
-  } else if (r.valueRange || r.valueReasoning) {
+  } else {
+    if (!isLiveListings) {
+      ensureSpace(40);
+      doc.setFillColor(255, 243, 205); doc.rect(margin, y - 14, pageW - margin * 2, 30, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(120, 80, 0);
+      doc.text("ESTIMATE", margin + 8, y + 4);
+      doc.setFont("helvetica", "normal");
+      doc.text("AI market estimate: live listings were unavailable for this car, so treat this as a guide.", margin + 62, y + 4);
+      y += 34;
+    }
+  }
+  if (!valuationUnavailable && (r.valueRange || r.valueReasoning)) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...MUTED);
     const low = r.valueRange?.privateSaleLow ?? r.values.privateSale;
     const high = r.valueRange?.privateSaleHigh ?? r.values.privateSale;
@@ -230,7 +245,7 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   for (let i = 1; i <= pages; i++) {
     doc.setPage(i);
     doc.setFontSize(8); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
-    doc.text("AI-generated estimate. Not financial advice.  valu8.uk", margin, pageH - 20);
+    doc.text(`Sources: ${isLiveListings ? "MarketCheck UK live listings" : "AI market estimate (live listings unavailable)"}, DVSA MOT history. Not financial advice.  valu8.uk`, margin, pageH - 20);
     doc.text(`${i} / ${pages}`, pageW - margin, pageH - 20, { align: "right" });
   }
 

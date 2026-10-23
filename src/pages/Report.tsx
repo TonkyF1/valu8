@@ -94,7 +94,7 @@ export default function Report() {
   useSeo({
     title: `${seoVehicle} valuation | Valu8`,
     description: isShared
-      ? `Independent Valu8 valuation for this ${seoVehicle}, ${v ? `${v.mileage.toLocaleString("en-GB")} miles` : ""}.${seoValue} Based on live UK listings, DVSA MOT history and photo condition.`
+      ? `Independent Valu8 valuation for this ${seoVehicle}, ${v ? `${v.mileage.toLocaleString("en-GB")} miles` : ""}.${seoValue} Based on live UK listings where available, DVSA MOT history and photo condition.`
       : `Your Valu8 valuation report for this ${seoVehicle}.`,
     path: location.pathname,
     noindex: true,
@@ -185,6 +185,12 @@ export default function Report() {
   const sampleSize = (r as any).marketSampleSize ?? (r as any).marketBaseline?.sampleSize ?? null;
   const countLine = marketCountLine(liveCount, sampleSize);
   const valuationUnavailable = !!r.valuationUnavailable;
+  // Honest source labelling: only claim live listings when the engine actually used them.
+  const isLiveListings = r.pricingSource === "marketcheck" || (!r.pricingSource && !!(r as any).marketBaseline);
+  const isEstimate = !isLiveListings;
+  const marketSourceLabel = isLiveListings ? "MarketCheck UK live pricing" : "AI market estimate";
+  // Missing live data is a "limited data" situation, not proof the car is too rare.
+  const limitedData = valuationUnavailable && isEstimate && !r.rareCarWarning;
 
   // Live market confidence derived from MarketCheck total count.
   // If API fails/pending -> liveCount is null. Default to LOW silently.
@@ -236,12 +242,12 @@ export default function Report() {
     if (r.expertInsight?.reason) return r.expertInsight.reason;
     const top = rarityReasons.slice(0, 2);
     if (top.length === 0) {
-      return "We've layered expert analysis on top of live market data to give you a confident figure on a harder-than-average car to price.";
+      return `We've layered expert analysis on top of ${isLiveListings ? "live market data" : "our AI market estimate"} to give you a confident figure on a harder-than-average car to price.`;
     }
     if (top.length === 1) {
-      return `Because ${top[0]}, we've layered expert analysis on top of live market data to give you a confident figure.`;
+      return `Because ${top[0]}, we've layered expert analysis on top of ${isLiveListings ? "live market data" : "our AI market estimate"} to give you a confident figure.`;
     }
-    return `Because ${top[0]} and ${top[1]}, we've layered expert analysis on top of live market data to give you a confident figure.`;
+    return `Because ${top[0]} and ${top[1]}, we've layered expert analysis on top of ${isLiveListings ? "live market data" : "our AI market estimate"} to give you a confident figure.`;
   })();
 
   const share = async () => {
@@ -442,9 +448,9 @@ export default function Report() {
                 </ul>
 
                 {/* Trust strip — the data moat made visible */}
-                <div className="mt-4 pt-3 border-t border-border/40 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                <div className="mt-4 pt-3 border-t border-border/40 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs uppercase tracking-[0.12em] text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> DVSA MOT history</span>
-                  <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> MarketCheck UK live pricing</span>
+                  <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> {marketSourceLabel}</span>
                   <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> AI vision condition</span>
                 </div>
               </div>
@@ -454,6 +460,13 @@ export default function Report() {
 
 
 
+
+        {isEstimate && !valuationUnavailable && (
+          <div role="note" className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 flex items-start gap-2">
+            <span className="shrink-0 rounded-full border border-amber-400/50 bg-amber-400/15 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-amber-300">Estimate</span>
+            <span>AI market estimate: live listings were unavailable for this car, so treat this as a guide.</span>
+          </div>
+        )}
 
         {/* Photo gallery */}
         {v.photo_urls.length > 0 && (
@@ -473,7 +486,7 @@ export default function Report() {
                       "aspect-[4/3] rounded overflow-hidden border-2 transition-all",
                       activePhoto === i ? "border-primary" : "border-transparent opacity-50 hover:opacity-100"
                     )}>
-                    <img src={u} alt="" className="w-full h-full object-cover" />
+                    <img src={u} alt={`${v.make} ${v.model} thumbnail ${i + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -519,7 +532,7 @@ export default function Report() {
             {valuationUnavailable ? (
               <div className="max-w-xl relative">
                 <div className="text-2xl sm:text-3xl font-semibold leading-tight text-foreground tracking-tight">
-                  Unable to value accurately
+                  {limitedData ? "Limited data for this car" : "Unable to value accurately"}
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed mt-3">
                   {r.valueReasoning || r.honestAnalysis}
@@ -615,7 +628,7 @@ export default function Report() {
                       r.headline
                     ) : (
                       <>
-                        Based on live UK market data, a realistic figure for this {v.year} {makeDisplay} {modelDisplay} sits around{" "}
+                        {isLiveListings ? "Based on live UK market data" : "Based on our AI market estimate"}, a realistic figure for this {v.year} {makeDisplay} {modelDisplay} sits around{" "}
                         <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>.
                       </>
                     )}
@@ -758,10 +771,12 @@ export default function Report() {
               <>
                 <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-4">Recommended route</div>
                 <div className="rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-medium text-amber-300">
-                  Specialist / auction
+                  {limitedData ? "Limited data" : "Specialist / auction"}
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-4 max-w-[220px] leading-relaxed">
-                  Cars like this are too rare for our system to value accurately. A specialist dealer or auction house will give you a much better idea.
+                  {limitedData
+                    ? "Live listings were unavailable for this car, so we don't have enough data for a confident figure yet. Try again later, or ask a specialist dealer for a second opinion."
+                    : "Cars like this are too rare for our system to value accurately. A specialist dealer or auction house will give you a much better idea."}
                 </p>
               </>
             ) : (
@@ -1112,9 +1127,9 @@ export default function Report() {
         )}
 
         <footer className="mt-12 pt-6 border-t border-border/40">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60 font-semibold mb-2">Legal</div>
-          <p className="text-[11px] leading-relaxed text-muted-foreground/70">
-            Sources: MarketCheck UK, DVSA MOT history, AI photo analysis. Estimates are for guidance only — not financial advice or a guaranteed sale price. Always verify vehicle history and MOT independently before transacting.
+          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground/60 font-semibold mb-2">Legal</div>
+          <p className="text-xs leading-relaxed text-muted-foreground/70">
+            Sources: {isLiveListings ? "MarketCheck UK live listings" : "AI market estimate (live listings unavailable)"}, DVSA MOT history, AI photo analysis. Estimates are for guidance only — not financial advice or a guaranteed sale price. Always verify vehicle history and MOT independently before transacting.
           </p>
         </footer>
       </main>
