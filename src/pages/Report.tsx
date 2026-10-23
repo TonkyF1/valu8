@@ -2,6 +2,9 @@ import { sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
 import { suggestedAskRange, hasPhotos } from "@/lib/askingPrice";
 import { fixableUpside as computeFixableUpside } from "../../supabase/functions/_shared/photo-insights";
 import { marketConfidenceTier } from "../../supabase/functions/_shared/pricing";
+import { shareLink } from "@/lib/retention";
+import { useSeo } from "@/lib/seo";
+import { posthog } from "@/lib/posthog";
 import { displayMake, displayModel, normaliseFuel, vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -82,9 +85,16 @@ export default function Report() {
       });
   }, [id, isShared]);
 
-  useEffect(() => {
-    if (v) document.title = `${v.year} ${v.make} ${v.model} valuation | Valu8`;
-  }, [v]);
+  const seoVehicle = v ? `${v.year} ${displayMake(v.make)} ${displayModel(v.model)}` : "Car";
+  const seoValue = v && !(v.report as any)?.valuationUnavailable && v.report?.values?.privateSale ? ` Private sale estimate £${Math.round(v.report.values.privateSale).toLocaleString("en-GB")}.` : "";
+  useSeo({
+    title: `${seoVehicle} valuation | Valu8`,
+    description: isShared
+      ? `Independent Valu8 valuation for this ${seoVehicle}, ${v ? `${v.mileage.toLocaleString("en-GB")} miles` : ""}.${seoValue} Based on live UK listings, DVSA MOT history and photo condition.`
+      : `Your Valu8 valuation report for this ${seoVehicle}.`,
+    path: location.pathname,
+    noindex: true,
+  });
 
 
   useEffect(() => {
@@ -232,12 +242,10 @@ export default function Report() {
 
   const share = async () => {
     const shareUrl = `${window.location.origin}/shared/${v?.id ?? id}`;
-    try {
-      await navigator.share?.({ title: `${v?.year} ${v?.make} ${v?.model} — Valu8`, url: shareUrl });
-    } catch {
-      navigator.clipboard.writeText(shareUrl);
-      toast.success("Share link copied");
-    }
+    const res = await shareLink(shareUrl, `${v?.year} ${v?.make} ${v?.model} valuation — Valu8`, "Here's the independent Valu8 valuation for this car:");
+    if (res === "copied") toast.success("Link copied", { description: "Send it to your buyer. They'll see the report without your account details." });
+    else if (res === "failed") toast.error("Couldn't copy link", { description: shareUrl });
+    posthog.capture?.("Report Shared", { method: res });
   };
 
   const downloadPdf = async () => {
@@ -287,7 +295,7 @@ export default function Report() {
                     <Pencil className="h-4 w-4" /> Edit valuation
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={share}>
-                    <Share2 className="h-4 w-4" /> Share link
+                    <Share2 className="h-4 w-4" /> Share with buyer
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     import("@/lib/shareCard")
@@ -659,7 +667,7 @@ export default function Report() {
                 <div className="mt-5 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.07] to-transparent px-4 py-4">
                   <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
                     <span className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-semibold">Suggested Asking Price</span>
-                    <span className="text-[10px] tabular-nums text-muted-foreground">Negotiation buffer ~£{buffer.toLocaleString()}</span>
+                    {!isShared && <span className="text-[10px] tabular-nums text-muted-foreground">Negotiation buffer ~£{buffer.toLocaleString()}</span>}
                   </div>
                   <div className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none tracking-tight">
                     £{rangeLow.toLocaleString()} – £{rangeHigh.toLocaleString()}
@@ -709,8 +717,8 @@ export default function Report() {
               );
             })()}
 
-            {/* Pro Tip — negotiation guidance */}
-            {!valuationUnavailable && (
+            {/* Pro Tip — negotiation guidance (seller-only; hidden on buyer share links) */}
+            {!valuationUnavailable && !isShared && (
               <details className="mt-3 group">
                 <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] font-semibold text-amber-300/90 hover:text-amber-300">
                   <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
@@ -830,7 +838,7 @@ export default function Report() {
         )}
 
         {/* What If Simulator — toggle fixable issues to see the upside */}
-        {!valuationUnavailable && r.photoInsights && r.photoInsights.length > 0 && (
+        {!valuationUnavailable && !isShared && r.photoInsights && r.photoInsights.length > 0 && (
           <WhatIfSimulator
             insights={r.photoInsights}
             privateSale={r.values.privateSale}
@@ -1091,7 +1099,7 @@ export default function Report() {
           />
         </SectionBoundary>
 
-        {!valuationUnavailable && (
+        {!valuationUnavailable && !isShared && (
           <>
 
 
@@ -1127,7 +1135,7 @@ export default function Report() {
           </Button>
         ) : (
           <div className="flex gap-2">
-            <Button variant="outline" size="lg" className="flex-1 min-h-[48px]" onClick={share}><Share2 className="h-4 w-4" aria-hidden /> Share</Button>
+            <Button variant="outline" size="lg" className="flex-1 min-h-[48px]" onClick={share}><Share2 className="h-4 w-4" aria-hidden /> Share with buyer</Button>
             {!valuationUnavailable && (
               <Button asChild variant="hero" size="lg" className="flex-1 min-h-[48px]"><a href="#advert"><Megaphone className="h-4 w-4" aria-hidden /> Write advert</a></Button>
             )}

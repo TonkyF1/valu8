@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { Compass, Home } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSeo } from "@/lib/seo";
 
 export default function NotFound() {
   const location = useLocation();
   const { user } = useAuth();
+  useSeo({ title: "Page not found — Valu8", description: "This page doesn't exist. Value your car free with Valu8.", path: location.pathname, noindex: true });
   useEffect(() => {
-    document.title = "Page not found — Valu8";
     console.warn("404:", location.pathname);
   }, [location.pathname]);
 

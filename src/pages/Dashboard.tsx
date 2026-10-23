@@ -15,6 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useConfirm } from "@/components/ConfirmDialog";
 import { signPhotoUrls } from "@/lib/photos";
 import { hasPhotos } from "@/lib/askingPrice";
+import { motDue, buildMotIcs, downloadIcs, valueTrends } from "@/lib/retention";
+import { SITE_URL } from "@/lib/site";
+import { CalendarPlus, AlertTriangle, TrendingDown, Minus } from "lucide-react";
 
 
 type SortKey = "newest" | "oldest" | "highest" | "lowest";
@@ -26,6 +29,7 @@ interface Row {
   year: number;
   mileage: number;
   registration?: string | null;
+  mot_expiry?: string | null;
   condition_score: number | null;
   private_value: number | null;
   created_at: string;
@@ -48,7 +52,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     supabase.from("valuations")
-      .select("id,make,model,year,mileage,registration,condition_score,private_value,created_at,photo_urls,report")
+      .select("id,make,model,year,mileage,registration,mot_expiry,condition_score,private_value,created_at,photo_urls,report")
       .order("created_at", { ascending: false })
       .then(async ({ data }) => {
         const list = (data as any[]) || [];
@@ -85,6 +89,21 @@ export default function Dashboard() {
   const avgCondition = scored.length
     ? (scored.reduce((s, r) => s + (r.condition_score || 0), 0) / scored.length).toFixed(1)
     : null;
+
+  const trends = valueTrends(rows);
+  // One MOT reminder per car (latest valuation of each reg), only when due within 60 days or overdue.
+  const motReminders = (() => {
+    const seen = new Set<string>();
+    const out: { row: Row; due: NonNullable<ReturnType<typeof motDue>> }[] = [];
+    for (const r of [...rows].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))) {
+      const key = (r.registration || r.id).replace(/\s+/g, "").toUpperCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const due = motDue(r.mot_expiry);
+      if (due && due.status !== "upcoming") out.push({ row: r, due });
+    }
+    return out.slice(0, 3);
+  })();
 
   const firstName = user?.email?.split("@")[0]?.replace(/[^a-zA-Z]/g, "") || "there";
   const greeting = (() => {
@@ -149,6 +168,41 @@ export default function Dashboard() {
             )}
           </div>
         </section>
+
+        {/* MOT revalue reminders */}
+        {motReminders.length > 0 && (
+          <section aria-label="MOT reminders" className="grid gap-2.5 mb-8">
+            {motReminders.map(({ row, due }) => {
+              const name = `${row.year} ${row.make} ${row.model}`;
+              const when = due.status === "overdue"
+                ? `MOT expired ${format(due.date, "d MMM yyyy")}`
+                : due.daysLeft === 0 ? "MOT due today" : `MOT due in ${due.daysLeft} day${due.daysLeft === 1 ? "" : "s"} (${format(due.date, "d MMM yyyy")})`;
+              return (
+                <div key={row.id} className={`rounded-2xl border p-4 flex flex-col sm:flex-row sm:items-center gap-3 ${due.status === "overdue" ? "border-destructive/40 bg-destructive/5" : "border-amber-400/40 bg-amber-400/5"}`}>
+                  <AlertTriangle className={`h-5 w-5 flex-shrink-0 ${due.status === "overdue" ? "text-destructive" : "text-amber-400"}`} aria-hidden />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm">{when}</div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {name}{row.registration ? ` · ${row.registration.toUpperCase()}` : ""}. A fresh MOT changes what buyers will pay, so revalue after your test.
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    {due.status !== "overdue" && (
+                      <Button variant="outline" size="sm" className="min-h-[40px]" onClick={() => {
+                        downloadIcs(`mot-${(row.registration || "car").replace(/\s+/g, "")}.ics`, buildMotIcs({ vehicle: name, registration: row.registration, motDate: due.date, url: `${SITE_URL}/valuation/new` }));
+                      }}>
+                        <CalendarPlus className="h-4 w-4" aria-hidden /> Add to calendar
+                      </Button>
+                    )}
+                    <Button asChild variant="hero" size="sm" className="min-h-[40px]">
+                      <Link to="/valuation/new">Revalue</Link>
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+        )}
 
         {/* Stats */}
         <section className="grid grid-cols-3 gap-3 mb-8">
@@ -305,6 +359,21 @@ export default function Dashboard() {
                               {Number(r.condition_score).toFixed(1)}/10
                             </span>
                           )}
+                          {trends[r.id] && (() => {
+                            const t = trends[r.id];
+                            const up = t.change > 0, flat = t.change === 0;
+                            const Icon = flat ? Minus : up ? TrendingUp : TrendingDown;
+                            return (
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ${flat ? "bg-muted text-muted-foreground" : up ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}
+                                title={`Previous valuation £${t.previousValue.toLocaleString()} on ${format(new Date(t.previousDate), "d MMM yyyy")}`}
+                              >
+                                <Icon className="h-2.5 w-2.5" aria-hidden />
+                                {flat ? "No change" : `${up ? "+" : "−"}£${Math.abs(t.change).toLocaleString()} (${up ? "+" : "−"}${Math.abs(t.pct)}%)`}
+                                <span className="sr-only"> since valuation on {format(new Date(t.previousDate), "d MMM yyyy")}</span>
+                              </span>
+                            );
+                          })()}
                         </div>
                       </div>
 

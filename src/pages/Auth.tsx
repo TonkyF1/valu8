@@ -13,6 +13,7 @@ import { TestModeBanner, Header } from "@/components/Layout";
 import { toast } from "sonner";
 import { Gauge, Mail, Lock, Sparkles } from "lucide-react";
 import { getAttribution } from "@/lib/attribution";
+import { useSeo } from "@/lib/seo";
 
 const emailSchema = z.string().trim().email("Enter a valid email").max(255);
 const passwordSchema = z.string().min(8, "Min 8 characters").max(72);
@@ -35,7 +36,7 @@ export default function Auth() {
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  useEffect(() => { document.title = "Sign in — Valu8"; }, []);
+  useSeo({ title: "Sign in — Valu8", description: "Sign in or create a free Valu8 account to save your car valuations.", path: "/auth", noindex: true });
 
   const hasPendingIntent = () => {
     try { return !!sessionStorage.getItem("valu8_pending_intent"); } catch { return false; }
