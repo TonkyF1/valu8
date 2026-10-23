@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CAR_MAKES, YEARS } from "@/lib/cars";
+import { CAR_MAKES, YEARS, matchOption } from "@/lib/cars";
 import { getModelsForMake } from "@/lib/models";
 import { getVariantsFor } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
@@ -84,10 +84,11 @@ export default function EditValuation() {
       const { data, error } = await supabase.from("valuations").select("*").eq("id", id).maybeSingle();
       if (error || !data) { toast.error("Valuation not found"); navigate("/dashboard"); return; }
       setRow(data);
-      setMake(data.make ?? "");
+      const canonMake = matchOption(data.make, CAR_MAKES);
+      setMake(canonMake);
       const rawModel = String(data.model ?? "");
       const [baseModel, ...rest] = rawModel.split(" · ");
-      setModel(baseModel ?? "");
+      setModel(matchOption(baseModel, getModelsForMake(canonMake)));
       setVariant(rest.join(" · "));
       setYear(String(data.year ?? ""));
       setMileage(String(data.mileage ?? ""));
@@ -288,6 +289,7 @@ export default function EditValuation() {
                   <div className="p-2 sticky top-0 bg-popover z-10">
                     <Input placeholder="Search makes" value={makeQuery} onChange={(e) => setMakeQuery(e.target.value)} onKeyDown={(e) => e.stopPropagation()} className="h-9" />
                   </div>
+                  {make && !CAR_MAKES.includes(make) && <SelectItem value={make}>{make}</SelectItem>}
                   {filteredMakes.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -301,6 +303,7 @@ export default function EditValuation() {
                     <div className="p-2 sticky top-0 bg-popover z-10">
                       <Input placeholder={`Search ${make} models`} value={modelQuery} onChange={(e) => setModelQuery(e.target.value)} onKeyDown={(e) => e.stopPropagation()} className="h-9" />
                     </div>
+                    {model && !availableModels.includes(model) && <SelectItem value={model}>{model}</SelectItem>}
                     {filteredModels.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                     {filteredModels.length === 0 && modelQuery && (
                       <SelectItem value={modelQuery.trim()}>Use "{modelQuery.trim()}"</SelectItem>

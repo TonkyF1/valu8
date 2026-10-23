@@ -32,3 +32,11 @@ export type PhotoSlotKey = typeof PHOTO_SLOTS[number]["key"];
 
 // 1950 → 2026 to support classics and heritage vehicles
 export const YEARS = Array.from({ length: 2026 - 1950 + 1 }, (_, i) => 2026 - i);
+
+/** Match a stored value (often DVLA upper case, e.g. "FORD") to the canonical option ("Ford"), ignoring case, spaces and hyphens. Falls back to the raw value. */
+export function matchOption(raw: string | null | undefined, options: readonly string[]): string {
+  const v = (raw ?? "").trim();
+  if (!v) return "";
+  const norm = (s: string) => s.toLowerCase().replace(/[\s-]+/g, "");
+  return options.find((o) => norm(o) === norm(v)) ?? v;
+}
