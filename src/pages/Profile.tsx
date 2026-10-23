@@ -129,8 +129,7 @@ export default function Profile() {
             <Button asChild variant="ghost" size="sm" className="mb-4 -ml-3">
               <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> Dashboard</Link>
             </Button>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold mb-1.5">Account</div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gradient">Profile & Settings</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Profile & settings</h1>
             <p className="text-muted-foreground mt-2 text-sm">Manage your account, subscription and security.</p>
           </div>
           <Button

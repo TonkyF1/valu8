@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { displayMake, displayModel } from "../../supabase/functions/_shared/vehicle-text";
 import { Turnstile, turnstileEnabled, turnstileHeaders } from "@/components/Turnstile";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -269,11 +270,11 @@ export default function EditValuation() {
 
         <div className="flex items-end justify-between gap-4 mb-6 flex-wrap">
           <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary mb-2">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary mb-2">
               {BILLING_ENABLED ? <><Crown className="h-3 w-3" aria-hidden /> Premium edit mode</> : <><Pencil className="h-3 w-3" aria-hidden /> Edit mode</>}
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">Edit valuation</h1>
-            <p className="text-muted-foreground mt-1">{row.year} {row.make} {row.model}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Edit valuation</h1>
+            <p className="text-muted-foreground mt-1">{row.year} {displayMake(row.make)} {displayModel(row.make, row.model)}</p>
           </div>
         </div>
 
