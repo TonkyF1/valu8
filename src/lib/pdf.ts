@@ -8,6 +8,7 @@ import { cleanReportText } from "@/lib/reportText";
 interface VehicleInfo {
   make: string; model: string; year: number; mileage: number;
   registration: string | null; created_at: string;
+  photo_urls?: unknown;
 }
 
 const TEAL: [number, number, number] = [0, 212, 200];
@@ -72,10 +73,17 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
     doc.setFontSize(11); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
     doc.text("Specialist appraisal recommended", margin, y + 46);
   } else {
-    doc.setFontSize(28); doc.setTextColor(...TEAL);
-    doc.text(`${r.conditionScore.toFixed(1)}/10`, margin, y + 30);
-    doc.setFontSize(11); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
-    doc.text(r.conditionLabel, margin, y + 46);
+    if (Array.isArray(v.photo_urls) && v.photo_urls.filter(Boolean).length > 0) {
+      doc.setFontSize(28); doc.setTextColor(...TEAL);
+      doc.text(`${r.conditionScore.toFixed(1)}/10`, margin, y + 30);
+      doc.setFontSize(11); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
+      doc.text(r.conditionLabel, margin, y + 46);
+    } else {
+      doc.setFontSize(14); doc.setTextColor(...DARK);
+      doc.text("Not scored", margin, y + 26);
+      doc.setFontSize(11); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
+      doc.text("Add photos for a condition score", margin, y + 44);
+    }
   }
 
   // Three value tiers

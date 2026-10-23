@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { signPhotoUrls } from "@/lib/photos";
+import { hasPhotos } from "@/lib/askingPrice";
 
 
 type SortKey = "newest" | "oldest" | "highest" | "lowest";
@@ -80,9 +81,10 @@ export default function Dashboard() {
   const avg = rows.length
     ? Math.round(rows.reduce((s, r) => s + (r.private_value || 0), 0) / rows.length)
     : 0;
-  const avgCondition = rows.length
-    ? (rows.reduce((s, r) => s + (r.condition_score || 0), 0) / rows.length).toFixed(1)
-    : "—";
+  const scored = rows.filter((r) => r.condition_score != null && hasPhotos(r.photo_urls));
+  const avgCondition = scored.length
+    ? (scored.reduce((s, r) => s + (r.condition_score || 0), 0) / scored.length).toFixed(1)
+    : null;
 
   const firstName = user?.email?.split("@")[0]?.replace(/[^a-zA-Z]/g, "") || "there";
   const greeting = (() => {
@@ -152,7 +154,7 @@ export default function Dashboard() {
         <section className="grid grid-cols-3 gap-3 mb-8">
           <StatCard icon={<Car className="h-3.5 w-3.5" />} label="Reports" value={String(total)} />
           <StatCard icon={<TrendingUp className="h-3.5 w-3.5" />} label="Avg value" value={total ? `£${avg.toLocaleString()}` : "—"} />
-          <StatCard icon={<Activity className="h-3.5 w-3.5" />} label="Avg condition" value={total ? `${avgCondition}/10` : "—"} />
+          <StatCard icon={<Activity className="h-3.5 w-3.5" />} label="Avg condition" value={avgCondition ? `${avgCondition}/10` : "—"} />
         </section>
 
         {/* List header with search + sort */}
@@ -297,7 +299,7 @@ export default function Dashboard() {
                           )}
                           <span className="opacity-30">•</span>
                           <span>{format(new Date(r.created_at), "d MMM yyyy")}</span>
-                          {r.condition_score != null && (
+                          {r.condition_score != null && hasPhotos(r.photo_urls) && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-semibold tabular-nums ml-0.5">
                               <Activity className="h-2.5 w-2.5" />
                               {Number(r.condition_score).toFixed(1)}/10

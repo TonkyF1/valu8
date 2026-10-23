@@ -1,4 +1,5 @@
-import { askRange, sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
+import { sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
+import { suggestedAskRange, hasPhotos } from "@/lib/askingPrice";
 import { fixableUpside as computeFixableUpside } from "../../supabase/functions/_shared/photo-insights";
 import { marketConfidenceTier } from "../../supabase/functions/_shared/pricing";
 import { displayMake, displayModel, normaliseFuel, vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
@@ -305,8 +306,9 @@ export default function Report() {
 
         {/* Hero Verdict — first thing the user sees */}
         {!valuationUnavailable && (() => {
-          const verdict =
-            r.conditionScore >= 8
+          const verdict = !hasPhotos(v.photo_urls)
+              ? { label: "Ready to sell privately", tone: "primary" as const, sub: "Add photos for a condition score and sharper pricing." }
+              : r.conditionScore >= 8
               ? { label: "Strong position to sell", tone: "primary" as const, sub: "Quality examples like this move fast." }
               : r.conditionScore >= 6.5
               ? { label: "Good value — sell privately", tone: "primary" as const, sub: "Price honestly and lead with photos + history." }
@@ -357,8 +359,9 @@ export default function Report() {
 
         {/* Quick Summary — confident verdict + scannable bullets + trust strip */}
         {!valuationUnavailable && (() => {
-          const verdict =
-            r.conditionScore >= 8
+          const verdict = !hasPhotos(v.photo_urls)
+              ? { label: "Sell privately", tone: "primary" as const, line: "A private sale usually gets the most money. Add photos to get a condition score and a sharper price." }
+              : r.conditionScore >= 8
               ? { label: "Sell privately", tone: "primary" as const, line: "A clean private sale is your best route — quality examples like this attract serious buyers fast." }
               : r.conditionScore >= 6.5
               ? { label: "Sell privately", tone: "primary" as const, line: "Worth a private sale, but price honestly and lead with photos + history to build trust." }
@@ -393,14 +396,18 @@ export default function Report() {
                   <li className="flex gap-2.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
-                      Realistic private sale: <strong className="tabular-nums text-foreground">£{r.values.privateSale.toLocaleString()}</strong>
+                      Realistic private sale (estimate): <strong className="tabular-nums text-foreground">£{r.values.privateSale.toLocaleString()}</strong>
                     </span>
                   </li>
                   <li className="flex gap-2.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
-                      Condition: <strong className="text-foreground">{r.conditionLabel}</strong>
-                      <span className="text-muted-foreground"> · {r.conditionScore}/10</span>
+                      {hasPhotos(v.photo_urls) ? (
+                        <>Condition: <strong className="text-foreground">{r.conditionLabel}</strong>
+                        <span className="text-muted-foreground"> · {r.conditionScore}/10</span></>
+                      ) : (
+                        <>Condition: <span className="text-muted-foreground">add photos for a condition score</span></>
+                      )}
                     </span>
                   </li>
                   <li className="flex gap-2.5">
@@ -513,7 +520,7 @@ export default function Report() {
                   <CountUp value={r.values.privateSale} prefix="£" />
                 </div>
                 <p className="text-[12px] text-muted-foreground mt-2 max-w-[44ch]">
-                  Realistic private sale in today's UK market.
+                  Our estimate of a realistic private sale in today's UK market.
                 </p>
 
                 {/* Live data ticker */}
@@ -633,8 +640,8 @@ export default function Report() {
             {!valuationUnavailable && (() => {
               const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
               const spread = Math.max(250, Math.round(base * 0.035 / 50) * 50);
-              // Ask range always starts at or above the realistic private figure.
-              const { low: rangeLow, high: rangeHigh } = askRange(r.values.privateSale, base);
+              // Ask range starts above the realistic private figure (+5% to +15%).
+              const { low: rangeLow, high: rangeHigh } = suggestedAskRange(r.values.privateSale);
               const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
               const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
               const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
@@ -667,7 +674,7 @@ export default function Report() {
                       <div
                         className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-muted-foreground/30"
                         style={{ left: `${marketLeft}%`, width: `${marketWidth}%` }}
-                        aria-label="Live market range"
+                        aria-label="Estimated private-sale range"
                       />
                       {/* asking range */}
                       <div
@@ -690,13 +697,13 @@ export default function Report() {
                     {/* Legend */}
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10.5px] text-muted-foreground">
                       <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-primary" /> Ask range</span>
-                      <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-muted-foreground/40" /> Live market</span>
+                      <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-muted-foreground/40" /> Est. private range</span>
                       <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full border-2 border-primary bg-background" /> Realistic sale</span>
                     </div>
                   </div>
 
                   <p className="text-[12px] text-muted-foreground mt-3 leading-relaxed max-w-[48ch]">
-                    Where you land depends on photos, history file and how quickly you need to sell. Comparable UK cars are asking between <span className="tabular-nums text-foreground/85">£{marketLow.toLocaleString()}</span> and <span className="tabular-nums text-foreground/85">£{marketHigh.toLocaleString()}</span>.
+                    Where you land depends on photos, history file and how quickly you need to sell. Our estimated private-sale range for this car is <span className="tabular-nums text-foreground/85">£{marketLow.toLocaleString()}</span> to <span className="tabular-nums text-foreground/85">£{marketHigh.toLocaleString()}</span>.
                   </p>
                 </div>
               );
@@ -711,7 +718,7 @@ export default function Report() {
                 </summary>
                 {(() => {
                   const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  const listAt = Math.round((base * 1.015) / 50) * 50;
+                  const listAt = suggestedAskRange(r.values.privateSale).high;
                   const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
                   const offerLow = Math.max(Math.round(r.values.privateSale * 0.95 / 50) * 50, Math.round((listAt - buffer * 1.6) / 50) * 50);
                   const offerHigh = Math.max(r.values.privateSale, Math.round((listAt - buffer * 0.7) / 50) * 50);
@@ -733,8 +740,8 @@ export default function Report() {
             )}
             {!valuationUnavailable && (
               <div className="grid grid-cols-2 gap-2 mt-5 pt-5 border-t border-border/60">
-                <MiniTier label="Trade-in" tag="Quick" tip="What a dealer pays you today. Fastest, lowest." value={r.values.dealerTradeIn} />
-                <MiniTier label="Retail" tag="Forecourt" tip="What a dealer would resell it for. Includes their margin." value={r.values.dealerRetail} />
+                <MiniTier label="Trade-in" tag="Estimate" tip="Our estimate of what a dealer would pay you today. Fastest, lowest." value={r.values.dealerTradeIn} />
+                <MiniTier label="Retail" tag="Estimate" tip="Our estimate of a dealer forecourt price. Includes their margin." value={r.values.dealerRetail} />
               </div>
             )}
           </div>
@@ -754,12 +761,26 @@ export default function Report() {
             ) : (
               <>
                 <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-4">Condition Score</div>
-                <div className="w-full max-w-[280px]">
-                  <ConditionGauge score={r.conditionScore} label={r.conditionLabel} />
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-4 max-w-[200px] leading-relaxed">
-                  Based on photos, mileage and history.
-                </p>
+                {hasPhotos(v.photo_urls) ? (
+                  <>
+                    <div className="w-full max-w-[280px]">
+                      <ConditionGauge score={r.conditionScore} label={r.conditionLabel} />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-4 max-w-[200px] leading-relaxed">
+                      Based on photos, mileage and history.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-8 w-8 text-muted-foreground/60 mb-3" aria-hidden />
+                    <p className="text-sm text-foreground/90 max-w-[220px] leading-relaxed">No photos uploaded, so we haven't scored condition.</p>
+                    {!isShared && (
+                      <Button asChild variant="outline" size="sm" className="mt-4 min-h-[44px]">
+                        <Link to={`/valuation/${v.id}/edit`}>Add photos for a condition score</Link>
+                      </Button>
+                    )}
+                  </>
+                )}
               </>
             )}
           </div>
@@ -1391,7 +1412,6 @@ function PhotoFeedback({
           </div>
           <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed max-w-[60ch] mb-4">
             We scanned every photo for value-affecting details — paint, panel gaps, wheels, interior wear, dashboard signals.
-            <span className="text-foreground/85"> AutoTrader, Parkers and AutoUncle don't do this.</span>
           </p>
 
           {/* Stat strip — bigger, more confident */}

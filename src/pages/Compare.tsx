@@ -7,8 +7,9 @@ import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import type { ValuationReport } from "@/lib/valuation";
 import { estimateUlez, estimateVed, summariseAdvisoryCosts } from "../../supabase/functions/_shared/insights";
+import { hasPhotos } from "@/lib/askingPrice";
 
-interface Row { id: string; make: string; model: string; year: number; mileage: number; registration: string | null; report: ValuationReport; created_at: string }
+interface Row { id: string; make: string; model: string; year: number; mileage: number; registration: string | null; report: ValuationReport; created_at: string; photo_urls?: unknown }
 
 const gbp = (n?: number | null) => (n == null || !Number.isFinite(n) ? "—" : `£${Math.round(n).toLocaleString("en-GB")}`);
 
@@ -23,7 +24,7 @@ function facts(v: Row) {
     ["Private sale", gbp(r.values?.privateSale)],
     ["Dealer retail", gbp(r.values?.dealerRetail)],
     ["Trade-in", gbp(r.values?.dealerTradeIn)],
-    ["Condition", r.conditionScore != null ? `${r.conditionScore}/100 (${r.conditionLabel})` : "—"],
+    ["Condition", r.conditionScore != null && hasPhotos(v.photo_urls) ? `${r.conditionScore}/10 (${r.conditionLabel})` : "Add photos to score"],
     ["Year", String(v.year)],
     ["Mileage", `${v.mileage.toLocaleString("en-GB")} mi`],
     ["Fuel", veh.fuelType ?? "—"],
@@ -43,7 +44,7 @@ export default function Compare() {
   useEffect(() => { document.title = "Compare cars — Valu8"; }, []);
   useEffect(() => {
     if (!user) return;
-    supabase.from("valuations").select("id, make, model, year, mileage, registration, report, created_at")
+    supabase.from("valuations").select("id, make, model, year, mileage, registration, report, created_at, photo_urls")
       .order("created_at", { ascending: false }).limit(100)
       .then(({ data }) => setRows((data ?? []) as unknown as Row[]));
   }, [user]);
