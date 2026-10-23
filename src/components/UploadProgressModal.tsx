@@ -17,7 +17,7 @@ const STEPS: { key: UploadPhase; label: string; sublabel: string }[] = [
 ];
 
 const REASSURANCES = [
-  "Comparing against 50,000+ live UK listings…",
+  "Comparing against live UK listings…",
   "Detecting panel condition and wheel wear…",
   "Factoring MOT history and recorded mileage…",
   "Calculating your strongest negotiation angle…",

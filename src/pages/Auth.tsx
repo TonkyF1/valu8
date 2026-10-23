@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TestModeBanner, Header } from "@/components/Layout";
 import { toast } from "sonner";
 import { Gauge, Mail, Lock, Sparkles } from "lucide-react";
+import { getAttribution } from "@/lib/attribution";
 
 const emailSchema = z.string().trim().email("Enter a valid email").max(255);
 const passwordSchema = z.string().min(8, "Min 8 characters").max(72);
@@ -63,7 +64,7 @@ export default function Auth() {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: `${window.location.origin}${postAuthPath()}`, captchaToken: captchaToken ?? undefined },
+          options: { emailRedirectTo: `${window.location.origin}${postAuthPath()}`, captchaToken: captchaToken ?? undefined, data: getAttribution() ? { first_touch: getAttribution() } : undefined },
         });
         resetCaptcha();
         if (error) throw error;

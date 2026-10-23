@@ -20,6 +20,7 @@ import {
   ShieldCheck, Sparkles, Clock, Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getAttribution } from "@/lib/attribution";
 
 interface LookupResult {
   registration: string;
@@ -298,7 +299,7 @@ export default function NewValuation() {
         photo_urls: photoUrls,
         condition_score: report.conditionScore,
         private_value: report.valuationUnavailable ? null : report.values.privateSale,
-        report: report as any,
+        report: { ...report, ...(getAttribution() ? { attribution: getAttribution() } : {}) } as any,
       }).select("id").single();
       if (error) throw error;
 

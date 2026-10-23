@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const STEPS = [
   { label: "Reading vehicle details", sub: "Pulling official DVSA record" },
-  { label: "Cross-referencing UK market data", sub: "50,000+ live listings scanned" },
+  { label: "Cross-referencing UK market data", sub: "Comparing live UK listings" },
   { label: "Analysing photos for condition", sub: "AI vision reading panels & wheels" },
   { label: "Computing three-tier valuation", sub: "Trade-in, private, and asking price" },
   { label: "Generating your full report", sub: "Building the data buyers can't argue with" },
