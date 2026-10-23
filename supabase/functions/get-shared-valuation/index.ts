@@ -72,7 +72,14 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ ...data, photo_urls: signed }),
+      JSON.stringify({
+        ...data,
+        // Owner-only sale feedback must never reach buyers.
+        report: data.report && typeof data.report === "object"
+          ? (({ saleFeedback: _sf, ...rest }) => rest)(data.report as Record<string, unknown>)
+          : data.report,
+        photo_urls: signed,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
