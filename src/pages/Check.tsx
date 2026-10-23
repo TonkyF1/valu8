@@ -35,9 +35,9 @@ export default function Check() {
   const navigate = useNavigate();
   const [f, setF] = useState<Form>(loadDraft);
   const [busy, setBusy] = useState(false);
-  const [res, setRes] = useState<(AdvertCheck & { asking: number; sample: number; basis: string }) | null>(null);
+  const [res, setRes] = useState<(AdvertCheck & { asking: number; sample: number; basis: string; source?: string }) | null>(null);
   const [noData, setNoData] = useState(false);
-  useSeo({ title: "Is this used car a fair price? Free advert price checker | Valu8", description: "Paste a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against live market data.", path: "/check" });
+  useSeo({ title: "Is this used car a fair price? Free advert price checker | Valu8", description: "Paste a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against UK market data.", path: "/check" });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +58,7 @@ export default function Check() {
       const d = data as any;
       const out = d?.verdict === "unknown" ? null : checkAdvert(asking, { low: d.low, mid: d.mid, high: d.high });
       if (!out) { setNoData(true); return; }
-      setRes({ ...out, asking, sample: d.sample, basis: d.basis });
+      setRes({ ...out, asking, sample: d.sample, basis: d.basis, source: d.source });
       try { posthog.capture?.("advert_check", { verdict: out.verdict, has_link: !!f.link }); } catch { /* optional */ }
       try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     } catch (err: any) {
@@ -86,7 +86,7 @@ export default function Check() {
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
           <SearchCheck className="h-7 w-7 text-primary shrink-0" aria-hidden /> Is this used car a fair price?
         </h1>
-        <p className="text-sm text-muted-foreground mt-2">Buying a used car? Copy in the details from AutoTrader, eBay, Gumtree or Facebook and we'll compare the asking price with similar cars listed in the UK right now, plus our private-sale estimate.</p>
+        <p className="text-sm text-muted-foreground mt-2">Buying a used car? Copy in the details from AutoTrader, eBay, Gumtree or Facebook and we'll compare the asking price with our estimate of what similar cars sell for in the UK, plus our private-sale estimate.</p>
 
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 mt-6">
           {field("make", "Make", { placeholder: "Skoda", autoComplete: "off", required: true })}
@@ -117,6 +117,9 @@ export default function Check() {
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Verdict</p>
                 <p className={`text-2xl font-semibold ${V.cls}`}>{V.label}</p>
+                {res.source !== "marketcheck" && (
+                  <span className="inline-block mt-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Estimate</span>
+                )}
               </div>
             </div>
             <p className="text-sm text-muted-foreground mt-3">{V.tip}</p>
@@ -139,7 +142,11 @@ export default function Check() {
                 <dd className="font-semibold tabular-nums mt-1">{gbp(res.retailLow)} – {gbp(res.retailHigh)}</dd>
               </div>
             </dl>
-            <p className="text-xs text-muted-foreground mt-3">Based on {res.sample} comparable listings ({res.basis}), mileage-adjusted. Private range is estimated from dealer asking prices. Doesn't account for this car's condition, spec or history.</p>
+            <p className="text-xs text-muted-foreground mt-3">{res.source === "marketcheck"
+              ? <>Based on {res.sample} comparable listings ({res.basis}), mileage-adjusted.</>
+              : res.source === "ai_estimate"
+                ? <>Estimate: AI market estimate, not live listings — treat as a guide only.</>
+                : <>Estimate from {res.basis}, not live listings.</>} Private range is estimated from dealer asking prices. Doesn't account for this car's condition, spec or history.</p>
             <div className="mt-5 flex flex-col sm:flex-row gap-2">
               <Button asChild variant="outline" className="min-h-[44px]"><Link to="/valuation/new">Get a full report with MOT history</Link></Button>
               <Button variant="ghost" className="min-h-[44px]" onClick={() => { setRes(null); setF(EMPTY); }}>Check another advert</Button>
