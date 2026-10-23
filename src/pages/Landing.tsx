@@ -10,8 +10,8 @@ import { CAR_MODELS } from "@/data/carModels";
 import { useSeo } from "@/lib/seo";
 
 const FAQS = [
-  { q: "How accurate is the valuation?", a: "Where there are enough live listings, prices are anchored to current UK dealer adverts for your make and model, corrected for your car's exact age and mileage. Every report shows its confidence level and how the figure was built." },
-  { q: "Where does the data come from?", a: "MOT history comes from the official DVSA database. Market prices come from live UK dealer listings where available, otherwise an AI market estimate that is clearly labelled. Photo condition checks are done by AI. Tax and ULEZ figures are estimates with links to the official checkers." },
+  { q: "How accurate is the valuation?", a: "Prices are estimated from thousands of real UK adverts in our database for your make and model, corrected for your car's exact age and mileage. Every report shows its confidence level and how the figure was built." },
+  { q: "Where does the data come from?", a: "MOT history comes from the official DVSA database. Market prices are estimates built from thousands of real UK adverts in our database plus an AI market estimate, and are clearly labelled as estimates. Photo condition checks are done by AI. Tax and ULEZ figures are estimates with links to the official checkers." },
   { q: "Is it really free?", a: "Yes. All features are free during early access and no card is needed." },
   { q: "Do I need photos?", a: "No, but adding a few lets us spot condition issues and selling points that move the price, and gives you better advert copy." },
   { q: "Who can see my valuation?", a: "Your valuations are private to your account unless you choose to share a report link. See our privacy policy for how data is handled." },
@@ -19,7 +19,7 @@ const FAQS = [
 ];
 
 const FEATURES = [
-  { icon: BadgePoundSterling, title: "Live market pricing", body: "Private-sale, trade-in and dealer figures anchored to current UK listings, where available, for your make, model, year and mileage." },
+  { icon: BadgePoundSterling, title: "Market-based pricing", body: "Private-sale, trade-in and dealer estimates built from thousands of real UK adverts in our database for your make, model, year and mileage." },
   { icon: Camera, title: "Photo condition check", body: "Upload a few photos and AI flags visible wear, damage and selling points that move the price." },
   { icon: FileCheck2, title: "Official DVSA MOT history", body: "Every test, advisory and failure, plus indicative repair-cost bands for current advisories." },
   { icon: Gauge, title: "Mileage consistency", body: "MOT mileage charted over time, with any drops flagged for a closer look." },
@@ -51,7 +51,7 @@ export default function Landing() {
               Know what your car is really worth
             </h1>
             <p className="text-[15px] sm:text-base md:text-lg text-muted-foreground mt-4 sm:mt-5 max-w-xl mx-auto leading-relaxed text-pretty">
-              Enter a reg. We check the official DVSA record, live UK listings and your photos, then give you a price you can defend.
+              Enter a reg. We check the official DVSA record, thousands of real UK adverts in our database and your photos, then give you a price you can defend.
             </p>
             <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 justify-center max-w-sm sm:max-w-none mx-auto">
               <Button asChild variant="hero" size="xl" className="w-full sm:w-auto min-h-[52px]">
@@ -91,7 +91,7 @@ export default function Landing() {
               ))}
             </dl>
             <ul className="mt-5 space-y-1.5 text-sm text-muted-foreground">
-              <li>• Priced from comparable live UK listings, each corrected to this car's age and mileage</li>
+              <li>• Priced from comparable UK adverts in our database, each corrected to this car's age and mileage</li>
               <li>• MOT: 6 passes, 2 minor advisories, mileage consistent</li>
               <li>• Photos: light scuff on rear bumper (−1%)</li>
               <li>• Suggested asking price, negotiation buffer and a ready-to-post advert</li>

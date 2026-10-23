@@ -99,7 +99,7 @@ export default function Report() {
   useSeo({
     title: `${seoVehicle} valuation | Valu8`,
     description: isShared
-      ? `Independent Valu8 valuation for this ${seoVehicle}, ${v ? `${v.mileage.toLocaleString("en-GB")} miles` : ""}.${seoValue} Based on live UK listings where available, DVSA MOT history and photo condition.`
+      ? `Independent Valu8 valuation for this ${seoVehicle}, ${v ? `${v.mileage.toLocaleString("en-GB")} miles` : ""}.${seoValue} Based on UK advert data, DVSA MOT history and photo condition.`
       : `Your Valu8 valuation report for this ${seoVehicle}.`,
     path: location.pathname,
     noindex: true,
@@ -115,7 +115,7 @@ export default function Report() {
         body: { make: v.make, model: v.model, year: v.year },
       })
       .then(({ data, error }) => {
-        if (error) return;
+        if (error || (data as any)?.error) return;
         const n = Number((data as any)?.totalCount);
         if (Number.isFinite(n)) setLiveCount(n);
       })
@@ -216,7 +216,7 @@ export default function Report() {
   const rarityReasons: string[] = [];
   // Only count *genuinely* thin markets — common cars routinely sit in the 25–80 range
   // for a specific year/model and should NOT trigger the specialist treatment.
-  if (liveCount != null && liveCount < 15) rarityReasons.push("very few comparable cars are listed in the UK right now");
+  if (liveCount != null && liveCount < 15) rarityReasons.push("very few comparable cars are on the UK market");
   if (carAge >= 25) rarityReasons.push("its age puts it into modern-classic territory");
   if (carAge <= 0 && liveCount != null && liveCount < 60) rarityReasons.push("it's a brand-new model with very limited resale data");
   if (mileageRatio < 0.25) rarityReasons.push("it has exceptionally low mileage for its age");
@@ -234,8 +234,9 @@ export default function Report() {
     (strongSingleSignal && rarityReasons.length >= 1) ||
     rarityReasons.length >= 3;
 
-  const liveConfidenceLine =
-    liveTier === "High"
+  const liveConfidenceLine = !isLiveListings
+    ? "An estimate built from our UK advert database and AI market analysis, not live listings."
+    : liveTier === "High"
       ? "Priced from a deep pool of live UK listings — a well-supported valuation."
       : liveTier === "Medium"
       ? "Based on a healthy sample of similar cars on the market right now."
@@ -754,7 +755,7 @@ export default function Report() {
 
             {!valuationUnavailable && liveCount == null && (
               <p className="text-[11px] text-muted-foreground/70 mt-3">
-                Valued using AI market analysis — fewer live comparables available for this model right now.
+                Valued using AI market analysis and our UK advert database.
               </p>
             )}
             {!valuationUnavailable && (

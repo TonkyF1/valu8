@@ -95,7 +95,7 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
       <div className="flex items-end justify-between mb-4 gap-3 flex-wrap">
         <div>
           <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">
-            Dealer asking prices · live UK listings
+            Dealer asking prices · UK adverts
           </h2>
           {avgPrice && valuation ? (
             <p className="text-xs text-muted-foreground/80 mt-1">
@@ -139,7 +139,7 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
       {loading && (
         <div className="rounded-2xl border border-border/50 bg-card/50 p-10 grid place-items-center text-muted-foreground text-sm gap-3">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          Searching live UK marketplaces…
+          Searching UK adverts…
         </div>
       )}
 
@@ -258,7 +258,7 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
         </>
       )}
       <p className="text-[10px] text-muted-foreground/60 mt-2">
-        Live market data from UK classifieds. Prices can change quickly.
+        Adverts from UK classifieds. Prices can change quickly.
       </p>
     </section>
   );
