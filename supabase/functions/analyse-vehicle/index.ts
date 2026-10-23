@@ -749,6 +749,11 @@ Deno.serve(async (req) => {
     // Round the anchor to a stable grain so small price wobbles in the sample
     // (one listing changing by £200) don't bleed into the final valuation.
     const anchorMedian = anchorMedianRaw > 0 ? roundToGrain(anchorMedianRaw) : 0;
+    // Median of the corrected comps, for labelling the mileage/age correction
+    // separately from the cheap-market lower-quantile step.
+    const anchorAdjMedian = anchorSubset.length >= 3
+      ? (compAdjustedAnchor(anchorSubset.map((l) => ({ price: l.price, miles: l.mileage, year: l.year })), pricedMiles, body.year, 0.5) ?? anchorMedianRaw)
+      : anchorMedianRaw;
     const compMedianMiles = anchorSubset.length >= 3 ? median(anchorSubset.map((l) => l.mileage).filter((m) => m > 0)) : null;
     const exampleListings = sortedByMileageDistance.slice(0, 3);
 
@@ -1003,10 +1008,12 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       const add = (label: string, impactPct: number, scope: LedgerItem["scope"] = "retail") => items.push({ label, impactPct, scope });
 
       const milesVsSample = pricedMiles / Math.max(mc.avgMiles ?? expectedMileage, 1);
-      const compCorrectionPct = rawMedianOfSubset > 0 && anchorMedianRaw > 0 ? Math.round((anchorMedianRaw / rawMedianOfSubset - 1) * 100) : 0;
+      const compCorrectionPct = rawMedianOfSubset > 0 && anchorAdjMedian > 0 ? Math.round((anchorAdjMedian / rawMedianOfSubset - 1) * 100) : 0;
       if (Math.abs(compCorrectionPct) >= 2) {
         add(compCorrectionPct < 0 ? "Higher mileage / older than comparables" : "Lower mileage / newer than comparables", compCorrectionPct, "anchor");
       }
+      const cheapMarketPct = anchorAdjMedian > 0 && anchorMedianRaw > 0 ? Math.round((anchorMedianRaw / anchorAdjMedian - 1) * 100) : 0;
+      if (cheapMarketPct <= -2) add("Budget market: priced on lower-middle of comparables", cheapMarketPct, "anchor");
 
       // --- MOT corrosion / failures (real DVSA signals). The advisory-count
       // deduction is skipped when corrosion already covers the advisories.

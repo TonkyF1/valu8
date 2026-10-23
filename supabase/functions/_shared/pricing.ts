@@ -28,15 +28,37 @@ export function compAdjustmentFactor(carMiles: number, carYear: number, comp: Co
   return f;
 }
 
-/** Median of comps after correcting each one to this car's mileage and year. */
-export function compAdjustedAnchor(comps: Comp[], carMiles: number, carYear: number): number | null {
+/** Linear-interpolated quantile of an ascending-sorted array. */
+export function quantileSorted(sorted: number[], q: number): number {
+  if (!sorted.length) return NaN;
+  const pos = clamp(q, 0, 1) * (sorted.length - 1);
+  const lo = Math.floor(pos), hi = Math.ceil(pos);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+}
+
+/**
+ * Quantile of the corrected comps used as the dealer anchor. Sub-£4k markets
+ * are about twice as dispersed (log-sd 0.27 vs 0.13 across 22 live tests):
+ * tidy, prepped forecourt cars at £2.5–3.5k sit beside £800–1,500 ones of the
+ * same age and mileage, so the median overstates what an ordinary example
+ * fetches. Cheap markets use the 35th percentile (leave-one-out tuned), blended
+ * linearly back to the median between a £3k and £5k median.
+ */
+export const CHEAP_ANCHOR_QUANTILE = 0.35;
+export function anchorQuantile(medianPrice: number): number {
+  const t = clamp((medianPrice - 3000) / 2000, 0, 1);
+  return CHEAP_ANCHOR_QUANTILE + (0.5 - CHEAP_ANCHOR_QUANTILE) * t;
+}
+
+/** Comps corrected to this car's mileage and year; median, or lower quantile in cheap markets. */
+export function compAdjustedAnchor(comps: Comp[], carMiles: number, carYear: number, quantile?: number): number | null {
   const vals = comps
     .filter((c) => Number.isFinite(c.price) && c.price > 0)
     .map((c) => c.price * compAdjustmentFactor(carMiles, carYear, c))
     .sort((a, b) => a - b);
   if (!vals.length) return null;
-  const mid = Math.floor(vals.length / 2);
-  return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
+  const med = quantileSorted(vals, 0.5);
+  return quantileSorted(vals, quantile ?? anchorQuantile(med));
 }
 
 /**
@@ -301,7 +323,7 @@ export function finalisePricing(p: {
 
 /** Old reports carry no scope — infer it from the label. */
 export function inferScope(label: string): AdjustmentScope {
-  if (/than comparables/i.test(label)) return "anchor";
+  if (/than comparables|budget market/i.test(label)) return "anchor";
   if (/\bMOT\b.*(expir|valid|months?|days?)|expir|very high mileage|narrow private/i.test(label) && !/advisor|corrosion|fail/i.test(label)) return "private";
   return "retail";
 }
