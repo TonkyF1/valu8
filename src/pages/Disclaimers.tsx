@@ -18,7 +18,7 @@ export default function Disclaimers() {
 
         <div className="space-y-4">
           <Card icon={<Sparkles className="h-4 w-4" />} title="AI-generated estimates">
-            Each report combines live UK listings and DVSA data with a general-purpose AI model that reads your photos and details. Results are indicative and will vary from actual sale prices depending on local demand, time of year, and buyer competition.
+            Each report combines UK adverts from our database and DVSA data with a general-purpose AI model that reads your photos and details. Results are indicative and will vary from actual sale prices depending on local demand, time of year, and buyer competition.
           </Card>
           <Card icon={<Database className="h-4 w-4" />} title="Data sources">
             Valuations are AI market estimates informed by our own UK comparable-sales data. MOT history is retrieved from the official DVSA MOT History API. Where any provider is unavailable we fall back to a realistic estimate and label it clearly inside the report.

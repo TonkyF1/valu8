@@ -14,7 +14,7 @@ export default function CarValue() {
   useSeo({
     title: car ? `What's my ${name} worth? Free ${name} valuation | Valu8` : "Car values | Valu8",
     description: car
-      ? `Free ${name} valuation using live UK listings, your MOT history and photos. See private sale, part-exchange and dealer values for your ${name}.`
+      ? `Free ${name} valuation using real UK adverts in our database, your MOT history and photos. See private sale, part-exchange and dealer values for your ${name}.`
       : "Free UK car valuations.",
     path: car ? `/car-values/${car.makeSlug}/${car.slug}` : "/car-values",
   });
@@ -43,7 +43,7 @@ export default function CarValue() {
         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">What's my {name} worth?</h1>
         <p className="text-muted-foreground mt-4 leading-relaxed">
           Get a free, honest valuation for your {name} in a couple of minutes. We check the official DVSA MOT record,
-          compare your car with live UK listings for the same model, and read your photos for condition, then give you
+          compare your car with real UK adverts for the same model in our database, and read your photos for condition, then give you
           private sale, part-exchange and dealer retail figures.
         </p>
         <div className="mt-6 flex flex-col sm:flex-row gap-3">

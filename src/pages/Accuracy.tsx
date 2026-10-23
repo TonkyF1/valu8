@@ -81,7 +81,7 @@ export default function Accuracy() {
 
         <section className="mt-8">
           <h2 className="font-semibold flex items-center gap-2"><FlaskConical className="h-4 w-4 text-primary" aria-hidden /> Blind tests against real adverts</h2>
-          <p className="text-sm text-muted-foreground mt-1">We valued live adverts without looking at the price. These compare our private-sale estimate with the dealer <em>asking</em> price, not a sold price. Dealer asking prices normally sit well above private sale.</p>
+          <p className="text-sm text-muted-foreground mt-1">We valued real UK adverts without looking at the price. These compare our private-sale estimate with the dealer <em>asking</em> price, not a sold price. Dealer asking prices normally sit well above private sale.</p>
           <div className="grid gap-3 mt-4">
             {BLIND_TESTS.map((t) => {
               const gap = Math.round(((t.asking - t.predicted) / t.predicted) * 100);

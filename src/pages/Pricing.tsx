@@ -22,7 +22,7 @@ const FREE = [
 ];
 
 const PREMIUM = [
-  "Priced against live UK listings where available",
+  "Priced against thousands of real UK adverts in our database",
   "AI photo condition score and what it does to the price",
   "Suggested asking price and negotiation buffer",
   "Ready-to-post marketplace advert",
@@ -40,7 +40,7 @@ export default function Pricing() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [busy, setBusy] = useState<"checkout" | "portal" | null>(null);
-  useSeo({ title: "Pricing — Valu8", description: "Valu8 is free during early access: valuations using live UK market data where available, MOT history, photo condition analysis and ready-to-post adverts.", path: "/pricing" });
+  useSeo({ title: "Pricing — Valu8", description: "Valu8 is free during early access: valuations using UK market data from our advert database, MOT history, photo condition analysis and ready-to-post adverts.", path: "/pricing" });
   useEffect(() => { if (params.get("billing") === "cancelled") toast("Checkout cancelled"); }, [params]);
 
   const go = async (fn: "stripe-checkout" | "stripe-portal") => {
