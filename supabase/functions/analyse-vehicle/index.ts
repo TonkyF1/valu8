@@ -13,6 +13,7 @@ import {
 } from "../_shared/valuation-math.ts";
 import { motStatus, motAdjustment, currentMotExpiry, failedWithoutValidMot, sanitizeMotClaim, isFalseLongMotClaim, motDaysRemaining, motConsistentBullets } from "../_shared/mot.ts";
 import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts";
+import { detectPerformanceVariant, filterCompsByPerformance, downgradeConfidence, type PerfVariant, type PerfMatch } from "../_shared/performance.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
 
@@ -108,6 +109,75 @@ async function fetchMarketCheckPricing(
     if (r && r.listings.length > (best?.listings.length ?? 0)) best = r;
   }
   return best;
+}
+
+// Performance variants: the generic tiers return the first 50 listings sorted
+// by mileage, which for e.g. a Megane are almost all GT Line / dCi. Pull an
+// extra price-descending pool across +/-2 years so enough like-for-like
+// performance comps are available to filter on.
+async function fetchPerformancePool(make: string, model: string, year: number): Promise<ComparableListing[]> {
+  if (!MC_KEY) return [];
+  const baseModel = model.split(" · ")[0].split("·")[0].trim();
+  const out: ComparableListing[] = [];
+  for (const start of [0, 50]) {
+    const params = new URLSearchParams({
+      api_key: MC_KEY, make, model: baseModel, year_range: `${year - 2}-${year + 2}`,
+      rows: "50", start: String(start), car_type: "used", sort_by: "price", sort_order: "desc",
+    });
+    try {
+      const r = await fetchWithRetry(`https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`);
+      if (!r.ok) { await r.body?.cancel(); break; }
+      const j = await r.json();
+      const items: any[] = Array.isArray(j?.listings) ? j.listings : [];
+      out.push(...items.map(toComparable).filter((l): l is ComparableListing => !!l));
+      if (items.length < 50) break;
+    } catch (e) { console.error("MarketCheck performance pool error", e); break; }
+  }
+  return out;
+}
+
+function toComparable(it: any): ComparableListing | null {
+  if (!(Number(it?.price) > 0 && Number(it?.build?.year) > 0)) return null;
+  const l: ComparableListing = {
+    price: Math.round(Number(it.price)),
+    mileage: Math.round(Number(it.miles ?? 0)),
+    year: Number(it.build.year),
+    trim: it.build?.trim || undefined,
+    location: it.dealer?.city || it.dealer?.county || undefined,
+    source: it.source || "MarketCheck",
+    url: it.vdp_url || undefined,
+    fuelType: it.build?.fuel_type || undefined,
+    transmission: it.build?.transmission || undefined,
+  };
+  return l.price >= 200 && l.mileage >= 0 ? l : null;
+}
+
+/** Adds the performance pool to the generic comps and keeps like-for-like ones. */
+export function applyPerformanceComps(
+  mc: MarketPricing | null, pool: ComparableListing[], perf: PerfVariant | null,
+): { mc: MarketPricing | null; match: PerfMatch | null; matchedCount: number } {
+  if (!perf) return { mc, match: null, matchedCount: 0 };
+  const seen = new Set<string>();
+  const merged = [...(mc?.listings ?? []), ...pool].filter((l) => {
+    const k = l.url || `${l.price}|${l.mileage}|${l.year}|${l.trim ?? ""}`;
+    if (seen.has(k)) return false; seen.add(k); return true;
+  });
+  const f = filterCompsByPerformance(merged, perf);
+  if (f.match === "fallback") return { mc, match: "fallback", matchedCount: f.matchedCount };
+  const prices = f.comps.map((l) => l.price);
+  const miles = f.comps.map((l) => l.mileage).filter((m) => m > 0);
+  return {
+    match: f.match, matchedCount: f.matchedCount,
+    mc: {
+      median: median(prices),
+      mean: prices.reduce((a, b) => a + b, 0) / prices.length,
+      p25: percentile(prices, 25), p75: percentile(prices, 75),
+      count: f.comps.length,
+      avgMiles: miles.length ? miles.reduce((a, b) => a + b, 0) / miles.length : undefined,
+      listings: f.comps,
+      matchTier: `${perf.label} like-for-like (${f.match === "specific" ? perf.specific?.label : "performance family"}) from ${merged.length} listings`,
+    },
+  };
 }
 
 async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
@@ -704,7 +774,8 @@ Deno.serve(async (req) => {
     // Fetch MOT history + MarketCheck pricing in parallel BEFORE calling the AI,
     // so we can feed real signals (corrosion advisories, fails, etc.) into the prompt.
     const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
-    const [mc, dvsa] = await Promise.all([
+    const perf = detectPerformanceVariant(body.make, body.model, body.variant, body.serviceNotes);
+    const [mcGeneric, dvsa, perfPool] = await Promise.all([
       fetchMarketCheckPricing(body.make, body.model, body.year, body.mileage, body.variant),
       body.registration && body.registration.trim().length >= 2
         ? fetchDvsaMotHistory(body.registration).catch((e) => {
@@ -712,7 +783,11 @@ Deno.serve(async (req) => {
             return { entries: [], error: "MOT service temporarily unavailable" } as const;
           })
         : Promise.resolve({ entries: [] as MotEntryOut[] }),
+      perf ? fetchPerformancePool(body.make, compSearchModels(body.make, body.model).slice(-1)[0] ?? body.model, body.year) : Promise.resolve([] as ComparableListing[]),
     ]);
+    const perfComps = applyPerformanceComps(mcGeneric, perfPool, perf);
+    const mc = perfComps.mc;
+    const perfFallback = !!perf && perfComps.match === "fallback";
 
     // Extract MOT signals — ONLY use the latest test for pricing / watchPoints
     const motEntries: MotEntryOut[] = [...(dvsa.entries ?? [])];
@@ -1140,6 +1215,13 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         confidenceReason = `Very few ${shortName}s on sale to compare against — this is a rough guide only.`;
       }
 
+      if (perf && perfFallback) {
+        // Never silently value a performance variant off its everyday siblings.
+        confidence = downgradeConfidence(confidence);
+        confidenceReason = `Only ${perfComps.matchedCount} ${perf.label} listing${perfComps.matchedCount === 1 ? "" : "s"} found, so this is based on wider ${body.model} listings and may undervalue a performance variant — treat as a rough guide.`;
+      } else if (perf) {
+        confidenceReason += ` Compared only against ${perf.specific?.label && perfComps.match === "specific" ? perf.specific.label : perf.label} listings.`;
+      }
       values = { dealerTradeIn, privateSale, dealerRetail };
       const baseRetail = ledger.baseRetail;
       marketBaseline = {
