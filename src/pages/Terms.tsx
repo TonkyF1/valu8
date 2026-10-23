@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
+import { CONTACT_EMAIL } from "@/lib/site";
+import { useSeo } from "@/lib/seo";
 
 export default function Terms() {
-  useEffect(() => { document.title = "Terms of Service — Valu8"; }, []);
+  useSeo({ title: "Terms of Service — Valu8", description: "The terms for using Valu8 car valuations.", path: "/terms" });
   return (
     <div className="min-h-screen flex flex-col">
       <TestModeBanner /><Header />
@@ -19,7 +21,7 @@ export default function Terms() {
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">2. The service</h2>
-            <p>Valu8 generates indicative AI valuations for used vehicles in the UK private sale market. The service is provided "as is" and is currently in Test Mode — all features are free.</p>
+            <p>Valu8 generates indicative AI valuations for used vehicles in the UK private sale market. The service is provided "as is" and is currently free during early access.</p>
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">3. Acceptable use</h2>
@@ -44,6 +46,10 @@ export default function Terms() {
           <section>
             <h2 className="text-lg font-semibold text-foreground">7. Governing law</h2>
             <p>These terms are governed by the laws of England &amp; Wales.</p>
+          </section>
+          <section>
+            <h2 className="text-lg font-semibold text-foreground">8. Contact</h2>
+            <p>Questions about these terms? Email <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>.</p>
           </section>
         </div>
       </main>

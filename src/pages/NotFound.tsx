@@ -3,9 +3,11 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { Compass, Home } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function NotFound() {
   const location = useLocation();
+  const { user } = useAuth();
   useEffect(() => {
     document.title = "Page not found — Valu8";
     console.warn("404:", location.pathname);
@@ -19,7 +21,7 @@ export default function NotFound() {
       <main id="main" className="flex-1 grid place-items-center px-4 pb-16">
         <div className="text-center max-w-md animate-fade-in-up">
           <div className="inline-flex h-14 w-14 rounded-2xl bg-primary/15 text-primary items-center justify-center mb-6">
-            <Compass className="h-7 w-7" />
+            <Compass className="h-7 w-7" aria-hidden />
           </div>
           <div className="text-xs uppercase tracking-[0.22em] text-primary font-semibold mb-2">404</div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gradient mb-3">
@@ -30,10 +32,10 @@ export default function NotFound() {
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
             <Button asChild variant="hero" size="lg">
-              <Link to="/dashboard"><Home className="h-4 w-4" /> Back to dashboard</Link>
+              <Link to={user ? "/dashboard" : "/"}><Home className="h-4 w-4" aria-hidden /> {user ? "Back to dashboard" : "Back to home"}</Link>
             </Button>
             <Button asChild variant="ghost" size="lg">
-              <Link to="/valuation/new">New valuation</Link>
+              <Link to="/valuation/new">Value a car</Link>
             </Button>
           </div>
         </div>
