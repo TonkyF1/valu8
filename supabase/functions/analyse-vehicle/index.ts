@@ -16,6 +16,7 @@ import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts
 import { detectPerformanceVariant, filterCompsByPerformance, downgradeConfidence, type PerfVariant, type PerfMatch } from "../_shared/performance.ts";
 import { shrinkThinAnchor, aiAgeFactor, THIN_COMP_FULL_WEIGHT } from "../_shared/calibration.ts";
 import { valueWithOwnComps } from "../_shared/ownCompsAdjust.ts";
+import { coherentPricing } from "../_shared/coherentPricing.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
 
@@ -1388,12 +1389,24 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const aiBuffer = Number(ai.negotiationBuffer) || 0;
     const minBuf = values.privateSale * 0.02;
     const maxBuf = values.privateSale * 0.08;
-    const negotiationBuffer = valuationUnavailable
+    let askRangeOut: { low: number; high: number } | undefined;
+    let negotiationBuffer = valuationUnavailable
       ? 0
       : roundTo50(clamp(aiBuffer > 0 ? aiBuffer : values.privateSale * 0.04, minBuf, maxBuf));
-    const recommendedAskingPrice = valuationUnavailable
-      ? 0
-      : roundTo50(values.privateSale + negotiationBuffer);
+    // Enforce one coherent model: trade < private range ∋ realistic ≤ ask ≤ retail.
+    let recommendedAskingPrice = 0;
+    if (!valuationUnavailable && values.privateSale > 0) {
+      const c = coherentPricing({
+        privateSale: values.privateSale, tradeIn: values.dealerTradeIn, retail: values.dealerRetail,
+        privateLow: rangeLow, privateHigh: rangeHigh, buffer: negotiationBuffer,
+      });
+      values = { dealerTradeIn: c.tradeIn, privateSale: c.privateSale, dealerRetail: c.retail };
+      rangeLow = c.privateLow;
+      rangeHigh = c.privateHigh;
+      negotiationBuffer = c.buffer;
+      recommendedAskingPrice = c.askLow;
+      askRangeOut = { low: c.askLow, high: c.askHigh };
+    }
     const listingPrice = recommendedAskingPrice || (valuationUnavailable ? 0 : roundToGrain(values.privateSale * 1.03));
 
     // Build factorsUp/Down: prefer AI output, fall back to deterministic adjustments.
@@ -1479,6 +1492,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       conditionLabel: ai.conditionLabel,
       values,
       valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
+      askRange: askRangeOut,
       valueReasoning: sanitizeNarrativeYears(valuationUnavailable ? pricingReasoning : ai.valueReasoning, body.year, CURRENT_YEAR, allowedNarrativeYears),
       marketConfidence: confidence,
       marketConfidenceReason: confidenceReason,
