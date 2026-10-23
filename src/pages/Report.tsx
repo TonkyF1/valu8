@@ -322,35 +322,9 @@ export default function Report() {
         </div>
 
 
-        {/* Hero Verdict — first thing the user sees */}
-        {!valuationUnavailable && (() => {
-          const verdict = !hasPhotos(v.photo_urls)
-              ? { label: "Ready to sell privately", tone: "primary" as const, sub: "Add photos for a condition score and sharper pricing." }
-              : r.conditionScore >= 8
-              ? { label: "Strong position to sell", tone: "primary" as const, sub: "Quality examples like this move fast." }
-              : r.conditionScore >= 6.5
-              ? { label: "Good value — sell privately", tone: "primary" as const, sub: "Price honestly and lead with photos + history." }
-              : { label: "Needs attention before listing", tone: "amber" as const, sub: "A few tidy-ups will lift your sale price." };
-          return (
-            <div className={cn(
-              "mb-4 inline-flex items-center gap-2.5 rounded-full border px-3.5 py-1.5 animate-fade-in-up backdrop-blur-sm",
-              verdict.tone === "primary"
-                ? "border-primary/35 bg-primary/10 text-primary"
-                : "border-amber-500/35 bg-amber-500/10 text-amber-300",
-            )}>
-              <span className={cn(
-                "h-1.5 w-1.5 rounded-full animate-pulse",
-                verdict.tone === "primary" ? "bg-primary" : "bg-amber-400",
-              )} />
-              <span className="text-[11px] uppercase tracking-[0.16em] font-semibold">Verdict: {verdict.label}</span>
-              <span className="hidden sm:inline text-[11px] text-foreground/70 font-normal normal-case tracking-normal">· {verdict.sub}</span>
-            </div>
-          );
-        })()}
-
         {/* Title */}
         <div className="mb-6 animate-fade-in-up">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold mb-1.5">Valuation Report</div>
+          <div className="text-[11px] uppercase tracking-wider text-primary font-semibold mb-1.5">Valuation Report</div>
           <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-gradient">
             {titleDisplay}
           </h1>
@@ -359,7 +333,7 @@ export default function Report() {
             {v.registration && <><span>•</span><span className="font-mono uppercase">{v.registration}</span></>}
             <span>•</span><span>{format(new Date(v.created_at), "d MMM yyyy")}</span>
             {(r as any).edited && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider">
                 <Pencil className="h-2.5 w-2.5" /> Edited
                 {(r as any).lastEditedAt && <span className="text-primary/70 normal-case font-normal">· {format(new Date((r as any).lastEditedAt), "d MMM")}</span>}
               </span>
@@ -370,10 +344,24 @@ export default function Report() {
               {(r as any).regenerationReason}
             </p>
           )}
-          <p className="mt-3 text-[10px] text-muted-foreground/60 max-w-[60ch]">
+          <p className="mt-3 text-[11px] text-muted-foreground/60 max-w-[60ch]">
             AI-assisted estimate. See full disclaimers below.
           </p>
         </div>
+
+        {/* Sticky summary — keeps the headline figure in view while reading the detail */}
+        {!valuationUnavailable && (
+          <div className="sticky top-16 z-30 -mx-4 sm:mx-0 mb-4 border-y sm:border sm:rounded-xl border-border/60 bg-background/85 backdrop-blur-xl px-4 py-2.5 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">{titleDisplay}</p>
+              <p className="text-xs text-muted-foreground">{v.mileage.toLocaleString("en-GB")} miles{v.registration ? ` · ${v.registration.toUpperCase()}` : ""}</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-[11px] font-medium text-muted-foreground">Private sale <span className="rounded border border-border px-1 py-px ml-0.5">Estimate</span></p>
+              <p className="text-lg font-bold tabular-nums text-primary">£{Math.round(normaliseReportPricing(r).privateSale).toLocaleString("en-GB")}</p>
+            </div>
+          </div>
+        )}
 
         {/* Quick Summary — confident verdict + scannable bullets + trust strip */}
         {!valuationUnavailable && (() => {
@@ -394,10 +382,10 @@ export default function Report() {
                 <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Quick Summary</h2>
+                    <h2 className="text-[11px] font-semibold uppercase tracking-wider text-primary">Quick Summary</h2>
                   </div>
                   <span className={cn(
-                    "inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] font-semibold px-2.5 py-1 rounded-full border",
+                    "inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full border",
                     verdict.tone === "primary"
                       ? "text-primary bg-primary/10 border-primary/30"
                       : "text-amber-300 bg-amber-500/10 border-amber-500/30",
@@ -448,7 +436,7 @@ export default function Report() {
                 </ul>
 
                 {/* Trust strip — the data moat made visible */}
-                <div className="mt-4 pt-3 border-t border-border/40 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                <div className="mt-4 pt-3 border-t border-border/40 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> DVSA MOT history</span>
                   <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> {marketSourceLabel}</span>
                   <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3 text-primary" /> AI vision condition</span>
@@ -503,17 +491,17 @@ export default function Report() {
 
             {/* Eyebrow + confidence pill */}
             <div className="flex items-center justify-between gap-2 mb-3 flex-wrap relative">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
+              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
                 {valuationUnavailable ? "Valuation status" : "Realistic Private Sale Price"}
               </span>
               {!valuationUnavailable && (
                 showSpecialistBadge ? (
-                  <span className="inline-flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] px-2.5 py-1 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
                     <ShieldCheck className="h-3 w-3" /> Expert insight
                   </span>
                 ) : (
                   <span className={cn(
-                    "inline-flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] px-2.5 py-1 rounded-full border font-semibold",
+                    "inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full border font-semibold",
                     liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
                     liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
                     liveTier === "Low" && "text-muted-foreground bg-muted/40 border-border",
@@ -568,7 +556,7 @@ export default function Report() {
                       <ShieldCheck className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[10.5px] uppercase tracking-[0.16em] text-primary font-semibold mb-1">
+                      <div className="text-[11px] uppercase tracking-wider text-primary font-semibold mb-1">
                         Expert Insight Applied
                       </div>
                       <p className="text-[12.5px] leading-[1.55] text-foreground/85">
@@ -592,7 +580,7 @@ export default function Report() {
                     where no Expert Insight badge is shown. Keeps transparency. */}
                 {!showSpecialistBadge && Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
                   <div className="mt-4 rounded-xl border border-border/60 bg-card/40 px-4 py-3">
-                    <div className="text-[10.5px] uppercase tracking-[0.16em] text-muted-foreground font-semibold mb-1.5">
+                    <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1.5">
                       Data used for this valuation
                     </div>
                     <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-foreground/75">
@@ -618,7 +606,7 @@ export default function Report() {
               </p>
             ) : (
               <details className="mt-4 group max-w-[44ch]">
-                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] font-semibold text-primary/90 hover:text-primary">
+                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold text-primary/90 hover:text-primary">
                   <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
                   Why this price
                 </summary>
@@ -678,8 +666,8 @@ export default function Report() {
               return (
                 <div className="mt-5 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.07] to-transparent px-4 py-4">
                   <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-primary/90 font-semibold">Suggested Asking Price</span>
-                    {!isShared && <span className="text-[10px] tabular-nums text-muted-foreground">Negotiation buffer ~£{buffer.toLocaleString()}</span>}
+                    <span className="text-[11px] uppercase tracking-wider text-primary/90 font-semibold">Suggested Asking Price</span>
+                    {!isShared && <span className="text-[11px] tabular-nums text-muted-foreground">Negotiation buffer ~£{buffer.toLocaleString()}</span>}
                   </div>
                   <div className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none tracking-tight">
                     £{rangeLow.toLocaleString()} – £{rangeHigh.toLocaleString()}
@@ -710,12 +698,12 @@ export default function Report() {
                         <span className="h-3.5 w-3.5 rounded-full bg-background border-2 border-primary shadow-[0_0_0_3px_hsl(176_100%_42%_/_0.18)]" />
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-1.5 text-[10px] tabular-nums text-muted-foreground/80">
+                    <div className="flex items-center justify-between mt-1.5 text-[11px] tabular-nums text-muted-foreground/80">
                       <span>Trade-in £{trackLow.toLocaleString()}</span>
                       <span>Retail £{trackHigh.toLocaleString()}</span>
                     </div>
                     {/* Legend */}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10.5px] text-muted-foreground">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-muted-foreground">
                       <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-primary" /> Ask range</span>
                       <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-muted-foreground/40" /> Est. private range</span>
                       <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full border-2 border-primary bg-background" /> Realistic sale</span>
@@ -732,7 +720,7 @@ export default function Report() {
             {/* Pro Tip — negotiation guidance (seller-only; hidden on buyer share links) */}
             {!valuationUnavailable && !isShared && (
               <details className="mt-3 group">
-                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] font-semibold text-amber-300/90 hover:text-amber-300">
+                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold text-amber-300/90 hover:text-amber-300">
                   <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
                   💡 Pro tip — listing & offers
                 </summary>
@@ -769,7 +757,7 @@ export default function Report() {
           <div className="lg:col-span-2 premium-card py-6 px-5 flex flex-col items-center justify-center text-center">
             {valuationUnavailable ? (
               <>
-                <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-4">Recommended route</div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-4">Recommended route</div>
                 <div className="rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-medium text-amber-300">
                   {limitedData ? "Limited data" : "Specialist / auction"}
                 </div>
@@ -781,7 +769,7 @@ export default function Report() {
               </>
             ) : (
               <>
-                <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-4">Condition Score</div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-4">Condition Score</div>
                 {hasPhotos(v.photo_urls) ? (
                   <>
                     <div className="w-full max-w-[280px]">
@@ -833,18 +821,6 @@ export default function Report() {
           );
         })()}
 
-
-        {/* Sale feedback: placed high so owners see it; real sale prices power /accuracy */}
-        {!isShared && user && (v as any).user_id === user.id && (
-          <SectionBoundary>
-            <SaleFeedbackCard
-              valuationId={v.id}
-              report={v.report}
-              estimate={(v.report as any)?.valuationUnavailable ? null : v.report?.values?.privateSale ?? null}
-              onSaved={(next) => setV((prev) => (prev ? { ...prev, report: next as unknown as ValuationReport } : prev))}
-            />
-          </SectionBoundary>
-        )}
 
         {/* Transparency: how the number was built, from stored figures only */}
         {(() => {
@@ -901,7 +877,7 @@ export default function Report() {
                 title="Strengths"
                 icon={Star}
                 badge={
-                  <span className="text-[10px] font-medium text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
+                  <span className="text-[11px] font-medium text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
                     {r.strengths.length}
                   </span>
                 }
@@ -922,11 +898,11 @@ export default function Report() {
                 defaultOpen={currentAdvisories.length >= 3 || !!r.motHistory?.some((m: any) => m.result === "Fail")}
                 badge={
                   currentAdvisories.length > 0 ? (
-                    <span className="text-[10px] font-medium text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-full px-2 py-0.5">
+                    <span className="text-[11px] font-medium text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-full px-2 py-0.5">
                       {currentAdvisories.length}
                     </span>
                   ) : (
-                    <span className="text-[10px] font-medium text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 rounded-full px-2 py-0.5">
+                    <span className="text-[11px] font-medium text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 rounded-full px-2 py-0.5">
                       Clean
                     </span>
                   )
@@ -973,8 +949,8 @@ export default function Report() {
               >
                 <div className="flex items-center gap-2">
                   <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">Previously Rectified Advisories</h2>
-                  <span className="text-[10px] text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">{oldAdvisories.length}</span>
+                  <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Previously Rectified Advisories</h2>
+                  <span className="text-[11px] text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">{oldAdvisories.length}</span>
                 </div>
                 <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showOldAdvisories && "rotate-180")} />
               </button>
@@ -986,7 +962,7 @@ export default function Report() {
                       <li key={i} className="flex gap-2.5 text-sm leading-snug text-muted-foreground">
                         <Check className="h-4 w-4 text-emerald-400 mt-0.5 flex-shrink-0" />
                         <span>{a}</span>
-                        <span className="text-[10px] text-emerald-400/80 ml-auto shrink-0">Fixed on latest MOT</span>
+                        <span className="text-[11px] text-emerald-400/80 ml-auto shrink-0">Fixed on latest MOT</span>
                       </li>
                     ))}
                   </ul>
@@ -1003,7 +979,7 @@ export default function Report() {
             icon={Megaphone}
             preview={`Where to sell, what to highlight, what to prepare`}
             badge={
-              <span className="text-[10px] font-medium text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">
+              <span className="text-[11px] font-medium text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">
                 3 guides
               </span>
             }
@@ -1032,13 +1008,13 @@ export default function Report() {
               badge={
                 <>
                   {r.motSource === "dvsa" && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium rounded-full px-2 py-0.5 border text-primary bg-primary/5 border-primary/30">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium rounded-full px-2 py-0.5 border text-primary bg-primary/5 border-primary/30">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                       Live DVSA
                     </span>
                   )}
                   {r.motHistory.length > 0 && (
-                    <span className="text-[10px] font-medium text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">
+                    <span className="text-[11px] font-medium text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">
                       {r.motHistory.length} {r.motHistory.length === 1 ? "test" : "tests"}
                     </span>
                   )}
@@ -1099,6 +1075,18 @@ export default function Report() {
         })()}
 
 
+        {/* Sale feedback: placed after the detail sections (end of the reading flow) so it does not interrupt the report; real sale prices power /accuracy */}
+        {!isShared && user && (v as any).user_id === user.id && (
+          <SectionBoundary>
+            <SaleFeedbackCard
+              valuationId={v.id}
+              report={v.report}
+              estimate={(v.report as any)?.valuationUnavailable ? null : v.report?.values?.privateSale ?? null}
+              onSaved={(next) => setV((prev) => (prev ? { ...prev, report: next as unknown as ValuationReport } : prev))}
+            />
+          </SectionBoundary>
+        )}
+
         <SectionBoundary>
           <VehicleInsights
             report={r}
@@ -1129,7 +1117,7 @@ export default function Report() {
         )}
 
         <footer className="mt-12 pt-6 border-t border-border/40">
-          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground/60 font-semibold mb-2">Legal</div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold mb-2">Legal</div>
           <p className="text-xs leading-relaxed text-muted-foreground/70">
             Sources: {isLiveListings ? "MarketCheck UK live listings" : "AI market estimate (live listings unavailable)"}, DVSA MOT history, AI photo analysis. Estimates are for guidance only — not financial advice or a guaranteed sale price. Always verify vehicle history and MOT independently before transacting.
           </p>
@@ -1201,7 +1189,7 @@ export default function Report() {
           />
 
           {/* Counter */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[11px] uppercase tracking-[0.14em] text-white/70 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[11px] uppercase tracking-wider text-white/70 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
             {lightboxIndex + 1} / {v.photo_urls.length}
           </div>
         </div>
@@ -1214,8 +1202,8 @@ function MiniTier({ label, tag, tip, value }: { label: string; tag: string; tip?
   const inner = (
     <div className="rounded-lg bg-muted/30 border border-border/50 px-3 py-2.5 transition-colors hover:border-border">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
-        <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70">{tag}</span>
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground/70">{tag}</span>
       </div>
       <div className="text-lg font-medium tabular-nums mt-0.5">£{value.toLocaleString()}</div>
     </div>
@@ -1233,7 +1221,7 @@ function Section({ title, right, children }: { title: string; right?: React.Reac
   return (
     <section className="mb-6 animate-fade-in-up">
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-        <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">{title}</h2>
+        <h2 className="text-[15px] font-semibold tracking-tight text-foreground">{title}</h2>
         {right}
       </div>
       <div className="rounded-2xl border border-border/50 bg-card/50 p-5 sm:p-6">
@@ -1291,7 +1279,7 @@ function CollapsibleSection({
             <div className="flex items-center gap-2 flex-wrap">
               <h2
                 className={cn(
-                  "text-sm font-medium uppercase tracking-[0.14em] transition-colors",
+                  "text-[15px] font-semibold tracking-tight transition-colors",
                   open ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
                 )}
               >
@@ -1329,7 +1317,7 @@ function CollapsibleSection({
 function RecBlock({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3 font-medium">{title}</div>
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-3 font-medium">{title}</div>
       <ul className="space-y-2">
         {items.map(i => (
           <li key={i} className="flex gap-2 text-sm">
@@ -1408,11 +1396,11 @@ function PhotoFeedback({
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg sm:text-xl font-semibold text-foreground tracking-tight">Vision AI Analysis</h2>
-                  <span className="text-[9px] uppercase tracking-[0.18em] px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
+                  <span className="text-[11px] uppercase tracking-wider px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
                     Valu8 exclusive
                   </span>
                 </div>
-                <div className="text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/80 mt-0.5">
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground/80 mt-0.5">
                   Powered by multimodal vision · {insights.length * 12}+ datapoints scanned
                 </div>
               </div>
@@ -1434,27 +1422,27 @@ function PhotoFeedback({
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div className="rounded-xl bg-background/40 border border-border/50 px-3 py-3 text-center">
               <div className="text-xl sm:text-2xl font-semibold tabular-nums text-foreground leading-none tracking-tight">{insights.length}</div>
-              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1.5">Observations</div>
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1.5">Observations</div>
             </div>
             <div className="rounded-xl bg-primary/[0.08] border border-primary/30 px-3 py-3 text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
               <div className="relative text-xl sm:text-2xl font-semibold tabular-nums text-primary leading-none tracking-tight">
                 {fixableUpside > 0 ? `+£${fixableUpside.toLocaleString()}` : "£0"}
               </div>
-              <div className="relative text-[10px] uppercase tracking-[0.12em] text-primary/90 mt-1.5 font-medium">Fixable upside</div>
+              <div className="relative text-[11px] uppercase tracking-wider text-primary/90 mt-1.5 font-medium">Fixable upside</div>
             </div>
             <div className="rounded-xl bg-background/40 border border-border/50 px-3 py-3 text-center">
               <div className="text-xl sm:text-2xl font-semibold tabular-nums text-foreground leading-none tracking-tight">
                 {notableCount + minorCount}
                 <span className="text-sm text-muted-foreground font-normal"> / {insights.length}</span>
               </div>
-              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground mt-1.5">Need attention</div>
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1.5">Need attention</div>
             </div>
           </div>
 
           {/* Mini-legend */}
           {(positiveCount > 0 || notableCount > 0 || minorCount > 0) && (
-            <div className="flex flex-wrap gap-x-3.5 gap-y-1 mt-3.5 text-[10.5px] text-muted-foreground">
+            <div className="flex flex-wrap gap-x-3.5 gap-y-1 mt-3.5 text-[11px] text-muted-foreground">
               {positiveCount > 0 && <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-primary" /> {positiveCount} value-add{positiveCount === 1 ? "" : "s"}</span>}
               {minorCount > 0 && <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> {minorCount} minor</span>}
               {notableCount > 0 && <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-red-400" /> {notableCount} notable</span>}
@@ -1509,7 +1497,7 @@ function PhotoFeedback({
                       />
                       {/* Top gradient + slot pill */}
                       <div className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/55 to-transparent pointer-events-none" />
-                      <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] font-semibold text-white">
+                      <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1 text-[11px] uppercase tracking-wider font-semibold text-white">
                         {SLOT_LABELS[slotKey] ?? "Photo"}
                       </div>
                       {/* Bottom gradient + impact + severity dots */}
@@ -1529,7 +1517,7 @@ function PhotoFeedback({
                             />
                           ))}
                           {items.length > 5 && (
-                            <span className="text-[9.5px] text-white/80 font-medium ml-0.5">+{items.length - 5}</span>
+                            <span className="text-[11px] text-white/80 font-medium ml-0.5">+{items.length - 5}</span>
                           )}
                         </div>
                         {photoImpact !== 0 && (
@@ -1547,7 +1535,7 @@ function PhotoFeedback({
                   ) : (
                     <div className="relative w-full aspect-[4/3] bg-muted/30 grid place-items-center">
                       <Camera className="h-5 w-5 text-muted-foreground" />
-                      <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-background/70 border border-border/60 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
+                      <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-background/70 border border-border/60 px-2.5 py-1 text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
                         {SLOT_LABELS[slotKey] ?? "Photo"}
                       </div>
                     </div>
@@ -1571,14 +1559,14 @@ function PhotoFeedback({
               {fixableUpside > 0 && (
                 <div className="rounded-xl bg-primary/[0.07] border border-primary/30 px-4 py-3 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.08] to-transparent pointer-events-none" />
-                  <div className="relative text-[10px] uppercase tracking-[0.14em] text-primary/90 mb-1 font-semibold">Potential upside</div>
+                  <div className="relative text-[11px] uppercase tracking-wider text-primary/90 mb-1 font-semibold">Potential upside</div>
                   <div className="relative text-lg font-semibold tabular-nums text-foreground">+£{fixableUpside.toLocaleString()}</div>
                   <div className="relative text-[11px] text-muted-foreground mt-0.5">If you tidy the {fixableCount} fixable item{fixableCount === 1 ? "" : "s"} before listing</div>
                 </div>
               )}
               {totalFixCost > 0 && (
                 <div className="rounded-xl bg-muted/20 border border-border/60 px-4 py-3">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mb-1 font-semibold">Estimated fix cost</div>
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1 font-semibold">Estimated fix cost</div>
                   <div className="text-lg font-semibold tabular-nums text-foreground/90">£{totalFixCost.toLocaleString()}</div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">Indicative trade prices, parts + labour</div>
                 </div>
@@ -1586,7 +1574,7 @@ function PhotoFeedback({
             </div>
           )}
 
-          <div className="mt-4 flex items-center justify-between gap-3 flex-wrap text-[10.5px] text-muted-foreground/80">
+          <div className="mt-4 flex items-center justify-between gap-3 flex-wrap text-[11px] text-muted-foreground/80">
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="h-3 w-3 text-primary/70" />
               AI-generated from visible evidence · always verify in person
@@ -1623,7 +1611,7 @@ function InsightRow({ insight }: { insight: PhotoInsight }) {
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {insight.priceImpact !== undefined && insight.priceImpact !== 0 && (
               <span className={cn(
-                "inline-flex items-center text-[10.5px] tabular-nums font-semibold rounded-md px-1.5 py-0.5 border",
+                "inline-flex items-center text-[11px] tabular-nums font-semibold rounded-md px-1.5 py-0.5 border",
                 insight.priceImpact > 0
                   ? "text-primary bg-primary/10 border-primary/30"
                   : "text-amber-300 bg-amber-500/10 border-amber-500/30",
@@ -1632,12 +1620,12 @@ function InsightRow({ insight }: { insight: PhotoInsight }) {
               </span>
             )}
             {insight.fixCost !== undefined && insight.fixCost > 0 && (
-              <span className="inline-flex items-center text-[10.5px] tabular-nums font-medium rounded-md px-1.5 py-0.5 border border-border/60 bg-muted/30 text-muted-foreground">
+              <span className="inline-flex items-center text-[11px] tabular-nums font-medium rounded-md px-1.5 py-0.5 border border-border/60 bg-muted/30 text-muted-foreground">
                 Fix ~£{insight.fixCost.toLocaleString()}
               </span>
             )}
             {insight.fixable && insight.priceImpact !== undefined && insight.priceImpact < 0 && (
-              <span className="inline-flex items-center text-[10px] font-semibold rounded-md px-1.5 py-0.5 border border-primary/30 bg-primary/5 text-primary/90 uppercase tracking-[0.12em]">
+              <span className="inline-flex items-center text-[11px] font-semibold rounded-md px-1.5 py-0.5 border border-primary/30 bg-primary/5 text-primary/90 uppercase tracking-wider">
                 Fixable
               </span>
             )}

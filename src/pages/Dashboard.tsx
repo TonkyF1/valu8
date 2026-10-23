@@ -124,7 +124,7 @@ export default function Dashboard() {
         {/* Welcome header */}
         <div className="mb-10 animate-fade-in-up">
           <div className="text-[10px] uppercase tracking-[0.22em] text-primary font-semibold mb-2">{greeting}</div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gradient capitalize">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gradient">
             Welcome back, {firstName}.
           </h1>
           <p className="text-muted-foreground mt-2 text-sm md:text-base max-w-lg">
@@ -341,9 +341,9 @@ export default function Dashboard() {
                     key={r.id}
                     className="group relative premium-card hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
                   >
-                    <Link to={`/valuation/${r.id}`} className="flex items-stretch gap-4 p-3 sm:p-4 pr-20 sm:pr-24">
+                    <Link to={`/valuation/${r.id}`} className="flex items-stretch gap-4 p-3 sm:p-4 pr-12 sm:pr-24">
                       {/* Thumbnail */}
-                      <div className="relative h-20 w-20 sm:h-24 sm:w-32 rounded-xl bg-muted overflow-hidden flex-shrink-0 ring-1 ring-border/60 shadow-soft">
+                      <div className="relative h-16 w-16 sm:h-24 sm:w-32 rounded-xl bg-muted overflow-hidden flex-shrink-0 ring-1 ring-border/60 shadow-soft">
                         {cover ? (
                           <img
                             src={cover}
@@ -371,7 +371,10 @@ export default function Dashboard() {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-x-2.5 gap-y-1 mt-1.5 text-[11.5px] text-muted-foreground flex-wrap">
+                        <p className="sm:hidden mt-1 text-base font-bold tabular-nums text-primary">
+                          {valuationUnavailable ? <span className="text-sm font-semibold text-amber-300">Specialist valuation recommended</span> : <>£{(r.private_value || 0).toLocaleString()} <span className="text-[11px] font-medium text-muted-foreground">private sale</span></>}
+                        </p>
+                        <div className="flex items-center gap-x-2.5 gap-y-1 mt-1.5 text-xs text-muted-foreground flex-wrap">
                           <span className="tabular-nums">{r.mileage.toLocaleString()} mi</span>
                           {r.registration && (
                             <>
@@ -406,8 +409,8 @@ export default function Dashboard() {
                       </div>
 
                       {/* Price */}
-                      <div className="text-right flex flex-col justify-center flex-shrink-0">
-                        <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+                      <div className="hidden sm:flex text-right flex-col justify-center flex-shrink-0">
+                        <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
                           {valuationUnavailable ? "Status" : "Private sale"}
                         </div>
                         {valuationUnavailable ? (
