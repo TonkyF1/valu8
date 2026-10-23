@@ -20,6 +20,8 @@ import { SITE_URL } from "@/lib/site";
 import { CalendarPlus, AlertTriangle, TrendingDown, Minus } from "lucide-react";
 
 
+const BILLING_ENABLED = import.meta.env.VITE_BILLING_ENABLED === "true";
+
 type SortKey = "newest" | "oldest" | "highest" | "lowest";
 
 interface Row {
@@ -149,6 +151,7 @@ export default function Dashboard() {
             </div>
           </Link>
 
+          {BILLING_ENABLED ? (
           <div className={`relative overflow-hidden rounded-2xl border p-5 ${
             isPremium ? "border-primary/40 bg-primary/5" : "border-border bg-card"
           }`}>
@@ -167,6 +170,17 @@ export default function Dashboard() {
               </Button>
             )}
           </div>
+          ) : (
+            <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-primary/5 p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-primary" aria-hidden />
+                <span className="text-sm font-medium">Free during early access</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Everything included: reports, PDFs, share links and adverts. No card needed.
+              </p>
+            </div>
+          )}
         </section>
 
         {/* MOT revalue reminders */}
