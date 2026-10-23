@@ -8,6 +8,13 @@
       "when": 1792711761961,
       "tag": "0000_launch_readiness",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792779264535,
+      "tag": "0001_own_comps_pool",
+      "breakpoints": true
     }
   ]
 }
