@@ -21,7 +21,7 @@ export default function Disclaimers() {
             Each report combines live UK listings and DVSA data with a general-purpose AI model that reads your photos and details. Results are indicative and will vary from actual sale prices depending on local demand, time of year, and buyer competition.
           </Card>
           <Card icon={<Database className="h-4 w-4" />} title="Data sources">
-            Live UK listing data is provided by MarketCheck (marketcheck.com). MOT history is retrieved from the official DVSA MOT History API. Where any provider is unavailable we fall back to a realistic estimate and label it clearly inside the report.
+            Valuations are AI market estimates informed by our own UK comparable-sales data. MOT history is retrieved from the official DVSA MOT History API. Where any provider is unavailable we fall back to a realistic estimate and label it clearly inside the report.
           </Card>
           <Card icon={<ShieldAlert className="h-4 w-4" />} title="Not financial advice">
             Valu8 reports do not constitute financial, legal, or commercial advice. Always carry out an independent vehicle history check and arrange a viewing/inspection before transacting.

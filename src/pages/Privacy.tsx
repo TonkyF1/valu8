@@ -48,7 +48,6 @@ export default function Privacy() {
               <li>Lovable Cloud / Supabase: hosting, database, sign-in and photo storage.</li>
               <li>Lovable AI gateway: reads your vehicle details and photos to produce the report. Submissions are not used to train external models.</li>
               <li>DVSA MOT History API and vehicle data lookups: fetch official records for the registration you enter.</li>
-              <li>MarketCheck: live UK listings used as comparables (no personal data is sent).</li>
               <li>Cloudflare Turnstile: bot protection on sign-in.</li>
               <li>PostHog (EU): analytics, only with your consent.</li>
             </ul>
