@@ -2,7 +2,7 @@
 import { writeFileSync } from "node:fs";
 import { CAR_MODELS } from "../src/data/carModels";
 
-const SITE = "https://valu8.lovable.app";
+const SITE = "https://valu8.uk";
 const STATIC: [string, string][] = [["/", "1.0"], ["/valuation/new", "0.9"], ["/buyer", "0.8"], ["/car-values", "0.8"], ["/pricing", "0.6"], ["/privacy", "0.3"], ["/terms", "0.3"], ["/disclaimers", "0.3"]];
 
 export function buildSitemap(): string {

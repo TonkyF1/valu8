@@ -19,4 +19,4 @@ Allow: /valuation/new
 Disallow: /valuation/
 Disallow: /shared/
 
-Sitemap: https://valu8.lovable.app/sitemap.xml
+Sitemap: https://valu8.uk/sitemap.xml
