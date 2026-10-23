@@ -34,7 +34,7 @@ export function drawShareCard(v: { year: number; make: string; model: string; mi
     g.fillStyle = "#ffffff"; g.font = "600 40px system-ui, sans-serif"; g.fillText("Specialist appraisal recommended", 72, 400);
   }
   g.fillStyle = "#71717a"; g.font = "400 22px system-ui, sans-serif";
-  g.fillText("Estimate based on live UK listings, DVSA MOT history and photos · valu8.uk", 72, 570);
+  g.fillText("Estimate based on UK advert data, DVSA MOT history and photos · valu8.uk", 72, 570);
   return c;
 }
 

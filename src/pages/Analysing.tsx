@@ -7,14 +7,14 @@ import { cn } from "@/lib/utils";
 
 const STEPS = [
   { label: "Reading vehicle details", sub: "Pulling official DVSA record" },
-  { label: "Cross-referencing UK market data", sub: "Comparing live UK listings" },
+  { label: "Cross-referencing UK market data", sub: "Comparing real UK adverts" },
   { label: "Analysing photos for condition", sub: "AI vision reading panels & wheels" },
   { label: "Computing three-tier valuation", sub: "Trade-in, private, and asking price" },
   { label: "Generating your full report", sub: "Building the data buyers can't argue with" },
 ];
 
 const REASSURANCES = [
-  "Comparing against live UK listings…",
+  "Comparing against real UK adverts…",
   "Detecting panel condition and wheel wear…",
   "Factoring MOT history and recorded mileage…",
   "Calculating your strongest negotiation angle…",

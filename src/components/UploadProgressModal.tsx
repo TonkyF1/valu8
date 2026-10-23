@@ -13,11 +13,11 @@ interface Props {
 const STEPS: { key: UploadPhase; label: string; sublabel: string }[] = [
   { key: "uploading", label: "Uploading photos", sublabel: "Securely sending your images" },
   { key: "analysing", label: "Reading photos & history", sublabel: "AI scanning condition, panels, wheels" },
-  { key: "generating", label: "Building your report", sublabel: "Cross-referencing live UK market data" },
+  { key: "generating", label: "Building your report", sublabel: "Cross-referencing UK market data" },
 ];
 
 const REASSURANCES = [
-  "Comparing against live UK listings…",
+  "Comparing against real UK adverts…",
   "Detecting panel condition and wheel wear…",
   "Factoring MOT history and recorded mileage…",
   "Calculating your strongest negotiation angle…",
