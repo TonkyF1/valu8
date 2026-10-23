@@ -115,8 +115,8 @@ Deno.serve(async (req) => {
   try {
     const { registration } = await req.json();
     const reg = String(registration ?? "").replace(/\s+/g, "").toUpperCase();
-    if (!reg || reg.length < 2 || reg.length > 8) {
-      return new Response(JSON.stringify({ error: "Invalid registration" }), {
+    if (!/^[A-Z0-9]{2,7}$/.test(reg) || !/[A-Z]/.test(reg) || !/[0-9]/.test(reg)) {
+      return new Response(JSON.stringify({ error: "That doesn't look like a valid UK registration." }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
     let dvsaFuel: string | undefined;
     let dvsaColour: string | undefined;
     let dvsaFirstReg: string | undefined;
+    let dvsaEngineCc: number | undefined;
 
     if (data) {
       const tests: any[] = Array.isArray(data?.motTests) ? data.motTests : [];
@@ -178,6 +179,7 @@ Deno.serve(async (req) => {
       dvsaModel = data?.model ? String(data.model).trim() : undefined;
       dvsaFuel = data?.fuelType ? String(data.fuelType) : undefined;
       dvsaColour = data?.primaryColour ? String(data.primaryColour) : undefined;
+      dvsaEngineCc = Number(data?.engineSize) || undefined;
 
       motExpiry = latest?.expiryDate ? String(latest.expiryDate).slice(0, 10) : undefined;
       { const d = motDaysRemaining(motExpiry); motStatus = d == null ? "Unknown" : d >= 0 ? "Valid" : "Expired"; }
@@ -204,7 +206,7 @@ Deno.serve(async (req) => {
       firstRegistered: dvsaFirstReg,
       fuelType: normaliseFuel(vdg?.fuelType ?? dvsaFuel),
       transmission: vdg?.transmission,
-      engineCapacity: vdg?.engineCapacity,
+      engineCapacity: vdg?.engineCapacity ?? dvsaEngineCc,
       bodyStyle: vdg?.bodyStyle,
       doors: vdg?.doors,
       colour: normaliseColour(vdg?.colour ?? dvsaColour),
@@ -217,6 +219,14 @@ Deno.serve(async (req) => {
       recentAdvisories: recentAdvisories.slice(0, 3),
       source: vdg && data ? "vdg+dvsa" : vdg ? "vdg" : "dvsa",
     };
+
+    // A response with no make/model would render as "Vehicle found" with blank
+    // fields; treat it as not found so the client shows an error instead.
+    if (!out.make || !out.model) {
+      return new Response(JSON.stringify({ error: "No vehicle found for that registration" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify(out), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
