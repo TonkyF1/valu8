@@ -190,7 +190,7 @@ export default function EditValuation() {
       };
       const changes = describeInputChanges(prevInputs, nextInputs);
       if (changes.length === 0) {
-        toast.info("Nothing has changed — valuation is locked. Edit a field or add a photo to refresh.");
+        toast.info("No changes made. Edit a detail or add photos to regenerate.");
         setRegenerating(false);
         return;
       }
