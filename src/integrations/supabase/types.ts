@@ -44,6 +44,66 @@ export type Database = {
         }
         Relationships: []
       }
+      market_listings: {
+        Row: {
+          created_at: string
+          flags: Json
+          fuel: string | null
+          gearbox: string | null
+          id: string
+          last_seen: string
+          listed_on: string
+          location: string | null
+          make: string
+          mileage: number
+          model: string
+          price: number
+          seller: string | null
+          source: string
+          source_url: string | null
+          variant: string | null
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          flags?: Json
+          fuel?: string | null
+          gearbox?: string | null
+          id: string
+          last_seen?: string
+          listed_on?: string
+          location?: string | null
+          make: string
+          mileage: number
+          model: string
+          price: number
+          seller?: string | null
+          source: string
+          source_url?: string | null
+          variant?: string | null
+          year: number
+        }
+        Update: {
+          created_at?: string
+          flags?: Json
+          fuel?: string | null
+          gearbox?: string | null
+          id?: string
+          last_seen?: string
+          listed_on?: string
+          location?: string | null
+          make?: string
+          mileage?: number
+          model?: string
+          price?: number
+          seller?: string | null
+          source?: string
+          source_url?: string | null
+          variant?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -98,6 +158,56 @@ export type Database = {
         }
         Relationships: []
       }
+      sale_feedback: {
+        Row: {
+          estimate_at_time: number | null
+          make: string
+          mileage: number
+          model: string
+          recorded_at: string
+          sale_price: number
+          sold_on: string | null
+          sold_to: string | null
+          valuation_id: string
+          variant: string | null
+          year: number
+        }
+        Insert: {
+          estimate_at_time?: number | null
+          make: string
+          mileage: number
+          model: string
+          recorded_at?: string
+          sale_price: number
+          sold_on?: string | null
+          sold_to?: string | null
+          valuation_id: string
+          variant?: string | null
+          year: number
+        }
+        Update: {
+          estimate_at_time?: number | null
+          make?: string
+          mileage?: number
+          model?: string
+          recorded_at?: string
+          sale_price?: number
+          sold_on?: string | null
+          sold_to?: string | null
+          valuation_id?: string
+          variant?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_feedback_valuation_id_fkey"
+            columns: ["valuation_id"]
+            isOneToOne: true
+            referencedRelation: "valuations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -118,6 +228,74 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      valuation_pool: {
+        Row: {
+          condition_score: number | null
+          created_at: string
+          declared_status: string | null
+          engine_version: string | null
+          fuel: string | null
+          gearbox: string | null
+          make: string
+          mileage: number
+          model: string
+          own_comps: Json | null
+          photo_count: number
+          price_private: number | null
+          price_source: string | null
+          spec: Json
+          valuation_id: string
+          variant: string | null
+          year: number
+        }
+        Insert: {
+          condition_score?: number | null
+          created_at?: string
+          declared_status?: string | null
+          engine_version?: string | null
+          fuel?: string | null
+          gearbox?: string | null
+          make: string
+          mileage: number
+          model: string
+          own_comps?: Json | null
+          photo_count?: number
+          price_private?: number | null
+          price_source?: string | null
+          spec?: Json
+          valuation_id: string
+          variant?: string | null
+          year: number
+        }
+        Update: {
+          condition_score?: number | null
+          created_at?: string
+          declared_status?: string | null
+          engine_version?: string | null
+          fuel?: string | null
+          gearbox?: string | null
+          make?: string
+          mileage?: number
+          model?: string
+          own_comps?: Json | null
+          photo_count?: number
+          price_private?: number | null
+          price_source?: string | null
+          spec?: Json
+          valuation_id?: string
+          variant?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "valuation_pool_valuation_id_fkey"
+            columns: ["valuation_id"]
+            isOneToOne: true
+            referencedRelation: "valuations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       valuations: {
         Row: {
@@ -169,6 +347,41 @@ export type Database = {
           year?: number
         }
         Relationships: []
+      }
+      vehicle_history_flags: {
+        Row: {
+          created_at: string
+          mot_flags: Json
+          source: string
+          stolen: boolean | null
+          valuation_id: string
+          write_off_category: string | null
+        }
+        Insert: {
+          created_at?: string
+          mot_flags?: Json
+          source?: string
+          stolen?: boolean | null
+          valuation_id: string
+          write_off_category?: string | null
+        }
+        Update: {
+          created_at?: string
+          mot_flags?: Json
+          source?: string
+          stolen?: boolean | null
+          valuation_id?: string
+          write_off_category?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_history_flags_valuation_id_fkey"
+            columns: ["valuation_id"]
+            isOneToOne: true
+            referencedRelation: "valuations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
