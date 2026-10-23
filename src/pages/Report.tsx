@@ -1,5 +1,5 @@
 import { sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
-import { suggestedAskRange, hasPhotos } from "@/lib/askingPrice";
+import { hasPhotos, normaliseReportPricing } from "@/lib/askingPrice";
 import { fixableUpside as computeFixableUpside } from "../../supabase/functions/_shared/photo-insights";
 import { marketConfidenceTier } from "../../supabase/functions/_shared/pricing";
 import { shareLink } from "@/lib/retention";
@@ -650,23 +650,18 @@ export default function Report() {
 
             {/* Suggested Asking Price — with visual price band */}
             {!valuationUnavailable && (() => {
-              const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-              const spread = Math.max(250, Math.round(base * 0.035 / 50) * 50);
-              // Ask range starts above the realistic private figure (+5% to +15%).
-              const { low: rangeLow, high: rangeHigh } = suggestedAskRange(r.values.privateSale);
-              const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
-              const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
-              const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
-              // Build the visual band — extend slightly past market bounds for breathing room
-              const trackLow = Math.min(marketLow, rangeLow) - Math.max(200, spread * 0.4);
-              const trackHigh = Math.max(marketHigh, rangeHigh) + Math.max(200, spread * 0.4);
+              const cp = normaliseReportPricing(r);
+              const { askLow: rangeLow, askHigh: rangeHigh, buffer, privateLow: marketLow, privateHigh: marketHigh } = cp;
+              // Slider scale always spans trade-in → retail.
+              const trackLow = cp.scaleLow;
+              const trackHigh = cp.scaleHigh;
               const trackSpan = Math.max(1, trackHigh - trackLow);
               const pct = (v: number) => Math.max(0, Math.min(100, ((v - trackLow) / trackSpan) * 100));
               const askLeft = pct(rangeLow);
-              const askWidth = Math.max(6, pct(rangeHigh) - askLeft);
+              const askWidth = Math.max(2, pct(rangeHigh) - askLeft);
               const marketLeft = pct(marketLow);
-              const marketWidth = Math.max(4, pct(marketHigh) - marketLeft);
-              const valLeft = pct(r.values.privateSale);
+              const marketWidth = Math.max(2, pct(marketHigh) - marketLeft);
+              const valLeft = pct(cp.privateSale);
               return (
                 <div className="mt-5 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.07] to-transparent px-4 py-4">
                   <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
@@ -703,8 +698,8 @@ export default function Report() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between mt-1.5 text-[10px] tabular-nums text-muted-foreground/80">
-                      <span>£{Math.round(trackLow / 100) * 100 >= 1000 ? `${Math.round(trackLow / 100) * 100 / 1000}k` : Math.round(trackLow / 100) * 100}</span>
-                      <span>£{Math.round(trackHigh / 100) * 100 >= 1000 ? `${Math.round(trackHigh / 100) * 100 / 1000}k` : Math.round(trackHigh / 100) * 100}</span>
+                      <span>Trade-in £{trackLow.toLocaleString()}</span>
+                      <span>Retail £{trackHigh.toLocaleString()}</span>
                     </div>
                     {/* Legend */}
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10.5px] text-muted-foreground">
@@ -729,16 +724,15 @@ export default function Report() {
                   💡 Pro tip — listing & offers
                 </summary>
                 {(() => {
-                  const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-                  const listAt = suggestedAskRange(r.values.privateSale).high;
-                  const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
-                  const offerLow = Math.max(Math.round(r.values.privateSale * 0.95 / 50) * 50, Math.round((listAt - buffer * 1.6) / 50) * 50);
-                  const offerHigh = Math.max(r.values.privateSale, Math.round((listAt - buffer * 0.7) / 50) * 50);
+                  const cp = normaliseReportPricing(r);
+                  const listAt = cp.askHigh;
+                  const offerLow = cp.privateLow;
+                  const offerHigh = Math.max(cp.privateSale, cp.askLow);
                   return (
                     <ul className="mt-3 space-y-1.5 text-[13px] leading-[1.55] text-[#E8E8E8]">
                       <li>• List at <strong className="tabular-nums">£{listAt.toLocaleString()}</strong> — small head-room without scaring buyers.</li>
                       <li>• Expect offers between <strong className="tabular-nums">£{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}</strong>.</li>
-                      <li>• Don't drop below <strong className="tabular-nums">£{r.values.privateSale.toLocaleString()}</strong> unless you need a fast sale.</li>
+                      <li>• Don't drop below <strong className="tabular-nums">£{cp.privateSale.toLocaleString()}</strong> unless you need a fast sale.</li>
                     </ul>
                   );
                 })()}
@@ -752,8 +746,8 @@ export default function Report() {
             )}
             {!valuationUnavailable && (
               <div className="grid grid-cols-2 gap-2 mt-5 pt-5 border-t border-border/60">
-                <MiniTier label="Trade-in" tag="Estimate" tip="Our estimate of what a dealer would pay you today. Fastest, lowest." value={r.values.dealerTradeIn} />
-                <MiniTier label="Retail" tag="Estimate" tip="Our estimate of a dealer forecourt price. Includes their margin." value={r.values.dealerRetail} />
+                <MiniTier label="Trade-in" tag="Estimate" tip="Our estimate of what a dealer would pay you today. Fastest, lowest." value={normaliseReportPricing(r).tradeIn} />
+                <MiniTier label="Retail" tag="Estimate" tip="Our estimate of a dealer forecourt price. Includes their margin." value={normaliseReportPricing(r).retail} />
               </div>
             )}
           </div>
