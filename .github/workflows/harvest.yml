@@ -1,0 +1,83 @@
+name: Harvest listings
+
+# Daily ~03:00 UK (cron is UTC: 02:00 UTC = 03:00 BST; 03:00 UTC = 03:00 GMT - both run, the
+# collector is idempotent per day). Weekly (Sunday) rebuild of ownCompsData.ts gated on held-out error.
+on:
+  schedule:
+    - cron: "0 2 * * *"
+    - cron: "0 3 * * *"
+    - cron: "30 4 * * 0"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "harvest | rebuild | both"
+        default: harvest
+
+permissions:
+  contents: write
+
+concurrency:
+  group: harvest
+  cancel-in-progress: false
+
+jobs:
+  harvest:
+    if: github.event_name == 'workflow_dispatch' && inputs.job != 'rebuild' || github.event_name == 'schedule' && github.event.schedule != '30 4 * * 0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Skip if already harvested today
+        id: done
+        run: |
+          if grep -q "\"date\":\"$(date -u +%F)\"" data/listings/runs.jsonl 2>/dev/null; then echo "skip=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Collect
+        if: steps.done.outputs.skip != 'true'
+        env:
+          MAX_PAGES: 450
+          MAX_MINUTES: 75
+          EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
+          EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/harvest/collect.mjs
+      - name: Commit data
+        if: steps.done.outputs.skip != 'true'
+        run: |
+          git config user.name "valu8-harvest-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A data/listings
+          git diff --cached --quiet || git commit -m "data: daily listings harvest $(date -u +%F) [skip ci]"
+          git pull --rebase && git push
+
+  rebuild:
+    if: github.event_name == 'workflow_dispatch' && inputs.job != 'harvest' || github.event.schedule == '30 4 * * 0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas numpy
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Rebuild + held-out gate
+        id: rb
+        run: |
+          scripts/owncomps/rebuild.sh | tee /tmp/rebuild.log
+      - name: Tests
+        run: deno test -A --node-modules-dir=none supabase/functions/_shared/
+      - name: Commit if accepted
+        run: |
+          if grep -q '^ACCEPTED' /tmp/rebuild.log; then
+            git config user.name "valu8-harvest-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add supabase/functions/_shared/ownCompsData.ts scripts/owncomps/last_eval.json
+            git diff --cached --quiet || git commit -m "own-comps: weekly data rebuild (held-out median not worse)"
+            git pull --rebase && git push
+          fi
