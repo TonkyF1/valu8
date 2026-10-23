@@ -11,7 +11,7 @@ function setMeta(selector: string, attr: "name" | "property", key: string, conte
 
 /** Client-side title/description/canonical. Google renders JS so this is indexed;
  *  social crawlers that don't run JS still see index.html defaults. */
-export function useSeo({ title, description, path }: { title: string; description: string; path: string }) {
+export function useSeo({ title, description, path, noindex = false }: { title: string; description: string; path: string; noindex?: boolean }) {
   useEffect(() => {
     const prevTitle = document.title;
     document.title = title;
@@ -23,6 +23,12 @@ export function useSeo({ title, description, path }: { title: string; descriptio
     if (!link) { link = document.createElement("link"); link.rel = "canonical"; document.head.appendChild(link); }
     const prevCanon = link.href;
     link.href = SITE_URL + path;
-    return () => { document.title = prevTitle; if (link) link.href = prevCanon; };
-  }, [title, description, path]);
+    let robots: HTMLMetaElement | null = null;
+    if (noindex) {
+      robots = document.createElement("meta");
+      robots.name = "robots"; robots.content = "noindex, follow";
+      document.head.appendChild(robots);
+    }
+    return () => { document.title = prevTitle; if (link) link.href = prevCanon; robots?.remove(); };
+  }, [title, description, path, noindex]);
 }
