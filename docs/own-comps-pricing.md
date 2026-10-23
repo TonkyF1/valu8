@@ -1,4 +1,4 @@
-# Own-comps pricing engine (owncomps-1) — SHADOW MODE
+# Own-comps pricing engine (owncomps-2) — SHADOW MODE
 
 Files: `supabase/functions/_shared/ownComps.ts` (engine), `ownCompsAdjust.ts` (adjustment modules + loader),
 `ownCompsData.ts` (892 cleaned UK asking prices, embedded), tests `_shared/ownComps.test.ts` (Deno) and `src/test/ownComps.test.ts` (vitest).
@@ -34,6 +34,24 @@ Cleaning: 1,000 rows → 899 (55 malformed/impossible incl. shifted valu8_tests 
 
 Main failure: cheap private cars (£500–£2k). The held set's private cars are much cheaper than training private cars of the same
 age/miles (median £2,125 vs £4,100); Gumtree "cheap" searches are price-capped, so the data is truncated and the engine overprices bargains.
+
+## owncomps-2 changes (23 Oct 2026)
+- New `van` segment (van model list + body text) so vans no longer price off cars; performance trims pool only with performance trims.
+- Age curve is piecewise-linear (hinges at 3/8/15 years) instead of quadratic, ridge-shrunk toward a pooled all-cars prior curve (`priorK=40`) so thin segments follow a sane depreciation shape and can't extrapolate upward for new cars.
+- Dealer vs private: dealer asks normalised as private = (dealer - 1500) / 1.10 (`DEALER_NORM`), replacing a dummy that put young-car dealer prices ~1.75x private.
+- Huber-weighted pooling, model-name resolution for unseen variants, confidence score built from effective comps, dispersion and nearest-year gap (make_segment/global capped at 0.3).
+- Data: +4,881 new Gumtree rows tonight (vans + newer/high-price breadth); master now 13,164 harvested + 1,000 seed, 13,301 training rows after cleaning.
+
+| Metric | Before (owncomps-1) | After (owncomps-2 + harvest) |
+|---|---|---|
+| Held-out median abs % err (n=79) | 22.7 | 17.2 |
+| Held-out mean | 28.3 | 24.1 |
+| Held-out within 15% | 37% | 47% |
+| 4-fold CV median | 22.0 | 18.9 |
+| Octavia vRS 2023 14.1k mi (real 26,250; AI 22,200) | 40,500 live | 27,850 dealer / 23,950 private |
+| Transit Custom 2025 (real 32,000; AI 20,750) | 24,050 live | 23,450 dealer / 19,950 private |
+
+Still **not promoted**: on the 9 rows where live used the AI fallback, own-comps median error is 36% vs AI 27%, so it stays in shadow.
 
 ## Adjustment modules
 | Module | Basis |

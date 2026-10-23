@@ -40,3 +40,21 @@ Deno.test("sold-price feedback comps pull the price (weighted)", () => {
   const sold = Array.from({ length: 3 }, () => ({ ...q, seller: "private", price: Math.round(base.privatePrice * 1.6), weight: 3 }));
   assert(valueWithOwnComps(q, sold).finalPrivate > base.finalPrivate);
 });
+Deno.test("vans get their own segment; perf queries never pool with other perf families", () => {
+  assertEquals(segmentOf("Ford", "Transit Custom", null), "van");
+  assertEquals(segmentOf("Citroen", "Berlingo Multispace", null), "mainstream");
+  const o = valueWithOwnComps({ make: "Skoda", model: "Octavia", variant: "vRS 2.0 TSI Estate", year: 2023, mileage: 14100 });
+  assertEquals(o.segment, "perf"); assert(o.level === "model" || o.level === "family", o.level);
+  assert(o.finalPrivate > 15000 && o.finalPrivate < 32000, String(o.finalPrivate));
+});
+Deno.test("unseen model strings resolve to a known model", () => {
+  const v = valueWithOwnComps({ make: "Skoda", model: "Octavia Estate", year: 2018, mileage: 60000 });
+  assertEquals(v.level, "model");
+});
+Deno.test("depreciation curve is monotone in age for nearly-new cars", () => {
+  let prev = Infinity;
+  for (const y of [2026, 2025, 2024, 2023, 2021, 2018, 2014]) {
+    const p = valueWithOwnComps({ make: "Zzz", model: "Nothing", year: y, mileage: (2026 - y) * 8000 + 1000 }).privatePrice;
+    assert(p <= prev, `${y}: ${p} > ${prev}`); prev = p;
+  }
+});

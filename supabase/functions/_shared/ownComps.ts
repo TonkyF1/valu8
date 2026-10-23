@@ -9,7 +9,7 @@ import { detectPerformanceVariant } from "./performance.ts";
 export interface CompListing {
   make: string; model: string; variant?: string; year: number; mileage: number;
   fuel?: string; gearbox?: string; seller?: "private" | "dealer" | string; price: number;
-  cat_sn?: boolean; non_runner?: boolean; no_mot?: boolean; desc?: string;
+  cat_sn?: boolean; non_runner?: boolean; no_mot?: boolean; desc?: string; body?: string;
   /** Comp weight: 1 = asking price; sold prices (sale feedback) should use 3. */
   weight?: number;
 }
@@ -18,11 +18,13 @@ export interface CompQuery {
   fuel?: string; gearbox?: string; adText?: string; cat_sn?: boolean; non_runner?: boolean; no_mot?: boolean;
   currentYear?: number;
 }
-export type OwnSegment = "perf" | "premium" | "mainstream";
+export type OwnSegment = "perf" | "premium" | "mainstream" | "van";
 export interface OwnCompsParams {
   version: string; refYear: number;
-  seg: Record<OwnSegment, { a: number; age: number; age2: number; mi: number }>;
+  seg: Record<OwnSegment, { a: number; age: number; h3: number; h8: number; h15: number; mi: number }>;
   dealer: number; privOld: number; hiMi: number; cond: number; auto: number; diesel: number;
+  /** Dealer normalisation: dealer ask = private * (1 + m) + F (fixed prep/warranty cost + margin). null = dummy-variable model. */
+  dn: { F: number; m: number } | null;
   sigma: number; trim: Record<string, number>; k: { model: number; family: number; makeSeg: number }; bw: { year: number; lnMi: number };
 }
 export interface OwnCompsResult {
@@ -58,8 +60,11 @@ function perfInfo(make: string, model: string, variant?: string, text?: string):
   if (p) return p.specific ? `${p.key}:${p.specific.label}` : p.key;
   return null;
 }
-export function segmentOf(make: string, model: string, perf: string | null): OwnSegment {
+// Light commercials: priced on their own curve (vans hold value far better than cars of the same age).
+const VAN_MODELS = /^(transit( custom| connect| courier)?|ranger|transporter|caddy( maxi)?|crafter|amarok|vito|sprinter|citan|vivaro|combo( cargo)?|movano|trafic|master|kangoo|expert|partner|boxer|dispatch|relay|proace( city)?|hilux|primastar|nv200|nv300|navara|doblo|ducato|talento|daily|l200|d-max|berlingo van)$/;
+export function segmentOf(make: string, model: string, perf: string | null, body?: string): OwnSegment {
   const mk = normMake(make), md = normModel(make, model);
+  if (/\bvan\b|pick[- ]?up|panel|crew cab|double cab|chassis/i.test(body ?? "") || (VAN_MODELS.test(md) && !(mk === "citroen" && md === "berlingo" && !/van/i.test(body ?? "")))) return "van";
   if (perf || PERF_MAKES.test(mk) || PERF_MODELS.test(md)) return "perf";
   return PREMIUM.test(mk) ? "premium" : "mainstream";
 }
@@ -68,14 +73,16 @@ interface Row { mk: string; md: string; fam: string; perf: string | null; seg: O
 
 export const trimTokens = (v?: string) => Array.from(new Set(String(v ?? "").toLowerCase().replace(/[^a-z+ ]/g, " ").split(/\s+/).filter((t) => t.length >= 2)));
 const lnMiles = (mi: number) => Math.log1p(Math.max(0, mi) / 10000);
-const SEGS: OwnSegment[] = ["perf", "premium", "mainstream"];
+const SEGS: OwnSegment[] = ["perf", "premium", "mainstream", "van"];
+const NSEGF = 6;
 
 function toRow(l: CompListing | CompQuery, refYear: number, price = 0, seller = "private"): Row {
   const mk = normMake(l.make), md = normModel(l.make, l.model);
   const text = (l as CompListing).desc ?? (l as CompQuery).adText ?? "";
   const perf = perfInfo(mk, md, l.variant, text);
+  const body = `${l.variant ?? ""} ${(l as CompListing).body ?? ""}`;
   return {
-    mk, md, fam: family(md), perf, seg: segmentOf(mk, md, perf),
+    mk, md, fam: family(md), perf, seg: segmentOf(mk, md, perf, body),
     age: Math.max(0, refYear - l.year), lnMi: lnMiles(l.mileage), dealer: seller === "dealer" ? 1 : 0,
     cond: l.cat_sn || l.non_runner || l.no_mot ? 1 : 0,
     auto: /auto|dsg|cvt|semi/i.test(l.gearbox ?? "") ? 1 : 0, diesel: /diesel/i.test(l.fuel ?? "") ? 1 : 0,
@@ -101,28 +108,48 @@ function ridge(X: number[][], y: number[], lambda: number[]): number[] {
 
 function feats(r: Row): number[] {
   const f: number[] = [];
-  for (const s of SEGS) { const on = r.seg === s ? 1 : 0; f.push(on, on * r.age, on * r.age * r.age / 10, on * r.lnMi); }
+  // Piecewise-linear depreciation in age (hinges at 3, 8, 15 years): monotone-friendly and does not
+  // explode when extrapolating to nearly-new cars the way a quadratic did.
+  const h = (k: number) => Math.max(0, r.age - k);
+  for (const s of SEGS) { const on = r.seg === s ? 1 : 0; f.push(on, on * r.age, on * h(3), on * h(8), on * h(15), on * r.lnMi); }
   f.push(r.dealer, r.cond, r.auto, r.diesel, (1 - r.dealer) * r.age, (1 - r.dealer) * r.lnMi);
   return f;
 }
 
+/** Fitted by grid search on held-in CV (scripts/owncomps): dealer ask ~ private x 1.10 + £1,500. */
+export const DEALER_NORM = { F: 1500, m: 0.10 };
 export interface OwnCompsModel { params: OwnCompsParams; rows: Row[] }
 
-export function fitOwnComps(train: CompListing[], opts: Partial<Pick<OwnCompsParams, "k" | "bw">> & { refYear?: number; trimK?: number } = {}): OwnCompsModel {
+export function fitOwnComps(train: CompListing[], opts: Partial<Pick<OwnCompsParams, "k" | "bw">> & { refYear?: number; trimK?: number; priorK?: number; dn?: { F: number; m: number } | null } = {}): OwnCompsModel {
   const refYear = opts.refYear ?? 2026;
-  const rows = train.filter((l) => l.price > 0 && l.year > 1980).map((l) => toRow(l, refYear, l.price, String(l.seller ?? "private")));
+  const dn = opts.dn === undefined ? DEALER_NORM : opts.dn;
+  const rows = train.filter((l) => l.price > 0 && l.year > 1980).map((l) => {
+    const seller = String(l.seller ?? "private");
+    if (!dn || seller !== "dealer") return toRow(l, refYear, l.price, seller);
+    // Dealer asks are converted to private-equivalent before fitting, so every comp speaks the same currency.
+    const r = toRow(l, refYear, l.price, seller); r.dealer = 0; r.lp = Math.log(Math.max(250, (l.price - dn.F) / (1 + dn.m))); return r;
+  });
   const X = rows.map(feats), y = rows.map((r) => r.lp);
-  const lam = X[0].map((_, j) => (j % 4 === 0 && j < 12 ? 1e-3 : 1)); // light ridge on slopes
-  const b = ridge(X, y, lam);
+  // Ridge: intercepts free; slopes shrunk toward a pooled "all cars" prior curve (fitted first) so thin
+  // segments (vans, few new cars) borrow the market's depreciation shape instead of extrapolating noise.
+  const S = SEGS.length * NSEGF;
+  const pooledX = X.map((x) => { const o = [1, 0, 0, 0, 0, 0]; for (let si = 0; si < SEGS.length; si++) for (let j = 1; j < NSEGF; j++) o[j] += x[si * NSEGF + j]; return [...o, ...x.slice(S)]; });
+  const pb = ridge(pooledX, y, pooledX[0].map((_, j) => (j === 0 ? 1e-3 : 1)));
+  const prior = X[0].map((_, j) => (j < S ? (j % NSEGF === 0 ? 0 : pb[j % NSEGF]) : 0));
+  const lamS = opts.priorK ?? 40;
+  const lam = X[0].map((_, j) => (j < S ? (j % NSEGF === 0 ? 1e-3 : lamS) : 1));
+  const yAdj = y.map((v, i) => v - X[i].reduce((a, x, j) => a + x * prior[j], 0));
+  const b = ridge(X, yAdj, lam).map((v, j) => v + prior[j]);
   const seg = {} as OwnCompsParams["seg"];
-  SEGS.forEach((s, i) => (seg[s] = { a: b[i * 4], age: b[i * 4 + 1], age2: b[i * 4 + 2], mi: b[i * 4 + 3] }));
+  SEGS.forEach((s, i) => (seg[s] = { a: b[i * NSEGF], age: b[i * NSEGF + 1], h3: b[i * NSEGF + 2], h8: b[i * NSEGF + 3], h15: b[i * NSEGF + 4], mi: b[i * NSEGF + 5] }));
+  const o = S;
   const params: OwnCompsParams = {
-    version: "owncomps-1", refYear, seg, dealer: b[12], cond: b[13], auto: b[14], diesel: b[15], privOld: b[16], hiMi: b[17], sigma: 0, trim: {},
+    version: "owncomps-2", refYear, seg, dn, dealer: b[o], cond: b[o + 1], auto: b[o + 2], diesel: b[o + 3], privOld: b[o + 4], hiMi: b[o + 5], sigma: 0, trim: {},
     k: opts.k ?? { model: 2, family: 3, makeSeg: 6 }, bw: opts.bw ?? { year: 2.5, lnMi: 0.45 },
   };
   let ss = 0;
   rows.forEach((r) => { r.res = r.lp - curve(params, r); ss += r.res * r.res; });
-  params.sigma = Math.sqrt(ss / Math.max(1, rows.length - 18));
+  params.sigma = Math.sqrt(ss / Math.max(1, rows.length - X[0].length));
   // Fitted trim uplift: token mean of residual vs its make+model mean, shrunk (k=10), min 8 uses.
   const mm = new Map<string, { s: number; n: number }>();
   rows.forEach((r) => { const k = r.mk + "|" + r.md; const v = mm.get(k) ?? { s: 0, n: 0 }; v.s += r.res!; v.n++; mm.set(k, v); });
@@ -134,24 +161,46 @@ export function fitOwnComps(train: CompListing[], opts: Partial<Pick<OwnCompsPar
 
 function curve(p: OwnCompsParams, r: Row): number {
   const s = p.seg[r.seg];
-  return s.a + s.age * r.age + s.age2 * r.age * r.age / 10 + s.mi * r.lnMi + p.dealer * r.dealer + p.cond * r.cond + p.auto * r.auto + p.diesel * r.diesel + p.privOld * (1 - r.dealer) * r.age + p.hiMi * (1 - r.dealer) * r.lnMi;
+  const h = (k: number) => Math.max(0, r.age - k);
+  return s.a + s.age * r.age + s.h3 * h(3) + s.h8 * h(8) + s.h15 * h(15) + s.mi * r.lnMi + p.dealer * r.dealer + p.cond * r.cond + p.auto * r.auto + p.diesel * r.diesel + p.privOld * (1 - r.dealer) * r.age + p.hiMi * (1 - r.dealer) * r.lnMi;
 }
 
-// Kernel-weighted residual mean over a pool, shrunk toward `prior` with pseudo-count k.
+// Kernel-weighted residual mean over a pool, shrunk toward `prior` with pseudo-count k. Huber-style
+// down-weighting of comps far from the prior stops one odd listing dragging a thin segment.
 function pooled(pool: Row[], q: Row, p: OwnCompsParams, prior: number, k: number) {
-  let sw = 0, swr = 0;
+  let sw = 0, swr = 0, sw2 = 0, gap = 99;
+  const hub = 2 * p.sigma;
   for (const c of pool) {
-    const w = Math.exp(-Math.abs(c.year - q.year) / p.bw.year - Math.abs(c.lnMi - q.lnMi) / p.bw.lnMi);
-    sw += w * c.w; swr += w * c.w * (c.res ?? 0);
+    const w0 = Math.exp(-Math.abs(c.year - q.year) / p.bw.year - Math.abs(c.lnMi - q.lnMi) / p.bw.lnMi);
+    const d = Math.abs((c.res ?? 0) - prior), w = w0 * c.w * (d > hub ? hub / d : 1);
+    sw += w; swr += w * (c.res ?? 0); sw2 += w * (c.res ?? 0) ** 2; gap = Math.min(gap, Math.abs(c.year - q.year));
   }
-  return { off: (swr + k * prior) / (sw + k), neff: sw };
+  const off = (swr + k * prior) / (sw + k);
+  const sd = sw > 0 ? Math.sqrt(Math.max(0, sw2 / sw - (swr / sw) ** 2)) : p.sigma;
+  return { off, neff: sw, sd, gap };
+}
+
+/** Map an unseen model string onto a known one: "octavia vrs estate" -> "octavia", "transit" -> "transit custom" only if nothing else. */
+function resolveModel(rows: Row[], mk: string, md: string): string {
+  const known = new Map<string, number>();
+  for (const c of rows) if (c.mk === mk) known.set(c.md, (known.get(c.md) ?? 0) + 1);
+  if (known.has(md) || !known.size) return md;
+  let best = "", bn = 0;
+  for (const [k, n] of known) if ((md.startsWith(k + " ") || md.replace(/[\s-]/g, "") === k.replace(/[\s-]/g, "")) && k.length > best.length) { best = k; bn = n; }
+  if (best && bn >= 2) return best;
+  for (const [k, n] of known) if (k.startsWith(md + " ") && n > bn) { best = k; bn = n; }
+  return bn >= 2 ? best : md;
 }
 
 export function priceOwnComps(model: OwnCompsModel, q: CompQuery): OwnCompsResult {
   const p = model.params, r = toRow(q, q.currentYear ?? p.refYear, 0, "private");
+  const rmd = resolveModel(model.rows, r.mk, r.md);
+  if (rmd !== r.md) { r.md = rmd; r.fam = family(rmd); }
   const samePerf = (c: Row) => (r.perf ? c.perf?.split(":")[0] === r.perf.split(":")[0] : !c.perf);
-  const makeSeg = model.rows.filter((c) => c.mk === r.mk && c.seg === r.seg);
-  const fam = makeSeg.filter((c) => c.fam === r.fam && samePerf(c));
+  // Make+segment pool only holds the same kind of car (no pooling an Octavia vRS with random perf cars,
+  // or a plain hatch with hot hatches); if that is empty we fall back to the segment depreciation curve.
+  const makeSeg = model.rows.filter((c) => c.mk === r.mk && c.seg === r.seg && samePerf(c));
+  const fam = makeSeg.filter((c) => c.fam === r.fam);
   let mod = fam.filter((c) => c.md === r.md);
   if (r.perf?.includes(":")) { const spec = mod.filter((c) => c.perf === r.perf); if (spec.length >= 2) mod = spec; }
   const L1 = pooled(makeSeg, r, p, 0, p.k.makeSeg);
@@ -162,10 +211,15 @@ export function priceOwnComps(model: OwnCompsModel, q: CompQuery): OwnCompsResul
   const level: OwnCompsResult["level"] = mod.length >= 2 ? "model" : fam.length >= 2 ? "family" : makeSeg.length >= 3 ? "make_segment" : "global";
   const lpPriv = curve(p, r) + off;
   const privatePrice = Math.round(Math.exp(lpPriv) / 50) * 50;
-  const dealerPrice = Math.round(Math.exp(curve(p, { ...r, dealer: 1 }) + off) / 50) * 50;
-  // Confidence from effective sample size at the most specific level + age extrapolation.
-  const neff = level === "model" ? L3.neff : level === "family" ? L2.neff : level === "make_segment" ? L1.neff * 0.3 : 0;
-  const score = Math.max(0, Math.min(1, neff / (neff + 3))) * (r.age > 25 ? 0.6 : 1);
+  const dealerPrice = p.dn ? Math.round((Math.exp(lpPriv) * (1 + p.dn.m) + p.dn.F) / 50) * 50 : Math.round(Math.exp(curve(p, { ...r, dealer: 1 }) + off) / 50) * 50;
+  // Confidence: effective comps at the most specific level, how scattered those comps are, and how far
+  // (in years) the nearest comp is from this car. make_segment / global levels are capped at Low.
+  const L = level === "model" ? L3 : level === "family" ? L2 : L1;
+  const neff = level === "global" ? 0 : L.neff * (level === "make_segment" ? 0.3 : 1);
+  const disp = Math.max(0, Math.min(1, (0.55 - L.sd) / 0.35));
+  const gapF = Math.exp(-Math.max(0, L.gap - 1) / 2);
+  let score = Math.max(0, Math.min(1, neff / (neff + 3))) * (0.4 + 0.6 * disp) * gapF * (r.age > 25 ? 0.6 : 1);
+  if (level === "make_segment" || level === "global") score = Math.min(score, 0.3);
   const confidence = score >= 0.6 ? "High" : score >= 0.4 ? "Medium" : score >= 0.15 ? "Low" : "Very Low";
   const spread = p.sigma * (1.3 - 0.6 * score);
   const nearest = (mod.length ? mod : fam.length ? fam : makeSeg).slice()
