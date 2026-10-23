@@ -3,25 +3,25 @@
  "overall": {
   "n": 79,
   "median": 22.7,
-  "mean": 29.1,
-  "within15": 39
+  "mean": 28.3,
+  "within15": 37
  },
  "under5kPrivate": {
   "n": 18,
   "median": 31.4,
-  "mean": 39.9,
+  "mean": 39.5,
   "within15": 22
  },
  "under5k": {
   "n": 32,
-  "median": 28.7,
-  "mean": 38.1,
-  "within15": 28
+  "median": 27.5,
+  "mean": 35.3,
+  "within15": 31
  },
  "private": {
   "n": 24,
   "median": 35,
-  "mean": 40.6,
+  "mean": 40.5,
   "within15": 17
  }
 }
