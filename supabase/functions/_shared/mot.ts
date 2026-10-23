@@ -90,3 +90,17 @@ export function motConsistentBullets(items: string[] | undefined, expiry: string
       : `Passed its last MOT cleanly, but it expires on ${fmtExpiry(expiry)} — renew before selling for the best price`];
   });
 }
+
+type MotEntryLite = { date?: string; result?: string; expiryDate?: string | null };
+
+/** Expiry of the most recent PASS (a failed test carries no expiry). */
+export function currentMotExpiry(entries: MotEntryLite[]): string | undefined {
+  return entries.find((e) => e.expiryDate)?.expiryDate ?? undefined;
+}
+
+/** Latest DVSA test is a fail with no pass after it and no MOT left: car can't legally be driven. */
+export function failedWithoutValidMot(entries: MotEntryLite[], now: Date = new Date()): boolean {
+  if (entries[0]?.result !== "Fail") return false;
+  const days = motDaysRemaining(currentMotExpiry(entries), now);
+  return days == null || days < 0;
+}

@@ -440,3 +440,26 @@ export function motPenaltyItems(tests: MotTestLite[], today: string): LedgerItem
   }
   return items;
 }
+
+// ---------------------------------------------------------------------------
+// Seller-declared status in free text (service notes / advert description).
+// Insurance write-off categories and spares-or-repair sales trade at a steep
+// discount to clean comps (MarketCheck comps are overwhelmingly clean cars).
+const NEGATED = /\b(no|not|never|isn'?t|wasn'?t|non)[\s-]+(an?\s+)?(cat(egory)?|write[- ]?off|spares)/i;
+export function declaredStatusItems(text: string | null | undefined): LedgerItem[] {
+  const t = (text ?? "").toLowerCase();
+  if (!t.trim()) return [];
+  const items: LedgerItem[] = [];
+  const cat = t.match(/\bcat(?:egory)?(?:\s+|\s*[-:]\s*)([sncd])\b/i);
+  if (cat && !NEGATED.test(t)) {
+    const c = cat[1].toUpperCase();
+    items.push({ label: `Insurance write-off (Cat ${c})`, impactPct: c === "S" || c === "C" ? -25 : -18, scope: "retail" });
+  } else if (/\b(written[- ]off|write[- ]off|insurance\s+loss)\b/i.test(t) && !/\b(never|not|no)\s+(been\s+)?(written|write|insurance)/i.test(t)) {
+    // Write-off declared without a category: treat as the milder Cat N.
+    items.push({ label: "Declared insurance write-off", impactPct: -18, scope: "retail" });
+  }
+  if (/\b(spares\s*(or|\/|&)\s*repairs?|non[- ]runner|for\s+spares)\b/i.test(t) && !/not\s+(a\s+)?(spares|non[- ]runner)/i.test(t)) {
+    items.push({ label: "Sold as spares or repair", impactPct: -30, scope: "retail" });
+  }
+  return items;
+}

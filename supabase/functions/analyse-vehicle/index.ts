@@ -11,9 +11,9 @@ import {
   sanitizeNarrativeYears, sanitizeNarrativeList, isEnthusiastCar, getExoticAnchor,
   isClearlyBadMarketData, computeMarketRange, type ConfidenceLevel,
 } from "../_shared/valuation-math.ts";
-import { motStatus, motAdjustment, sanitizeMotClaim, isFalseLongMotClaim, motDaysRemaining, motConsistentBullets } from "../_shared/mot.ts";
+import { motStatus, motAdjustment, currentMotExpiry, failedWithoutValidMot, sanitizeMotClaim, isFalseLongMotClaim, motDaysRemaining, motConsistentBullets } from "../_shared/mot.ts";
 import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts";
-import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, type LedgerItem } from "../_shared/pricing.ts";
+import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
 
 const PHOTO_BUCKET = "vehicle-photos";
@@ -703,7 +703,7 @@ Deno.serve(async (req) => {
 
     // Years legitimately allowed in narrative output: vehicle year, current
     // year, current+1, plus the real MOT expiry year (DVSA or user-provided).
-    const motExpiryYearFromDvsa = latestTest?.expiryDate ? Number(String(latestTest.expiryDate).slice(0, 4)) : undefined;
+    const motExpiryYearFromDvsa = currentMotExpiry(motEntries) ? Number(String(currentMotExpiry(motEntries)).slice(0, 4)) : undefined;
     const motExpiryYearFromUser = body.motExpiry ? Number(String(body.motExpiry).slice(0, 4)) : undefined;
     const allowedNarrativeYears: number[] = [];
     if (Number.isFinite(motExpiryYearFromDvsa)) allowedNarrativeYears.push(motExpiryYearFromDvsa as number);
@@ -1013,6 +1013,11 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       // Mild for routine "not seriously weakened" corrosion, strong for
       // serious/structural corrosion and failures in the last 12 months, capped.
       items.push(...motPenaltyItems(motEntries, new Date().toISOString().slice(0, 10)));
+      // A failed latest test with no MOT left means the car can't legally be
+      // driven: it sells as a project, far below MOT'd comps (Golf NL61TWY).
+      if (failedWithoutValidMot(motEntries)) add("Failed latest MOT — no valid MOT", -20);
+      // Declared write-off category / spares-or-repair in the seller's notes.
+      items.push(...declaredStatusItems(serviceText));
 
       if (hasStrongHistory) add("Full service history", 6);
       else if (hasPartialHistory) add("Partial service history", -5);
@@ -1043,7 +1048,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       }
 
       // --- MOT expiry: dealers re-MOT before sale, so it affects private only.
-      const motAdj = motAdjustment(body.motExpiry || latestTest?.expiryDate);
+      const motAdj = motAdjustment(body.motExpiry || currentMotExpiry(motEntries));
       if (motAdj) add(motAdj.label, motAdj.impactPct, "private");
 
       // --- Possible clocking: only a gap beyond tolerance that isn't rounding.
@@ -1157,7 +1162,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         conditionScore: score,
         aiPrivateValue: aiPrivate > fallback * 0.25 ? aiPrivate : fallback,
       });
-      const motDays = motDaysRemaining(body.motExpiry || latestTest?.expiryDate);
+      const motDays = motDaysRemaining(body.motExpiry || currentMotExpiry(motEntries));
       const cal = calibrateAiPrivate({
         aiPrivate: market.center, make: body.make, year: body.year, miles: pricedMiles,
         currentYear: CURRENT_YEAR, motValid: motDays != null && motDays >= 0,
@@ -1261,7 +1266,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       .slice(0, 18);
     // Drop zero-evidence items / non-photo deductions; upside is computed here, not by the AI.
     const validInsights = validatePhotoInsights(photoInsights as any[]) as typeof photoInsights;
-    const motExpiryForText = body.motExpiry || latestTest?.expiryDate;
+    const motExpiryForText = body.motExpiry || currentMotExpiry(motEntries);
     const marketContext = sanitizeNarrativeYears(ai.marketContext ?? "", body.year, CURRENT_YEAR, allowedNarrativeYears);
     const sellerTip = sanitizeNarrativeYears(ai.sellerTip ?? "", body.year, CURRENT_YEAR, allowedNarrativeYears);
 
