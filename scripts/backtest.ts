@@ -1,4 +1,4 @@
-// Recompute the 6 test cars with the calibrated engine and print error vs asking price.
+// Recompute the 12 test cars with the calibrated engine and print error vs asking price.
 // Run: npx tsx scripts/backtest.ts
 // Private sellers are compared on privateSale; the dealer car on dealerRetail.
 import { BACKTEST_CARS } from "../src/test/fixtures/backtest-cars";
