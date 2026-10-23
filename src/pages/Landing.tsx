@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { ArrowRight, BadgePoundSterling, Camera, Check, FileCheck2, Gauge, SearchCheck, ShieldAlert, Sparkles, Target, Wind } from "lucide-react";
 import { Header, TestModeBanner } from "@/components/Layout";
@@ -29,7 +29,16 @@ const FEATURES = [
 
 export default function Landing() {
   const { user, loading } = useAuth();
-  useSeo({ title: "Valu8: what's my car worth? Free UK car valuation", description: "Free UK car valuation for private sellers. Live dealer listings where available, DVSA MOT history and photo checks give you a realistic private sale price and asking price.", path: "/" });
+  // Sticky mobile CTA only once the hero CTA has scrolled away, so the first screen has one clear action.
+  const heroCta = useRef<HTMLDivElement>(null);
+  const [showSticky, setShowSticky] = useState(false);
+  useEffect(() => {
+    const el = heroCta.current;
+    if (!el || typeof IntersectionObserver === "undefined") { setShowSticky(true); return; }
+    const io = new IntersectionObserver(([e]) => setShowSticky(!e.isIntersecting && e.boundingClientRect.top < 0));
+    io.observe(el); return () => io.disconnect();
+  }, []);
+  useSeo({ title: "Valu8: what's my car worth? Free UK car valuation", description: "Free UK car valuation for private sellers. Thousands of real UK adverts, DVSA MOT history and photo checks give you a realistic private sale price and asking price.", path: "/" });
 
   // Returning from sign-in with an unfinished valuation: carry on where they left off.
   let pending = false;
@@ -44,7 +53,7 @@ export default function Landing() {
         <section className="relative overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 -top-32 h-96 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.18),transparent_60%)]" aria-hidden />
           <div className="container relative pt-8 pb-8 sm:pt-12 md:pt-24 md:pb-14 text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-[11px] font-medium text-primary mb-4 sm:mb-5">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-4 sm:mb-5">
               <Sparkles className="h-3 w-3" aria-hidden /> Free UK car valuations for sellers and buyers
             </div>
             <h1 className="text-[2.25rem] sm:text-[2.6rem] md:text-[3.2rem] font-semibold tracking-tight text-gradient leading-[1.05] text-balance">
@@ -53,7 +62,7 @@ export default function Landing() {
             <p className="text-[15px] sm:text-base md:text-lg text-muted-foreground mt-4 sm:mt-5 max-w-xl mx-auto leading-relaxed text-pretty">
               Enter a reg. We check the official DVSA record, thousands of real UK adverts in our database and your photos, then give you a price you can defend.
             </p>
-            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 justify-center max-w-sm sm:max-w-none mx-auto">
+            <div ref={heroCta} className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 justify-center max-w-sm sm:max-w-none mx-auto">
               <Button asChild variant="hero" size="xl" className="w-full sm:w-auto min-h-[52px]">
                 <Link to="/valuation/new">Value my car free <ArrowRight className="h-4 w-4" aria-hidden /></Link>
               </Button>
@@ -85,7 +94,7 @@ export default function Landing() {
             <dl className="grid grid-cols-3 gap-2 mt-5 text-center">
               {[["Part-exchange", "£6,400"], ["Private sale", "£7,700"], ["Dealer retail", "£9,100"]].map(([k, val], i) => (
                 <div key={k} className={i === 1 ? "rounded-xl bg-primary/10 border border-primary/30 p-3" : "rounded-xl border border-border p-3"}>
-                  <dt className="text-[11px] text-muted-foreground">{k}</dt>
+                  <dt className="text-xs text-muted-foreground">{k}</dt>
                   <dd className="font-semibold tabular-nums mt-1">{val}</dd>
                 </div>
               ))}
@@ -165,9 +174,9 @@ export default function Landing() {
       </main>
       <Footer />
       {/* Sticky mobile CTA */}
-      <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div aria-hidden={!showSticky} className={`sm:hidden fixed inset-x-0 bottom-0 z-40 transition-transform duration-200 ${showSticky ? "translate-y-0" : "translate-y-full pointer-events-none"} border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]`}>
         <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
-          <Link to="/valuation/new">Value my car free <ArrowRight className="h-4 w-4" aria-hidden /></Link>
+          <Link to="/valuation/new" tabIndex={showSticky ? 0 : -1}>Value my car free <ArrowRight className="h-4 w-4" aria-hidden /></Link>
         </Button>
       </div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({

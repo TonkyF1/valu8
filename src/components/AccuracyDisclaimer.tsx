@@ -3,7 +3,7 @@ import { Info } from "lucide-react";
 // Kept separate from VehicleInsights so the landing page doesn't pull in recharts.
 export function AccuracyDisclaimer() {
   return (
-    <div className="rounded-lg border border-border/60 bg-muted/20 p-3 text-[11px] text-muted-foreground flex gap-2" role="note">
+    <div className="rounded-lg border border-border/60 bg-muted/20 p-3 sm:p-4 text-xs leading-relaxed text-muted-foreground flex gap-2" role="note">
       <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden />
       <p>
         <strong className="text-foreground">How accurate is this?</strong> Valuations are estimates based on UK adverts in our database
