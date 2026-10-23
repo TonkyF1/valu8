@@ -15,6 +15,7 @@ import { motStatus, motAdjustment, currentMotExpiry, failedWithoutValidMot, sani
 import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts";
 import { detectPerformanceVariant, filterCompsByPerformance, downgradeConfidence, type PerfVariant, type PerfMatch } from "../_shared/performance.ts";
 import { shrinkThinAnchor, aiAgeFactor, THIN_COMP_FULL_WEIGHT } from "../_shared/calibration.ts";
+import { valueWithOwnComps } from "../_shared/ownCompsAdjust.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
 
@@ -1362,6 +1363,27 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       dataSource = "ai_estimate";
     }
 
+    // Own-comps engine (SHADOW MODE): priced from our own collected listings and
+    // logged alongside the live figure for evaluation. It does NOT set the price yet —
+    // held-out accuracy has not beaten the current path (see docs/own-comps-pricing.md).
+    let ownCompsShadow: Record<string, unknown> | undefined;
+    try {
+      const oc = valueWithOwnComps({
+        make: body.make, model: body.model, variant: body.variant, year: body.year, mileage: pricedMiles,
+        fuel: body.fuelType, gearbox: body.transmission, adText: body.variant, currentYear: CURRENT_YEAR,
+        conditionScore: score, photoInsights: Array.isArray(ai.photoInsights) ? ai.photoInsights : [],
+        declaredStatus: serviceText,
+      });
+      ownCompsShadow = {
+        version: "owncomps-1", privateSale: oc.finalPrivate, low: oc.finalLow, high: oc.finalHigh, unavailable: oc.unavailable,
+        level: oc.level, confidence: oc.confidence, confidenceScore: oc.confidenceScore, nComps: oc.nComps, segment: oc.segment,
+        adjustments: oc.adjustments.map((a) => ({ key: a.key, pct: a.pct, basis: a.basis })),
+      };
+      debugInfo.ownComps = { ...ownCompsShadow, nearest: oc.nearest, perfKey: oc.perfKey, trimUpliftPct: oc.trimUpliftPct };
+    } catch (e) {
+      console.warn("ownComps shadow failed", e);
+    }
+
     // Negotiation buffer: trust AI if reasonable (2-8% of privateSale), else default to ~4%.
     const aiBuffer = Number(ai.negotiationBuffer) || 0;
     const minBuf = values.privateSale * 0.02;
@@ -1543,6 +1565,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       motNotice,
       generatedAt: new Date().toISOString(),
       engineVersion: "v2.2-ledger",
+      ...(ownCompsShadow ? { ownCompsShadow } : {}),
       inputsHash: computeInputsHash({
         make: body.make,
         model: body.model,
