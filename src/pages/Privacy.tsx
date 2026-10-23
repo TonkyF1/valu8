@@ -13,7 +13,7 @@ export default function Privacy() {
       <main id="main" className="flex-1 container max-w-3xl py-12 md:py-16">
         <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Legal</div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gradient mb-6">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground mb-10">Last updated: 16 May 2026</p>
+        <p className="text-sm text-muted-foreground mb-10">Last updated: 23 October 2026</p>
 
         <div className="prose prose-invert max-w-none space-y-6 text-sm leading-relaxed text-foreground/85">
           <section>
@@ -36,8 +36,10 @@ export default function Privacy() {
               <li>To create, store and show your valuation reports (contract: providing the service you asked for).</li>
               <li>To keep the service secure and prevent abuse (legitimate interests).</li>
               <li>To understand which links and pages bring people to Valu8 (legitimate interests).</li>
+              <li>To improve the accuracy of our valuations and build our pricing database (legitimate interests, see below).</li>
               <li>Analytics and session replay (consent, which you can withdraw at any time).</li>
             </ul>
+            <p className="mt-2"><strong>Improving our valuations.</strong> We keep the vehicle details you enter (make, model, trim, year, mileage, condition answers and specification), the valuation we produce and, if you tell us, the price your car sold for. We make an anonymised copy of this with your name, email, registration and photos removed, and use it to build our pricing database and make Valu8 valuations more accurate. Our lawful basis is our legitimate interest in providing accurate valuations. Once anonymised, these records no longer identify you and are not personal data. We do not record your location.</p>
             <p className="mt-2">We never sell your personal data and we do not use it for advertising.</p>
           </section>
           <section>
@@ -53,7 +55,8 @@ export default function Privacy() {
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">5. Retention</h2>
-            <p>We keep your account and saved valuations until you delete them. You can delete any valuation from your dashboard, which removes its photos and report, and you can delete your whole account from your profile page.</p>
+            <p>We keep your account and saved valuations until you delete them. You can delete any valuation from your dashboard, which removes its photos and report, and you can delete your whole account from your profile page. Your registration, photos and reports linked to your account are kept only for as long as needed to provide your account, and you can ask us to delete your account data at any time by emailing <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>.</p>
+            <p className="mt-2">Anonymised vehicle and price records (with no name, email, registration or photos) are kept indefinitely to build our pricing database, as they no longer identify you.</p>
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">6. Your rights (UK GDPR)</h2>

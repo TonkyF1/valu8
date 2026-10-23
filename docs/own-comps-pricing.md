@@ -65,12 +65,12 @@ Thin/none: Land Rover 11, Volvo 10, Mitsubishi 6, Fiat 5, Jaguar 5, Suzuki 3, MG
 Held-out median <15% and beats current path on the same rows, especially <£5k private. Then: use own-comps as anchor, MarketCheck as
 secondary, AI narrative only (AI never sets price).
 
-## Privacy policy — DRAFT wording (not applied; needs owner decision)
-Add to "3. How we use it":
-> **Improving our valuations.** We keep the vehicle details you enter (make, model, trim, year, mileage, condition answers, specification)
-> and the valuation we produce, and — if you tell us — the price your car sold for. We use a de-identified copy of this (without your name,
-> email, registration or photos) to improve the accuracy of Valu8 valuations. Our lawful basis is our legitimate interest in providing
-> accurate valuations. We never sell your personal data. Your registration and photos stay linked to your account only as needed to provide
-> your report, and are deleted when you delete the report or your account. Tony Fisher trading as Valu8 is the controller.
-Add to "5. Retention": de-identified vehicle and price records may be kept indefinitely as they no longer identify you.
-Decisions for owner: retention period for de-identified rows; whether to offer opt-out; whether location (postcode district) is collected.
+## Privacy policy — APPLIED 23 October 2026 (src/pages/Privacy.tsx)
+Owner decisions:
+- No location (incl. postcode district) is recorded.
+- No opt-in/opt-out prompt; lawful basis is legitimate interests (accurate valuations).
+- Anonymised records (no name, email, registration or photos) kept indefinitely to build the pricing database; anonymised data is not personal data.
+- Registration, photos and reports linked to an account kept only while needed for the account; users can request deletion of account data.
+- Personal data is never sold.
+- Controller: Tony Fisher trading as Valu8 (src/lib/legal.ts); contact by email only, no postal address published.
+Wording added to section 3 ("Improving our valuations") and section 5 (Retention); "Last updated" set to 23 October 2026.
