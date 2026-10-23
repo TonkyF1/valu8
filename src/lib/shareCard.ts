@@ -1,3 +1,4 @@
+import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
 // Branded 1200x630 share image for a report, drawn client-side on a canvas.
 // (Per-report OG tags for link previews need server rendering, which this SPA host
 // doesn't provide; this gives users an image they can post or send instead.)
@@ -16,7 +17,7 @@ export function drawShareCard(v: { year: number; make: string; model: string; mi
   g.fillStyle = "#00d4c8"; g.fillRect(0, 0, 1200, 8);
   g.font = "600 30px system-ui, -apple-system, Segoe UI, sans-serif"; g.fillText("VALU8", 72, 92);
   g.fillStyle = "#ffffff"; g.font = "700 60px system-ui, -apple-system, Segoe UI, sans-serif";
-  g.fillText(`${v.year} ${v.make} ${v.model}`.slice(0, 32), 72, 200);
+  g.fillText(vehicleTitle({ year: v.year, make: v.make, model: v.model, engineCapacity: (r as any)?.vehicle?.engineCapacity, fuelType: (r as any)?.vehicle?.fuelType }).slice(0, 32), 72, 200);
   g.fillStyle = "#a1a1aa"; g.font = "400 30px system-ui, -apple-system, Segoe UI, sans-serif";
   g.fillText(`${v.mileage.toLocaleString("en-GB")} miles`, 72, 250);
   if (!r.valuationUnavailable && r.values) {
@@ -44,7 +45,7 @@ export async function shareReportImage(v: Parameters<typeof drawShareCard>[0], r
   const file = new File([blob], name, { type: "image/png" });
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
   if (nav.canShare?.({ files: [file] })) {
-    try { await nav.share({ files: [file], title: `${v.year} ${v.make} ${v.model} — Valu8`, url }); return "shared"; } catch { /* fall back */ }
+    try { await nav.share({ files: [file], title: `${vehicleTitle({ year: v.year, make: v.make, model: v.model })} — Valu8`, url }); return "shared"; } catch { /* fall back */ }
   }
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();

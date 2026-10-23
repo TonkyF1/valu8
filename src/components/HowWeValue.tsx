@@ -53,7 +53,11 @@ export function HowWeValue({ ex }: { ex: ValuationExplanation }) {
           <ul className="space-y-1.5">
             {ex.adjustments.map((a) => (
               <li key={a.label} className="flex justify-between gap-3">
-                <span className="text-muted-foreground">{a.label}</span>
+                <span className="text-muted-foreground">
+                  {a.label}
+                  {a.scope === "anchor" && <span className="block text-xs">Already in the anchor — shown for transparency</span>}
+                  {a.scope === "private" && <span className="block text-xs">Private &amp; part-exchange only</span>}
+                </span>
                 <span className={a.impactPct < 0 ? "text-destructive tabular-nums" : "text-primary tabular-nums"}>
                   {a.impactPct > 0 ? "+" : ""}{a.impactPct}%
                 </span>

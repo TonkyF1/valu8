@@ -1,3 +1,4 @@
+import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
 import jsPDF from "jspdf";
 import type { ValuationReport } from "@/lib/valuation";
 import { format } from "date-fns";
@@ -56,7 +57,7 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   doc.setFont("helvetica", "bold"); doc.setFontSize(10);
   doc.text("VALU8 — VALUATION REPORT", margin, 38);
   doc.setTextColor(255, 255, 255); doc.setFontSize(20);
-  doc.text(`${v.year} ${v.make} ${v.model}`, margin, 64);
+  doc.text(vehicleTitle({ year: v.year, make: v.make, model: v.model, engineCapacity: (r as any)?.vehicle?.engineCapacity, fuelType: (r as any)?.vehicle?.fuelType }), margin, 64);
   doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(200, 200, 200);
   const meta = [`${v.mileage.toLocaleString()} miles`, v.registration, `Generated ${format(new Date(v.created_at), "d MMM yyyy")}`].filter(Boolean).join("  •  ");
   doc.text(meta, margin, 82);

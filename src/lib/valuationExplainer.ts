@@ -1,7 +1,7 @@
 // Plain-English "How we value your car" breakdown. Only uses figures already stored
 // on the report — never invents numbers. Shared by the Report page and the PDF.
 import type { ValuationReport } from "@/lib/valuation";
-import { compAdjustmentFactor } from "../../supabase/functions/_shared/pricing";
+import { compAdjustmentFactor, retailNetFromAdjustments, inferScope } from "../../supabase/functions/_shared/pricing";
 
 export interface ExplainedComp {
   price: number; year: number; mileage: number; trim?: string; location?: string; url?: string;
@@ -14,7 +14,7 @@ export interface ExplainedComp {
 export interface ValuationExplanation {
   steps: { title: string; body: string }[];
   comps: ExplainedComp[];
-  adjustments: { label: string; impactPct: number; plain: string }[];
+  adjustments: { label: string; impactPct: number; plain: string; scope: "anchor" | "retail" | "private" }[];
 }
 
 const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
@@ -46,7 +46,7 @@ export function explainValuation(r: ValuationReport, car: { year: number; mileag
     });
     steps.push({
       title: "2. Correct each one to your car",
-      body: `Every listing is re-priced as if it had your car's age and mileage (${car.mileage.toLocaleString("en-GB")} miles, ${car.year}). Roughly: double the mileage is worth about 12% less, and each extra year of age about 12% less. We then take the median of the closest matches${r.marketAnchor ? `, which gave a dealer retail anchor of ${gbp(r.marketAnchor)}` : ""}.`,
+      body: `Every listing is re-priced as if it had your car's age and mileage (${((r as any).pricedMileage ?? car.mileage).toLocaleString("en-GB")} miles, ${car.year}). Roughly: double the mileage is worth about 12% less, and each extra year of age about 12% less. We then take the median of the closest matches${r.marketAnchor ? `, which gave a dealer retail anchor of ${gbp(r.marketAnchor)}` : ""}.`,
     });
   } else {
     steps.push({
@@ -57,7 +57,13 @@ export function explainValuation(r: ValuationReport, car: { year: number; mileag
   steps.push({
     title: `${steps.length + 1}. Adjust for this car`,
     body: (r.priceAdjustments?.length ?? 0) > 0
-      ? `We then adjusted for what we know about your car specifically${r.marketBaseline ? ` (net ${r.marketBaseline.netAdjustmentPct > 0 ? "+" : ""}${r.marketBaseline.netAdjustmentPct}%)` : ""}: MOT history, photos and mileage versus the sample.`
+      ? (() => {
+          // Net % = the sum of the listed dealer-retail adjustments (one source of truth).
+          const net = retailNetFromAdjustments(r.priceAdjustments as any);
+          const anchor = r.marketBaseline?.baseDealerRetail ?? r.marketAnchor;
+          const sign = net > 0 ? "+" : "";
+          return `We then adjusted for what we know about your car specifically (net ${sign}${net}% from the adjustments listed below)${anchor && r.values?.dealerRetail ? `, taking the ${gbp(anchor)} anchor to a dealer retail figure of ${gbp(r.values.dealerRetail)}` : ""}. MOT timing and very high mileage only affect the private and part-exchange figures.`;
+        })()
       : "Nothing specific to your car moved the price up or down beyond the market comparison.",
   });
   steps.push({
@@ -73,6 +79,6 @@ export function explainValuation(r: ValuationReport, car: { year: number; mileag
       return { ...c, adjustedPrice: Math.round((c.price * f) / 50) * 50, correctionPct: Math.round((f - 1) * 100), why: compWhy(car.mileage, car.year, c) };
     });
 
-  const adjustments = (r.priceAdjustments ?? []).map((a) => ({ ...a, plain: adjustmentPlain(a.label, a.impactPct) }));
+  const adjustments = (r.priceAdjustments ?? []).map((a) => ({ ...a, scope: (a as any).scope ?? inferScope(a.label), plain: adjustmentPlain(a.label, a.impactPct) }));
   return { steps, comps, adjustments };
 }
