@@ -1,3 +1,5 @@
+import { dedupeReportText } from "../../supabase/functions/_shared/pricing";
+import { fixOdometerWording } from "../../supabase/functions/_shared/vehicle-text";
 import { isFalseLongMotClaim, sanitizeMotClaim } from "../../supabase/functions/_shared/mot";
 
 /** Old reports stored "54 live UK listings via MarketCheck"; reword to match the headline count. */
@@ -22,14 +24,18 @@ type Textish = {
   sellerTip?: string; marketContext?: string; strengths?: string[]; factorsUp?: string[];
   recommendations?: { highlights?: string[]; documents?: string[] } & Record<string, unknown>;
   expertInsight?: { sources?: string[] } & Record<string, unknown>;
+  photoInsights?: Array<{ observation?: string }>;
 };
 
 /** Fixes stale "long MOT" claims and source wording in already-saved reports. */
 export function cleanReportText<T extends Textish>(r: T, motExpiry: string | null | undefined, now: Date = new Date()): T {
   const fix = (t?: string) => (t ? sanitizeMotClaim(t, motExpiry, now) : t);
   const keep = (l?: string[]) => (Array.isArray(l) ? l.filter((x) => !isFalseLongMotClaim(x, motExpiry, now)) : l);
-  return {
+  return dedupeReportText({
     ...r,
+    photoInsights: Array.isArray(r.photoInsights)
+      ? r.photoInsights.map((p) => (p && typeof p.observation === "string" ? { ...p, observation: fixOdometerWording(p.observation) } : p))
+      : r.photoInsights,
     honestAnalysis: fix(r.honestAnalysis),
     valueReasoning: fix(r.valueReasoning),
     marketPositioning: fix(r.marketPositioning),
@@ -44,5 +50,5 @@ export function cleanReportText<T extends Textish>(r: T, motExpiry: string | nul
     expertInsight: r.expertInsight
       ? { ...r.expertInsight, sources: r.expertInsight.sources?.map(rewordSource) }
       : r.expertInsight,
-  };
+  } as T);
 }

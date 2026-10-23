@@ -1,3 +1,5 @@
+import { askRange, sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
+import { displayModel, normaliseFuel } from "../../supabase/functions/_shared/vehicle-text";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,7 +72,7 @@ export default function Report() {
           // Refresh signed URLs on every load so photos always render even after expiry.
           const signed = refs.length > 0 ? (await signPhotoUrls(refs)).filter(Boolean) : [];
           setV({ ...(data as any), photo_urls: signed, report: data.report as unknown as ValuationReport });
-          document.title = `${data.year} ${data.make} ${data.model} — Valu8`;
+          document.title = `${data.year} ${data.make} ${displayModel(data.make, data.model, (data.report as any)?.vehicle?.fuelType)} — Valu8`;
         }
         setLoading(false);
       });
@@ -153,6 +155,9 @@ export default function Report() {
   // Latest DVSA expiry wins over the seller-entered field.
   const motExpiryForText = (v.report as any)?.motHistory?.[0]?.expiryDate ?? v.mot_expiry;
   const r = cleanReportText(v.report, motExpiryForText);
+  const fuelDisplay = normaliseFuel((r as any).vehicle?.fuelType);
+  if ((r as any).vehicle) (r as any).vehicle = { ...(r as any).vehicle, fuelType: fuelDisplay };
+  const modelDisplay = displayModel(v.make, v.model, fuelDisplay);
   const sampleSize = (r as any).marketSampleSize ?? (r as any).marketBaseline?.sampleSize ?? null;
   const countLine = marketCountLine(liveCount, sampleSize);
   const valuationUnavailable = !!r.valuationUnavailable;
@@ -311,7 +316,7 @@ export default function Report() {
         <div className="mb-6 animate-fade-in-up">
           <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold mb-1.5">Valuation Report</div>
           <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-gradient">
-            {v.year} {v.make} {v.model}
+            {v.year} {v.make} {modelDisplay}
           </h1>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground">
             <span>{v.mileage.toLocaleString()} miles</span>
@@ -575,7 +580,7 @@ export default function Report() {
                       r.headline
                     ) : (
                       <>
-                        Based on live UK market data, a realistic figure for this {v.year} {v.make} {v.model} sits around{" "}
+                        Based on live UK market data, a realistic figure for this {v.year} {v.make} {modelDisplay} sits around{" "}
                         <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>.
                       </>
                     )}
@@ -611,9 +616,9 @@ export default function Report() {
             {/* Suggested Asking Price — with visual price band */}
             {!valuationUnavailable && (() => {
               const base = r.recommendedAskingPrice || r.recommendations?.recommendedAskingPrice || r.recommendations.listingPrice || Math.round(r.values.privateSale * 1.04 / 50) * 50;
-              const spread = Math.max(500, Math.round(base * 0.035 / 50) * 50);
-              const rangeLow = Math.round((base - spread) / 50) * 50;
-              const rangeHigh = Math.round((base + spread) / 50) * 50;
+              const spread = Math.max(250, Math.round(base * 0.035 / 50) * 50);
+              // Ask range always starts at or above the realistic private figure.
+              const { low: rangeLow, high: rangeHigh } = askRange(r.values.privateSale, base);
               const buffer = r.negotiationBuffer || r.recommendations?.negotiationBuffer || Math.round(base * 0.04 / 50) * 50;
               const marketLow = r.valueRange?.privateSaleLow ?? Math.round(r.values.privateSale * 0.95 / 50) * 50;
               const marketHigh = r.valueRange?.privateSaleHigh ?? Math.round(r.values.privateSale * 1.08 / 50) * 50;
@@ -1287,7 +1292,7 @@ function PhotoFeedback({
     grouped.set(idx, arr);
   });
 
-  const totalImpact = insights.reduce((sum, i) => sum + (i.priceImpact ?? 0), 0);
+  const totalImpact = sumPhotoImpacts(insights);
   const totalFixCost = insights.reduce((sum, i) => sum + (i.fixCost ?? 0), 0);
   const fixableUpside = insights
     .filter((i) => i.fixable && (i.priceImpact ?? 0) < 0)
@@ -1385,7 +1390,7 @@ function PhotoFeedback({
               const items = grouped.get(idx)!;
               const url = idx >= 0 ? photoUrls[idx] : undefined;
               const slotKey = items[0]?.slot ?? "other";
-              const photoImpact = items.reduce((s, i) => s + (i.priceImpact ?? 0), 0);
+              const photoImpact = sumPhotoImpacts(items);
               const topSev = items.some(i => i.severity === "notable") ? "notable"
                 : items.some(i => i.severity === "minor") ? "minor"
                 : items.some(i => i.severity === "positive") ? "positive"
