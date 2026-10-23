@@ -3,8 +3,42 @@
   <url><loc>https://valu8.lovable.app/</loc><priority>1.0</priority></url>
   <url><loc>https://valu8.lovable.app/valuation/new</loc><priority>0.9</priority></url>
   <url><loc>https://valu8.lovable.app/buyer</loc><priority>0.8</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values</loc><priority>0.8</priority></url>
   <url><loc>https://valu8.lovable.app/pricing</loc><priority>0.6</priority></url>
   <url><loc>https://valu8.lovable.app/privacy</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.lovable.app/terms</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.lovable.app/disclaimers</loc><priority>0.3</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/ford/fiesta</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/ford/focus</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/ford/puma</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/ford/kuga</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/vauxhall/corsa</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/vauxhall/astra</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/vauxhall/mokka</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/volkswagen/polo</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/volkswagen/golf</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/volkswagen/t-roc</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/volkswagen/tiguan</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/nissan/juke</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/nissan/qashqai</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/toyota/aygo</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/toyota/yaris</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/toyota/corolla</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/toyota/c-hr</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/bmw/1-series</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/bmw/3-series</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/mercedes-benz/a-class</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/mercedes-benz/c-class</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/audi/a3</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/audi/a4</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/kia/ceed</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/kia/sportage</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/hyundai/tucson</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/mini/hatch</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/land-rover/range-rover-evoque</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/peugeot/208</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/peugeot/2008</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/skoda/octavia</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/honda/civic</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.lovable.app/car-values/tesla/model-3</loc><priority>0.7</priority></url>
 </urlset>

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,24 +9,33 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ReportErrorBoundary } from "@/components/ReportErrorBoundary";
 import { PostHogTracker } from "@/components/PostHogTracker";
-import NewValuation from "./pages/NewValuation";
-import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import Dashboard from "./pages/Dashboard";
-import Analysing from "./pages/Analysing";
-import Report from "./pages/Report";
-import EditValuation from "./pages/EditValuation";
-import Profile from "./pages/Profile";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import Disclaimers from "./pages/Disclaimers";
-import NotFound from "./pages/NotFound";
+const NewValuation = lazy(() => import("./pages/NewValuation"));
+const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Analysing = lazy(() => import("./pages/Analysing"));
+const Report = lazy(() => import("./pages/Report"));
+const EditValuation = lazy(() => import("./pages/EditValuation"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Disclaimers = lazy(() => import("./pages/Disclaimers"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 import Landing from "./pages/Landing";
-import Buyer from "./pages/Buyer";
-import Compare from "./pages/Compare";
-import Admin from "./pages/Admin";
-import Pricing from "./pages/Pricing";
+const Buyer = lazy(() => import("./pages/Buyer"));
+const Compare = lazy(() => import("./pages/Compare"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 import { CookieConsent } from "@/components/CookieConsent";
+const CarValue = lazy(() => import("./pages/CarValue"));
+const CarValuesIndex = lazy(() => import("./pages/CarValuesIndex"));
+
+const PageFallback = () => (
+  <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite">
+    <span className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" aria-hidden />
+    <span className="sr-only">Loading…</span>
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -38,6 +48,7 @@ const App = () => (
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <PostHogTracker />
+          <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
@@ -54,11 +65,14 @@ const App = () => (
             <Route path="/shared/:id" element={<ReportErrorBoundary><Report /></ReportErrorBoundary>} />
             <Route path="/valuation/:id/edit" element={<ProtectedRoute><EditValuation /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/car-values" element={<CarValuesIndex />} />
+            <Route path="/car-values/:make/:model" element={<CarValue />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/disclaimers" element={<Disclaimers />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           <CookieConsent />
         </AuthProvider>
       </BrowserRouter>
