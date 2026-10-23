@@ -2,9 +2,11 @@ import { useEffect } from "react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { ShieldAlert, Database, Sparkles, Scale } from "lucide-react";
+import { CONTACT_EMAIL } from "@/lib/site";
+import { useSeo } from "@/lib/seo";
 
 export default function Disclaimers() {
-  useEffect(() => { document.title = "Disclaimers & Data Sources — Valu8"; }, []);
+  useSeo({ title: "Disclaimers & Data Sources — Valu8", description: "What a Valu8 report is and is not: data sources, AI use and limitations.", path: "/disclaimers" });
   return (
     <div className="min-h-screen flex flex-col">
       <TestModeBanner /><Header />
@@ -15,10 +17,10 @@ export default function Disclaimers() {
 
         <div className="space-y-4">
           <Card icon={<Sparkles className="h-4 w-4" />} title="AI-generated estimates">
-            Each report is produced by a large vision-and-language model trained on UK market data and your vehicle photos and details. Results are indicative and will vary from actual sale prices depending on local demand, time of year, and buyer competition.
+            Each report combines live UK listings and DVSA data with a general-purpose AI model that reads your photos and details. Results are indicative and will vary from actual sale prices depending on local demand, time of year, and buyer competition.
           </Card>
           <Card icon={<Database className="h-4 w-4" />} title="Data sources">
-            Live UK listing data is provided by MarketCheck (marketcheck.com). MOT history is retrieved from the official DVSA MOT History API. Pricing benchmarks combine these live signals with public retail/trade comparables. Where any provider is unavailable we fall back to a realistic estimate and label it clearly inside the report.
+            Live UK listing data is provided by MarketCheck (marketcheck.com). MOT history is retrieved from the official DVSA MOT History API. Where any provider is unavailable we fall back to a realistic estimate and label it clearly inside the report.
           </Card>
           <Card icon={<ShieldAlert className="h-4 w-4" />} title="Not financial advice">
             Valu8 reports do not constitute financial, legal, or commercial advice. Always carry out an independent HPI check and arrange a viewing/inspection before transacting.
@@ -29,7 +31,7 @@ export default function Disclaimers() {
         </div>
 
         <p className="text-xs text-muted-foreground mt-10">
-          Questions? Email <a href="mailto:hello@valu8.app" className="text-primary hover:underline">hello@valu8.app</a>.
+          Questions? Email <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>.
         </p>
       </main>
       <Footer />

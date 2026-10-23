@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
-export const SITE_URL = "https://valu8.lovable.app";
+import { SITE_URL } from "./site";
+export { SITE_URL };
 
 function setMeta(selector: string, attr: "name" | "property", key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(selector);
