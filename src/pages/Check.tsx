@@ -86,14 +86,14 @@ export default function Check() {
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
           <SearchCheck className="h-7 w-7 text-primary shrink-0" aria-hidden /> Is this used car a fair price?
         </h1>
-        <p className="text-sm text-muted-foreground mt-2">Buying a used car? Copy in the details from AutoTrader, eBay, Gumtree or Facebook and we'll compare the asking price with our estimate of what similar cars sell for in the UK, plus our private-sale estimate.</p>
+        <p className="text-sm text-muted-foreground mt-2">Buying a used car? Copy in the details from AutoTrader, eBay, Gumtree or Facebook and we'll tell you how the asking price compares with what similar cars go for in the UK.</p>
 
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 mt-6">
-          {field("make", "Make", { placeholder: "Skoda", autoComplete: "off", required: true })}
-          {field("model", "Model", { placeholder: "Octavia", autoComplete: "off", required: true })}
-          {field("year", "Year", { inputMode: "numeric", placeholder: "2019", required: true })}
-          {field("mileage", "Mileage", { inputMode: "numeric", placeholder: "45,000", required: true })}
-          <div className="sm:col-span-2">{field("askingPrice", "Asking price (£)", { inputMode: "numeric", placeholder: "12,995", required: true })}</div>
+          {field("make", "Make", { placeholder: "e.g. Skoda", autoComplete: "off", required: true })}
+          {field("model", "Model", { placeholder: "e.g. Octavia", autoComplete: "off", required: true })}
+          {field("year", "Year", { inputMode: "numeric", placeholder: "e.g. 2019", required: true })}
+          {field("mileage", "Mileage", { inputMode: "numeric", placeholder: "e.g. 45,000", required: true })}
+          <div className="sm:col-span-2">{field("askingPrice", "Asking price (£)", { inputMode: "numeric", placeholder: "e.g. 12,995", required: true })}</div>
           <div className="sm:col-span-2">{field("link", "Advert link (optional)", { type: "url", placeholder: "https://…", autoComplete: "off" })}</div>
           <div className="sm:col-span-2">
             <Button type="submit" variant="hero" size="lg" disabled={busy} className="w-full sm:w-auto min-h-[48px]">
