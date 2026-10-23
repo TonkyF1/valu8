@@ -1,3 +1,4 @@
+import { operatorSentence } from "@/lib/legal";
 import { useEffect } from "react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
@@ -17,7 +18,7 @@ export default function Privacy() {
         <div className="prose prose-invert max-w-none space-y-6 text-sm leading-relaxed text-foreground/85">
           <section>
             <h2 className="text-lg font-semibold text-foreground">1. Who we are</h2>
-            <p>Valu8 ("we", "us") provides car valuations to private sellers in the United Kingdom. Valu8 is the data controller for the personal data described here. Contact: <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>.</p>
+            <p>Valu8 ("we", "us") provides car valuations to private sellers in the United Kingdom. {operatorSentence()} Contact: <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>.</p>
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">2. Data we collect</h2>

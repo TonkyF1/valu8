@@ -1,3 +1,4 @@
+import { LEGAL_NAME, LEGAL_ADDRESS } from "@/lib/legal";
 import { useEffect } from "react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
@@ -49,7 +50,7 @@ export default function Terms() {
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">8. Contact</h2>
-            <p>Questions about these terms? Email <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>.</p>
+            <p>{LEGAL_NAME.trim() ? `Valu8 is operated by ${LEGAL_NAME.trim()}${LEGAL_ADDRESS.trim() ? `, ${LEGAL_ADDRESS.trim()}` : ""}. ` : ""}Questions about these terms? Email <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>.</p>
           </section>
         </div>
       </main>
