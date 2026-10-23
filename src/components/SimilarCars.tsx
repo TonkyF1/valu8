@@ -95,18 +95,18 @@ export function SimilarCars({ make, model, variant, year, mileage, valuation }: 
       <div className="flex items-end justify-between mb-4 gap-3 flex-wrap">
         <div>
           <h2 className="text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground">
-            Similar Cars on the UK Market
+            Dealer asking prices · live UK listings
           </h2>
           {avgPrice && valuation ? (
             <p className="text-xs text-muted-foreground/80 mt-1">
-              Live market average{" "}
+              Average dealer asking price{" "}
               <span className="text-foreground font-semibold tabular-nums">£{avgPrice.toLocaleString()}</span>{" "}
-              · Your valuation{" "}
+              · Your private-sale estimate{" "}
               <span className="text-foreground font-semibold tabular-nums">£{valuation.toLocaleString()}</span>
             </p>
           ) : (
             <p className="text-xs text-muted-foreground/80 mt-1">
-              Ranked by closeness to your year, mileage and spec.
+              Asking prices from live UK dealer listings, ranked by closeness to your year, mileage and spec.
             </p>
           )}
           {matchNote && matchMode && matchMode !== "exact" && (

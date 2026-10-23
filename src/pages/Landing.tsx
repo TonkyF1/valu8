@@ -22,7 +22,7 @@ const FEATURES = [
   { icon: Camera, title: "Photo condition check", body: "Upload a few photos and AI flags visible wear, damage and selling points that move the price." },
   { icon: FileCheck2, title: "Official DVSA MOT history", body: "Every test, advisory and failure, plus indicative repair-cost bands for current advisories." },
   { icon: Gauge, title: "Mileage consistency", body: "MOT mileage charted over time, with any drops flagged for a closer look." },
-  { icon: ShieldAlert, title: "Safety recalls", body: "Published DVSA recalls for your model and build year." },
+  { icon: ShieldAlert, title: "Safety recalls", body: "A direct link to the official GOV.UK recall check for your exact car." },
   { icon: Wind, title: "Tax & ULEZ estimates", body: "Estimated annual VED and ULEZ/Clean Air Zone compliance, with links to the official checkers." },
 ];
 

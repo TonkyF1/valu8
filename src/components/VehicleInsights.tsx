@@ -1,13 +1,12 @@
 import { AccuracyDisclaimer } from "@/components/AccuracyDisclaimer";
-import { Component, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Component, useMemo, type ReactNode } from "react";
 import { captureError } from "@/lib/sentry";
 import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { AlertTriangle, CheckCircle2, ExternalLink, Gauge, Info, ListChecks, Loader2, Receipt, ShieldAlert, Wind, Wrench } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { AlertTriangle, CheckCircle2, ExternalLink, Gauge, Info, ListChecks, Receipt, ShieldAlert, Wind, Wrench } from "lucide-react";
 import type { ValuationReport } from "@/lib/valuation";
 import {
   analyseMileage, estimateUlez, estimateVed, sellerChecklist, summariseAdvisoryCosts,
-  CAZ_CHECKER_URL, ULEZ_CHECKER_URL, VED_RATES_FROM, VED_SOURCE, type Recall,
+  CAZ_CHECKER_URL, ULEZ_CHECKER_URL, VED_RATES_FROM, VED_SOURCE,
 } from "../../supabase/functions/_shared/insights";
 
 interface Props {
@@ -55,19 +54,6 @@ export function VehicleInsights({ report, vehicle, isShared }: Props) {
   const costs = useMemo(() => summariseAdvisoryCosts(latestAdvisories), [r.motSource, r.motHistory]); // eslint-disable-line react-hooks/exhaustive-deps
   const checklist = useMemo(() => sellerChecklist({ motExpiry: vehicle.mot_expiry, hasServiceHistory: !!vehicle.service_notes }), [vehicle.mot_expiry, vehicle.service_notes]);
 
-  const [recalls, setRecalls] = useState<{ loading: boolean; list: Recall[] | null; error?: string }>({ loading: true, list: null });
-  useEffect(() => {
-    let off = false;
-    supabase.functions
-      .invoke("recall-check", { body: { make: vehicle.make, model: baseModel, year: vehicle.year } })
-      .then(({ data, error }) => {
-        if (off) return;
-        if (error || (data as any)?.error) setRecalls({ loading: false, list: null, error: "Recall data unavailable right now." });
-        else setRecalls({ loading: false, list: ((data as any)?.recalls ?? []) as Recall[] });
-      })
-      .catch(() => !off && setRecalls({ loading: false, list: null, error: "Recall data unavailable right now." }));
-    return () => { off = true; };
-  }, [vehicle.make, baseModel, vehicle.year]);
 
   const ulezStyle = ulez.status === "likely_compliant" ? "text-emerald-400" : ulez.status === "likely_non_compliant" ? "text-amber-400" : "text-muted-foreground";
   const ulezLabel = ulez.status === "likely_compliant" ? "Likely compliant" : ulez.status === "likely_non_compliant" ? "Likely non-compliant" : "Check required";
@@ -150,30 +136,11 @@ export function VehicleInsights({ report, vehicle, isShared }: Props) {
 
       {/* Recalls */}
       <Card title="Safety recalls" icon={ShieldAlert}>
-        {recalls.loading ? (
-          <p className="text-xs text-muted-foreground inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Checking DVSA recall data…</p>
-        ) : recalls.error ? (
-          <p className="text-xs text-muted-foreground">{recalls.error}</p>
-        ) : recalls.list && recalls.list.length ? (
-          <>
-            <p className="text-xs text-muted-foreground mb-2">
-              {recalls.list.length} recall{recalls.list.length === 1 ? "" : "s"} published for {vehicle.make} {baseModel} models built around {vehicle.year}. These may not all apply to this exact car.
-            </p>
-            <ul className="space-y-2">
-              {recalls.list.slice(0, 6).map((x) => (
-                <li key={x.number} className="text-xs border-l-2 border-amber-400/60 pl-3">
-                  <div className="font-medium">{x.concern || x.defect.slice(0, 80)}</div>
-                  <div className="text-muted-foreground">{x.defect}</div>
-                  <div className="text-muted-foreground/70 mt-0.5">Ref {x.number} · launched {x.launchDate}</div>
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p className="text-xs text-muted-foreground">No matching recalls found in DVSA data for this make, model and year.</p>
-        )}
-        <a href="https://www.check-vehicle-recalls.service.gov.uk/" target="_blank" rel="noopener noreferrer" className="text-xs text-primary inline-flex items-center gap-1 mt-3 hover:underline">
-          Check this exact car by VIN/reg on GOV.UK <ExternalLink className="h-3 w-3" aria-hidden />
+        <p className="text-xs text-muted-foreground">
+          Recalls are issued against specific build batches, so the only reliable check is by this car's registration on the official DVSA service.
+        </p>
+        <a href="https://www.check-vehicle-recalls.service.gov.uk/" target="_blank" rel="noopener noreferrer" className="text-xs text-primary inline-flex items-center gap-1 mt-3 min-h-[44px] sm:min-h-0 hover:underline">
+          Check your recalls on GOV.UK <ExternalLink className="h-3 w-3" aria-hidden />
         </a>
       </Card>
 
