@@ -4,7 +4,7 @@
  * - LEGAL_ADDRESS: optional. Leave "" to publish no postal address.
  * Empty values are simply omitted from the Privacy and Terms pages; nothing placeholder-like is ever shown.
  */
-export const LEGAL_NAME = "";
+export const LEGAL_NAME = "Tony Fisher trading as Valu8";
 export const LEGAL_ADDRESS = "";
 
 /** Sentence identifying who runs Valu8, used on Privacy and Terms. */

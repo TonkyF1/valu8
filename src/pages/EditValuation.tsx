@@ -16,7 +16,8 @@ import { getModelsForMake } from "@/lib/models";
 import { getVariantsFor } from "@/lib/variants";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { toast } from "sonner";
-import { ArrowLeft, RefreshCw, Save, Crown, X } from "lucide-react";
+import { ArrowLeft, RefreshCw, Save, Crown, X, Pencil } from "lucide-react";
+import { BILLING_ENABLED } from "@/lib/billing";
 import { signPhotoUrls, extractPhotoPath } from "@/lib/photos";
 
 type InputSnapshot = {
@@ -267,7 +268,7 @@ export default function EditValuation() {
         <div className="flex items-end justify-between gap-4 mb-6 flex-wrap">
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary mb-2">
-              <Crown className="h-3 w-3" /> Premium edit mode
+              {BILLING_ENABLED ? <><Crown className="h-3 w-3" aria-hidden /> Premium edit mode</> : <><Pencil className="h-3 w-3" aria-hidden /> Edit mode</>}
             </div>
             <h1 className="text-3xl font-bold tracking-tight">Edit valuation</h1>
             <p className="text-muted-foreground mt-1">{row.year} {row.make} {row.model}</p>

@@ -15,12 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useConfirm } from "@/components/ConfirmDialog";
 import { signPhotoUrls } from "@/lib/photos";
 import { hasPhotos } from "@/lib/askingPrice";
+import { BILLING_ENABLED } from "@/lib/billing";
 import { motDue, buildMotIcs, downloadIcs, valueTrends } from "@/lib/retention";
 import { SITE_URL } from "@/lib/site";
 import { CalendarPlus, AlertTriangle, TrendingDown, Minus } from "lucide-react";
 
-
-const BILLING_ENABLED = import.meta.env.VITE_BILLING_ENABLED === "true";
 
 type SortKey = "newest" | "oldest" | "highest" | "lowest";
 
@@ -410,9 +409,9 @@ export default function Dashboard() {
 
                     {/* Actions */}
                     <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1">
-                      <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg" title={isPremium ? "Edit" : "Premium feature"}>
+                      <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg" title={isPremium || !BILLING_ENABLED ? "Edit" : "Premium feature"} aria-label="Edit valuation">
                         <Link to={`/valuation/${r.id}/edit`} onClick={(e) => e.stopPropagation()}>
-                          {isPremium ? <Pencil className="h-3.5 w-3.5" /> : <Crown className="h-3.5 w-3.5 text-primary" />}
+                          {isPremium || !BILLING_ENABLED ? <Pencil className="h-3.5 w-3.5" aria-hidden /> : <Crown className="h-3.5 w-3.5 text-primary" aria-hidden />}
                         </Link>
                       </Button>
                       <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg hidden sm:inline-flex" title="View report">
