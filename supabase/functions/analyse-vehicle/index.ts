@@ -12,7 +12,7 @@ import {
   isClearlyBadMarketData, computeMarketRange, type ConfidenceLevel,
 } from "../_shared/valuation-math.ts";
 import { motStatus, motAdjustment, sanitizeMotClaim, isFalseLongMotClaim, motDaysRemaining, motConsistentBullets } from "../_shared/mot.ts";
-import { fixOdometerWording } from "../_shared/vehicle-text.ts";
+import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
 
@@ -91,7 +91,26 @@ interface MarketPricing {
 }
 
 
+// Try the DVLA model name first, then cleaned-up variants (trim stripped,
+// import alias, Mazda6-style) — a zero-comp search otherwise falls back to AI-only.
 async function fetchMarketCheckPricing(
+  make: string,
+  model: string,
+  year: number,
+  mileage: number,
+  variant?: string,
+): Promise<MarketPricing | null> {
+  const candidates = compSearchModels(make, model);
+  let best: MarketPricing | null = null;
+  for (const m of candidates.length ? candidates : [model]) {
+    const r = await fetchMarketCheckPricingFor(make, m, year, mileage, variant);
+    if (r && r.listings.length >= 3) return r;
+    if (r && r.listings.length > (best?.listings.length ?? 0)) best = r;
+  }
+  return best;
+}
+
+async function fetchMarketCheckPricingFor(
   make: string,
   model: string,
   year: number,

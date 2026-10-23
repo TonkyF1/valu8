@@ -121,3 +121,32 @@ export function vehicleTitle(p: {
   else if (litres && !model.includes(litres)) parts.push(`${litres}${fuel && fuel !== "Electric" ? ` ${fuel}` : ""}`);
   return parts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 }
+
+/** UK-market names for common JDM-import model names (DVLA records the import name). */
+const IMPORT_MODEL_ALIASES: Record<string, Record<string, string>> = {
+  HONDA: { FIT: "Jazz", "FIT SHUTTLE": "Jazz", VEZEL: "HR-V", "GRACE": "Civic" },
+  TOYOTA: { AQUA: "Prius C", VITZ: "Yaris", "ESTIMA": "Previa", "HARRIER": "RAV4" },
+  NISSAN: { DAYZ: "Pixo", "X-TRAIL": "X-Trail" },
+  MAZDA: { DEMIO: "2", AXELA: "3", ATENZA: "6" },
+};
+
+/**
+ * Ordered, de-duplicated model names to try when searching listing APIs.
+ * DVLA/VDG model strings often carry trim ("V70 R-Design SE D") or a bare
+ * number ("6" for Mazda6), which return zero comps and drop the car to an
+ * AI-only estimate. First candidate is always the original base model.
+ */
+export function compSearchModels(make?: string | null, model?: string | null): string[] {
+  const mk = String(make ?? "").trim().toUpperCase();
+  const base = String(model ?? "").split("·")[0].trim();
+  if (!base) return [];
+  const out: string[] = [base];
+  const first = base.split(/\s+/)[0];
+  const alias = IMPORT_MODEL_ALIASES[mk]?.[base.toUpperCase()] ?? IMPORT_MODEL_ALIASES[mk]?.[first.toUpperCase()];
+  if (alias) out.push(alias);
+  if (first && first !== base) out.push(first);
+  // Mazda / similar: bare-number model names are listed as e.g. "Mazda6" / "MAZDA6".
+  const num = (alias ?? first).match(/^\d$/);
+  if (mk === "MAZDA" && num) out.push(`Mazda${num[0]}`, `MAZDA${num[0]}`);
+  return [...new Set(out)];
+}
