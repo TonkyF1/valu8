@@ -130,6 +130,14 @@ const IMPORT_MODEL_ALIASES: Record<string, Record<string, string>> = {
   MAZDA: { DEMIO: "2", AXELA: "3", ATENZA: "6" },
 };
 
+// DVLA spellings that differ from how UK listing feeds name the model
+// (Ford "Grand C-Max" is listed as "Grand C-MAX"/"C-MAX"; VW "Up" as "up!").
+const LISTING_MODEL_ALIASES: Record<string, Record<string, string[]>> = {
+  FORD: { "GRAND C-MAX": ["Grand C-MAX", "C-MAX"], "C-MAX": ["C-MAX"], "GRAND TOURNEO CONNECT": ["Grand Tourneo Connect", "Tourneo Connect"] },
+  VOLKSWAGEN: { UP: ["up!"], "UP!": ["up!"] },
+  VW: { UP: ["up!"], "UP!": ["up!"] },
+};
+
 /**
  * Ordered, de-duplicated model names to try when searching listing APIs.
  * DVLA/VDG model strings often carry trim ("V70 R-Design SE D") or a bare
@@ -144,7 +152,10 @@ export function compSearchModels(make?: string | null, model?: string | null): s
   const first = base.split(/\s+/)[0];
   const alias = IMPORT_MODEL_ALIASES[mk]?.[base.toUpperCase()] ?? IMPORT_MODEL_ALIASES[mk]?.[first.toUpperCase()];
   if (alias) out.push(alias);
-  if (first && first !== base) out.push(first);
+  const listing = LISTING_MODEL_ALIASES[mk]?.[base.toUpperCase()];
+  if (listing) out.push(...listing);
+  // "Grand" alone is not a model name (Grand C-Max, Grand Scenic...).
+  if (first && first !== base && !/^grand$/i.test(first)) out.push(first);
   // Mazda / similar: bare-number model names are listed as e.g. "Mazda6" / "MAZDA6".
   const num = (alias ?? first).match(/^\d$/);
   if (mk === "MAZDA" && num) out.push(`Mazda${num[0]}`, `MAZDA${num[0]}`);

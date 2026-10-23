@@ -1,4 +1,4 @@
-import { askRange, retailFromPrivate, calibrateAiPrivate, compAdjustmentFactor, finalisePricing, reconcileMileage } from "../../../supabase/functions/_shared/pricing";
+import { askRange, retailFromPrivate, calibrateAiPrivate, compAdjustmentFactor, finalisePricing, reconcileMileage, applyCheapCarRules, aiPathAdjustments } from "../../../supabase/functions/_shared/pricing";
 import { roundToGrain, roundTo50 } from "../../../supabase/functions/_shared/valuation-math";
 import type { BacktestCar } from "./backtest-cars";
 
@@ -14,12 +14,16 @@ export function recomputeCar(c: BacktestCar) {
     const anchor = c.comps.anchor * compAdjustmentFactor(miles, c.year, { price: c.comps.anchor, miles: c.comps.compMiles, year: c.comps.compYear });
     const items = [...c.comps.items];
     if (check.status === "clocking") items.push({ label: "Declared mileage below MOT record", impactPct: -15, scope: "retail" });
-    const l = finalisePricing({ anchor, miles, compMedianMiles: c.comps.compMedianMiles, items });
+    const priced = applyCheapCarRules(items, { anchor, correctedMedian: anchor });
+    const l = finalisePricing({ anchor, miles, compMedianMiles: c.comps.compMedianMiles, items: priced });
     retail = l.dealerRetail; privateSale = l.privateSale;
     notes.push(`anchor ${Math.round(anchor)}, retail net ${l.retailNetPct}%, private net ${l.privateNetPct}%`);
   } else {
     const cal = calibrateAiPrivate({ aiPrivate: c.oldPrivate, make: c.make, year: c.year, miles, currentYear: BACKTEST_YEAR, motValid: c.motValid });
-    privateSale = roundToGrain(cal.privateSale);
+    // No stored MOT / ad text for these cars: post-adjustments are a no-op
+    // except clocking, exactly as analyse-vehicle would apply them.
+    const post = aiPathAdjustments({ motItems: [], failedNoMot: false, declared: [], clocking: check.status === "clocking", motMax: check.motMax, privateEstimate: cal.privateSale });
+    privateSale = roundToGrain(cal.privateSale * post.factor);
     retail = roundToGrain(retailFromPrivate(privateSale));
     notes.push(...cal.notes);
   }

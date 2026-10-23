@@ -13,7 +13,7 @@ import {
 } from "../_shared/valuation-math.ts";
 import { motStatus, motAdjustment, currentMotExpiry, failedWithoutValidMot, sanitizeMotClaim, isFalseLongMotClaim, motDaysRemaining, motConsistentBullets } from "../_shared/mot.ts";
 import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts";
-import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, type LedgerItem } from "../_shared/pricing.ts";
+import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
 
 const PHOTO_BUCKET = "vehicle-photos";
@@ -110,6 +110,21 @@ async function fetchMarketCheckPricing(
   return best;
 }
 
+async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
+  let last: Response | undefined; let err: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      last = await fetch(url);
+      if (last.ok || (last.status !== 429 && last.status < 500)) return last;
+      console.warn("MarketCheck retryable status", last.status, "attempt", i + 1);
+      if (i < attempts - 1) await last.body?.cancel();
+    } catch (e) { err = e; console.warn("MarketCheck network error, attempt", i + 1, e); }
+    if (i < attempts - 1) await new Promise((res) => setTimeout(res, 600 * (i + 1) + Math.floor(Math.random() * 300)));
+  }
+  if (last) return last;
+  throw err;
+}
+
 async function fetchMarketCheckPricingFor(
   make: string,
   model: string,
@@ -137,7 +152,10 @@ async function fetchMarketCheckPricingFor(
     params.set("sort_order", highMiles ? "desc" : "asc");
     const url = `https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`;
     try {
-      const r = await fetch(url);
+      // MarketCheck throttles bursts (several tier queries per valuation):
+      // retry 429/5xx/network errors with a short backoff instead of silently
+      // dropping a well-covered car to the AI-only path (VE15WHA: 715 comps -> 0).
+      const r = await fetchWithRetry(url);
       if (!r.ok) {
         console.error("MarketCheck listings", r.status, (await r.text()).slice(0, 160));
         return null;
@@ -1070,7 +1088,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       if (photoImpactPct !== 0) add("Specific issues seen in photos", photoImpactPct);
 
       const anchor = anchorMedian > 0 ? anchorMedian : mc.median;
-      const ledger = finalisePricing({ anchor, miles: pricedMiles, compMedianMiles, items });
+      // Cheap-car rules: no history/recent-work uplift under ~£2k private, and
+      // budget anchor + soft MOT/description deductions capped at -12%.
+      const pricedItems = applyCheapCarRules(items, { anchor, correctedMedian: anchorAdjMedian > 0 ? anchorAdjMedian : anchor });
+      const ledger = finalisePricing({ anchor, miles: pricedMiles, compMedianMiles, items: pricedItems });
       let dealerRetail = ledger.dealerRetail;
       let privateSale = ledger.privateSale;
       let dealerTradeIn = ledger.dealerTradeIn;
@@ -1174,7 +1195,18 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         aiPrivate: market.center, make: body.make, year: body.year, miles: pricedMiles,
         currentYear: CURRENT_YEAR, motValid: motDays != null && motDays >= 0,
       });
-      const fair = cal.privateSale;
+      // Same deterministic post-adjustments as the comps path (MOT penalties,
+      // failed MOT with no valid MOT, declared write-off / spares, clocking).
+      const post = aiPathAdjustments({
+        motItems: motPenaltyItems(motEntries, new Date().toISOString().slice(0, 10)),
+        failedNoMot: failedWithoutValidMot(motEntries),
+        declared: declaredStatusItems(serviceText),
+        clocking: mileageCheck.status === "clocking",
+        motMax: mileageCheck.motMax,
+        privateEstimate: cal.privateSale,
+      });
+      for (const it of post.items) adjustments.push(it);
+      const fair = Math.max(100, cal.privateSale * post.factor);
       const calRatio = fair / Math.max(1, market.center);
       // Retail implied by the same dealer-cost model used on the comps path.
       const impliedRetail = retailFromPrivate(fair / Math.max(0.5, 1 - highMileagePenalty(pricedMiles)));

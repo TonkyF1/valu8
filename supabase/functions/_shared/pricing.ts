@@ -488,3 +488,72 @@ export function declaredStatusItems(text: string | null | undefined): LedgerItem
   }
   return items;
 }
+
+// ---------------------------------------------------------------------------
+// Cheap-car rules (v2.3). In the budget market the lower-quantile anchor
+// already prices in "tired old car" — stacking every MOT/advisory/description
+// deduction on top double-counts (Peugeot 3008 DE61HGL -37%, Auris CU08ZZK
+// -30%). Seller-declared facts (write-off, spares, no MOT, clocking) are
+// distinct and are never capped.
+export const BUDGET_STACK_MAX_MEDIAN = 3000;
+export const BUDGET_STACK_CAP = -12;
+export const UPLIFT_MIN_PRIVATE = 2000;
+const HARD_FACT_RE = /write-off|written off|\bcat [a-z]\b|spares|no valid mot|declared mileage|photos|condition/i;
+const CHEAP_UPLIFT_RE = /service history|recent major mechanical work/i;
+export const BUDGET_CAP_LABEL = "Overlapping budget-market deductions capped";
+
+export function isSoftDeduction(i: LedgerItem): boolean {
+  return i.impactPct < 0 && i.scope === "retail" && !HARD_FACT_RE.test(i.label);
+}
+
+/**
+ * Apply the cheap-car rules to a comps-path ledger:
+ *  - drop positive history / recent-work uplifts when the car's private value
+ *    (from the anchor) is under £2k — at that price buyers don't pay for stamps;
+ *  - when the budget-market anchor applies and the corrected comps median is
+ *    ≤ £3k, cap budget anchor + soft retail deductions at -12% by trimming the
+ *    soft deductions (never by undoing the anchor itself).
+ */
+export function applyCheapCarRules(items: LedgerItem[], p: { anchor: number; correctedMedian: number }): LedgerItem[] {
+  let out = items.map((i) => ({ ...i }));
+  if (p.anchor > 0 && dealerToPrivate(p.anchor) < UPLIFT_MIN_PRIVATE) {
+    out = out.filter((i) => !(i.impactPct > 0 && i.scope === "retail" && CHEAP_UPLIFT_RE.test(i.label)));
+  }
+  const budget = out.filter((i) => i.scope === "anchor" && /budget market/i.test(i.label)).reduce((s, i) => s + i.impactPct, 0);
+  if (budget < 0 && p.correctedMedian > 0 && p.correctedMedian <= BUDGET_STACK_MAX_MEDIAN) {
+    const soft = out.filter(isSoftDeduction).reduce((s, i) => s + i.impactPct, 0);
+    const excess = BUDGET_STACK_CAP - (budget + soft); // > 0 when over the cap
+    const giveBack = Math.min(Math.max(0, excess), -soft);
+    if (giveBack > 0) out.push({ label: BUDGET_CAP_LABEL, impactPct: Math.round(giveBack), scope: "retail" });
+  }
+  return out;
+}
+
+/**
+ * Deterministic post-adjustments for the AI-only (no comps) path, so cars with
+ * no comparables get the same MOT / declared-status / clocking treatment as
+ * the comps path. Returns ledger items (retail scope) and the multiplier to
+ * apply to the AI private figure. Soft (MOT/advisory) deductions are capped at
+ * the budget cap for cheap cars, mirroring applyCheapCarRules.
+ */
+export function aiPathAdjustments(p: {
+  motItems: LedgerItem[];
+  failedNoMot: boolean;
+  declared: LedgerItem[];
+  clocking: boolean;
+  motMax?: number;
+  privateEstimate: number;
+}): { items: LedgerItem[]; netPct: number; factor: number } {
+  const items: LedgerItem[] = [...p.motItems.map((i) => ({ ...i }))];
+  if (p.failedNoMot) items.push({ label: "Failed latest MOT — no valid MOT", impactPct: -20, scope: "retail" });
+  items.push(...p.declared.map((i) => ({ ...i })));
+  if (p.clocking) items.push({ label: `Declared mileage below MOT record${p.motMax ? ` (${p.motMax.toLocaleString("en-GB")} mi)` : ""}`, impactPct: -15, scope: "retail" });
+  if (p.privateEstimate > 0 && p.privateEstimate < UPLIFT_MIN_PRIVATE) {
+    const soft = items.filter(isSoftDeduction).reduce((s, i) => s + i.impactPct, 0);
+    if (soft < BUDGET_STACK_CAP) items.push({ label: BUDGET_CAP_LABEL, impactPct: BUDGET_STACK_CAP - soft, scope: "retail" });
+  }
+  const raw = items.reduce((s, i) => s + i.impactPct, 0);
+  const netPct = clamp(raw, RETAIL_NET_MIN, 0);
+  if (netPct !== raw) items.push({ label: "Combined adjustments capped", impactPct: netPct - raw, scope: "retail" });
+  return { items, netPct, factor: 1 + netPct / 100 };
+}
