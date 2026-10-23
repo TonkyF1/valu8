@@ -37,7 +37,7 @@ export default function Check() {
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<(AdvertCheck & { asking: number; sample: number; basis: string }) | null>(null);
   const [noData, setNoData] = useState(false);
-  useSeo({ title: "Is this car advert fair? Free used car price checker | Valu8", description: "Paste a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against live market data.", path: "/check" });
+  useSeo({ title: "Is this used car a fair price? Free advert price checker | Valu8", description: "Paste a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against live market data.", path: "/check" });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,9 +84,9 @@ export default function Check() {
       <Header />
       <main id="main" className="flex-1 container max-w-2xl py-8 sm:py-10">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-          <SearchCheck className="h-7 w-7 text-primary shrink-0" aria-hidden /> Is this advert fair?
+          <SearchCheck className="h-7 w-7 text-primary shrink-0" aria-hidden /> Is this used car a fair price?
         </h1>
-        <p className="text-sm text-muted-foreground mt-2">Found a car on AutoTrader, eBay, Gumtree or Facebook? Copy in the details and we'll check the asking price against our private-sale and dealer retail range.</p>
+        <p className="text-sm text-muted-foreground mt-2">Buying a used car? Copy in the details from AutoTrader, eBay, Gumtree or Facebook and we'll compare the asking price with similar cars listed in the UK right now, plus our private-sale estimate.</p>
 
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 mt-6">
           {field("make", "Make", { placeholder: "Skoda", autoComplete: "off", required: true })}

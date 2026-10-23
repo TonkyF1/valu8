@@ -48,7 +48,7 @@ export default function CarValue() {
         </p>
         <div className="mt-6 flex flex-col sm:flex-row gap-3">
           <Button asChild variant="hero" size="xl"><Link to="/valuation/new">Value my {car.model} <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
-          <Button asChild variant="outline" size="xl"><Link to="/buyer">Check a {car.model} asking price</Link></Button>
+          <Button asChild variant="outline" size="xl"><Link to="/check">Check a {car.model} asking price</Link></Button>
         </div>
 
         <section className="mt-12" aria-labelledby="how">

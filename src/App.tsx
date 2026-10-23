@@ -23,7 +23,6 @@ const Disclaimers = lazy(() => import("./pages/Disclaimers"));
 const About = lazy(() => import("./pages/About"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 import Landing from "./pages/Landing";
-const Buyer = lazy(() => import("./pages/Buyer"));
 const Compare = lazy(() => import("./pages/Compare"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Pricing = lazy(() => import("./pages/Pricing"));
@@ -59,7 +58,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             {/* Unprotected so anonymous visitors can enter a reg; NewValuation stores the intent and sends them to /auth. */}
             <Route path="/valuation/new" element={<NewValuation />} />
-            <Route path="/buyer" element={<Buyer />} />
+            <Route path="/buyer" element={<Navigate to="/check" replace />} />
             <Route path="/check" element={<Check />} />
             <Route path="/accuracy" element={<Accuracy />} />
             <Route path="/pricing" element={<Pricing />} />

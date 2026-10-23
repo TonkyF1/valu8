@@ -11,7 +11,6 @@ const COLS: { title: string; links: { to: string; label: string }[] }[] = [
   ] },
   { title: "Guides", links: [
     { to: "/car-values", label: "Car values by model" },
-    { to: "/buyer", label: "Buying a used car" },
     { to: "/about", label: "About & contact" },
   ] },
   { title: "Legal", links: [
