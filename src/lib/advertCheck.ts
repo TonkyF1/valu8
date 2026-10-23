@@ -1,6 +1,6 @@
 import { coherentPricing } from "../../supabase/functions/_shared/coherentPricing";
 
-/** Market range from the existing fair-price function (live UK listing prices, mileage-adjusted). */
+/** Market range from the existing fair-price function (own-comps / AI estimate, or MarketCheck when enabled). */
 export interface MarketRange { low: number; mid: number; high: number }
 
 export type AdvertVerdict = "overpriced" | "fair" | "bargain";
