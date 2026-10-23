@@ -7,7 +7,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AccuracyDisclaimer } from "@/components/VehicleInsights";
+import { AccuracyDisclaimer } from "@/components/AccuracyDisclaimer";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 

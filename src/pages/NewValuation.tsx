@@ -92,7 +92,7 @@ export default function NewValuation() {
         setLookup({ registration: "" });
         setEditing(true);
       }
-    } catch {}
+    } catch { /* storage unavailable */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -130,7 +130,7 @@ export default function NewValuation() {
     if (!user) {
       try {
         sessionStorage.setItem("valu8_pending_intent", JSON.stringify({ kind: "lookup", reg: cleaned }));
-      } catch {}
+      } catch { /* storage unavailable */ }
       toast.message("Sign in to get your valuation", { description: "We'll pick up right where you left off." });
       navigate("/auth");
       return;
@@ -142,7 +142,7 @@ export default function NewValuation() {
     if (!user) {
       try {
         sessionStorage.setItem("valu8_pending_intent", JSON.stringify({ kind: "manual" }));
-      } catch {}
+      } catch { /* storage unavailable */ }
       toast.message("Sign in to get your valuation", { description: "We'll pick up right where you left off." });
       navigate("/auth");
       return;

@@ -1,3 +1,4 @@
+import { AccuracyDisclaimer } from "@/components/AccuracyDisclaimer";
 import { Component, useEffect, useMemo, useState, type ReactNode } from "react";
 import { captureError } from "@/lib/sentry";
 import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -51,7 +52,7 @@ export function VehicleInsights({ report, vehicle, isShared }: Props) {
     fuelType: facts.fuelType, year: vehicle.year, firstRegistered: facts.firstRegistered, euroStatus: facts.euroStatus,
   }), [facts.fuelType, facts.firstRegistered, facts.euroStatus, vehicle.year]);
   const latestAdvisories = r.motSource === "dvsa" ? r.motHistory?.[0]?.advisories ?? [] : [];
-  const costs = useMemo(() => summariseAdvisoryCosts(latestAdvisories), [latestAdvisories]);
+  const costs = useMemo(() => summariseAdvisoryCosts(latestAdvisories), [r.motSource, r.motHistory]); // eslint-disable-line react-hooks/exhaustive-deps
   const checklist = useMemo(() => sellerChecklist({ motExpiry: vehicle.mot_expiry, hasServiceHistory: !!vehicle.service_notes }), [vehicle.mot_expiry, vehicle.service_notes]);
 
   const [recalls, setRecalls] = useState<{ loading: boolean; list: Recall[] | null; error?: string }>({ loading: true, list: null });
@@ -213,19 +214,7 @@ export function VehicleInsights({ report, vehicle, isShared }: Props) {
   );
 }
 
-export function AccuracyDisclaimer() {
-  return (
-    <div className="rounded-lg border border-border/60 bg-muted/20 p-3 text-[11px] text-muted-foreground flex gap-2" role="note">
-      <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden />
-      <p>
-        <strong className="text-foreground">How accurate is this?</strong> Valuations are estimates based on live listings
-        (asking prices, not sold prices), DVSA records and AI analysis of your details and photos. Real sale prices vary with
-        condition, spec, location and timing. Tax, ULEZ, recall and repair figures are indicative. Always confirm with the
-        official GOV.UK and TfL services and get a professional inspection and history check before buying or selling.
-      </p>
-    </div>
-  );
-}
+export { AccuracyDisclaimer };
 
 /** Keeps an insights failure from taking down the whole report. */
 export class SectionBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
