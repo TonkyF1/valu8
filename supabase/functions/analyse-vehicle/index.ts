@@ -11,7 +11,9 @@ import {
   sanitizeNarrativeYears, sanitizeNarrativeList, isEnthusiastCar, getExoticAnchor,
   isClearlyBadMarketData, computeMarketRange, type ConfidenceLevel,
 } from "../_shared/valuation-math.ts";
-import { motStatus, motAdjustment, sanitizeMotClaim, isFalseLongMotClaim } from "../_shared/mot.ts";
+import { motStatus, motAdjustment, sanitizeMotClaim, isFalseLongMotClaim, motDaysRemaining } from "../_shared/mot.ts";
+import { fixOdometerWording } from "../_shared/vehicle-text.ts";
+import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText } from "../_shared/pricing.ts";
 
 const PHOTO_BUCKET = "vehicle-photos";
 // 1h is plenty — the AI vision call completes in seconds.
@@ -95,18 +97,22 @@ async function fetchMarketCheckPricing(
 ): Promise<MarketPricing | null> {
   if (!MC_KEY) return null;
   const baseModel = model.split(" · ")[0].split("·")[0].trim();
+  const expectedMiles = Math.max(3000, (new Date().getUTCFullYear() - year) * 8000);
+  const highMiles = mileage > expectedMiles * 1.1;
   const trim = variant?.split(" · ")[0].split("·")[0].trim();
 
   // Pull up to 20 real active listings, with stats, for any given filter.
   const tryFetch = async (params: URLSearchParams, tierLabel: string): Promise<MarketPricing | null> => {
-    params.set("rows", "20");
+    params.set("rows", "50");
     params.set("stats", "price,miles");
     params.set("car_type", "used");
     // Stable ordering — without this MarketCheck returns relevance/freshness
     // order which shuffles between calls and makes the anchor wobble even with
     // identical inputs. Sorting by miles ascending gives a deterministic slice.
     params.set("sort_by", "miles");
-    params.set("sort_order", "asc");
+    // High-mileage cars sort descending so the slice isn't all low-mile stock
+    // (a 180k car was being priced off 60k-mile listings).
+    params.set("sort_order", highMiles ? "desc" : "asc");
     const url = `https://mc-api.marketcheck.com/v2/search/car/uk/active?${params}`;
     try {
       const r = await fetch(url);
@@ -199,8 +205,24 @@ async function fetchMarketCheckPricing(
     api_key: MC_KEY,
     make, model: baseModel,
     year_range: `${year - 2}-${year + 2}`,
+    miles_range: `${Math.max(0, mileage - 40000)}-${mileage + 40000}`,
+  }), `${make} ${baseModel} ${year - 2}-${year + 2} (similar mileage)`);
+  if (r && r.listings.length >= 5) return r;
+
+  r = await tryFetch(new URLSearchParams({
+    api_key: MC_KEY,
+    make, model: baseModel,
+    year_range: `${year - 2}-${year + 2}`,
   }), `${make} ${baseModel} ${year - 2}-${year + 2}`);
-  return r;
+  if (r && r.listings.length >= 5) return r;
+
+  // Wider net for old/cheap cars where stock is thin; comps are mileage/age-corrected later.
+  const wide = await tryFetch(new URLSearchParams({
+    api_key: MC_KEY,
+    make, model: baseModel,
+    year_range: `${year - 4}-${year + 4}`,
+  }), `${make} ${baseModel} ${year - 4}-${year + 4}`);
+  return wide && wide.listings.length > (r?.listings.length ?? 0) ? wide : r;
 }
 
 
@@ -229,7 +251,7 @@ const SLOT_LABELS: Record<PhotoSlot, string> = {
   rear: "Rear 3/4 exterior",
   side: "Driver's side profile",
   interior: "Interior (dash + seats)",
-  odometer: "Odometer / mileage",
+  odometer: "Odometer / mileage (the mileage counter — not the rev counter/tachometer)",
   engine: "Engine bay",
   other: "Additional photo",
 };
@@ -482,6 +504,7 @@ The user message gives you a numbered list of photos ("Photo 1", "Photo 2", ...)
 For EVERY photo you analyse:
 - Look at THAT SPECIFIC image and decide what it actually contains.
 - Set photoIndex to the 1-based number of the image you are looking at (Photo 1, Photo 2, ...). This is non-negotiable — if you describe seat wear, photoIndex must point at the image that actually shows seats.
+- On instrument-cluster photos, the mileage reading comes from the ODOMETER (the total-miles counter, usually a digital readout). The rev counter/tachometer shows engine RPM, not mileage — never call the odometer a "rev counter".
 - Set slot to what you ACTUALLY see in that image (front / rear / side / interior / odometer / engine / other) — purely from the visible content, never from position in the list.
 - Never describe something that isn't in that photo. If a photo shows the rear of the car, only talk about the rear in that observation. Interior wear belongs against the interior photo, kerbed alloys against the photo showing those alloys, etc.
 - Analyse each photo independently. Do not carry over observations from a previous photo.
@@ -680,8 +703,13 @@ Deno.serve(async (req) => {
       if (a.year !== b.year) return a.year - b.year;
       return (a.url ?? "").localeCompare(b.url ?? "");
     });
-    const anchorSubset = sortedByMileageDistance.slice(0, Math.min(10, allListings.length));
-    const anchorMedianRaw = anchorSubset.length >= 3 ? median(anchorSubset.map((l) => l.price)) : (mc?.median ?? 0);
+    const anchorSubset = sortedByMileageDistance.slice(0, Math.min(15, allListings.length));
+    // Each comparable is corrected to this car's mileage and year before taking
+    // the median (see _shared/pricing.ts), replacing the old step adjustment.
+    const rawMedianOfSubset = anchorSubset.length >= 3 ? median(anchorSubset.map((l) => l.price)) : (mc?.median ?? 0);
+    const anchorMedianRaw = anchorSubset.length >= 3
+      ? (compAdjustedAnchor(anchorSubset.map((l) => ({ price: l.price, miles: l.mileage, year: l.year })), body.mileage, body.year) ?? rawMedianOfSubset)
+      : (mc?.median ?? 0);
     // Round the anchor to a stable grain so small price wobbles in the sample
     // (one listing changing by £200) don't bleed into the final valuation.
     const anchorMedian = anchorMedianRaw > 0 ? roundToGrain(anchorMedianRaw) : 0;
@@ -703,7 +731,7 @@ ${mc.avgMiles ? `- Avg mileage of comparable listings: ${Math.round(mc.avgMiles)
 CLOSEST 3 LIVE EXAMPLES TO THIS CAR:
 ${examplesText}
 
-These are REAL cars currently for sale in the UK. Use the anchor above as the dealer-asking benchmark for this exact car. Private sale typically lands 4-8% below dealer asking.`
+These are REAL cars currently for sale in the UK. Use the anchor above as the dealer-asking benchmark for this exact car. These are mostly DEALER forecourt prices: a private sale typically lands 12-20% below them (more on cheap or high-mileage cars).`
       : `(No live MarketCheck listings returned for this exact spec — fall back on your own UK private market knowledge and stay conservative.)`;
 
     const motBlock = motEntries.length > 0
@@ -934,12 +962,12 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
 
       // --- Mileage adjustments — LIGHT because the anchor is already mileage-matched.
       // Only penalise when this car is meaningfully above the comparable sample average.
-      const sampleAvg = mc.avgMiles ?? expectedMileage;
-      const milesVsSample = body.mileage / Math.max(sampleAvg, 1);
-      if (milesVsSample >= 1.6) { mult *= 0.90; adjustments.push({ label: "Well above comparable mileage", impactPct: -10 }); }
-      else if (milesVsSample >= 1.3) { mult *= 0.95; adjustments.push({ label: "Above comparable mileage", impactPct: -5 }); }
-      else if (milesVsSample <= 0.6 && body.mileage < 60000) { mult *= 1.07; adjustments.push({ label: "Well below comparable mileage", impactPct: 7 }); }
-      else if (milesVsSample <= 0.8) { mult *= 1.03; adjustments.push({ label: "Below comparable mileage", impactPct: 3 }); }
+      // Mileage/age are corrected per comparable inside the anchor; surface the net effect only.
+      const milesVsSample = body.mileage / Math.max(mc.avgMiles ?? expectedMileage, 1);
+      const compCorrectionPct = rawMedianOfSubset > 0 && anchorMedianRaw > 0 ? Math.round((anchorMedianRaw / rawMedianOfSubset - 1) * 100) : 0;
+      if (Math.abs(compCorrectionPct) >= 2) {
+        adjustments.push({ label: compCorrectionPct < 0 ? "Higher mileage / older than comparables" : "Lower mileage / newer than comparables", impactPct: compCorrectionPct });
+      }
 
       // --- MOT corrosion / failures (real DVSA signals) ---
       if (corrosionMatches >= 2) { mult *= 0.84; adjustments.push({ label: `Multiple corrosion advisories (${corrosionMatches})`, impactPct: -16 }); }
@@ -989,7 +1017,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       // --- MOT expiry (user-entered or DVSA) — previously ignored in this path ---
       // parseMotDate handles ISO, DVSA "YYYY.MM.DD" and UK "DD/MM/YYYY" (new Date() returned NaN for the latter).
       const motAdj = motAdjustment(body.motExpiry || latestTest?.expiryDate);
-      if (motAdj) { mult *= motAdj.mult; adjustments.push({ label: motAdj.label, impactPct: motAdj.impactPct }); }
+      // Dealers re-MOT before sale, so MOT timing affects the private/trade figure, not retail.
+      const motMult = motAdj ? motAdj.mult : 1;
+      if (motAdj) adjustments.push({ label: motAdj.label, impactPct: motAdj.impactPct });
 
       // --- Mileage consistency vs DVSA odometer readings (possible clocking) ---
       const maxRecordedMiles = motEntries.reduce((m, e) => Math.max(m, Number(e.mileage) || 0), 0);
@@ -999,10 +1029,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       }
 
       // --- Photo-level damage findings from the AI (priceImpact in £) ---
-      const photoImpactGbp = (ai.photoInsights ?? []).reduce((sum, p) => {
-        const v = Number(p?.priceImpact);
-        return Number.isFinite(v) ? sum + v : sum;
-      }, 0);
+      const photoImpactGbp = sumPhotoImpacts(ai.photoInsights ?? []);
       const photoImpactAnchor = Math.max(1, (anchorMedian > 0 ? anchorMedian : mc.median) || 1);
       // Condition score already captures general condition; only add specific
       // damage beyond it, capped to ±8% so one misread can't dominate.
@@ -1027,27 +1054,14 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         adjustments.push({ label: "Adjusted toward known exotic floor (sparse market data)", impactPct: 0 });
       }
 
-      // Private-sale ratio — clean cars achieve close to dealer asking. Lift the
-      // baseline a touch so we stop under-selling well-presented private cars.
-      // Tune by condition: outstanding 0.97, good 0.95, average 0.92, poor 0.89.
-      let privateRatio = 0.94;
-      if (score >= 8.5) privateRatio = 0.97;
-      else if (score >= 7.5) privateRatio = 0.95;
-      else if (score >= 6.5) privateRatio = 0.92;
-      else privateRatio = 0.89;
-      if (hasStrongHistory) privateRatio += 0.01;
-      if (recentMajorWork) privateRatio += 0.01;
-      privateRatio = clamp(privateRatio, 0.88, 0.98);
-
-      let privateSale = roundToGrain(dealerRetail * privateRatio);
-      // Blend in the AI's holistic private-sale figure (it saw the photos and the
-      // full notes) at a modest weight, only when it is plausibly close to the
-      // market-derived figure. Previously the AI value was discarded entirely here.
-      const aiPv = Number(ai.privateSaleValue);
-      if (Number.isFinite(aiPv) && aiPv > 0 && Math.abs(aiPv - privateSale) / privateSale <= 0.25) {
-        privateSale = roundToGrain(privateSale * 0.8 + aiPv * 0.2);
+      // Private sale from dealer retail: fixed dealer cost + proportional margin,
+      // plus a high-mileage penalty (see _shared/pricing.ts). The AI blend was
+      // dropped — backtests showed the AI figure carries the same dealer bias.
+      const privateSale = roundToGrain(privateFromRetail(dealerRetail, body.mileage) * motMult);
+      const dealerTradeIn = roundToGrain(tradeFrom(dealerRetail, privateSale));
+      if (highMileagePenalty(body.mileage) > 0) {
+        adjustments.push({ label: "Very high mileage (narrow private buyer pool)", impactPct: -Math.round(highMileagePenalty(body.mileage) * 100) });
       }
-      const dealerTradeIn = roundToGrain(dealerRetail * 0.78);
 
       // Range — tighter for strong cars, wider for problem cars
       const negativeCount = adjustments.filter((a) => a.impactPct < 0).length;
@@ -1055,8 +1069,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       let spread = negativeCount >= 3 ? 0.12 : negativeCount >= 1 ? 0.08 : 0.06;
       if (positiveCount >= 3 && negativeCount === 0) spread = 0.05;
       if (ultraRare) spread = Math.max(spread, 0.20);
-      rangeLow = roundToGrain(privateSale * (1 - spread * 0.8));
-      rangeHigh = roundToGrain(privateSale * (1 + spread));
+      ({ low: rangeLow, high: rangeHigh } = privateRange(privateSale, spread));
 
       // --- Confidence reasoning (short, model-specific) ---
       const isOutlierMileage = milesVsSample >= 1.5 || milesVsSample <= 0.5;
@@ -1088,8 +1101,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         source: "MarketCheck UK",
         sampleSize: mc.count,
         baseDealerRetail: baseRetail,
-        basePrivateSale: roundToGrain(baseRetail * 0.92),
-        baseTradeIn: roundToGrain(baseRetail * 0.78),
+        basePrivateSale: roundToGrain(privateFromRetail(baseRetail, body.mileage)),
+        baseTradeIn: roundToGrain(tradeFrom(baseRetail, privateFromRetail(baseRetail, body.mileage))),
         netAdjustmentPct: Math.round((mult - 1) * 100),
       };
       // Build a transparent reasoning string that highlights both sides.
@@ -1131,19 +1144,29 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         conditionScore: score,
         aiPrivateValue: aiPrivate > fallback * 0.25 ? aiPrivate : fallback,
       });
-      const fair = market.center;
+      const motDays = motDaysRemaining(body.motExpiry || latestTest?.expiryDate);
+      const cal = calibrateAiPrivate({
+        aiPrivate: market.center, make: body.make, year: body.year, miles: body.mileage,
+        currentYear: CURRENT_YEAR, motValid: motDays != null && motDays >= 0,
+      });
+      const fair = cal.privateSale;
+      const calRatio = fair / Math.max(1, market.center);
+      // Retail implied by the same dealer-cost model used on the comps path.
+      const impliedRetail = (fair / Math.max(0.5, 1 - highMileagePenalty(body.mileage)) + 750) / 0.93;
       values = {
-        dealerTradeIn: roundToGrain(fair * 0.78),
+        dealerTradeIn: roundToGrain(tradeFrom(impliedRetail, fair)),
         privateSale: roundToGrain(fair),
-        dealerRetail: roundToGrain(fair * 1.15),
+        dealerRetail: roundToGrain(Math.max(impliedRetail, fair * 1.08)),
       };
       // For ultra-rare cars, widen the range further to communicate uncertainty.
       if (ultraRare) {
         rangeLow = roundToGrain(fair * 0.75);
         rangeHigh = roundToGrain(fair * 1.25);
       } else {
-        rangeLow = market.low;
-        rangeHigh = market.high;
+        ({ low: rangeLow, high: rangeHigh } = {
+          low: Math.min(values.privateSale, roundToGrain(market.low * calRatio)),
+          high: Math.max(values.privateSale, roundToGrain(market.high * calRatio)),
+        });
       }
       if (ultraRare) {
         valuationUnavailable = true;
@@ -1190,7 +1213,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     const rawInsights = Array.isArray(ai.photoInsights) ? ai.photoInsights : [];
     const photoInsights = rawInsights
       .map((ins) => {
-        const observation = sanitizeNarrativeYears(String(ins?.observation ?? "").trim(), body.year, CURRENT_YEAR, allowedNarrativeYears).slice(0, 140);
+        const observation = sanitizeNarrativeYears(
+          fixOdometerWording(String(ins?.observation ?? "").trim()),
+          body.year, CURRENT_YEAR, allowedNarrativeYears,
+        ).slice(0, 140);
         if (!observation) return null;
         // Photo index is the authoritative anchor — it ties the AI's words to the
         // exact image it actually looked at, regardless of any user slot label.
@@ -1342,7 +1368,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       }),
     };
 
-    return new Response(JSON.stringify({ report }), {
+    return new Response(JSON.stringify({ report: dedupeReportText(report) }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

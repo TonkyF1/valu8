@@ -1,4 +1,5 @@
 // Valu8 — UK vehicle lookup by registration (DVSA MOT History API)
+import { normaliseFuel, normaliseColour, displayModel } from "../_shared/vehicle-text.ts";
 import { motDaysRemaining } from "../_shared/mot.ts";
 import { corsHeaders, guard } from "../_shared/guard.ts";
 
@@ -197,16 +198,16 @@ Deno.serve(async (req) => {
     const out: LookupResponse = {
       registration: reg,
       make: vdg?.make ?? dvsaMake,
-      model: vdg?.model ?? dvsaModel,
+      model: displayModel(vdg?.make ?? dvsaMake, vdg?.model ?? dvsaModel, vdg?.fuelType ?? dvsaFuel) || undefined,
       variant: vdg?.variant,
       year: vdg?.year ?? dvsaYear,
       firstRegistered: dvsaFirstReg,
-      fuelType: vdg?.fuelType ?? dvsaFuel,
+      fuelType: normaliseFuel(vdg?.fuelType ?? dvsaFuel),
       transmission: vdg?.transmission,
       engineCapacity: vdg?.engineCapacity,
       bodyStyle: vdg?.bodyStyle,
       doors: vdg?.doors,
-      colour: vdg?.colour ?? dvsaColour,
+      colour: normaliseColour(vdg?.colour ?? dvsaColour),
       vin: vdg?.vin,
       co2Emissions: vdg?.co2Emissions,
       motExpiry,
