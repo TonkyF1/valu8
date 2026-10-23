@@ -62,6 +62,12 @@ export function coherentPricing(input: CoherentInput): CoherentPricing {
     else tradeIn = Math.max(0, privateLow - g);
   }
 
+  // Final invariant: the realistic sale (headline/marker) ALWAYS sits inside the
+  // highlighted private range — widen the range to include it if needed.
+  if (privateLow > P) privateLow = P;
+  if (privateHigh < P) privateHigh = P;
+  if (tradeIn >= privateLow) tradeIn = Math.max(0, privateLow - g);
+
   return {
     tradeIn, privateLow, privateSale: P, privateHigh, askLow, askHigh, retail,
     buffer: askLow - P, scaleLow: tradeIn, scaleHigh: retail,

@@ -542,7 +542,7 @@ export default function Report() {
               <div className="relative">
                 {/* Headline price — bigger, tighter, more Apple */}
                 <div className="text-5xl sm:text-6xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight">
-                  <CountUp value={r.values.privateSale} prefix="£" />
+                  <CountUp value={normaliseReportPricing(r).privateSale} prefix="£" />
                 </div>
                 <p className="text-[12px] text-muted-foreground mt-2 max-w-[44ch]">
                   Our estimate of a realistic private sale in today's UK market.

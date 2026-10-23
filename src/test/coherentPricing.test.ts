@@ -44,3 +44,20 @@ describe("coherentPricing", () => {
     }
   });
 });
+
+describe("realistic sale inside private range", () => {
+  it("£82,000 realistic with stored £69,000–£80,000 range is widened to include it", () => {
+    const c = coherentPricing({ privateSale: 82000, tradeIn: 65000, retail: 95000, privateLow: 69000, privateHigh: 80000 });
+    assertOrdered(c);
+    expect(c.privateLow).toBe(69000);
+    expect(c.privateHigh).toBeGreaterThanOrEqual(82000);
+  });
+  it("normaliseReportPricing keeps headline inside range for old saved reports", async () => {
+    const { normaliseReportPricing } = await import("@/lib/askingPrice");
+    for (const [p, lo, hi, t] of [[82000, 69000, 80000, 60000], [5000, 5200, 5300, 5100], [12000, 0, 0, 0]]) {
+      const c = normaliseReportPricing({ values: { privateSale: p, dealerTradeIn: t }, valueRange: { privateSaleLow: lo || null, privateSaleHigh: hi || null } });
+      assertOrdered(c);
+      expect(c.privateSale).toBe(p);
+    }
+  });
+});

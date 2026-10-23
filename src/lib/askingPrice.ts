@@ -34,7 +34,7 @@ export function hasPhotos(photoUrls: unknown): boolean {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function normaliseReportPricing(r: any): CoherentPricing {
-  return coherentPricing({
+  const cp = coherentPricing({
     privateSale: Number(r?.values?.privateSale) || 0,
     tradeIn: Number(r?.values?.dealerTradeIn) || null,
     retail: Number(r?.values?.dealerRetail) || null,
@@ -42,4 +42,9 @@ export function normaliseReportPricing(r: any): CoherentPricing {
     privateHigh: r?.valueRange?.privateSaleHigh ?? null,
     buffer: r?.negotiationBuffer || r?.recommendations?.negotiationBuffer || null,
   });
+  // Display guard: headline realistic sale must sit inside the green private range.
+  const privateLow = Math.min(cp.privateLow, cp.privateSale);
+  const privateHigh = Math.max(cp.privateHigh, cp.privateSale);
+  const tradeIn = cp.tradeIn >= privateLow ? Math.max(0, privateLow - 50) : cp.tradeIn;
+  return { ...cp, privateLow, privateHigh, tradeIn, scaleLow: Math.min(cp.scaleLow, tradeIn) };
 }
