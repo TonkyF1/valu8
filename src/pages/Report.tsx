@@ -41,6 +41,7 @@ import { SaleFeedbackCard } from "@/components/SaleFeedbackCard";
 import { stripSaleFeedback } from "@/lib/saleFeedback";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSaleFeedback } from "@/lib/saleFeedback";
+import { priceBandGeometry } from "@/lib/priceBand";
 import { ReportNav, SoldItPrompt, useReportSections } from "@/components/report/ReportNav";
 import { MiniTier, Section, CollapsibleSection, RecBlock, SLOT_LABELS, PhotoFeedback, InsightRow } from "@/components/report/ReportParts";
 
@@ -667,13 +668,11 @@ export default function Report() {
               // Slider scale always spans trade-in → retail.
               const trackLow = cp.scaleLow;
               const trackHigh = cp.scaleHigh;
-              const trackSpan = Math.max(1, trackHigh - trackLow);
-              const pct = (v: number) => Math.max(0, Math.min(100, ((v - trackLow) / trackSpan) * 100));
-              const askLeft = pct(rangeLow);
-              const askWidth = Math.max(2, pct(rangeHigh) - askLeft);
-              const marketLeft = pct(marketLow);
-              const marketWidth = Math.max(2, pct(marketHigh) - marketLeft);
-              const valLeft = pct(cp.privateSale);
+              const band = priceBandGeometry({
+                scaleLow: trackLow, scaleHigh: trackHigh,
+                privateLow: marketLow, privateHigh: marketHigh,
+                askLow: rangeLow, askHigh: rangeHigh, privateSale: cp.privateSale,
+              });
               return (
                 <div className="mt-5 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.07] to-transparent px-4 py-4">
                   <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
@@ -689,22 +688,24 @@ export default function Report() {
                     <div className="relative h-9">
                       {/* base track */}
                       <div className="absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2 rounded-full bg-muted/40" />
-                      {/* market range */}
+                      {/* asking range (outlined, behind) */}
                       <div
-                        className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-muted-foreground/30"
-                        style={{ left: `${marketLeft}%`, width: `${marketWidth}%` }}
-                        aria-label="Estimated private-sale range"
+                        className="absolute top-1/2 h-3 -translate-y-1/2 rounded-full border border-dashed border-foreground/40"
+                        style={{ left: `${band.ask.left}%`, width: `${band.ask.width}%` }}
+                        aria-label="Your suggested asking range"
                       />
-                      {/* asking range */}
+                      {/* private-sale range: green pill that always contains the marker */}
                       <div
                         className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary/70 to-primary shadow-[0_0_12px_hsl(176_100%_42%_/_0.5)]"
-                        style={{ left: `${askLeft}%`, width: `${askWidth}%` }}
-                        aria-label="Your suggested asking range"
+                        style={{ left: `${band.pill.left}%`, width: `${band.pill.width}%` }}
+                        aria-label="Estimated private-sale range"
+                        data-testid="band-pill"
                       />
                       {/* realistic sale marker */}
                       <div
                         className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
-                        style={{ left: `${valLeft}%` }}
+                        style={{ left: `${band.marker}%` }}
+                        data-testid="band-marker"
                       >
                         <span className="h-3.5 w-3.5 rounded-full bg-background border-2 border-primary shadow-[0_0_0_3px_hsl(176_100%_42%_/_0.18)]" />
                       </div>
@@ -715,8 +716,8 @@ export default function Report() {
                     </div>
                     {/* Legend */}
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-muted-foreground">
-                      <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-primary" /> Ask range</span>
-                      <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-muted-foreground/40" /> Est. private range</span>
+                      <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-3 rounded-full bg-primary" /> Est. private range</span>
+                      <span className="inline-flex items-center gap-1.5"><span className="h-2 w-3 rounded-full border border-dashed border-foreground/50" /> Ask range</span>
                       <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full border-2 border-primary bg-background" /> Realistic sale</span>
                     </div>
                   </div>
