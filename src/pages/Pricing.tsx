@@ -14,7 +14,7 @@ import { useSeo } from "@/lib/seo";
 const BILLING_ENABLED = import.meta.env.VITE_BILLING_ENABLED === "true";
 
 const INCLUDED = [
-  "Unlimited valuations with live UK market data",
+  "Unlimited valuations with live UK market data where available",
   "AI photo condition analysis",
   "DVSA MOT history, mileage check and a GOV.UK recall-check link",
   "Tax and ULEZ estimates and advisory repair costs",
@@ -26,7 +26,7 @@ export default function Pricing() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [busy, setBusy] = useState<"checkout" | "portal" | null>(null);
-  useSeo({ title: "Pricing — Valu8", description: "Valu8 is free during early access: live UK market valuations, MOT history, photo condition analysis and ready-to-post adverts.", path: "/pricing" });
+  useSeo({ title: "Pricing — Valu8", description: "Valu8 is free during early access: valuations using live UK market data where available, MOT history, photo condition analysis and ready-to-post adverts.", path: "/pricing" });
   useEffect(() => { if (params.get("billing") === "cancelled") toast("Checkout cancelled"); }, [params]);
 
   const go = async (fn: "stripe-checkout" | "stripe-portal") => {

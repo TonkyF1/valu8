@@ -11,7 +11,7 @@ import { useSeo } from "@/lib/seo";
 
 const FAQS = [
   { q: "How accurate is the valuation?", a: "Where there are enough live listings, prices are anchored to current UK dealer adverts for your make and model, corrected for your car's exact age and mileage. Every report shows its confidence level and how the figure was built." },
-  { q: "Where does the data come from?", a: "MOT history comes from the official DVSA database. Market prices come from live UK dealer listings. Photo condition checks are done by AI. Tax and ULEZ figures are estimates with links to the official checkers." },
+  { q: "Where does the data come from?", a: "MOT history comes from the official DVSA database. Market prices come from live UK dealer listings where available, otherwise an AI market estimate that is clearly labelled. Photo condition checks are done by AI. Tax and ULEZ figures are estimates with links to the official checkers." },
   { q: "Is it really free?", a: "Yes. All features are free during early access and no card is needed." },
   { q: "Do I need photos?", a: "No, but adding a few lets us spot condition issues and selling points that move the price, and gives you better advert copy." },
   { q: "Who can see my valuation?", a: "Your valuations are private to your account unless you choose to share a report link. See our privacy policy for how data is handled." },
@@ -19,7 +19,7 @@ const FAQS = [
 ];
 
 const FEATURES = [
-  { icon: BadgePoundSterling, title: "Live market pricing", body: "Private-sale, trade-in and dealer figures anchored to current UK listings for your make, model, year and mileage." },
+  { icon: BadgePoundSterling, title: "Live market pricing", body: "Private-sale, trade-in and dealer figures anchored to current UK listings, where available, for your make, model, year and mileage." },
   { icon: Camera, title: "Photo condition check", body: "Upload a few photos and AI flags visible wear, damage and selling points that move the price." },
   { icon: FileCheck2, title: "Official DVSA MOT history", body: "Every test, advisory and failure, plus indicative repair-cost bands for current advisories." },
   { icon: Gauge, title: "Mileage consistency", body: "MOT mileage charted over time, with any drops flagged for a closer look." },
@@ -29,7 +29,7 @@ const FEATURES = [
 
 export default function Landing() {
   const { user, loading } = useAuth();
-  useSeo({ title: "Valu8: what's my car worth? Free UK car valuation", description: "Free UK car valuation for private sellers. Live dealer listings, DVSA MOT history and photo checks give you a realistic private sale price and asking price.", path: "/" });
+  useSeo({ title: "Valu8: what's my car worth? Free UK car valuation", description: "Free UK car valuation for private sellers. Live dealer listings where available, DVSA MOT history and photo checks give you a realistic private sale price and asking price.", path: "/" });
 
   // Returning from sign-in with an unfinished valuation: carry on where they left off.
   let pending = false;

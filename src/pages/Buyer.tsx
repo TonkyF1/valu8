@@ -33,7 +33,7 @@ export default function Buyer() {
   const [f, setF] = useState({ make: "", model: "", year: "", mileage: "", askingPrice: "" });
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<Result | null>(null);
-  useSeo({ title: "Is this used car a fair price? Valu8 buyer check", description: "Check whether a used car asking price is fair against live UK listings and MOT history.", path: "/buyer" });
+  useSeo({ title: "Is this used car a fair price? Valu8 buyer check", description: "Check whether a used car asking price is fair against live UK listings where available and MOT history.", path: "/buyer" });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
