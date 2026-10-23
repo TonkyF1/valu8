@@ -3,6 +3,7 @@
 // docs/pricing-calibration.md.
 
 import { clamp, roundToGrain } from "./valuation-math.ts";
+import { OLD_CAR_FLOOR, OLD_CAR_FLOOR_DURABLE } from "./calibration.ts";
 
 export type Comp = { price: number; miles?: number | null; year?: number | null };
 
@@ -96,7 +97,7 @@ const DURABLE_MAKES = /^(toyota|honda|lexus|mazda|suzuki)$/i;
  *   mostly private already).
  * - Same high-mileage penalty as the comps path.
  * - Old/cheap floor: a running, MOT'd car at or below average mileage rarely
- *   trades privately for under ~£1,500; durable makes hold ~15% more at 10+ years.
+ *   trades privately for under ~£1,000 (see calibration.ts OLD_CAR_FLOOR); durable makes hold ~15% more at 10+ years.
  */
 export function calibrateAiPrivate(params: {
   aiPrivate: number;
@@ -118,7 +119,7 @@ export function calibrateAiPrivate(params: {
   const durable = DURABLE_MAKES.test(make.trim());
   if (age >= 10 && durable) { p *= 1.15; notes.push("durable make +15%"); }
   if (age >= 10 && motValid && miles / expected <= 1.1 && miles < 140_000) {
-    const floor = 1500 * (durable ? 1.15 : 1);
+    const floor = durable ? OLD_CAR_FLOOR_DURABLE : OLD_CAR_FLOOR;
     if (p < floor) { p = floor; notes.push(`old-car floor £${Math.round(floor)}`); }
   }
   return { privateSale: p, notes };

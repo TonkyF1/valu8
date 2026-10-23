@@ -90,6 +90,13 @@ export async function isPremiumUser(userId: string): Promise<boolean> {
   return !!prof?.is_premium || !!role;
 }
 
+export async function isAdminUser(userId: string): Promise<boolean> {
+  const admin = adminClient();
+  if (!admin) return false;
+  const { data } = await admin.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+  return !!data;
+}
+
 export async function verifyTurnstile(req: Request): Promise<boolean> {
   const secret = Deno.env.get("TURNSTILE_SECRET_KEY");
   if (!secret) return true; // inactive until a key is configured

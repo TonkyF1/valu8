@@ -1,3 +1,4 @@
+import { LIMITED_EDITION_MIN_COMPS, LIMITED_EDITION_PREMIUM } from "./calibration.ts";
 // Performance / high-spec variant detection and like-for-like comp filtering.
 // A Megane RS Trophy was being priced off GT Line / dCi comps (batch Megane
 // 2026-10-23: mean -50%). Detect performance variants from variant / DVLA model
@@ -8,7 +9,7 @@ export interface PerfRule {
   label: string;
   makes: RegExp;           // matched against normalised make
   detect: RegExp;          // matched against normalised car text
-  specific?: { detect: RegExp; comp: RegExp; label: string }[]; // narrower tiers, most specific first
+  specific?: { detect: RegExp; comp: RegExp; label: string; parent?: RegExp }[]; // narrower tiers, most specific first
   comp?: RegExp;           // comp matcher (defaults to detect)
   includeMake?: boolean;   // the make itself is a performance brand (Abarth)
 }
@@ -28,11 +29,14 @@ const RX = (src: string) => new RegExp(src, "i");
 
 const RS_RENAULT = String.raw`renault ?sport|renaultsport|\br\.?s\.?${NOT_LINE}(?=[\s\-\d]|$)|\brs ?(?:2[0-9]{2}|300)\b|\btrophy\b|\bcup\b`;
 
+const TROPHY_R = /trophy[- ]?r\b(?![. -]*s\b)/i;
+
 export const PERF_RULES: PerfRule[] = [
   { key: "renault-rs", label: "Renault Sport (RS)", makes: /renault/,
     detect: RX(RS_RENAULT),
     specific: [
-      { label: "Trophy-R", detect: /trophy[- ]?r\b/i, comp: /trophy[- ]?r\b/i },
+      // "Trophy R.S. 300" / "trophy-rs" are plain Trophies — R must not be the start of "R.S.".
+      { label: "Trophy-R", detect: TROPHY_R, comp: TROPHY_R, parent: /\btrophy\b(?![- ]?r\b(?![. -]*s\b))/i },
       { label: "Trophy", detect: /\btrophy\b/i, comp: /\btrophy\b/i },
     ] },
   { key: "vw-perf", label: "VW GTI/GTD/R/Clubsport", makes: /volkswagen|^vw$/,
@@ -68,7 +72,7 @@ export interface PerfVariant {
   key: string;
   label: string;        // e.g. "Renault Sport (RS) — Trophy"
   broad: RegExp;
-  specific?: { label: string; comp: RegExp };
+  specific?: { label: string; comp: RegExp; parent?: RegExp };
 }
 
 /**
@@ -94,7 +98,7 @@ export function detectPerformanceVariant(
         key: rule.key,
         label: spec ? `${rule.label} — ${spec.label}` : rule.label,
         broad: rule.comp ?? rule.detect,
-        specific: spec ? { label: spec.label, comp: spec.comp } : undefined,
+        specific: spec ? { label: spec.label, comp: spec.comp, parent: spec.parent } : undefined,
       };
     }
   }
@@ -114,16 +118,23 @@ export function isPerformanceComp(perf: PerfVariant, c: { trim?: string; url?: s
   return specific && perf.specific ? perf.specific.comp.test(t) : perf.broad.test(t);
 }
 
-export type PerfMatch = "specific" | "broad" | "fallback";
+export type PerfMatch = "specific" | "parent" | "broad" | "fallback";
 
 /** Keep like-for-like comps when >= MIN_PERF_COMPS exist; otherwise flag a fallback. */
 export function filterCompsByPerformance<T extends { trim?: string; url?: string }>(
   comps: T[], perf: PerfVariant | null, min = MIN_PERF_COMPS,
-): { comps: T[]; match: PerfMatch | null; matchedCount: number } {
+): { comps: T[]; match: PerfMatch | null; matchedCount: number; premium?: number } {
   if (!perf) return { comps, match: null, matchedCount: 0 };
   if (perf.specific) {
     const s = comps.filter((c) => isPerformanceComp(perf, c, true));
-    if (s.length >= min) return { comps: s, match: "specific", matchedCount: s.length };
+    // Limited editions (parent set): a couple of own-trim comps beat a wider pool.
+    const need = perf.specific.parent ? Math.min(min, LIMITED_EDITION_MIN_COMPS) : min;
+    if (s.length >= need) return { comps: s, match: "specific", matchedCount: s.length };
+    if (perf.specific.parent) {
+      const parent = perf.specific.parent;
+      const p = comps.filter((c) => parent.test(compText(c)));
+      if (p.length >= min) return { comps: p, match: "parent", matchedCount: p.length, premium: LIMITED_EDITION_PREMIUM[perf.specific.label] ?? 1 };
+    }
   }
   const b = comps.filter((c) => isPerformanceComp(perf, c));
   if (b.length >= min) return { comps: b, match: "broad", matchedCount: b.length };
