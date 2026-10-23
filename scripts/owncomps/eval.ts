@@ -11,7 +11,11 @@ export function stats(ps: P[]) {
 }
 const train = all.filter((x) => !x.held && !x.non_runner), held = all.filter((x) => x.held);
 const m = fitOwnComps(train);
-const ps: P[] = held.map((t) => { const r = priceOwnComps(m, { ...t, adText: t.desc }); return { price: t.price, pred: priceFor(r, String(t.seller)), seller: String(t.seller) }; });
-const out = { trainRows: train.length, overall: stats(ps), under5kPrivate: stats(ps.filter((p) => p.price < 5000 && p.seller === "private")), under5k: stats(ps.filter((p) => p.price < 5000)), private: stats(ps.filter((p) => p.seller === "private")) };
+const ps: (P & { id: string })[] = held.map((t) => { const r = priceOwnComps(m, { ...t, adText: t.desc }); return { id: t.id, price: t.price, pred: priceFor(r, String(t.seller)), seller: String(t.seller) }; });
+// Head-to-head vs the live AI-estimate path on the held rows it also priced (results_baseline.json).
+const base: { id: string; split: string; pred?: number }[] = JSON.parse(Deno.readTextFileSync(new URL("./results_baseline.json", import.meta.url)));
+const bmap = new Map(base.filter((b) => b.split === "held" && b.pred).map((b) => [b.id, b.pred as number]));
+const both = ps.filter((p) => bmap.has(p.id));
+const out = { trainRows: train.length, overall: stats(ps), under5kPrivate: stats(ps.filter((p) => p.price < 5000 && p.seller === "private")), under5k: stats(ps.filter((p) => p.price < 5000)), private: stats(ps.filter((p) => p.seller === "private")), vsAI: { ownComps: stats(both), aiEstimate: stats(both.map((p) => ({ ...p, pred: bmap.get(p.id)! }))) } };
 console.log(JSON.stringify(out, null, 1));
 Deno.writeTextFileSync(`${WORK}/eval.json`, JSON.stringify(out));
