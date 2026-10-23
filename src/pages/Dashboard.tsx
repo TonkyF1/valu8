@@ -1,3 +1,4 @@
+import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -277,7 +278,7 @@ export default function Dashboard() {
                       <div className="flex-1 min-w-0 flex flex-col justify-center min-h-[80px]">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-bold text-[15px] sm:text-base truncate leading-tight tracking-tight">
-                            {r.year} {r.make} {r.model}
+                            {vehicleTitle({ year: r.year, make: r.make, model: r.model, engineCapacity: (r.report as any)?.vehicle?.engineCapacity, fuelType: (r.report as any)?.vehicle?.fuelType })}
                             {variant && <span className="text-muted-foreground font-medium"> · {variant}</span>}
                           </h3>
                           {r.report?.edited && (

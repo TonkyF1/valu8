@@ -1,5 +1,7 @@
 import { askRange, sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
-import { displayModel, normaliseFuel } from "../../supabase/functions/_shared/vehicle-text";
+import { fixableUpside as computeFixableUpside } from "../../supabase/functions/_shared/photo-insights";
+import { marketConfidenceTier } from "../../supabase/functions/_shared/pricing";
+import { displayMake, displayModel, normaliseFuel, vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,7 +75,7 @@ export default function Report() {
           // Refresh signed URLs on every load so photos always render even after expiry.
           const signed = refs.length > 0 ? (await signPhotoUrls(refs)).filter(Boolean) : [];
           setV({ ...(data as any), photo_urls: signed, report: data.report as unknown as ValuationReport });
-          document.title = `${data.year} ${data.make} ${displayModel(data.make, data.model, (data.report as any)?.vehicle?.fuelType)} — Valu8`;
+          document.title = `${vehicleTitle({ year: data.year, make: data.make, model: data.model, engineCapacity: (data.report as any)?.vehicle?.engineCapacity, fuelType: (data.report as any)?.vehicle?.fuelType })} — Valu8`;
         }
         setLoading(false);
       });
@@ -163,17 +165,19 @@ export default function Report() {
   const fuelDisplay = normaliseFuel((r as any).vehicle?.fuelType);
   if ((r as any).vehicle) (r as any).vehicle = { ...(r as any).vehicle, fuelType: fuelDisplay };
   const modelDisplay = displayModel(v.make, v.model, fuelDisplay);
+  const makeDisplay = displayMake(v.make);
+  const titleDisplay = vehicleTitle({ year: v.year, make: v.make, model: v.model, engineCapacity: (r as any).vehicle?.engineCapacity, fuelType: fuelDisplay });
   const sampleSize = (r as any).marketSampleSize ?? (r as any).marketBaseline?.sampleSize ?? null;
   const countLine = marketCountLine(liveCount, sampleSize);
   const valuationUnavailable = !!r.valuationUnavailable;
 
   // Live market confidence derived from MarketCheck total count.
   // If API fails/pending -> liveCount is null. Default to LOW silently.
-  const liveTier: "High" | "Medium" | "Low" =
-    liveCount == null ? "Low"
-    : liveCount >= 500 ? "High"
-    : liveCount >= 150 ? "Medium"
-    : "Low";
+  // One source of truth: the confidence stored with the valuation (v2.2+), else
+  // the same sample-size thresholds the engine uses. Very Low shows as Low.
+  const storedTier = (r as any).engineVersion === "v2.2-ledger" ? r.marketConfidence : undefined;
+  const computedTier = storedTier ?? marketConfidenceTier({ sampleSize: Number(sampleSize ?? liveCount ?? 0) });
+  const liveTier: "High" | "Medium" | "Low" = computedTier === "High" ? "High" : computedTier === "Medium" ? "Medium" : "Low";
 
   // Specialist Valuation logic — combines multiple signals so a normal
   // mainstream car doesn't trigger it from a temporary MarketCheck gap.
@@ -328,7 +332,7 @@ export default function Report() {
         <div className="mb-6 animate-fade-in-up">
           <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold mb-1.5">Valuation Report</div>
           <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-gradient">
-            {v.year} {v.make} {modelDisplay}
+            {titleDisplay}
           </h1>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground">
             <span>{v.mileage.toLocaleString()} miles</span>
@@ -592,7 +596,7 @@ export default function Report() {
                       r.headline
                     ) : (
                       <>
-                        Based on live UK market data, a realistic figure for this {v.year} {v.make} {modelDisplay} sits around{" "}
+                        Based on live UK market data, a realistic figure for this {v.year} {makeDisplay} {modelDisplay} sits around{" "}
                         <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>.
                       </>
                     )}
@@ -1333,10 +1337,9 @@ function PhotoFeedback({
   });
 
   const totalImpact = sumPhotoImpacts(insights);
-  const totalFixCost = insights.reduce((sum, i) => sum + (i.fixCost ?? 0), 0);
-  const fixableUpside = insights
-    .filter((i) => i.fixable && (i.priceImpact ?? 0) < 0)
-    .reduce((sum, i) => sum + Math.abs(i.priceImpact ?? 0), 0);
+  const totalFixCost = insights.reduce((sum, i) => sum + (i.fixable ? (i.fixCost ?? 0) : 0), 0);
+  // Computed from the validated line items — never an AI-supplied figure.
+  const fixableUpside = computeFixableUpside(insights);
 
   const orderedKeys = Array.from(grouped.keys()).sort((a, b) => {
     if (a === -1) return 1;
@@ -1400,7 +1403,7 @@ function PhotoFeedback({
             <div className="rounded-xl bg-primary/[0.08] border border-primary/30 px-3 py-3 text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
               <div className="relative text-xl sm:text-2xl font-semibold tabular-nums text-primary leading-none tracking-tight">
-                {fixableUpside > 0 ? `+£${fixableUpside.toLocaleString()}` : "—"}
+                {fixableUpside > 0 ? `+£${fixableUpside.toLocaleString()}` : "£0"}
               </div>
               <div className="relative text-[10px] uppercase tracking-[0.12em] text-primary/90 mt-1.5 font-medium">Fixable upside</div>
             </div>

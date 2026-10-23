@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isFoundVehicle, isPlausibleUkReg, normaliseReg } from "@/lib/registration";
 import { Turnstile, turnstileEnabled, turnstileHeaders } from "@/components/Turnstile";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -26,6 +27,7 @@ interface LookupResult {
   model?: string;
   year?: number;
   fuelType?: string;
+  transmission?: string;
   colour?: string;
   firstRegistered?: string;
   engineCapacity?: number;
@@ -55,6 +57,7 @@ export default function NewValuation() {
   const [looking, setLooking] = useState(false);
   const [lookup, setLookup] = useState<LookupResult | null>(null);
   const [editing, setEditing] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
 
   // Editable vehicle fields (populated by lookup, overridable)
   const [make, setMake] = useState("");
@@ -98,13 +101,21 @@ export default function NewValuation() {
 
   async function runLookup(cleaned: string) {
     setLooking(true);
+    setLookupError(null);
     try {
       const { data, error } = await supabase.functions.invoke("lookup-vehicle", {
         body: { registration: cleaned },
       });
-      if (error) throw error;
+      if (error) {
+        // Non-2xx responses carry the server's friendly message in the body.
+        let msg = "We couldn't find a vehicle with that registration.";
+        try { const j = await (error as any).context?.json?.(); if (j?.error) msg = j.error; } catch { /* ignore */ }
+        throw new Error(msg);
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
       const result = data as LookupResult;
+      // Never show "Vehicle found" with blank fields: an unidentified car is an error.
+      if (!isFoundVehicle(result)) throw new Error("We couldn't find a vehicle with that registration.");
       setLookup(result);
       setMake(result.make ?? "");
       setModel(result.model ?? "");
@@ -113,17 +124,18 @@ export default function NewValuation() {
       if (result.lastMileage && !mileage) setMileage(String(result.lastMileage));
       toast.success("Vehicle found");
     } catch (err: any) {
-      toast.error(err.message || "Lookup failed — you can enter details manually");
-      setLookup({ registration: cleaned });
-      setEditing(true);
+      const msg = err?.message || "We couldn't find a vehicle with that registration.";
+      setLookupError(`${msg} Check the plate, or enter the details manually.`);
+      toast.error(msg);
     } finally {
       setLooking(false);
     }
   }
 
   async function handleLookup() {
-    const cleaned = reg.replace(/\s+/g, "").toUpperCase();
-    if (cleaned.length < 2) {
+    const cleaned = normaliseReg(reg);
+    if (!isPlausibleUkReg(cleaned)) {
+      setLookupError("That doesn't look like a valid UK registration (e.g. AB12 CDE).");
       toast.error("Enter a valid UK registration");
       return;
     }
@@ -147,6 +159,7 @@ export default function NewValuation() {
       navigate("/auth");
       return;
     }
+    setLookupError(null);
     setLookup({ registration: "" });
     setEditing(true);
   }
@@ -242,6 +255,7 @@ export default function NewValuation() {
           modifications: modifications.trim() || undefined,
           colour: lookup?.colour || undefined,
           fuelType: lookup?.fuelType || undefined,
+          transmission: lookup?.transmission || undefined,
           motAdvisories: lookup?.recentAdvisories?.length ? lookup.recentAdvisories : undefined,
           photoUrls,
           photos: photos_labeled,
@@ -265,6 +279,7 @@ export default function NewValuation() {
       // Keep the vehicle facts the client needs for tax / ULEZ estimates.
       report.vehicle = {
         fuelType: lookup?.fuelType,
+        transmission: lookup?.transmission,
         firstRegistered: lookup?.firstRegistered,
         engineCapacity: lookup?.engineCapacity,
         co2Emissions: lookup?.co2Emissions,
@@ -361,7 +376,7 @@ export default function NewValuation() {
                 aria-label="Vehicle registration number"
                 autoComplete="off"
                 value={reg}
-                onChange={(e) => setReg(e.target.value.toUpperCase())}
+                onChange={(e) => { setReg(e.target.value.toUpperCase()); setLookupError(null); }}
                 placeholder="AB12 CDE"
                 maxLength={10}
                 disabled={looking}
@@ -400,6 +415,13 @@ export default function NewValuation() {
               )}
             </button>
           </div>
+
+          {lookupError && (
+            <div role="alert" className="mt-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-[12.5px] text-foreground/90">
+              {lookupError}{" "}
+              <button type="button" className="underline underline-offset-2 text-primary" onClick={handleManualEntry}>Enter details manually</button>
+            </div>
+          )}
 
           {/* Trust micro-strip */}
           <div className="mt-5 grid grid-cols-3 gap-2 text-[10px] text-muted-foreground/70">
@@ -443,7 +465,7 @@ export default function NewValuation() {
                     <Car className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Vehicle found</p>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{isFoundVehicle(lookup) ? "Vehicle found" : "Your vehicle"}</p>
                     <h2 className="text-lg font-semibold">
                       {make || "—"} {model} {variant && <span className="text-muted-foreground font-normal">· {variant}</span>}
                     </h2>
