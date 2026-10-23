@@ -12,12 +12,11 @@ import { WhatIfSimulator } from "@/components/WhatIfSimulator";
 import { VehicleInsights, SectionBoundary } from "@/components/VehicleInsights";
 
 import type { ValuationReport, PhotoInsight } from "@/lib/valuation";
-import { downloadValuationPdf } from "@/lib/pdf";
 import { format } from "date-fns";
 import {
   Share2, Download, Check, ShieldCheck, AlertTriangle, ArrowLeft,
   Star, Pencil, ChevronDown, MoreHorizontal, Sparkles, Camera, TrendingUp, TrendingDown, Minus,
-  Megaphone, FileCheck2, X, ChevronLeft, ChevronRight, History,
+  Megaphone, FileCheck2, X, Calculator, ChevronLeft, ChevronRight, History,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -30,6 +29,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { signPhotoUrls } from "@/lib/photos";
 import { cleanReportText, marketCountLine } from "@/lib/reportText";
+import { explainValuation } from "@/lib/valuationExplainer";
+import { HowWeValue } from "@/components/HowWeValue";
 
 interface Valuation {
   id: string; make: string; model: string; year: number; mileage: number;
@@ -79,13 +80,17 @@ export default function Report() {
   }, [id, isShared]);
 
   useEffect(() => {
+    if (v) document.title = `${v.year} ${v.make} ${v.model} valuation | Valu8`;
+  }, [v]);
+
+
+  useEffect(() => {
     if (!v) return;
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 8000);
     supabase.functions
       .invoke("marketcheck-count", {
         body: { make: v.make, model: v.model, year: v.year },
-        // @ts-ignore - method query workaround
       })
       .then(({ data, error }) => {
         if (error) return;
@@ -230,18 +235,29 @@ export default function Report() {
     }
   };
 
+  const downloadPdf = async () => {
+    const tid = toast.loading("Generating PDF…");
+    try {
+      await (await import("@/lib/pdf")).downloadValuationPdf(v, r, { shareUrl: `${window.location.origin}/shared/${v.id}` });
+      toast.success("Report downloaded successfully", { id: tid });
+    } catch (err) {
+      console.error("PDF download failed", err);
+      toast.error("Couldn't generate PDF", { id: tid, description: "Please try again.", action: { label: "Retry", onClick: () => { void downloadPdf(); } } });
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main id="main" className="flex-1 container py-6 md:py-8 max-w-5xl">
+      <main id="main" className="flex-1 container py-6 md:py-8 pb-28 sm:pb-8 max-w-5xl">
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           {isShared ? (
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0">
               <Link to="/"><ArrowLeft className="h-4 w-4" /> Valu8</Link>
             </Button>
           ) : (
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0">
               <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> All valuations</Link>
             </Button>
           )}
@@ -249,27 +265,15 @@ export default function Report() {
             <Button
               variant="premium"
               size="sm"
-              onClick={async () => {
-                const id = toast.loading("Generating PDF…");
-                try {
-                  await downloadValuationPdf(v, r);
-                  toast.success("Report downloaded successfully", { id });
-                } catch (err) {
-                  console.error("PDF download failed", err);
-                  toast.error("Couldn't generate PDF", {
-                    id,
-                    description: "Please try again.",
-                    action: { label: "Retry", onClick: () => downloadValuationPdf(v, r).catch(() => {}) },
-                  });
-                }
-              }}
+              onClick={downloadPdf}
+              className="min-h-[44px] sm:min-h-0"
             >
               <Download className="h-4 w-4" /> PDF
             </Button>
             {!isShared && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="More actions">
+                  <Button variant="ghost" size="icon" aria-label="More actions" className="h-11 w-11 sm:h-10 sm:w-10">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -279,6 +283,14 @@ export default function Report() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={share}>
                     <Share2 className="h-4 w-4" /> Share link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    import("@/lib/shareCard")
+                      .then((m) => m.shareReportImage(v, r, `${window.location.origin}/shared/${v.id}`))
+                      .then((res) => { if (res === "downloaded") toast.success("Share image downloaded"); })
+                      .catch(() => toast.error("Couldn't create share image"));
+                  }}>
+                    <Camera className="h-4 w-4" /> Share as image
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -776,6 +788,17 @@ export default function Report() {
         })()}
 
 
+        {/* Transparency: how the number was built, from stored figures only */}
+        {(() => {
+          const ex = explainValuation(r, { year: v.year, mileage: v.mileage });
+          if (!ex) return null;
+          return (
+            <CollapsibleSection title="How we value your car" icon={Calculator} preview="Comparables, mileage and age corrections, and adjustments in plain English">
+              <HowWeValue ex={ex} />
+            </CollapsibleSection>
+          );
+        })()}
+
         {/* Per-photo AI feedback — our moat made visible */}
         {r.photoInsights && r.photoInsights.length > 0 && v.photo_urls.length > 0 && (
           <PhotoFeedback insights={r.photoInsights} photoUrls={v.photo_urls} onSelectPhoto={setActivePhoto} onOpenLightbox={setLightboxIndex} />
@@ -1047,6 +1070,7 @@ export default function Report() {
           <>
 
 
+            <div id="advert" className="scroll-mt-20">
             <AdvertCreator
               valuationId={v.id}
               vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, registration: v.registration, mot_expiry: v.mot_expiry }}
@@ -1059,6 +1083,7 @@ export default function Report() {
               }}
               initialAdvert={(r as any).advert ?? null}
             />
+            </div>
           </>
         )}
 
@@ -1069,6 +1094,21 @@ export default function Report() {
           </p>
         </footer>
       </main>
+      {/* Sticky mobile CTA */}
+      <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        {isShared ? (
+          <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
+            <Link to="/valuation/new">Value your own car free</Link>
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button variant="outline" size="lg" className="flex-1 min-h-[48px]" onClick={share}><Share2 className="h-4 w-4" aria-hidden /> Share</Button>
+            {!valuationUnavailable && (
+              <Button asChild variant="hero" size="lg" className="flex-1 min-h-[48px]"><a href="#advert"><Megaphone className="h-4 w-4" aria-hidden /> Write advert</a></Button>
+            )}
+          </div>
+        )}
+      </div>
       <Footer />
 
       {/* Fullscreen photo lightbox */}

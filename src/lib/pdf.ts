@@ -1,6 +1,8 @@
 import jsPDF from "jspdf";
 import type { ValuationReport } from "@/lib/valuation";
 import { format } from "date-fns";
+import { explainValuation } from "@/lib/valuationExplainer";
+import { cleanReportText } from "@/lib/reportText";
 
 interface VehicleInfo {
   make: string; model: string; year: number; mileage: number;
@@ -35,7 +37,7 @@ function triggerBlobDownload(blob: Blob, filename: string) {
   }, 1000);
 }
 
-export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport): Promise<void> {
+export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, opts: { shareUrl?: string } = {}): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -114,6 +116,33 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport): 
       y = wrappedText(doc, r.valueReasoning, margin, y + 8, pageW - margin * 2, 9, 12, MUTED);
       y += 6;
     }
+  }
+
+  // How we valued it (transparency)
+  const ex = explainValuation(r, { year: v.year, mileage: v.mileage });
+  if (ex) {
+    ensureSpace(120);
+    y = section(doc, "HOW WE VALUED YOUR CAR", y, margin, pageW);
+    ex.steps.forEach((st) => {
+      ensureSpace(50);
+      y = subsection(doc, st.title, y, margin);
+      y = wrappedText(doc, st.body, margin, y, pageW - margin * 2, 9, 12, MUTED);
+      y += 4;
+    });
+    if (ex.comps.length) {
+      ensureSpace(40);
+      y = subsection(doc, "Example comparables (dealer asking price -> corrected to your car)", y + 2, margin);
+      ex.comps.forEach((c) => {
+        ensureSpace(20);
+        y = bullet(doc, `${c.year}, ${c.mileage.toLocaleString("en-GB")} mi${c.trim ? `, ${c.trim}` : ""}: £${c.price.toLocaleString("en-GB")} -> £${c.adjustedPrice.toLocaleString("en-GB")}. ${c.why}.`, margin, y, pageW - margin * 2, TEAL);
+      });
+    }
+    if (ex.adjustments.length) {
+      ensureSpace(40);
+      y = subsection(doc, "Adjustments for your car", y + 2, margin);
+      ex.adjustments.forEach((a) => { ensureSpace(18); y = bullet(doc, a.plain, margin, y, pageW - margin * 2, TEAL); });
+    }
+    y += 10;
   }
 
   // Honest analysis
@@ -197,8 +226,14 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport): 
   for (let i = 1; i <= pages; i++) {
     doc.setPage(i);
     doc.setFontSize(8); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
-    doc.text("AI-generated estimate. Not financial advice. valu8.app", margin, pageH - 20);
+    doc.text("AI-generated estimate. Not financial advice.  valu8.lovable.app", margin, pageH - 20);
     doc.text(`${i} / ${pages}`, pageW - margin, pageH - 20, { align: "right" });
+  }
+
+  if (opts.shareUrl) {
+    doc.setPage(1);
+    doc.setFontSize(9); doc.setTextColor(...TEAL); doc.setFont("helvetica", "normal");
+    doc.textWithLink("View this report online", pageW - margin, 82, { url: opts.shareUrl, align: "right" } as never);
   }
 
   const filename = buildPdfFilename(v);

@@ -4,8 +4,18 @@ import { ArrowRight, BadgePoundSterling, Camera, FileCheck2, Gauge, Scale, Shiel
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { AccuracyDisclaimer } from "@/components/VehicleInsights";
+import { AccuracyDisclaimer } from "@/components/AccuracyDisclaimer";
 import { useAuth } from "@/contexts/AuthContext";
+import { CAR_MODELS } from "@/data/carModels";
+
+const FAQS = [
+  { q: "How accurate is the valuation?", a: "Where there are enough live listings, prices are anchored to current UK dealer adverts for your make and model, corrected for your car's exact age and mileage. Every report shows its confidence level and how the figure was built." },
+  { q: "Where does the data come from?", a: "MOT history comes from the official DVSA database. Market prices come from live UK dealer listings. Photo condition checks are done by AI. Tax and ULEZ figures are estimates with links to the official checkers." },
+  { q: "Is it really free?", a: "Yes. All features are free during early access and no card is needed." },
+  { q: "Do I need photos?", a: "No, but adding a few lets us spot condition issues and selling points that move the price, and gives you better advert copy." },
+  { q: "Who can see my valuation?", a: "Your valuations are private to your account unless you choose to share a report link. See our privacy policy for how data is handled." },
+  { q: "Should I sell privately or part-exchange?", a: "Your report shows both. Private sale usually gets more money; part-exchange is quicker. We show the gap so you can decide if it's worth it." },
+];
 
 const FEATURES = [
   { icon: BadgePoundSterling, title: "Live market pricing", body: "Private-sale, trade-in and dealer figures anchored to current UK listings for your make, model, year and mileage." },
@@ -32,7 +42,7 @@ export default function Landing() {
       <main id="main" className="flex-1">
         <section className="relative overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 -top-32 h-96 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.18),transparent_60%)]" aria-hidden />
-          <div className="container relative pt-16 pb-10 md:pt-24 md:pb-14 text-center max-w-3xl mx-auto">
+          <div className="container relative pt-10 pb-10 md:pt-24 md:pb-14 text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-[11px] font-medium text-primary mb-5">
               <Sparkles className="h-3 w-3" aria-hidden /> UK car valuations for private sellers and buyers
             </div>
@@ -82,11 +92,75 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="container max-w-3xl pb-8">
+        <section className="container max-w-3xl pb-12" aria-labelledby="sample-h">
+          <h2 id="sample-h" className="text-xl font-semibold text-center mb-2">What a report looks like</h2>
+          <p className="text-xs text-muted-foreground text-center mb-5">Illustrative example only, not a real vehicle or valuation.</p>
+          <div className="rounded-2xl border border-primary/25 bg-card/60 p-5 sm:p-6">
+            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+              <p className="font-semibold">2018 Ford Fiesta 1.0 EcoBoost · 42,000 mi</p>
+              <span className="text-xs rounded-full bg-primary/10 text-primary px-2 py-0.5">Medium confidence</span>
+            </div>
+            <dl className="grid grid-cols-3 gap-2 mt-5 text-center">
+              {[["Part-exchange", "£6,400"], ["Private sale", "£7,700"], ["Dealer retail", "£9,100"]].map(([k, val], i) => (
+                <div key={k} className={i === 1 ? "rounded-xl bg-primary/10 border border-primary/30 p-3" : "rounded-xl border border-border p-3"}>
+                  <dt className="text-[11px] text-muted-foreground">{k}</dt>
+                  <dd className="font-semibold tabular-nums mt-1">{val}</dd>
+                </div>
+              ))}
+            </dl>
+            <ul className="mt-5 space-y-1.5 text-sm text-muted-foreground">
+              <li>• Priced from comparable live UK listings, each corrected to this car's age and mileage</li>
+              <li>• MOT: 6 passes, 2 minor advisories, mileage consistent</li>
+              <li>• Photos: light scuff on rear bumper (−1%)</li>
+              <li>• Suggested asking price, negotiation buffer and a ready-to-post advert</li>
+            </ul>
+            <div className="mt-5 text-center">
+              <Button asChild variant="hero" size="lg"><Link to="/valuation/new">Get my report <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+            </div>
+          </div>
+        </section>
+
+        {/* TODO(social-proof): add a "What sellers say" section here once we have REAL, consented
+            customer quotes or a review-platform widget (e.g. Trustpilot). Never add invented testimonials. */}
+
+        <section className="container max-w-3xl pb-12" aria-labelledby="faq-h">
+          <h2 id="faq-h" className="text-xl font-semibold text-center mb-6">Questions</h2>
+          <div className="space-y-2">
+            {FAQS.map((f) => (
+              <details key={f.q} className="rounded-xl border border-border bg-card/40 p-4">
+                <summary className="font-medium cursor-pointer min-h-[28px]">{f.q}</summary>
+                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="container max-w-3xl pb-12" aria-labelledby="models-h">
+          <h2 id="models-h" className="text-base font-semibold text-center mb-4">Popular valuations</h2>
+          <ul className="flex flex-wrap justify-center gap-2 text-sm">
+            {CAR_MODELS.slice(0, 16).map((m) => (
+              <li key={m.makeSlug + m.slug}>
+                <Link to={`/car-values/${m.makeSlug}/${m.slug}`} className="inline-flex min-h-[44px] items-center rounded-full border border-border px-4 hover:border-primary/50">{m.make} {m.model}</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="container max-w-3xl pb-28 sm:pb-8">
           <AccuracyDisclaimer />
         </section>
       </main>
       <Footer />
+      {/* Sticky mobile CTA */}
+      <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
+          <Link to="/valuation/new">Value my car free <ArrowRight className="h-4 w-4" aria-hidden /></Link>
+        </Button>
+      </div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org", "@type": "FAQPage",
+        mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+      }) }} />
     </div>
   );
 }
