@@ -3,7 +3,7 @@
 // then uses Lovable AI Gateway (Gemini 2.5 Flash vision, provider configurable via AI_GATEWAY_URL/AI_API_KEY/AI_MODEL) to adjust the figure
 // based on photos, mileage, history, MOT advisories and modifications.
 
-import { corsHeaders, guard } from "../_shared/guard.ts";
+import { corsHeaders, guard, isAdminUser } from "../_shared/guard.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { capturePosthogAiGeneration } from "../_shared/posthog.ts";
 import {
@@ -14,6 +14,7 @@ import {
 import { motStatus, motAdjustment, currentMotExpiry, failedWithoutValidMot, sanitizeMotClaim, isFalseLongMotClaim, motDaysRemaining, motConsistentBullets } from "../_shared/mot.ts";
 import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts";
 import { detectPerformanceVariant, filterCompsByPerformance, downgradeConfidence, type PerfVariant, type PerfMatch } from "../_shared/performance.ts";
+import { shrinkThinAnchor, aiAgeFactor, THIN_COMP_FULL_WEIGHT } from "../_shared/calibration.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
 
@@ -155,7 +156,7 @@ function toComparable(it: any): ComparableListing | null {
 /** Adds the performance pool to the generic comps and keeps like-for-like ones. */
 export function applyPerformanceComps(
   mc: MarketPricing | null, pool: ComparableListing[], perf: PerfVariant | null,
-): { mc: MarketPricing | null; match: PerfMatch | null; matchedCount: number } {
+): { mc: MarketPricing | null; match: PerfMatch | null; matchedCount: number; premium?: number } {
   if (!perf) return { mc, match: null, matchedCount: 0 };
   const seen = new Set<string>();
   const merged = [...(mc?.listings ?? []), ...pool].filter((l) => {
@@ -167,7 +168,7 @@ export function applyPerformanceComps(
   const prices = f.comps.map((l) => l.price);
   const miles = f.comps.map((l) => l.mileage).filter((m) => m > 0);
   return {
-    match: f.match, matchedCount: f.matchedCount,
+    match: f.match, matchedCount: f.matchedCount, premium: f.premium,
     mc: {
       median: median(prices),
       mean: prices.reduce((a, b) => a + b, 0) / prices.length,
@@ -175,12 +176,20 @@ export function applyPerformanceComps(
       count: f.comps.length,
       avgMiles: miles.length ? miles.reduce((a, b) => a + b, 0) / miles.length : undefined,
       listings: f.comps,
-      matchTier: `${perf.label} like-for-like (${f.match === "specific" ? perf.specific?.label : "performance family"}) from ${merged.length} listings`,
+      matchTier: `${perf.label} like-for-like (${f.match === "specific" ? perf.specific?.label : f.match === "parent" ? `parent trim of ${perf.specific?.label}` : "performance family"}) from ${merged.length} listings`,
     },
   };
 }
 
-async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
+// Timestamp of the last MarketCheck request that still failed after retries
+// with 429/5xx/network error. Used to flag AI fallbacks caused by throttling
+// rather than a genuinely thin market (batch run: 30/41 cars fell to AI).
+let mcThrottledAt = 0;
+export function marketCheckRecentlyThrottled(now = Date.now()): boolean {
+  return now - mcThrottledAt < 120_000;
+}
+
+async function fetchWithRetry(url: string, attempts = 4): Promise<Response> {
   let last: Response | undefined; let err: unknown;
   for (let i = 0; i < attempts; i++) {
     try {
@@ -189,8 +198,9 @@ async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
       console.warn("MarketCheck retryable status", last.status, "attempt", i + 1);
       if (i < attempts - 1) await last.body?.cancel();
     } catch (e) { err = e; console.warn("MarketCheck network error, attempt", i + 1, e); }
-    if (i < attempts - 1) await new Promise((res) => setTimeout(res, 600 * (i + 1) + Math.floor(Math.random() * 300)));
+    if (i < attempts - 1) await new Promise((res) => setTimeout(res, 1000 * 2 ** i + Math.floor(Math.random() * 400)));
   }
+  if (!last || last.status === 429 || last.status >= 500) mcThrottledAt = Date.now();
   if (last) return last;
   throw err;
 }
@@ -349,6 +359,8 @@ interface AnalyseRequest {
   motExpiry?: string;
   serviceNotes?: string;
   modifications?: string;
+  /** Admin-only: include full comps + pricing internals in the response. */
+  debugComps?: boolean;
   colour?: string;
   fuelType?: string;
   transmission?: string;
@@ -788,6 +800,7 @@ Deno.serve(async (req) => {
     const perfComps = applyPerformanceComps(mcGeneric, perfPool, perf);
     const mc = perfComps.mc;
     const perfFallback = !!perf && perfComps.match === "fallback";
+    const debugInfo: Record<string, unknown> = {};
 
     // Extract MOT signals — ONLY use the latest test for pricing / watchPoints
     const motEntries: MotEntryOut[] = [...(dvsa.entries ?? [])];
@@ -1162,7 +1175,24 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       const photoImpactPct = Math.round(clamp(photoImpactGbp / photoImpactAnchor, -0.08, 0.04) * 100);
       if (photoImpactPct !== 0) add("Specific issues seen in photos", photoImpactPct);
 
-      const anchor = anchorMedian > 0 ? anchorMedian : mc.median;
+      let anchor = anchorMedian > 0 ? anchorMedian : mc.median;
+      if (allListings.length > 0 && allListings.length < 3) {
+        anchor = roundToGrain(compAdjustedAnchor(allListings.map((l) => ({ price: l.price, miles: l.mileage, year: l.year })), pricedMiles, body.year, 0.5) ?? anchor);
+      }
+      const thinN = Math.min(mc.count, allListings.length || mc.count);
+      if (thinN < THIN_COMP_FULL_WEIGHT) {
+        const prior = retailFromPrivate(aiPrivate);
+        const sh = shrinkThinAnchor(anchor, prior, thinN);
+        const pct = Math.round((sh.anchor / anchor - 1) * 100);
+        debugInfo.thinShrink = { n: thinN, compAnchor: anchor, priorRetail: Math.round(prior), weight: sh.weight };
+        if (pct !== 0) add(`Only ${thinN} comparable${thinN === 1 ? "" : "s"}: blended with model estimate`, pct, "anchor");
+        anchor = roundToGrain(sh.anchor);
+      }
+      if (perfComps.match === "parent" && perfComps.premium && perfComps.premium !== 1) {
+        const pct = Math.round((perfComps.premium - 1) * 100);
+        add(`${perf?.specific?.label} premium over ${body.model} parent-trim comparables`, pct, "anchor");
+        anchor = roundToGrain(anchor * perfComps.premium);
+      }
       // Cheap-car rules: no history/recent-work uplift under ~£2k private, and
       // budget anchor + soft MOT/description deductions capped at -12%.
       const pricedItems = applyCheapCarRules(items, { anchor, correctedMedian: anchorAdjMedian > 0 ? anchorAdjMedian : anchor });
@@ -1219,6 +1249,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         // Never silently value a performance variant off its everyday siblings.
         confidence = downgradeConfidence(confidence);
         confidenceReason = `Only ${perfComps.matchedCount} ${perf.label} listing${perfComps.matchedCount === 1 ? "" : "s"} found, so this is based on wider ${body.model} listings and may undervalue a performance variant — treat as a rough guide.`;
+      } else if (perf && perfComps.match === "parent") {
+        confidence = downgradeConfidence(confidence);
+        confidenceReason = `Very few ${perf.specific?.label}s are for sale, so this is priced from ${body.model} ${perf.specific?.label?.replace(/-R$/, "")} listings plus a typical ${perf.specific?.label} premium — treat as a guide.`;
       } else if (perf) {
         confidenceReason += ` Compared only against ${perf.specific?.label && perfComps.match === "specific" ? perf.specific.label : perf.label} listings.`;
       }
@@ -1288,7 +1321,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         privateEstimate: cal.privateSale,
       });
       for (const it of post.items) adjustments.push(it);
-      const fair = Math.max(100, cal.privateSale * post.factor);
+      const fair = Math.max(100, cal.privateSale * post.factor * aiAgeFactor(age));
       const calRatio = fair / Math.max(1, market.center);
       // Retail implied by the same dealer-cost model used on the comps path.
       const impliedRetail = retailFromPrivate(fair / Math.max(0.5, 1 - highMileagePenalty(pricedMiles)));
@@ -1319,6 +1352,11 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       } else {
         confidence = "Low";
         confidenceReason = "We couldn't find enough similar cars for sale right now, so this is our best estimate without direct comparable sales.";
+        if (marketCheckRecentlyThrottled()) {
+          confidence = "Very Low";
+          confidenceReason = "Live market data was temporarily unavailable, so this is a model estimate without comparable listings — try again in a few minutes for a market-backed figure.";
+          debugInfo.marketCheckThrottled = true;
+        }
         pricingReasoning = market.reasoning;
       }
       dataSource = "ai_estimate";
@@ -1518,7 +1556,15 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       }),
     };
 
-    return new Response(JSON.stringify({ report: dedupeReportText(report) }), {
+    const wantDebug = body.debugComps === true && !!g.userId && (await isAdminUser(g.userId));
+    const debug = wantDebug ? {
+      ...debugInfo,
+      perfMatch: perfComps.match, perfMatched: perfComps.matchedCount, perfPremium: perfComps.premium ?? null,
+      matchTier: mc?.matchTier ?? null, mcCount: mc?.count ?? 0,
+      comps: (mc?.listings ?? []).map((l) => ({ price: l.price, mileage: l.mileage, year: l.year, trim: l.trim, url: l.url, fuelType: l.fuelType, transmission: l.transmission })),
+      anchorMedian, anchorAdjMedian, rawMedianOfSubset, compMedianMiles, aiPrivate,
+    } : undefined;
+    return new Response(JSON.stringify(debug ? { report: dedupeReportText(report), debug } : { report: dedupeReportText(report) }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

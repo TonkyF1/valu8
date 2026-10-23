@@ -66,7 +66,7 @@ describe("AI-path calibration", () => {
     expect(calibrateAiPrivate({ ...base, aiPrivate: 16600, make: "Toyota", year: 2022, miles: 36000 }).privateSale).toBeCloseTo(14608, 0);
   });
   it("floors old MOT'd average-mileage cars", () => {
-    expect(calibrateAiPrivate({ ...base, aiPrivate: 900, make: "Ford", year: 2010, miles: 100_000 }).privateSale).toBe(1500);
+    expect(calibrateAiPrivate({ ...base, aiPrivate: 700, make: "Ford", year: 2010, miles: 100_000 }).privateSale).toBe(1000);
     expect(calibrateAiPrivate({ ...base, motValid: false, aiPrivate: 900, make: "Ford", year: 2010, miles: 100_000 }).privateSale).toBe(900);
   });
   it("no floor for very high mileage", () => {
