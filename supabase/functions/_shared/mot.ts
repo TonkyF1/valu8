@@ -46,7 +46,7 @@ export function motAdjustment(expiry: string | null | undefined, now: Date = new
   return null;
 }
 
-const LONG_MOT_RE = /\b(?:a\s+)?(?:long|lengthy|fresh|full|generous|plenty of)\s+(?:\w+\s+)?MOT\b/gi;
+const LONG_MOT_RE = /\b(?:a\s+)?(?:long|lengthy|fresh|full|generous|plenty of)\s+(?:\w+\s+){0,2}MOT\b/gi;
 
 /** Removes "long MOT"-style claims from AI text when the MOT isn't actually long. */
 export function sanitizeMotClaim(text: string, expiry: string | null | undefined, now: Date = new Date()): string {
@@ -62,4 +62,31 @@ export function isFalseLongMotClaim(text: string, expiry: string | null | undefi
   if (s.kind === "long" || s.kind === "unknown") return false;
   LONG_MOT_RE.lastIndex = 0;
   return LONG_MOT_RE.test(text);
+}
+
+const CLEAN_PASS_RE = /\b(clean|passed|pass|zero advisor|no advisor|advisory[- ]free|flawless)\b.*\bMOT\b|\bMOT\b.*\b(clean|pass(?:ed)?|zero advisor|no advisor|advisory[- ]free)\b/i;
+
+function fmtExpiry(expiry: string): string {
+  const d = parseMotDate(expiry);
+  return d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "soon";
+}
+
+/**
+ * A "clean pass" strength next to an MOT that expires within ~2 months (or has
+ * expired) reads as contradictory. Reword it so the expiry is stated alongside
+ * the pass. Other bullets are untouched.
+ */
+export function motConsistentBullets(items: string[] | undefined, expiry: string | null | undefined, now: Date = new Date()): string[] | undefined {
+  if (!Array.isArray(items) || !expiry) return items;
+  const days = motDaysRemaining(expiry, now);
+  if (days == null || days > 62) return items;
+  let done = false;
+  return items.flatMap((t) => {
+    if (typeof t !== "string" || !CLEAN_PASS_RE.test(t)) return [t];
+    if (done) return []; // one consistent MOT bullet is enough
+    done = true;
+    return [days < 0
+      ? `Last MOT passed cleanly, but it expired on ${fmtExpiry(expiry)} — re-test before selling`
+      : `Passed its last MOT cleanly, but it expires on ${fmtExpiry(expiry)} — renew before selling for the best price`];
+  });
 }

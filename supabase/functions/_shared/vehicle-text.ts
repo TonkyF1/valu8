@@ -48,6 +48,9 @@ const KEEP_UPPER = new Set([
 function caseModelToken(tok: string): string {
   if (!tok) return tok;
   if (tok.includes("-")) return tok.split("-").map((p) => (p.length <= 2 && p === p.toUpperCase() ? p : caseModelToken(p))).join("-");
+  // Lower-case-prefix model names: Hyundai i10/i20/i30/ix35, BMW i3/i4/iX.
+  if (/^I[X]?\d{1,2}[A-Z]?$/i.test(tok) && !/^I\d{3}/i.test(tok)) return "i" + tok.slice(1).toLowerCase();
+  if (/^IX$/i.test(tok)) return "iX";
   if (/\d/.test(tok)) return tok.replace(/^(\d{3})([DIE])$/, (_m, n: string, l: string) => n + l.toLowerCase());
   if (KEEP_UPPER.has(tok.toUpperCase())) return tok.toUpperCase();
   if (tok === tok.toUpperCase() && tok.length > 1) return titleWord(tok);
@@ -77,4 +80,44 @@ export function displayModel(make?: string | null, model?: string | null, fuel?:
 export function fixOdometerWording(text: string): string {
   if (!text || !/\b(mi|mls|miles|mileage)\b/i.test(text)) return text;
   return text.replace(/\b(?:rev(?:olution)?[- ]counter|tachometer)\b/gi, (m) => (m[0] === m[0].toUpperCase() ? "Odometer" : "odometer"));
+}
+
+const MAKE_UPPER = new Set(["BMW", "MG", "DS", "BYD", "MINI", "KGM", "GWM", "TVR", "LEVC"]);
+
+/** "AUDI" -> "Audi", "MERCEDES-BENZ" -> "Mercedes-Benz", "LAND ROVER" -> "Land Rover"; BMW/MG/MINI stay upper. */
+export function displayMake(make?: string | null): string {
+  const raw = String(make ?? "").trim().replace(/\s+/g, " ");
+  if (!raw) return "";
+  return raw.split(" ").map((w) => {
+    if (MAKE_UPPER.has(w.toUpperCase())) return w.toUpperCase();
+    if (w !== w.toUpperCase()) return w;
+    return w.split("-").map((p) => titleWord(p)).join("-");
+  }).join(" ");
+}
+
+/** "1248" cc -> "1.2"; ignores implausible values. */
+export function engineLitres(cc?: number | string | null): string | undefined {
+  const n = Number(cc);
+  if (!Number.isFinite(n) || n < 500 || n > 8500) return undefined;
+  return (Math.round(n / 100) / 10).toFixed(1);
+}
+
+/**
+ * Report/vehicle title, e.g. "2014 Hyundai i20 1.2 Petrol". Adds trim (variant)
+ * when the lookup supplied one, else engine size + fuel when known. Never invents.
+ */
+export function vehicleTitle(p: {
+  year?: number | string | null; make?: string | null; model?: string | null;
+  variant?: string | null; engineCapacity?: number | string | null; fuelType?: string | null;
+}): string {
+  const fuel = normaliseFuel(p.fuelType ?? undefined);
+  const fullModel = String(p.model ?? "");
+  const [baseModel, ...restParts] = fullModel.split(" · ");
+  const variant = (p.variant ?? restParts.join(" · ")).trim();
+  const model = displayModel(p.make, baseModel, fuel);
+  const parts = [p.year ? String(p.year) : "", displayMake(p.make), model];
+  const litres = engineLitres(p.engineCapacity);
+  if (variant) parts.push(variant.split(/\s+/).map(caseModelToken).join(" "));
+  else if (litres && !model.includes(litres)) parts.push(`${litres}${fuel && fuel !== "Electric" ? ` ${fuel}` : ""}`);
+  return parts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 }
