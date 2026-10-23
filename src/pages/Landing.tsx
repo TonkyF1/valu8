@@ -74,35 +74,8 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="container max-w-5xl pb-12" aria-labelledby="features-h">
-          <h2 id="features-h" className="sr-only">What you get</h2>
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f) => (
-              <li key={f.title} className="rounded-xl border border-border bg-card/60 p-5">
-                <f.icon className="h-5 w-5 text-primary mb-3" aria-hidden />
-                <h3 className="font-semibold text-sm mb-1">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.body}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="container max-w-3xl pb-12" aria-labelledby="how-h">
-          <h2 id="how-h" className="text-xl font-semibold text-center mb-6">How it works</h2>
-          <ol className="grid gap-4 sm:grid-cols-3 text-sm">
-            {["Enter your registration and mileage", "Add a few photos (optional)", "Get your valuation, report and a ready-to-post advert"].map((s, i) => (
-              <li key={s} className="rounded-xl border border-border p-4">
-                <span className="text-primary font-semibold">{i + 1}.</span> {s}
-              </li>
-            ))}
-          </ol>
-          <div className="text-center mt-8">
-            <Button asChild variant="hero" size="lg"><Link to="/valuation/new">Start free valuation <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
-          </div>
-        </section>
-
-        <section className="container max-w-3xl pb-12" aria-labelledby="sample-h">
-          <h2 id="sample-h" className="text-xl font-semibold text-center mb-2">What a report looks like</h2>
+        <section className="container max-w-3xl pb-16" aria-labelledby="sample-h">
+          <h2 id="sample-h" className="text-xl md:text-2xl font-semibold tracking-tight text-center mb-2">What a report looks like</h2>
           <p className="text-xs text-muted-foreground text-center mb-5">Illustrative example only, not a real vehicle or valuation.</p>
           <div className="rounded-2xl border border-primary/25 bg-card/60 p-5 sm:p-6">
             <div className="flex items-baseline justify-between gap-3 flex-wrap">
@@ -127,6 +100,37 @@ export default function Landing() {
               <Button asChild variant="hero" size="lg"><Link to="/valuation/new">Get my report <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
             </div>
           </div>
+        </section>
+
+        <section className="container max-w-4xl pb-16" aria-labelledby="how-h">
+          <h2 id="how-h" className="text-xl md:text-2xl font-semibold tracking-tight text-center mb-8">How it works</h2>
+          <ol className="grid gap-3 sm:grid-cols-4 text-sm">
+            {[["Reg", "Enter your registration and mileage"], ["Details", "Confirm the car and add service notes"], ["Photos", "Add a few photos (optional) for a condition score"], ["Report", "Get your valuation, report and a ready-to-post advert"]].map(([t, d], i) => (
+              <li key={t} className="flex sm:flex-col gap-3 rounded-xl border border-border/70 bg-card/40 p-4">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-primary/40 bg-primary/10 text-sm font-semibold text-primary">{i + 1}</span>
+                <div><p className="font-semibold">{t}</p><p className="text-muted-foreground mt-0.5 leading-relaxed">{d}</p></div>
+              </li>
+            ))}
+          </ol>
+          <div className="text-center mt-8">
+            <Button asChild variant="hero" size="lg"><Link to="/valuation/new">Start free valuation <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+          </div>
+        </section>
+
+        <section className="container max-w-5xl pb-16" aria-labelledby="features-h">
+          <h2 id="features-h" className="text-xl md:text-2xl font-semibold tracking-tight text-center mb-2">What's in every report</h2>
+          <p className="text-sm text-muted-foreground text-center mb-6">Market data where available, official records always.</p>
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((f) => (
+              <li key={f.title} className="flex gap-4 sm:block rounded-xl border border-border/70 bg-card/50 p-4 sm:p-5">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 sm:mb-3"><f.icon className="h-[18px] w-[18px] text-primary" aria-hidden /></span>
+                <div>
+                  <h3 className="font-semibold text-[15px] mb-1">{f.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{f.body}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* TODO(social-proof): add a "What sellers say" section here once we have REAL, consented
