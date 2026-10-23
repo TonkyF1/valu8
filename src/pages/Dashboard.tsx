@@ -18,6 +18,8 @@ import { hasPhotos } from "@/lib/askingPrice";
 import { BILLING_ENABLED } from "@/lib/billing";
 import { motDue, buildMotIcs, downloadIcs, valueTrends } from "@/lib/retention";
 import { SITE_URL } from "@/lib/site";
+import { needsSaleFeedbackPrompt } from "@/lib/saleFeedback";
+import { HandCoins } from "lucide-react";
 import { CalendarPlus, AlertTriangle, TrendingDown, Minus } from "lucide-react";
 
 
@@ -315,8 +317,21 @@ export default function Dashboard() {
             );
           }
 
+          const feedbackDue = rows.filter((r) => needsSaleFeedbackPrompt(r));
           return (
             <div className="grid gap-3">
+              {feedbackDue.length > 0 && (
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3">
+                  <HandCoins className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden />
+                  <div className="flex-1 min-w-0 text-sm">
+                    <p className="font-medium">Sold your {vehicleTitle({ year: feedbackDue[0].year, make: feedbackDue[0].make, model: feedbackDue[0].model })}?</p>
+                    <p className="text-muted-foreground mt-0.5">If you've sold {feedbackDue.length > 1 ? "any of these cars" : "it"}, telling us the price takes a few seconds and helps us make our valuations more accurate. Totally optional.</p>
+                  </div>
+                  <Button asChild size="sm" variant="outline" className="shrink-0">
+                    <Link to={`/valuation/${feedbackDue[0].id}#sale-feedback`}>Add sale price</Link>
+                  </Button>
+                </div>
+              )}
               {list.map((r) => {
                 const cover = coverUrls[r.id] || null;
                 const variant = (r as any).report?.variant || (r as any).variant;

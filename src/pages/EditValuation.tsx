@@ -223,6 +223,8 @@ export default function EditValuation() {
         lastEditedAt: new Date().toISOString(),
         regenerationReason: `Refreshed because ${changes.join(", ")}.`,
         previousVersions: [snapshot, ...previousVersions].slice(0, 10),
+        // Keep the owner's recorded sale price across regenerations.
+        ...(row.report?.saleFeedback ? { saleFeedback: row.report.saleFeedback } : {}),
       };
 
       const { error } = await supabase.from("valuations").update({

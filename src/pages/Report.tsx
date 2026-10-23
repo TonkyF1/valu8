@@ -37,6 +37,9 @@ import { signPhotoUrls } from "@/lib/photos";
 import { cleanReportText, marketCountLine } from "@/lib/reportText";
 import { explainValuation } from "@/lib/valuationExplainer";
 import { HowWeValue } from "@/components/HowWeValue";
+import { SaleFeedbackCard } from "@/components/SaleFeedbackCard";
+import { stripSaleFeedback } from "@/lib/saleFeedback";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Valuation {
   id: string; make: string; model: string; year: number; mileage: number;
@@ -49,6 +52,7 @@ export default function Report() {
   const location = useLocation();
   const navigate = useNavigate();
   const isShared = location.pathname.startsWith("/shared/");
+  const { user } = useAuth();
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
@@ -65,7 +69,7 @@ export default function Report() {
         .then(({ data, error }) => {
           if (!error && data && !(data as any).error) {
             const d = data as any;
-            setV({ ...d, photo_urls: Array.isArray(d.photo_urls) ? d.photo_urls.filter(Boolean) : [], report: d.report as ValuationReport });
+            setV({ ...d, photo_urls: Array.isArray(d.photo_urls) ? d.photo_urls.filter(Boolean) : [], report: stripSaleFeedback(d.report) as ValuationReport });
             document.title = `${d.year} ${d.make} ${d.model} — Valu8`;
           }
           setLoading(false);
@@ -1090,6 +1094,17 @@ export default function Report() {
             </CollapsibleSection>
           );
         })()}
+
+        {!isShared && user && (v as any).user_id === user.id && (
+          <SectionBoundary>
+            <SaleFeedbackCard
+              valuationId={v.id}
+              report={v.report}
+              estimate={(v.report as any)?.valuationUnavailable ? null : v.report?.values?.privateSale ?? null}
+              onSaved={(next) => setV((prev) => (prev ? { ...prev, report: next as unknown as ValuationReport } : prev))}
+            />
+          </SectionBoundary>
+        )}
 
         <SectionBoundary>
           <VehicleInsights
