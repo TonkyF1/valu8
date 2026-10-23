@@ -11,13 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FlowSteps } from "@/components/FlowSteps";
 import { PhotoUploader, PhotoFile } from "@/components/PhotoUploader";
 import { UploadProgressModal, type UploadPhase } from "@/components/UploadProgressModal";
 import { Footer } from "@/components/Footer";
 import { toast } from "sonner";
 import {
   ArrowRight, Search, Loader2, CheckCircle2, Pencil, AlertCircle, Car,
-  ShieldCheck, Sparkles, Clock, Database,
+  ShieldCheck, Clock, Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAttribution } from "@/lib/attribution";
@@ -340,12 +341,8 @@ export default function NewValuation() {
           <div className="pointer-events-none absolute inset-x-0 -top-32 h-96 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.18),transparent_60%)]" />
           <div className="pointer-events-none absolute left-1/2 top-10 -translate-x-1/2 h-72 w-72 rounded-full bg-primary/10 blur-[120px]" />
 
-          <div className="container relative pt-14 pb-4 md:pt-20 md:pb-8 text-center max-w-2xl mx-auto">
-            {/* Eyebrow chip */}
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-[11px] font-medium text-primary mb-5 animate-fade-in-up">
-              <Sparkles className="h-3 w-3" />
-              AI-powered · UK private seller valuations
-            </div>
+          <div className="container relative pt-8 pb-4 md:pt-12 md:pb-8 text-center max-w-2xl mx-auto">
+            <FlowSteps current={showVehicleStep ? (photos.length > 0 ? 2 : 1) : 0} className="mb-8" />
 
             <h1 className="text-[2rem] md:text-[2.85rem] font-semibold tracking-tight text-gradient leading-[1.05] animate-fade-in-up">
               Know exactly what{" "}
