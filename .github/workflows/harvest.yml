@@ -69,7 +69,7 @@ jobs:
       - name: Rebuild + held-out gate
         id: rb
         run: |
-          scripts/owncomps/rebuild.sh | tee /tmp/rebuild.log
+          bash scripts/owncomps/rebuild.sh | tee /tmp/rebuild.log
       - name: Tests
         run: deno test -A --node-modules-dir=none supabase/functions/_shared/
       - name: Commit if accepted
