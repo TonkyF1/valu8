@@ -39,6 +39,7 @@ const PERF_MODELS = /^(gt86|brz|gr86|mx-5|mx5|mr2|s2000|z4|tt|370z|350z|supra|m2
 
 export const normMake = (s: string) => {
   const m = String(s ?? "").toLowerCase().trim().replace(/\s+/g, " ").replace("mercedes benz", "mercedes-benz");
+  if (/^mg( motors?( uk)?)?$/.test(m)) return "mg";
   return m === "vw" ? "volkswagen" : m === "mercedes" ? "mercedes-benz" : m;
 };
 export function normModel(make: string, model: string): string {

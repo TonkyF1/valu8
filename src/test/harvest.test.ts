@@ -45,3 +45,26 @@ describe("harvest collector", () => {
     expect(fingerprint(r)).toBe("toyota|yaris|2011|84000|2450");
   });
 });
+
+describe("seller type + make normalisation", () => {
+  it("uses Gumtree trade signals and dealer text cues", async () => {
+    const m = await import("../../scripts/harvest/collect.mjs");
+    expect(m.sellerType({ sellerAttr: "Trade" })).toBe("dealer");
+    expect(m.sellerType({ sellerAttr: "Private", proAccount: true })).toBe("dealer");
+    expect(m.sellerType({ sellerAttr: "Private", isTrade: true })).toBe("dealer");
+    expect(m.sellerType({ sellerAttr: "Private", vat: "No VAT" })).toBe("dealer");
+    expect(m.sellerType({ sellerAttr: "Private", text: "Lovely car, finance available, part exchange welcome" })).toBe("dealer");
+    expect(m.sellerType({ sellerAttr: "Private", text: "Reliable Motors - quality cars" })).toBe("dealer");
+    expect(m.sellerType({ sellerAttr: "Private", text: "6 months warranty included" })).toBe("dealer");
+    expect(m.sellerType({ sellerAttr: "Private", text: "Sold as seen, no warranty. New battery with 3 years warranty. No finance." })).toBe("private");
+    expect(m.sellerType({ sellerAttr: "Private", text: "Corsa limited edition, px welcome" })).toBe("private");
+  });
+  it("normalises make names", async () => {
+    const m = await import("../../scripts/harvest/collect.mjs");
+    expect(m.normMake("Mg")).toBe("MG");
+    expect(m.normMake("Mg Motor Uk")).toBe("MG");
+    expect(m.normMake("MG Motor UK")).toBe("MG");
+    expect(m.normMake("mercedes benz")).toBe("Mercedes-Benz");
+    expect(m.normMake("ford")).toBe("Ford");
+  });
+});

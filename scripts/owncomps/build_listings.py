@@ -27,6 +27,26 @@ def open_gz(p):
     if os.path.exists(p): return gzip.open(p, 'rt')
     if os.path.exists(p + '.b64'): return io.TextIOWrapper(gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(open(p + '.b64').read()))), encoding='utf-8')
     return None
+# --- seller cues / make normalisation (mirror of scripts/harvest/collect.mjs dealerCue/normMake) ---
+CUE_STRIP = [re.compile(r"\b(no|not|without)\s+(\w+\s+){0,2}(warranty|finance|part[\s-]*ex\w*|p/?x)\b", re.I),
+             re.compile(r"\b(battery|clutch|gearbox|tyres?|parts?|acuator|actuator|repair)\b[^.]{0,30}warranty", re.I)]
+CUE_STRONG = [re.compile(p, f) for p, f in [
+    (r"\bfinance\s+(is\s+)?(available|options|arranged|packages)\b", re.I), (r"\btrade\s+sale\b", re.I),
+    (r"\b(visit|see)\s+our\s+(website|showroom|forecourt|stock)\b", re.I), (r"\bour\s+(showroom|forecourt|dealership)\b", re.I),
+    (r"\b(cliff\s+warranty|warranty\s*first|warrantywise|autoprotect)\b", re.I), (r"\bpart[\s-]*exchange\s+(vehicle|car)\s+to\s+clear\b", re.I),
+    (r"\b(ltd|car\s+sales)\b(?!\s+edition)", re.I), (r"\b[A-Z][A-Za-z-]+\s+(Motors|Car Sales|Autos|Automotive|Motor Group|Car Centre)\b", 0),
+    (r"\bwarranty\s+(included|provided|given)\b", re.I), (r"\b\d+\s*(months?|mths?)\s+warranty\b(?!\s+(on|with|from|for)\b)", re.I)]]
+CUE_WEAK = [re.compile(p, re.I) for p in [r"\b(part[\s-]*ex(change)?|partex|p/?x)\s+(welcome|available|considered)\b", r"\bdelivery\s+available\b",
+    r"\bwarranty\b", r"\bhpi\s+clear\s*\|", r"\bvosa\s+verified\b"]]
+def dealer_cue(t):
+    d = t or ''
+    for r in CUE_STRIP: d = r.sub(' ', d)
+    return any(r.search(d) for r in CUE_STRONG) or sum(bool(r.search(d)) for r in CUE_WEAK) >= 2
+MAKE_FIX = {'mg': 'MG', 'mg motor uk': 'MG', 'mg motor': 'MG', 'mg motors': 'MG', 'bmw': 'BMW', 'ds': 'DS', 'ds automobiles': 'DS', 'cupra': 'CUPRA',
+    'vw': 'Volkswagen', 'mercedes': 'Mercedes-Benz', 'mercedes benz': 'Mercedes-Benz', 'mercedes-benz': 'Mercedes-Benz', 'land rover': 'Land Rover', 'alfa romeo': 'Alfa Romeo', 'mini': 'Mini'}
+def norm_make(m):
+    k = ' '.join((m or '').split()).lower()
+    return MAKE_FIX.get(k, re.sub(r'\b\w', lambda c: c.group().upper(), k))
 base = list(csv.DictReader(open_gz(os.path.join(HERE, 'base_listings.csv.gz'))))
 for r in base:
     r['cat_sn'] = is_cat((r['variant'] or '') + ' ' + (r['desc'] or ''))
@@ -44,6 +64,11 @@ if fh_h:
             fuel=r['fuel'], gearbox=r['gearbox'], seller=r['seller_type'], price=r['sold_price_inferred'] if sold else r['price'],
             price_type='inferred_sold' if sold else 'asking', search_tag='harvest', **flags(r['trim'] + ' ' + r['desc']),
             source_url=r['url'], date=r['last_seen'], desc=r['desc']))
+relabelled = 0
+for r in rows:
+    r['make'] = norm_make(r['make'])
+    if r['seller'] == 'private' and dealer_cue((r['variant'] or '') + ' ' + (r['desc'] or '')): r['seller'] = 'dealer'; relabelled += 1
+print(f'seller relabelled private->dealer from text cues: {relabelled}')
 PLATE = re.compile(r'\b[A-Z]{2}[0-9]{2} ?[A-Z]{3}\b', re.I)
 for r in rows:
     r['variant'] = PLATE.sub('[reg]', r['variant'] or ''); r['desc'] = PLATE.sub('[reg]', r['desc'] or '')

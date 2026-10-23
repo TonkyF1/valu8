@@ -97,6 +97,30 @@ export const GT_BANDS = [
   { seller: "trade", min: 0, max: 5000, pages: 1 }, { seller: "private", min: 8000, max: 0, pages: 1 },
   { seller: "trade", min: 5000, max: 15000, pages: 1 }, { seller: "trade", min: 15000, max: 0, pages: 1 },
 ];
+// ---------- seller type & make normalisation ----------
+// Dealer text cues: one strong cue, or two weak cues. Negated mentions ("no warranty") and part-level
+// warranties ("battery with 3 years warranty") are stripped first so private ads aren't flipped.
+const CUE_STRIP = [/\b(no|not|without)\s+(\w+\s+){0,2}(warranty|finance|part[\s-]*ex\w*|p\/?x)\b/gi, /\b(battery|clutch|gearbox|tyres?|parts?|acuator|actuator|repair)\b[^.]{0,30}warranty/gi];
+const CUE_STRONG = [/\bfinance\s+(is\s+)?(available|options|arranged|packages)\b/i, /\btrade\s+sale\b/i, /\b(visit|see)\s+our\s+(website|showroom|forecourt|stock)\b/i,
+  /\bour\s+(showroom|forecourt|dealership)\b/i, /\b(cliff\s+warranty|warranty\s*first|warrantywise|autoprotect)\b/i, /\bpart[\s-]*exchange\s+(vehicle|car)\s+to\s+clear\b/i,
+  /\b(ltd|car\s+sales)\b(?!\s+edition)/i, /\b[A-Z][A-Za-z-]+\s+(Motors|Car Sales|Autos|Automotive|Motor Group|Car Centre)\b/, /\bwarranty\s+(included|provided|given)\b/i,
+  /\b\d+\s*(months?|mths?)\s+warranty\b(?!\s+(on|with|from|for)\b)/i];
+const CUE_WEAK = [/\b(part[\s-]*ex(change)?|partex|p\/?x)\s+(welcome|available|considered)\b/i, /\bdelivery\s+available\b/i, /\bwarranty\b/i, /\bhpi\s+clear\s*\|/i, /\bvosa\s+verified\b/i];
+export function dealerCue(text) {
+  let d = String(text ?? ""); for (const r of CUE_STRIP) d = d.replace(r, " ");
+  return CUE_STRONG.some((r) => r.test(d)) || CUE_WEAK.filter((r) => r.test(d)).length >= 2;
+}
+// Gumtree's own signals first (seller_type attribute, proAccount, isTrade, a VAT field), then text cues.
+export function sellerType({ sellerAttr, proAccount, isTrade, vat, text } = {}) {
+  if (/trade|dealer|business/i.test(sellerAttr ?? "") || proAccount === true || isTrade === true || (vat != null && vat !== "")) return "dealer";
+  return dealerCue(text) ? "dealer" : "private";
+}
+const MAKE_FIX = { "mg": "MG", "mg motor uk": "MG", "mg motor": "MG", "mg motors": "MG", "bmw": "BMW", "ds": "DS", "ds automobiles": "DS", "cupra": "CUPRA",
+  "vw": "Volkswagen", "mercedes": "Mercedes-Benz", "mercedes benz": "Mercedes-Benz", "mercedes-benz": "Mercedes-Benz", "land rover": "Land Rover", "alfa romeo": "Alfa Romeo", "mini": "Mini" };
+export function normMake(m) {
+  const k = String(m ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+  return MAKE_FIX[k] ?? k.replace(/\b\w/g, (c) => c.toUpperCase());
+}
 const attr = (a, k) => a.find((x) => x.key === k)?.value ?? "";
 export function parseGumtreePage(html) {
   const i = html.indexOf("%22searchAds%22"); if (i < 0) return { ads: [], total: 0 };
@@ -109,13 +133,14 @@ export function parseGumtreePage(html) {
     total,
     ads: ads.map((a) => {
       const at = a.attributes ?? [], price = Number(String(a.price ?? "").replace(/[^0-9.]/g, ""));
-      const st = attr(at, "seller_type") || (listDetails.get(String(a.id))?.trade ? "Trade" : "Private");
+      const ld = listDetails.get(String(a.id));
+      const seller = sellerType({ sellerAttr: attr(at, "seller_type"), proAccount: a.proAccount, isTrade: ld?.trade, vat: a.vat ?? attr(at, "vat"), text: `${a.title ?? ""} ${a.shortDescription ?? ""}` });
       return {
         source: "gumtree", listing_id: String(a.id), url: "https://www.gumtree.com" + a.path,
-        make: attr(at, "vehicle_make"), model: title(attr(at, "vehicle_model")), trim: attr(at, "vehicle_derivative") || String(a.title ?? "").slice(0, 80),
+        make: normMake(attr(at, "vehicle_make")), model: title(attr(at, "vehicle_model")), trim: attr(at, "vehicle_derivative") || String(a.title ?? "").slice(0, 80),
         year: attr(at, "vehicle_registration_year"), mileage: attr(at, "vehicle_mileage"), fuel: attr(at, "vehicle_fuel_type"), gearbox: attr(at, "vehicle_transmission"),
         body: attr(at, "vehicle_body_type"), engine_cc: attr(at, "vehicle_engine_size"), price: Math.round(price) || "",
-        seller_type: /trade/i.test(st) ? "dealer" : "private", location: town(a.location ?? listDetails.get(String(a.id))?.loc),
+        seller_type: seller, location: town(a.location ?? listDetails.get(String(a.id))?.loc),
         desc: redactPlates(a.shortDescription).replace(/\s+/g, " ").trim().slice(0, 160),
       };
     }),
@@ -197,6 +222,7 @@ export function merge(master, seen, today = TODAY, delistDays = DELIST_DAYS) {
   const stats = {};
   for (const s of seen) {
     if (!s.price || !s.make || !s.year || !s.listing_id) continue;
+    s.make = normMake(s.make);
     const k = `${s.source}:${s.listing_id}`, ex = byKey.get(k);
     if (ex) { Object.assign(ex, { ...s, first_seen: ex.first_seen, last_seen: today, status: ex.status === "duplicate" ? "duplicate" : "active", sold_price_inferred: "" }); continue; }
     const dup = fp.get(fingerprint(s));
@@ -204,6 +230,8 @@ export function merge(master, seen, today = TODAY, delistDays = DELIST_DAYS) {
     if (dup && dup.source !== s.source) dup.last_seen = today; else fp.set(fingerprint(s), row);
     byKey.set(k, row); stats[s.source] = (stats[s.source] ?? 0) + 1;
   }
+  // Idempotent clean-up of existing rows: normalised makes; private rows whose text shows dealer cues become dealer.
+  for (const r of byKey.values()) { r.make = normMake(r.make); if (r.seller_type !== "dealer" && dealerCue(`${r.trim ?? ""} ${r.desc ?? ""}`)) r.seller_type = "dealer"; }
   const cut = new Date(Date.parse(today) - delistDays * 864e5).toISOString().slice(0, 10);
   for (const r of byKey.values()) if (r.status === "active" && r.last_seen < cut) { r.status = "delisted"; r.sold_price_inferred = r.price; }
   return { rows: [...byKey.values()], newBySource: stats };
