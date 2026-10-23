@@ -20,6 +20,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Disclaimers = lazy(() => import("./pages/Disclaimers"));
+const About = lazy(() => import("./pages/About"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 import Landing from "./pages/Landing";
 const Buyer = lazy(() => import("./pages/Buyer"));
@@ -70,6 +71,8 @@ const App = () => (
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/disclaimers" element={<Disclaimers />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<About />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>

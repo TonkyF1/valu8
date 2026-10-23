@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { ShieldAlert, Database, Sparkles, Scale } from "lucide-react";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { useSeo } from "@/lib/seo";
+import { operatorSentence } from "@/lib/legal";
 
 export default function Disclaimers() {
   useSeo({ title: "Disclaimers & Data Sources — Valu8", description: "What a Valu8 report is and is not: data sources, AI use and limitations.", path: "/disclaimers" });
@@ -24,6 +25,9 @@ export default function Disclaimers() {
           </Card>
           <Card icon={<ShieldAlert className="h-4 w-4" />} title="Not financial advice">
             Valu8 reports do not constitute financial, legal, or commercial advice. Always carry out an independent vehicle history check and arrange a viewing/inspection before transacting.
+          </Card>
+          <Card icon={<Scale className="h-4 w-4" />} title="Who runs Valu8">
+            {operatorSentence()}
           </Card>
           <Card icon={<Scale className="h-4 w-4" />} title="Liability">
             Valu8 accepts no liability for outcomes arising from reliance on a valuation. By using the service you acknowledge the indicative nature of the results.

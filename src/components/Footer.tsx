@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { resetConsent } from "@/lib/consent";
 import { CAR_MODELS } from "@/data/carModels";
-import { CONTACT_EMAIL } from "@/lib/site";
 
 const POPULAR = CAR_MODELS.filter((m) => ["fiesta", "golf", "corsa", "qashqai", "3-series", "yaris"].includes(m.slug));
 
@@ -26,7 +25,10 @@ export function Footer() {
           <Link to="/terms" className="inline-flex min-h-[44px] items-center hover:text-primary transition-colors">Terms of Service</Link>
           <span className="opacity-30" aria-hidden>·</span>
           <Link to="/disclaimers" className="inline-flex min-h-[44px] items-center hover:text-primary transition-colors">Disclaimers</Link>
-          <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex min-h-[44px] items-center hover:text-primary transition-colors">Contact</a>
+          <span className="opacity-30" aria-hidden>·</span>
+          <Link to="/about" className="inline-flex min-h-[44px] items-center hover:text-primary transition-colors">About</Link>
+          <span className="opacity-30" aria-hidden>·</span>
+          <Link to="/contact" className="inline-flex min-h-[44px] items-center hover:text-primary transition-colors">Contact</Link>
           <span className="opacity-30" aria-hidden>·</span>
           <button type="button" onClick={resetConsent} className="inline-flex min-h-[44px] items-center hover:text-primary transition-colors">Cookie settings</button>
         </nav>
