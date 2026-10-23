@@ -177,7 +177,7 @@ export default function Dashboard() {
         {motReminders.length > 0 && (
           <section aria-label="MOT reminders" className="grid gap-2.5 mb-8">
             {motReminders.map(({ row, due }) => {
-              const name = `${row.year} ${row.make} ${row.model}`;
+              const name = vehicleTitle({ year: row.year, make: row.make, model: row.model });
               const when = due.status === "overdue"
                 ? `MOT expired ${format(due.date, "d MMM yyyy")}`
                 : due.daysLeft === 0 ? "MOT due today" : `MOT due in ${due.daysLeft} day${due.daysLeft === 1 ? "" : "s"} (${format(due.date, "d MMM yyyy")})`;

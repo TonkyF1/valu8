@@ -331,7 +331,7 @@ export default function Report() {
         <div className="min-w-0">
         {/* Title */}
         <div className="mb-6 animate-fade-in-up">
-          <div className="text-[11px] uppercase tracking-wider text-primary font-semibold mb-1.5">Valuation Report</div>
+          <div className="text-xs  text-primary font-semibold mb-1.5">Valuation report</div>
           <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-gradient">
             {titleDisplay}
           </h1>
@@ -340,7 +340,7 @@ export default function Report() {
             {v.registration && <><span>•</span><span className="font-mono uppercase">{v.registration}</span></>}
             <span>•</span><span>{format(new Date(v.created_at), "d MMM yyyy")}</span>
             {(r as any).edited && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider">
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-2 py-0.5 text-xs font-semibold ">
                 <Pencil className="h-2.5 w-2.5" /> Edited
                 {(r as any).lastEditedAt && <span className="text-primary/70 normal-case font-normal">· {format(new Date((r as any).lastEditedAt), "d MMM")}</span>}
               </span>
@@ -393,10 +393,10 @@ export default function Report() {
                 <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    <h2 className="text-[11px] font-semibold uppercase tracking-wider text-primary">Quick Summary</h2>
+                    <h2 className="text-xs font-semibold  text-primary">Quick summary</h2>
                   </div>
                   <span className={cn(
-                    "inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full border",
+                    "inline-flex items-center gap-1.5 text-xs  font-semibold px-2.5 py-1 rounded-full border",
                     verdict.tone === "primary"
                       ? "text-primary bg-primary/10 border-primary/30"
                       : "text-amber-300 bg-amber-500/10 border-amber-500/30",
@@ -503,17 +503,17 @@ export default function Report() {
 
             {/* Eyebrow + confidence pill */}
             <div className="flex items-center justify-between gap-2 mb-3 flex-wrap relative">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+              <span className="text-xs  text-muted-foreground font-medium">
                 {valuationUnavailable ? "Valuation status" : "Realistic Private Sale Price"}
               </span>
               {!valuationUnavailable && (
                 showSpecialistBadge ? (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
+                  <span className="inline-flex items-center gap-1.5 text-xs  px-2.5 py-1 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
                     <ShieldCheck className="h-3 w-3" /> Expert insight
                   </span>
                 ) : (
                   <span className={cn(
-                    "inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full border font-semibold",
+                    "inline-flex items-center gap-1.5 text-xs  px-2.5 py-1 rounded-full border font-semibold",
                     liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
                     liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
                     liveTier === "Low" && "text-muted-foreground bg-muted/40 border-border",
@@ -568,7 +568,7 @@ export default function Report() {
                       <ShieldCheck className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[11px] uppercase tracking-wider text-primary font-semibold mb-1">
+                      <div className="text-xs  text-primary font-semibold mb-1">
                         Expert Insight Applied
                       </div>
                       <p className="text-[12.5px] leading-[1.55] text-foreground/85">
@@ -592,7 +592,7 @@ export default function Report() {
                     where no Expert Insight badge is shown. Keeps transparency. */}
                 {!showSpecialistBadge && Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
                   <div className="mt-4 rounded-xl border border-border/60 bg-card/40 px-4 py-3">
-                    <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1.5">
+                    <div className="text-xs  text-muted-foreground font-semibold mb-1.5">
                       Data used for this valuation
                     </div>
                     <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-foreground/75">
@@ -618,7 +618,7 @@ export default function Report() {
               </p>
             ) : (
               <details className="mt-4 group max-w-[44ch]">
-                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold text-primary/90 hover:text-primary">
+                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-xs  font-semibold text-primary/90 hover:text-primary">
                   <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
                   Why this price
                 </summary>
@@ -676,7 +676,7 @@ export default function Report() {
               return (
                 <div className="mt-5 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.07] to-transparent px-4 py-4">
                   <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
-                    <span className="text-[11px] uppercase tracking-wider text-primary/90 font-semibold">Suggested Asking Price</span>
+                    <span className="text-xs  text-primary/90 font-semibold">Suggested asking price</span>
                     {!isShared && <span className="text-[11px] tabular-nums text-muted-foreground">Negotiation buffer ~£{buffer.toLocaleString()}</span>}
                   </div>
                   <div className="text-2xl sm:text-3xl font-semibold tabular-nums text-foreground leading-none tracking-tight">
@@ -732,7 +732,7 @@ export default function Report() {
             {/* Pro Tip — negotiation guidance (seller-only; hidden on buyer share links) */}
             {!valuationUnavailable && !isShared && (
               <details className="mt-3 group">
-                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold text-amber-300/90 hover:text-amber-300">
+                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-xs  font-semibold text-amber-300/90 hover:text-amber-300">
                   <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
                   💡 Pro tip — listing & offers
                 </summary>
@@ -769,7 +769,7 @@ export default function Report() {
           <div className="lg:col-span-2 premium-card py-6 px-5 flex flex-col items-center justify-center text-center">
             {valuationUnavailable ? (
               <>
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-4">Recommended route</div>
+                <div className="text-xs  text-muted-foreground mb-4">Recommended route</div>
                 <div className="rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-medium text-amber-300">
                   {limitedData ? "Limited data" : "Specialist / auction"}
                 </div>
@@ -781,7 +781,7 @@ export default function Report() {
               </>
             ) : (
               <>
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-4">Condition Score</div>
+                <div className="text-xs  text-muted-foreground mb-4">Condition score</div>
                 {hasPhotos(v.photo_urls) ? (
                   <>
                     <div className="w-full max-w-[280px]">
@@ -963,7 +963,7 @@ export default function Report() {
               >
                 <div className="flex items-center gap-2">
                   <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Previously Rectified Advisories</h2>
+                  <h2 className="text-sm font-semibold text-muted-foreground">Previously rectified advisories</h2>
                   <span className="text-[11px] text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">{oldAdvisories.length}</span>
                 </div>
                 <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showOldAdvisories && "rotate-180")} />
@@ -1048,7 +1048,7 @@ export default function Report() {
                       <div className="flex items-baseline justify-between flex-wrap gap-x-3 gap-y-1">
                         <div className="flex items-baseline gap-2.5">
                           <span className={cn(
-                            "text-[11px] font-semibold uppercase tracking-wider",
+                            "text-xs font-semibold ",
                             m.result === "Pass" ? "text-primary" : m.result === "Advisory" ? "text-amber-400" : "text-destructive"
                           )}>{m.result}</span>
                           <span className="font-medium text-sm">{format(new Date(m.date), "d MMM yyyy")}</span>
@@ -1133,7 +1133,7 @@ export default function Report() {
         )}
 
         <footer className="mt-12 pt-6 border-t border-border/40">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold mb-2">Legal</div>
+          <div className="text-xs text-muted-foreground/60 font-semibold mb-2">Legal</div>
           <p className="text-xs leading-relaxed text-muted-foreground/70">
             Sources: {isLiveListings ? "MarketCheck UK live listings" : "AI market estimate (live listings unavailable)"}, DVSA MOT history, AI photo analysis. Estimates are for guidance only — not financial advice or a guaranteed sale price. Always verify vehicle history and MOT independently before transacting.
           </p>
@@ -1211,7 +1211,7 @@ export default function Report() {
           />
 
           {/* Counter */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[11px] uppercase tracking-wider text-white/70 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs  text-white/70 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
             {lightboxIndex + 1} / {v.photo_urls.length}
           </div>
         </div>

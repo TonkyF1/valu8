@@ -47,8 +47,8 @@ export function MiniTier({ label, tag, tip, value }: { label: string; tag: strin
   const inner = (
     <div className="rounded-lg bg-muted/30 border border-border/50 px-3 py-2.5 transition-colors hover:border-border">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</span>
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground/70">{tag}</span>
+        <span className="text-xs  text-muted-foreground">{label}</span>
+        <span className="text-xs  text-muted-foreground/70">{tag}</span>
       </div>
       <div className="text-lg font-medium tabular-nums mt-0.5">£{value.toLocaleString()}</div>
     </div>
@@ -162,7 +162,7 @@ export function CollapsibleSection({
 export function RecBlock({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-3 font-medium">{title}</div>
+      <div className="text-xs  text-muted-foreground mb-3 font-medium">{title}</div>
       <ul className="space-y-2">
         {items.map(i => (
           <li key={i} className="flex gap-2 text-sm">
@@ -241,11 +241,11 @@ export function PhotoFeedback({
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg sm:text-xl font-semibold text-foreground tracking-tight">Vision AI Analysis</h2>
-                  <span className="text-[11px] uppercase tracking-wider px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
+                  <span className="text-xs  px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
                     Valu8 exclusive
                   </span>
                 </div>
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground/80 mt-0.5">
+                <div className="text-xs  text-muted-foreground/80 mt-0.5">
                   Powered by multimodal vision · {insights.length * 12}+ datapoints scanned
                 </div>
               </div>
@@ -267,21 +267,21 @@ export function PhotoFeedback({
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div className="rounded-xl bg-background/40 border border-border/50 px-3 py-3 text-center">
               <div className="text-xl sm:text-2xl font-semibold tabular-nums text-foreground leading-none tracking-tight">{insights.length}</div>
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1.5">Observations</div>
+              <div className="text-xs  text-muted-foreground mt-1.5">Observations</div>
             </div>
             <div className="rounded-xl bg-primary/[0.08] border border-primary/30 px-3 py-3 text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
               <div className="relative text-xl sm:text-2xl font-semibold tabular-nums text-primary leading-none tracking-tight">
                 {fixableUpside > 0 ? `+£${fixableUpside.toLocaleString()}` : "£0"}
               </div>
-              <div className="relative text-[11px] uppercase tracking-wider text-primary/90 mt-1.5 font-medium">Fixable upside</div>
+              <div className="relative text-xs  text-primary/90 mt-1.5 font-medium">Fixable upside</div>
             </div>
             <div className="rounded-xl bg-background/40 border border-border/50 px-3 py-3 text-center">
               <div className="text-xl sm:text-2xl font-semibold tabular-nums text-foreground leading-none tracking-tight">
                 {notableCount + minorCount}
                 <span className="text-sm text-muted-foreground font-normal"> / {insights.length}</span>
               </div>
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1.5">Need attention</div>
+              <div className="text-xs  text-muted-foreground mt-1.5">Need attention</div>
             </div>
           </div>
 
@@ -342,7 +342,7 @@ export function PhotoFeedback({
                       />
                       {/* Top gradient + slot pill */}
                       <div className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/55 to-transparent pointer-events-none" />
-                      <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1 text-[11px] uppercase tracking-wider font-semibold text-white">
+                      <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-black/55 backdrop-blur-md border border-white/15 px-2.5 py-1 text-xs  font-semibold text-white">
                         {SLOT_LABELS[slotKey] ?? "Photo"}
                       </div>
                       {/* Bottom gradient + impact + severity dots */}
@@ -380,7 +380,7 @@ export function PhotoFeedback({
                   ) : (
                     <div className="relative w-full aspect-[4/3] bg-muted/30 grid place-items-center">
                       <Camera className="h-5 w-5 text-muted-foreground" />
-                      <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-background/70 border border-border/60 px-2.5 py-1 text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+                      <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-background/70 border border-border/60 px-2.5 py-1 text-xs  font-semibold text-muted-foreground">
                         {SLOT_LABELS[slotKey] ?? "Photo"}
                       </div>
                     </div>
@@ -404,14 +404,14 @@ export function PhotoFeedback({
               {fixableUpside > 0 && (
                 <div className="rounded-xl bg-primary/[0.07] border border-primary/30 px-4 py-3 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.08] to-transparent pointer-events-none" />
-                  <div className="relative text-[11px] uppercase tracking-wider text-primary/90 mb-1 font-semibold">Potential upside</div>
+                  <div className="relative text-xs  text-primary/90 mb-1 font-semibold">Potential upside</div>
                   <div className="relative text-lg font-semibold tabular-nums text-foreground">+£{fixableUpside.toLocaleString()}</div>
                   <div className="relative text-[11px] text-muted-foreground mt-0.5">If you tidy the {fixableCount} fixable item{fixableCount === 1 ? "" : "s"} before listing</div>
                 </div>
               )}
               {totalFixCost > 0 && (
                 <div className="rounded-xl bg-muted/20 border border-border/60 px-4 py-3">
-                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1 font-semibold">Estimated fix cost</div>
+                  <div className="text-xs  text-muted-foreground mb-1 font-semibold">Estimated fix cost</div>
                   <div className="text-lg font-semibold tabular-nums text-foreground/90">£{totalFixCost.toLocaleString()}</div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">Indicative trade prices, parts + labour</div>
                 </div>
