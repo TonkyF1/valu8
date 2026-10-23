@@ -8,6 +8,8 @@
   <url><loc>https://valu8.uk/privacy</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.uk/terms</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.uk/disclaimers</loc><priority>0.3</priority></url>
+  <url><loc>https://valu8.uk/about</loc><priority>0.4</priority></url>
+  <url><loc>https://valu8.uk/contact</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.uk/car-values/ford/fiesta</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/car-values/ford/focus</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/car-values/ford/puma</loc><priority>0.7</priority></url>
