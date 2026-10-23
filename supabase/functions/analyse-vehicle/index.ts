@@ -1045,7 +1045,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       // ---- Anchor selection ----
       // Anchor on live MarketCheck UK comparables (median of matched listings).
       const mcAnchorRaw = anchorMedian > 0 ? anchorMedian : mc.median;
-      let anchor = mcAnchorRaw;
+      const anchor = mcAnchorRaw;
       let dealerRetail = roundToGrain(anchor * mult);
 
       // Sanity floor for ultra-rare cars
