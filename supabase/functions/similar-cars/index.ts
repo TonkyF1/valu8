@@ -51,7 +51,7 @@ async function ensureCachedImage(l: Listing): Promise<string | null> {
   try {
     const head = await fetch(publicUrl, { method: "HEAD" });
     if (head.ok) return publicUrl;
-  } catch (_) {}
+  } catch (_) { /* ignore */ }
 
   // Generate via Nano Banana
   const prompt = `Photorealistic professional automotive photograph of a ${colour} ${l.year} ${l.make} ${l.model}${
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
             .sort((a, b) => a.score - b.score);
 
         // Tier A — tight (±3 years).
-        let items = await fetchTier(3, 40);
+        const items = await fetchTier(3, 40);
         let scored = scoreItems(items, 3);
 
         // Tier B — widen to ±5 years if we don't have enough good comparables.
