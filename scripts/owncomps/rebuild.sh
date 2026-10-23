@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Weekly: rebuild ownCompsData.ts from seed + harvested listings, re-run the held-out evaluation and only
+# replace supabase/functions/_shared/ownCompsData.ts when held-out median error does not get worse than
+# the last accepted run (scripts/owncomps/last_eval.json). Exit 0 either way; prints ACCEPTED/REJECTED.
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+export WORK="${WORK:-$(mktemp -d)}"
+python3 scripts/owncomps/build_listings.py
+python3 scripts/owncomps/clean.py
+deno run -A scripts/owncomps/gen.ts
+deno run -A scripts/owncomps/eval.ts > /dev/null
+python3 - <<'PY'
+import json, os, shutil
+W = os.environ['WORK']; new = json.load(open(f'{W}/eval.json'))
+lp = 'scripts/owncomps/last_eval.json'
+old = json.load(open(lp)) if os.path.exists(lp) else None
+print('before:', json.dumps(old and {k: old[k] for k in ('overall', 'under5kPrivate')}))
+print('after :', json.dumps({k: new[k] for k in ('overall', 'under5kPrivate')}))
+if old is None or new['overall']['median'] <= old['overall']['median']:
+    shutil.copy(f'{W}/ownCompsData.ts', 'supabase/functions/_shared/ownCompsData.ts')
+    json.dump(new, open(lp, 'w'), indent=1)
+    print('ACCEPTED')
+else:
+    print('REJECTED: held-out median got worse; ownCompsData.ts unchanged')
+PY
