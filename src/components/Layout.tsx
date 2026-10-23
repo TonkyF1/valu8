@@ -32,6 +32,9 @@ export function Header() {
         <Link to={logoHref} className="flex items-center group" aria-label="Valu8 home">
           <Logo className="transition-transform group-hover:scale-[1.02]" />
         </Link>
+        <span className="ml-2 mr-auto hidden sm:inline-flex items-center rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary" title="All features are free during early access">
+          Early access: free
+        </span>
 
         <nav aria-label="Main" className="flex items-center gap-1.5">
           {user ? (
