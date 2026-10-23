@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAttribution } from "@/lib/attribution";
+import { useSeo } from "@/lib/seo";
 
 interface LookupResult {
   registration: string;
@@ -78,7 +79,7 @@ export default function NewValuation() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => { document.title = "New valuation — Valu8"; }, []);
+  useSeo({ title: "New valuation — Valu8", description: "Enter a UK registration to get a free private sale valuation in minutes.", path: "/valuation/new" });
 
   // Restore pending intent after sign-in/up
   useEffect(() => {

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { AccuracyDisclaimer } from "@/components/AccuracyDisclaimer";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useSeo } from "@/lib/seo";
 
 interface Result {
   verdict: "great" | "fair" | "high" | "overpriced" | "unknown";
@@ -32,7 +33,7 @@ export default function Buyer() {
   const [f, setF] = useState({ make: "", model: "", year: "", mileage: "", askingPrice: "" });
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<Result | null>(null);
-  useEffect(() => { document.title = "Is this used car a fair price? Valu8 buyer check"; }, []);
+  useSeo({ title: "Is this used car a fair price? Valu8 buyer check", description: "Check whether a used car asking price is fair against live UK listings and MOT history.", path: "/buyer" });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
