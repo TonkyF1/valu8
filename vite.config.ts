@@ -6,14 +6,14 @@ import type { Plugin } from "vite";
 import { componentTagger } from "lovable-tagger";
 
 // Branding PNGs live in branding/*.png.b64 (text-only commit tooling). Serve them in dev and
-// emit them at the site root on build so https://valu8.uk/og.png and /logo.png exist.
+// emit them at the site root on build so https://valu8.uk/og-v2.png (and legacy /og.png, /logo.png) exist.
 function brandingAssets(): Plugin {
   const dir = path.resolve(__dirname, "branding");
   const read = (name: string) => {
     const f = path.join(dir, `${name}.b64`);
     return fs.existsSync(f) ? Buffer.from(fs.readFileSync(f, "utf8").replace(/\s+/g, ""), "base64") : null;
   };
-  const names = ["og.png", "logo.png"];
+  const names = ["og.png", "og-v2.png", "logo.png"];
   return {
     name: "valu8-branding-assets",
     configureServer(server) {
