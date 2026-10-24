@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { isFoundVehicle, isPlausibleUkReg, normaliseReg } from "@/lib/registration";
 import { Turnstile, turnstileEnabled, turnstileHeaders } from "@/components/Turnstile";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { posthog } from "@/lib/posthog";
@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getAttribution } from "@/lib/attribution";
 import { useSeo } from "@/lib/seo";
+import { GUEST_DAILY_CAP, functionErrorBody, getGuestToken, photoToDataUrl, rememberGuestValuation } from "@/lib/guest";
 
 interface LookupResult {
   registration: string;
@@ -79,6 +80,8 @@ export default function NewValuation() {
   const [phase, setPhase] = useState<UploadPhase>("uploading");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Set when a guest hits the server-side daily cap.
+  const [guestLimit, setGuestLimit] = useState<string | null>(null);
 
   useSeo({ title: "New valuation — Valu8", description: "Enter a UK registration to get a free private sale valuation in minutes.", path: "/valuation/new" });
 
@@ -111,9 +114,10 @@ export default function NewValuation() {
       });
       if (error) {
         // Non-2xx responses carry the server's friendly message in the body.
-        let msg = "We couldn't find a vehicle with that registration.";
-        try { const j = await (error as any).context?.json?.(); if (j?.error) msg = j.error; } catch { /* ignore */ }
-        throw new Error(msg);
+        const { status, body } = await functionErrorBody(error);
+        if (status === 401 && !user) { sendToAuth({ kind: "lookup", reg: cleaned }); return; }
+        if (status === 429 && body?.code === "guest_limit") { setGuestLimit(body.error); return; }
+        throw new Error(body?.error || "We couldn't find a vehicle with that registration.");
       }
       if ((data as any)?.error) throw new Error((data as any).error);
       const result = data as LookupResult;
@@ -135,6 +139,13 @@ export default function NewValuation() {
     }
   }
 
+  // Only used if the backend still requires an account (older deploy) — keeps guests unstuck.
+  function sendToAuth(intent: { kind: "lookup" | "manual"; reg?: string }) {
+    try { sessionStorage.setItem("valu8_pending_intent", JSON.stringify(intent)); } catch { /* storage unavailable */ }
+    toast.message("Sign in to get your valuation", { description: "We'll pick up right where you left off." });
+    navigate("/auth");
+  }
+
   async function handleLookup() {
     const cleaned = normaliseReg(reg);
     if (!isPlausibleUkReg(cleaned)) {
@@ -142,26 +153,10 @@ export default function NewValuation() {
       toast.error("Enter a valid UK registration");
       return;
     }
-    if (!user) {
-      try {
-        sessionStorage.setItem("valu8_pending_intent", JSON.stringify({ kind: "lookup", reg: cleaned }));
-      } catch { /* storage unavailable */ }
-      toast.message("Sign in to get your valuation", { description: "We'll pick up right where you left off." });
-      navigate("/auth");
-      return;
-    }
     await runLookup(cleaned);
   }
 
   function handleManualEntry() {
-    if (!user) {
-      try {
-        sessionStorage.setItem("valu8_pending_intent", JSON.stringify({ kind: "manual" }));
-      } catch { /* storage unavailable */ }
-      toast.message("Sign in to get your valuation", { description: "We'll pick up right where you left off." });
-      navigate("/auth");
-      return;
-    }
     setLookupError(null);
     setLookup({ registration: "" });
     setEditing(true);
@@ -177,7 +172,6 @@ export default function NewValuation() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!user) return navigate("/auth");
 
     const labels: Record<string, string> = { make: "Make", model: "Model", year: "Year", mileage: "Mileage" };
     const parsed = finalSchema.safeParse({
@@ -219,10 +213,19 @@ export default function NewValuation() {
     try {
       const photoUrls: string[] = []; // now stores storage PATHS (private bucket)
       const photos_labeled: { slot: string; url: string }[] = [];
-      for (let i = 0; i < photos.length; i++) {
+      // Guests can't write to Storage (RLS); analyse-vehicle stores their photos with the service role.
+      const guestPhotos: { slot: string; dataUrl: string }[] = [];
+      if (!user) {
+        for (let i = 0; i < photos.length; i++) {
+          const dataUrl = await photoToDataUrl(photos[i].file);
+          if (dataUrl) guestPhotos.push({ slot: photos[i].key, dataUrl });
+          setUploadProgress(Math.round(((i + 1) / photos.length) * 100));
+        }
+      }
+      for (let i = 0; user && i < photos.length; i++) {
         const p = photos[i];
         const ext = p.file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+        const path = `${user!.id}/${crypto.randomUUID()}.${ext}`;
         const { error } = await supabase.storage.from("vehicle-photos").upload(path, p.file, {
           contentType: p.file.type, upsert: false,
         });
@@ -231,7 +234,7 @@ export default function NewValuation() {
         photos_labeled.push({ slot: p.key, url: path });
         setUploadProgress(Math.round(((i + 1) / photos.length) * 100));
       }
-      if (photos.length > 0) {
+      if (photos.length > 0 && user) {
         posthog.capture?.("Photos Uploaded", {
           count: photos.length,
           slots: photos_labeled.map((p) => p.slot),
@@ -240,6 +243,13 @@ export default function NewValuation() {
 
 
       setPhase("analysing");
+      const vehicleFacts = {
+        fuelType: lookup?.fuelType,
+        transmission: lookup?.transmission,
+        firstRegistered: lookup?.firstRegistered,
+        engineCapacity: lookup?.engineCapacity,
+        co2Emissions: lookup?.co2Emissions,
+      };
       const combinedNotes = [
         serviceNotes.trim(),
         modifications.trim() ? `Modifications / extras: ${modifications.trim()}` : "",
@@ -262,7 +272,17 @@ export default function NewValuation() {
           motAdvisories: lookup?.recentAdvisories?.length ? lookup.recentAdvisories : undefined,
           photoUrls,
           photos: photos_labeled,
-          userId: user.id,
+          ...(user ? { userId: user.id } : {
+            // Guest: the edge function saves the valuation itself and returns its id.
+            guestToken: getGuestToken(),
+            guestPhotos,
+            guestSave: {
+              displayModel: variant.trim() ? `${parsed.data.model} · ${variant.trim()}` : parsed.data.model,
+              serviceNotes: combinedNotes || null,
+              vehicle: vehicleFacts,
+              attribution: getAttribution() ?? null,
+            },
+          }),
         },
         headers: turnstileHeaders(tsToken),
       });
@@ -271,26 +291,40 @@ export default function NewValuation() {
 
       if (aiErr) {
         // Non-2xx responses carry the server's friendly message in the body.
-        let msg = aiErr.message;
-        try { const j = await (aiErr as any).context?.json?.(); if (j?.error) msg = j.error; } catch { /* ignore */ }
-        throw new Error(msg);
+        const { status, body } = await functionErrorBody(aiErr);
+        if (!user && status === 401) { setBusy(false); sendToAuth({ kind: "lookup", reg: lookup?.registration || normaliseReg(reg) }); return; }
+        if (!user && status === 429 && body?.code === "guest_limit") {
+          posthog.capture?.("Guest Limit Reached", {});
+          setGuestLimit(body.error); setBusy(false); return;
+        }
+        throw new Error(body?.error || aiErr.message);
       }
       if ((aiData as any)?.error) throw new Error((aiData as any).error);
       const report = (aiData as any)?.report;
       if (!report) throw new Error("AI did not return a report");
 
+      if (!user) {
+        const guestId = (aiData as any)?.valuationId as string | undefined;
+        if (!guestId) throw new Error("We couldn't save your report — please try again.");
+        rememberGuestValuation(guestId);
+        posthog.capture?.("Valuation Report Generated", {
+          valuation_id: guestId, guest: true,
+          make: parsed.data.make, model: parsed.data.model, year: parsed.data.year,
+          condition_score: report.conditionScore, private_value: report.values?.privateSale,
+          photo_count: guestPhotos.length, duration_ms: Date.now() - t0,
+          valuation_unavailable: !!report.valuationUnavailable,
+        });
+        setPhase("done");
+        setTimeout(() => navigate(`/valuation/${guestId}`), 600);
+        return;
+      }
+
       // Keep the vehicle facts the client needs for tax / ULEZ estimates.
-      report.vehicle = {
-        fuelType: lookup?.fuelType,
-        transmission: lookup?.transmission,
-        firstRegistered: lookup?.firstRegistered,
-        engineCapacity: lookup?.engineCapacity,
-        co2Emissions: lookup?.co2Emissions,
-      };
+      report.vehicle = vehicleFacts;
 
       setPhase("generating");
       const { data, error } = await supabase.from("valuations").insert({
-        user_id: user.id,
+        user_id: user!.id,
         make: parsed.data.make,
         model: variant.trim() ? `${parsed.data.model} · ${variant.trim()}` : parsed.data.model,
         year: parsed.data.year,
@@ -414,6 +448,8 @@ export default function NewValuation() {
               )}
             </button>
           </div>
+
+          {guestLimit && !user && !showVehicleStep && <div className="mt-3"><GuestLimitCard message={guestLimit} reg={normaliseReg(reg)} /></div>}
 
           {lookupError && (
             <div role="alert" className="mt-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-[12.5px] text-foreground/90">
@@ -569,9 +605,11 @@ export default function NewValuation() {
 
               {/* Submit */}
               <Turnstile key={tsKey} onToken={setTsToken} action="analyse" />
+              {guestLimit && !user && <GuestLimitCard message={guestLimit} reg={lookup?.registration || normaliseReg(reg)} />}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
                 <p className="text-xs text-muted-foreground max-w-md">
                   We'll combine your reg lookup, details and photos to generate a realistic private sale price.
+                  {!user && <span className="block mt-1 text-muted-foreground/70">No account needed. Free for up to {GUEST_DAILY_CAP} valuations a day.</span>}
                 </p>
                 <Button type="submit" variant="hero" size="xl" disabled={busy || (turnstileEnabled() && !tsToken)}>
                   {busy ? "Working…" : <>Get my valuation <ArrowRight className="h-4 w-4" /></>}
@@ -583,6 +621,28 @@ export default function NewValuation() {
       </main>
       <Footer />
       <UploadProgressModal open={busy} phase={phase} uploadProgress={uploadProgress} />
+    </div>
+  );
+}
+
+function GuestLimitCard({ message, reg }: { message: string; reg?: string }) {
+  const remember = () => {
+    try {
+      if (reg) sessionStorage.setItem("valu8_pending_intent", JSON.stringify({ kind: "lookup", reg }));
+    } catch { /* storage unavailable */ }
+  };
+  return (
+    <div role="alert" className="rounded-xl border border-primary/30 bg-primary/5 p-4 sm:p-5">
+      <p className="text-sm font-medium text-foreground">You've used today's free guest valuations</p>
+      <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">{message}</p>
+      <div className="mt-3 flex flex-col sm:flex-row gap-2">
+        <Button asChild variant="hero" size="sm" className="min-h-[44px]">
+          <Link to="/auth?mode=signup" onClick={remember}>Create a free account</Link>
+        </Button>
+        <Button asChild variant="ghost" size="sm" className="min-h-[44px]">
+          <Link to="/auth" onClick={remember}>I already have one</Link>
+        </Button>
+      </div>
     </div>
   );
 }

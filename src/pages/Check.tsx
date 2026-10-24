@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSeo } from "@/lib/seo";
 import { posthog } from "@/lib/posthog";
+import { functionErrorBody } from "@/lib/guest";
 import { checkAdvert, parseMoney, type AdvertCheck, type AdvertVerdict } from "@/lib/advertCheck";
 
 const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
@@ -37,6 +38,7 @@ export default function Check() {
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<(AdvertCheck & { asking: number; sample: number; basis: string; source?: string }) | null>(null);
   const [noData, setNoData] = useState(false);
+  const [guestLimit, setGuestLimit] = useState<string | null>(null);
   useSeo({ title: "Is this used car a fair price? Free advert price checker | Valu8", description: "Paste a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against UK market data.", path: "/check" });
 
   const submit = async (e: React.FormEvent) => {
@@ -45,16 +47,25 @@ export default function Check() {
     if (!Number.isFinite(asking) || !Number.isFinite(mileage) || !(year > 1980 && year <= new Date().getFullYear() + 1)) {
       toast.error("Check the year, mileage and asking price"); return;
     }
-    if (!user) {
-      try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(f)); } catch { /* ignore */ }
-      navigate("/auth"); return;
-    }
-    setBusy(true); setRes(null); setNoData(false);
+    setBusy(true); setRes(null); setNoData(false); setGuestLimit(null);
     try {
       const { data, error } = await supabase.functions.invoke("fair-price", {
         body: { make: f.make.trim(), model: f.model.trim(), year, mileage, askingPrice: asking },
       });
-      if (error || (data as any)?.error) throw new Error((data as any)?.error || "Could not check the price right now.");
+      if (error) {
+        const { status, body } = await functionErrorBody(error);
+        // Guests are welcome; only fall back to sign-in if the backend still requires it.
+        if (status === 401 && !user) {
+          try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(f)); } catch { /* ignore */ }
+          navigate("/auth"); return;
+        }
+        if (status === 429 && body?.code === "guest_limit" && !user) {
+          try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(f)); } catch { /* ignore */ }
+          setGuestLimit(body.error); return;
+        }
+        throw new Error(body?.error || "Could not check the price right now.");
+      }
+      if ((data as any)?.error) throw new Error((data as any).error);
       const d = data as any;
       const out = d?.verdict === "unknown" ? null : checkAdvert(asking, { low: d.low, mid: d.mid, high: d.high });
       if (!out) { setNoData(true); return; }
@@ -97,11 +108,22 @@ export default function Check() {
           <div className="sm:col-span-2">{field("link", "Advert link (optional)", { type: "url", placeholder: "https://…", autoComplete: "off" })}</div>
           <div className="sm:col-span-2">
             <Button type="submit" variant="hero" size="lg" disabled={busy} className="w-full sm:w-auto min-h-[48px]">
-              {busy ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Checking…</> : user ? <>Check this advert <ArrowRight className="h-4 w-4" aria-hidden /></> : "Sign in free to check"}
+              {busy ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Checking…</> : <>Check this advert <ArrowRight className="h-4 w-4" aria-hidden /></>}
             </Button>
-            {!user && <p className="text-xs text-muted-foreground mt-2">Free during early access. We'll keep what you typed for when you come back.</p>}
+            {!user && <p className="text-xs text-muted-foreground mt-2">Free, no account needed.</p>}
           </div>
         </form>
+
+        {guestLimit && !user && (
+          <section role="alert" className="mt-8 rounded-xl border border-primary/30 bg-primary/5 p-5">
+            <p className="font-semibold">You've used today's free guest checks</p>
+            <p className="text-sm text-muted-foreground mt-1">{guestLimit}</p>
+            <div className="mt-3 flex flex-col sm:flex-row gap-2">
+              <Button asChild variant="hero" size="sm" className="min-h-[44px]"><Link to="/auth?mode=signup">Create a free account</Link></Button>
+              <Button asChild variant="ghost" size="sm" className="min-h-[44px]"><Link to="/auth">I already have one</Link></Button>
+            </div>
+          </section>
+        )}
 
         {noData && (
           <section className="mt-8 rounded-xl border border-border bg-card/60 p-5" aria-live="polite">

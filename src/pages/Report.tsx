@@ -41,6 +41,8 @@ import { SaleFeedbackCard } from "@/components/SaleFeedbackCard";
 import { stripSaleFeedback } from "@/lib/saleFeedback";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSaleFeedback } from "@/lib/saleFeedback";
+import { GuestSavePrompt } from "@/components/report/GuestSavePrompt";
+import { claimGuestValuations, clearReturnTo, isGuestValuation, setReturnTo } from "@/lib/guest";
 import { priceBandGeometry } from "@/lib/priceBand";
 import { ReportNav, SoldItPrompt, useReportSections } from "@/components/report/ReportNav";
 import { MiniTier, Section, CollapsibleSection, RecBlock, SLOT_LABELS, PhotoFeedback, InsightRow } from "@/components/report/ReportParts";
@@ -56,7 +58,9 @@ export default function Report() {
   const location = useLocation();
   const navigate = useNavigate();
   const isShared = location.pathname.startsWith("/shared/");
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  // Guest = no account; their own report is read via the share endpoint (unguessable UUID).
+  const isGuest = !isShared && !authLoading && !user;
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
@@ -68,7 +72,8 @@ export default function Report() {
 
   useEffect(() => {
     if (!id) return;
-    if (isShared) {
+    if (!isShared && authLoading) return;
+    if (isShared || !user) {
       // Public share view: fetch via edge function which signs photo URLs server-side.
       supabase.functions.invoke("get-shared-valuation", { body: { id } })
         .then(({ data, error }) => {
@@ -81,8 +86,16 @@ export default function Report() {
         });
       return;
     }
-    supabase.from("valuations").select("*").eq("id", id).maybeSingle()
-      .then(async ({ data }) => {
+    const loadOwn = () => supabase.from("valuations").select("*").eq("id", id).maybeSingle();
+    loadOwn()
+      .then(async (res) => {
+        let data = res.data;
+        // Just signed up/in from a guest report: claim it into the account, then reload.
+        if (!data && isGuestValuation(id)) {
+          await claimGuestValuations(user!.id);
+          data = (await loadOwn()).data;
+        }
+        clearReturnTo();
         if (data) {
           const refs = Array.isArray(data.photo_urls) ? (data.photo_urls as string[]) : [];
           // Refresh signed URLs on every load so photos always render even after expiry.
@@ -92,7 +105,7 @@ export default function Report() {
         }
         setLoading(false);
       });
-  }, [id, isShared]);
+  }, [id, isShared, authLoading, user?.id]);
 
   const seoVehicle = v ? `${v.year} ${displayMake(v.make)} ${displayModel(v.model)}` : "Car";
   const seoValue = v && !(v.report as any)?.valuationUnavailable && v.report?.values?.privateSale ? ` Private sale estimate £${Math.round(v.report.values.privateSale).toLocaleString("en-GB")}.` : "";
@@ -172,7 +185,7 @@ export default function Report() {
         <div className="flex-1 grid place-items-center text-center px-4">
           <div>
             <h1 className="text-2xl font-bold">Report not found</h1>
-            <Button asChild variant="hero" className="mt-6"><Link to="/dashboard">Back to dashboard</Link></Button>
+            <Button asChild variant="hero" className="mt-6"><Link to={user ? "/dashboard" : "/valuation/new"}>{user ? "Back to dashboard" : "Value a car free"}</Link></Button>
           </div>
         </div>
       </div>
@@ -281,9 +294,9 @@ export default function Report() {
       <Header />
       <main id="main" className="flex-1 container py-6 md:py-8 pb-28 sm:pb-8 max-w-5xl lg:max-w-6xl">
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-          {isShared ? (
+          {isShared || isGuest ? (
             <Button asChild variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0">
-              <Link to="/"><ArrowLeft className="h-4 w-4" /> Valu8</Link>
+              <Link to={isGuest ? "/valuation/new" : "/"}><ArrowLeft className="h-4 w-4" /> {isGuest ? "New valuation" : "Valu8"}</Link>
             </Button>
           ) : (
             <Button asChild variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0">
@@ -307,7 +320,15 @@ export default function Report() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem onClick={() => navigate(`/valuation/${v.id}/edit`)}>
+                  <DropdownMenuItem onClick={() => {
+                    if (isGuest) {
+                      setReturnTo(`/valuation/${v.id}`);
+                      toast.message("Create a free account to edit", { description: "Your report is saved to your account automatically." });
+                      navigate("/auth?mode=signup");
+                      return;
+                    }
+                    navigate(`/valuation/${v.id}/edit`);
+                  }}>
                     <Pencil className="h-4 w-4" /> Edit valuation
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={share}>
@@ -796,7 +817,7 @@ export default function Report() {
                   <>
                     <Camera className="h-8 w-8 text-muted-foreground/60 mb-3" aria-hidden />
                     <p className="text-sm text-foreground/90 max-w-[220px] leading-relaxed">No photos uploaded, so we haven't scored condition.</p>
-                    {!isShared && (
+                    {!isShared && !isGuest && (
                       <Button asChild variant="outline" size="sm" className="mt-4 min-h-[44px]">
                         <Link to={`/valuation/${v.id}/edit`}>Add photos for a condition score</Link>
                       </Button>
@@ -810,6 +831,7 @@ export default function Report() {
 
 
         {!isShared && user && (v as any).user_id === user.id && !valuationUnavailable && !getSaleFeedback(v.report) && <SoldItPrompt />}
+        {isGuest && <GuestSavePrompt valuationId={v.id} />}
         <div id="r-details" className="scroll-mt-44" />
         {/* Honest analysis — max 2 bullets, punchy */}
         {(() => {
@@ -1112,7 +1134,17 @@ export default function Report() {
           />
         </SectionBoundary>
 
-        {!valuationUnavailable && !isShared && (
+        {isGuest && (
+          <div id="advert" className="scroll-mt-44">
+            <GuestSavePrompt
+              valuationId={v.id}
+              variant="inline"
+              reason="Create a free account to write your advert from this report, track your car's value and tell us what it sold for. Your report comes with you."
+            />
+          </div>
+        )}
+
+        {!valuationUnavailable && !isShared && !isGuest && (
           <>
 
 
@@ -1155,7 +1187,9 @@ export default function Report() {
           <div className="flex gap-2">
             <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" onClick={downloadPdf} aria-label="Download PDF"><Download className="h-4 w-4" aria-hidden /></Button>
             <Button variant="outline" size="lg" className="flex-1 min-h-[48px] px-3" onClick={share}><Share2 className="h-4 w-4" aria-hidden /> Share</Button>
-            {!valuationUnavailable && (
+            {isGuest ? (
+              <Button asChild variant="hero" size="lg" className="flex-1 min-h-[48px] px-3"><Link to="/auth?mode=signup" onClick={() => setReturnTo(`/valuation/${v.id}`)}>Save report</Link></Button>
+            ) : !valuationUnavailable && (
               <Button asChild variant="hero" size="lg" className="flex-1 min-h-[48px] px-3"><a href="#advert"><Megaphone className="h-4 w-4" aria-hidden /> Write advert</a></Button>
             )}
           </div>
