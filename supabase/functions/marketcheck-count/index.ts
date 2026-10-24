@@ -2,6 +2,16 @@ import { corsHeaders, guard } from "../_shared/guard.ts";
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  // MarketCheck is off by default. Say so plainly instead of the old misleading
+  // "missing params" error (the key was undefined, not the params).
+  const enabled = (Deno.env.get('MARKETCHECK_ENABLED') ?? 'false').toLowerCase() === 'true';
+  const apiKey = enabled ? Deno.env.get('MARKETCHECK_API_KEY') : undefined;
+  if (!apiKey) {
+    return new Response(JSON.stringify({ totalCount: null, disabled: true }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
   {
     const g = await guard(req, { feature: "mc-count", ipPerHour: 120 });
     if (g.response) return g.response;
@@ -20,9 +30,7 @@ Deno.serve(async (req) => {
         year = year || Number(body?.year);
       } catch { /* ignore */ }
     }
-    const apiKey = (Deno.env.get('MARKETCHECK_ENABLED') ?? 'false').toLowerCase() === 'true' ? Deno.env.get('MARKETCHECK_API_KEY') : undefined;
-
-    if (!make || !model || !year || !apiKey) {
+    if (!make || !model || !year) {
       return new Response(JSON.stringify({ totalCount: 0, error: 'missing params' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
