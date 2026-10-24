@@ -1,7 +1,7 @@
 // Valu8 — UK vehicle lookup by registration (DVSA MOT History API)
 import { normaliseFuel, normaliseColour, displayModel } from "../_shared/vehicle-text.ts";
 import { motDaysRemaining } from "../_shared/mot.ts";
-import { corsHeaders, guard } from "../_shared/guard.ts";
+import { corsHeaders, guard, checkLimit, clientIp, envInt, json } from "../_shared/guard.ts";
 
 interface LookupResponse {
   registration: string;
@@ -108,8 +108,11 @@ async function getDvsaToken(): Promise<string> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   {
-    const g = await guard(req, { feature: "lookup", requireUser: true, perMinute: 8, perDay: 60, ipPerHour: 60 });
+    const g = await guard(req, { feature: "lookup", requireUser: false, perMinute: 8, perDay: 60, ipPerHour: 60 });
     if (g.response) return g.response;
+    if (!g.userId && !(await checkLimit(`lookup:guest:ip:${clientIp(req)}:d`, 86400, envInt("GUEST_LOOKUP_DAILY_CAP", 10)))) {
+      return json({ error: "You've used today's free guest lookups. Create a free account to keep going.", code: "guest_limit" }, 429);
+    }
   }
 
   try {

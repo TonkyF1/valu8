@@ -3,7 +3,7 @@
 // our own comparable-listings engine (ownComps), falling back to a quick AI
 // estimate when ownComps confidence is low. Response shape is unchanged, plus
 // `source`: "marketcheck" | "own_comps" | "ai_estimate".
-import { corsHeaders, guard, json } from "../_shared/guard.ts";
+import { corsHeaders, guard, json, checkLimit, clientIp, envInt } from "../_shared/guard.ts";
 import { fairPrice } from "../_shared/insights.ts";
 import { valueWithOwnComps } from "../_shared/ownCompsAdjust.ts";
 
@@ -66,8 +66,11 @@ async function comps(key: string, p: Record<string, string>) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const g = await guard(req, { feature: "fair-price", requireUser: true, requirePremium: true, perMinute: 6, perDay: 40, ipPerHour: 60 });
+  const g = await guard(req, { feature: "fair-price", requireUser: false, requirePremium: true, perMinute: 6, perDay: 40, ipPerHour: 60 });
   if (g.response) return g.response;
+  if (!g.userId && !(await checkLimit(`fair-price:guest:ip:${clientIp(req)}:d`, 86400, envInt("GUEST_CHECK_DAILY_CAP", 10)))) {
+    return json({ error: "You've used today's free guest checks. Create a free account to keep going.", code: "guest_limit" }, 429);
+  }
   try {
     const b = await req.json().catch(() => ({}));
     const make = String(b?.make ?? "").trim().slice(0, 60);
