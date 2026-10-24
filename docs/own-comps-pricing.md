@@ -92,3 +92,22 @@ Owner decisions:
 - Personal data is never sold.
 - Controller: Tony Fisher trading as Valu8 (src/lib/legal.ts); contact by email only, no postal address published.
 Wording added to section 3 ("Improving our valuations") and section 5 (Retention); "Last updated" set to 23 October 2026.
+
+## 2026-10-24 — diagnosis and fixes (commit 3e38643)
+
+Tuned on the 15% id-hash tuning split only (3,588 adverts); held-out 79 evaluated once.
+
+Root causes found:
+- Gumtree gearbox "Other" (1,337 rows, 93% private) is mostly automatics but was encoded manual: -28% signed bias, 30.7% median error on those rows.
+- One global auto/diesel dummy (+0.39 log for auto) mis-prices mixed pools; the within-model auto effect is ~0.27. Fixed by down-weighting comps with a different gearbox or fuel (x0.3).
+- The mean residual offset is pulled by odd adverts; a weighted median is more robust.
+- Cheap private adverts are near an irreducible noise floor: leave-one-out median of close comps (same model, ±1yr, ±25% miles, same seller/fuel) is still 25% median error for private <£5k.
+- The held-out 79 are seed adverts, 30 of them "cheap"-tagged (all 18 AI-shared cases), so held-out is small and skewed; a time split (newest 10% of harvested adverts, n=2,290) is used as a second benchmark.
+
+| | tuning (3,588) | time split (2,290) | held-out 79 (repo data) |
+|---|---|---|---|
+| before | 18.5% | 16.4% | 17.2% |
+| after | 16.5% | 15.2% | 15.3% |
+
+Dealer median error on tuning 12.9% -> 10.8%. Tried with no gain: kernel bandwidth/shrinkage grids, dealer-conversion grid, seller-match weighting, engine-cc matching, junk-text filters, high-mileage hinge, model-string cleaning.
+Own-comps is still behind the AI estimate on the 18 shared held cases (35.0% vs 19.1% median), so it stays in shadow.
