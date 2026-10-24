@@ -301,6 +301,7 @@ export type Database = {
         Row: {
           condition_score: number | null
           created_at: string
+          guest_token_hash: string | null
           id: string
           make: string
           mileage: number
@@ -311,12 +312,13 @@ export type Database = {
           registration: string | null
           report: Json
           service_notes: string | null
-          user_id: string
+          user_id: string | null
           year: number
         }
         Insert: {
           condition_score?: number | null
           created_at?: string
+          guest_token_hash?: string | null
           id?: string
           make: string
           mileage: number
@@ -327,12 +329,13 @@ export type Database = {
           registration?: string | null
           report?: Json
           service_notes?: string | null
-          user_id: string
+          user_id?: string | null
           year: number
         }
         Update: {
           condition_score?: number | null
           created_at?: string
+          guest_token_hash?: string | null
           id?: string
           make?: string
           mileage?: number
@@ -343,7 +346,7 @@ export type Database = {
           registration?: string | null
           report?: Json
           service_notes?: string | null
-          user_id?: string
+          user_id?: string | null
           year?: number
         }
         Relationships: []

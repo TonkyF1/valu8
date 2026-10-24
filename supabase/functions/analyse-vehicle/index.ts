@@ -3,7 +3,7 @@
 // then uses Lovable AI Gateway (Gemini 2.5 Flash vision, provider configurable via AI_GATEWAY_URL/AI_API_KEY/AI_MODEL) to adjust the figure
 // based on photos, mileage, history, MOT advisories and modifications.
 
-import { corsHeaders, guard, isAdminUser } from "../_shared/guard.ts";
+import { corsHeaders, guard, isAdminUser, json, clientIp, checkLimit, envInt, adminClient } from "../_shared/guard.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { capturePosthogAiGeneration } from "../_shared/posthog.ts";
 import {
@@ -41,15 +41,15 @@ function extractPhotoPath(value: string | null | undefined): string | null {
   }
 }
 
-async function signPhotoRefsForAi(refs: string[], ownerId: string | null): Promise<string[]> {
+async function signPhotoRefsForAi(refs: string[], allowedPrefix: string | null): Promise<string[]> {
   if (!refs.length) return [];
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_ROLE) return refs; // best-effort fallback
+  if (!SUPABASE_URL || !SERVICE_ROLE) return refs.map(() => "");
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-  // Only sign objects inside the authenticated caller's own folder ("<uid>/...").
+  // Only sign objects inside the authenticated caller's or this guest report's folder.
   // Without this, any caller could ask the service role to sign anyone's photos.
-  const paths = refs.map(extractPhotoPath).map((p) => (p && ownerId && p.startsWith(`${ownerId}/`) ? p : null));
+  const paths = refs.map(extractPhotoPath).map((p) => (p && allowedPrefix && p.startsWith(allowedPrefix) && !p.split("/").some((part) => part === "." || part === "..") ? p : null));
   const unique = Array.from(new Set(paths.filter((p): p is string => !!p)));
   if (unique.length === 0) return refs.map(() => "");
   const { data, error } = await admin.storage
@@ -373,6 +373,9 @@ interface AnalyseRequest {
   motAdvisories?: string[];
   photoUrls: string[];
   photos?: { slot: string; url: string }[];
+  guestToken?: unknown;
+  guestPhotos?: { slot: string; dataUrl: string }[];
+  guestSave?: { displayModel?: string; serviceNotes?: string; vehicle?: unknown; attribution?: unknown };
 }
 
 type PhotoSlot = "front" | "rear" | "side" | "interior" | "odometer" | "engine" | "other";
@@ -734,10 +737,27 @@ Deno.serve(async (req) => {
 
   try {
     // Rate limit / daily cap / optional Turnstile / premium (only if PREMIUM_ENFORCED=true).
-    const g = await guard(req, { feature: "analyse", requireUser: true, requirePremium: true, turnstile: true, perMinute: 4, perDay: 25, ipPerHour: 40 });
+    const g = await guard(req, { feature: "analyse", requireUser: false, requirePremium: true, turnstile: true, perMinute: 4, perDay: 25, ipPerHour: 40 });
     if (g.response) return g.response;
 
-    const body = (await req.json()) as AnalyseRequest;
+    const body = (await req.json().catch(() => null)) as AnalyseRequest | null;
+    let tokenHash: string | null = null;
+    let guestValuationId: string | null = null;
+    if (!g.userId) {
+      if (typeof body?.guestToken !== "string" || !/^[a-f0-9]{64}$/.test(body.guestToken)) {
+        return json({ error: "Please refresh the page and try again." }, 400);
+      }
+      const cap = envInt("GUEST_DAILY_CAP", 3);
+      const ip = clientIp(req);
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body.guestToken));
+      tokenHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+      const okIp = await checkLimit(`analyse:guest:ip:${ip}:d`, 86400, cap);
+      const okTok = await checkLimit(`analyse:guest:t:${tokenHash}:d`, 86400, cap);
+      if (!okIp || !okTok) {
+        return json({ error: "You've used today's free guest valuations. Create a free account to keep going — it takes 30 seconds and your reports are saved.", code: "guest_limit" }, 429);
+      }
+      guestValuationId = crypto.randomUUID();
+    }
     if (!body?.make || !body?.model || !body?.year || body?.mileage == null) {
       return new Response(JSON.stringify({ error: "Missing required vehicle fields" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -767,7 +787,27 @@ Deno.serve(async (req) => {
     // Build labeled photo list (slot + ref). Accepts either storage paths
     // (new private-bucket clients) or legacy public URLs. All refs are then
     // signed via service-role for the AI vision call.
-    const rawLabeled: { slot: PhotoSlot; ref: string }[] = (() => {
+    const guestLabeled: { slot: PhotoSlot; ref: string }[] = [];
+    if (guestValuationId && Array.isArray(body.guestPhotos)) {
+      const admin = adminClient();
+      for (const [i, item] of body.guestPhotos.slice(0, 6).entries()) {
+        if (!item || typeof item.dataUrl !== "string") continue;
+        const match = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(item.dataUrl);
+        if (!match || match[2].length > Math.ceil(1.5 * 1024 * 1024 / 3) * 4) continue;
+        try {
+          const decoded = atob(match[2]);
+          if (!decoded.length || decoded.length > 1.5 * 1024 * 1024) continue;
+          const bytes = Uint8Array.from(decoded, (c) => c.charCodeAt(0));
+          const ext = match[1] === "jpeg" ? "jpg" : match[1];
+          const path = `guest/${guestValuationId}/${i}.${ext}`;
+          if (!admin) { console.warn("Guest photo upload unavailable"); continue; }
+          const { error } = await admin.storage.from(PHOTO_BUCKET).upload(path, bytes, { contentType: `image/${match[1]}`, upsert: false });
+          if (error) { console.warn("Guest photo upload failed", error.message); continue; }
+          guestLabeled.push({ slot: VALID_SLOTS.includes(item.slot as PhotoSlot) ? item.slot as PhotoSlot : "other", ref: path });
+        } catch (e) { console.warn("Guest photo upload failed", e); }
+      }
+    }
+    const rawLabeled: { slot: PhotoSlot; ref: string }[] = guestValuationId ? guestLabeled : (() => {
       if (Array.isArray(body.photos) && body.photos.length > 0) {
         return body.photos
           .filter((p) => p && typeof p.url === "string" && p.url.length > 0)
@@ -783,7 +823,7 @@ Deno.serve(async (req) => {
         ref: url,
       }));
     })();
-    const signed = await signPhotoRefsForAi(rawLabeled.map((p) => p.ref), callerId);
+    const signed = await signPhotoRefsForAi(rawLabeled.map((p) => p.ref), guestValuationId ? `guest/${guestValuationId}/` : callerId ? `${callerId}/` : null);
     const labeledPhotos: { slot: PhotoSlot; url: string }[] = rawLabeled
       .map((p, i) => ({ slot: p.slot, url: signed[i] }))
       .filter((p) => !!p.url);
@@ -1616,6 +1656,28 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         photoRefs: rawLabeled.map((p) => extractPhotoPath(p.ref) ?? p.ref),
       }),
     };
+
+    if (guestValuationId && tokenHash) {
+      const admin = adminClient();
+      if (!admin) return json({ error: "We couldn't save your report — please try again." }, 500);
+      const displayModel = typeof body.guestSave?.displayModel === "string" ? body.guestSave.displayModel.slice(0, 120) : "";
+      const notes = body.guestSave?.serviceNotes ?? body.serviceNotes ?? null;
+      const cleanReport = dedupeReportText(report);
+      const { error } = await admin.from("valuations").insert({
+        id: guestValuationId, user_id: null, guest_token_hash: tokenHash,
+        make: body.make, model: displayModel || body.model, year: body.year, mileage: body.mileage,
+        registration: body.registration || null, mot_expiry: body.motExpiry || null,
+        service_notes: typeof notes === "string" ? notes.slice(0, 4000) : null,
+        photo_urls: guestLabeled.map((p) => p.ref), condition_score: report.conditionScore,
+        private_value: report.valuationUnavailable ? null : report.values?.privateSale ?? null,
+        report: { ...cleanReport, vehicle: body.guestSave?.vehicle ?? null, ...(body.guestSave?.attribution ? { attribution: body.guestSave.attribution } : {}) },
+      });
+      if (error) {
+        console.error("Guest valuation save failed", error.message);
+        return json({ error: "We couldn't save your report — please try again." }, 500);
+      }
+      return json({ report: cleanReport, valuationId: guestValuationId });
+    }
 
     const wantDebug = body.debugComps === true && !!g.userId && (await isAdminUser(g.userId));
     const debug = wantDebug ? {
