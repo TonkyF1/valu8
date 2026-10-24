@@ -402,6 +402,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      public_accuracy_stats: {
+        Args: never
+        Returns: {
+          count: number
+          mean_signed_pct: number
+          median_abs_pct: number
+          within_10_pct: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"

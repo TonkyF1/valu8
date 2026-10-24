@@ -15,6 +15,13 @@
       "when": 1792779264535,
       "tag": "0001_own_comps_pool",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792828871964,
+      "tag": "0002_public_accuracy_stats",
+      "breakpoints": true
     }
   ]
 }
