@@ -164,3 +164,52 @@ Live shadow logs: only 5 valuations carry `ownCompsShadow` (4 unique, all test c
 The simulation instead used the 32 listings with a stored AI-estimate baseline (`results_baseline.json`, AI source only), with own-comps fitted excluding all of them.
 On those 32, AI plus the live cap gives a median of 29.6 and a mean of 73.8. No rule beat it on median: own-comps alone 41.9, OC-if-confident 37.2, 30/70 blend 33.9.
 The geometric mean cut the mean error to 63.1 (19 wins / 11 losses), but the median went up to 39.2. No hybrid clearly beats AI+cap, so none was adopted.
+
+## 2026-10-24 (night): trained price model pm-1 (`_shared/priceModel.ts`) — SHADOW ONLY, not deployed
+
+**What:** LightGBM (free, local) on log(price) over the harvested Gumtree listings. Features (`scripts/pricemodel/features.py`, mirrored 1:1 in `priceModel.ts`):
+age, log mileage, miles/year, engine cc, fuel, gearbox, body, seller, perf-trim regex, advert-text flags (spares/repair/non-runner, Cat S/N/write-off,
+no MOT, long MOT, FSH, ULEZ, low miles, warranty, finance/PX, urgent/cheap, damage/project, one owner) and hierarchical smoothed target encodings
+make → make|model → make|model|trim (out-of-fold on train). Finance/deposit/"parts only" prices < £2,500 dropped from training. 900 trees × 31 leaves.
+Range = split-conformal q10/q90 of out-of-fold log residuals by predicted band × seller (no extra models).
+
+**Eval — the SAME stratified held-out set as own-comps** (`scripts/owncomps/strat_test_ids.json`, newest 20% per band×seller, 4,784 rows; train 19,097).
+Median abs % error (`scripts/pricemodel/pm_eval_2026-10-24.json`):
+
+| stratum | n | own-comps | **pm-1** | pm-1^0.7·oc^0.3 blend |
+|---|---|---|---|---|
+| overall | 4784 | 17.0 | **15.2** (≤25%: 69% vs 65%) | 14.7 |
+| dealer | 1703 | 10.8 | **10.2** | 9.4 |
+| private | 3081 | 21.5 | **19.4** | 19.4 |
+| <£2k | 1165 | 27.3 | **24.9** | 24.5 |
+| £2–5k | 1366 | 20.0 | **17.9** | 17.5 |
+| £5–10k | 1056 | 14.5 | **13.4** | 12.6 |
+| £10–20k | 889 | 11.5 | **10.0** | 9.5 |
+| £20–40k | 283 | 9.3 | **9.2** | 8.8 |
+| £40k+ | 25 | 23.1 | **21.3** | 19.6 |
+| dealer <£2k | 32 | 129.6 | **51.2** | 82.6 |
+| private £10–20k / £20–40k | 223 / 28 | 20.0 / 28.4 | **13.6 / 14.2** | 15.4 / 18.0 |
+| confident model-level rows | 2283 | 15.6 | **13.8** | — |
+
+Paired bootstrap: pm-1 median gain over own-comps +1.7 pts (95% CI +1.0 to +2.4); pm-1 closer on 53% of rows. Range coverage 80.4% at nominal 80%
+(dealer 81.2, private 80.0), median width 79% of the price (honest but wide). Makes where pm-1 is worse than own-comps: Land Rover 16.3 vs 15.2.
+
+**32 AI-estimate cases** (refit excluding all 41 baseline ids + held rows): pm-1 median 43.0% / mean 65.2 vs AI+cap 29.6 / 73.8 and own-comps 41.9 / 66.1.
+The AI (which read the full advert) still wins on median for these cheap, text-driven cases; pm-1 wins on mean (fewer blow-ups). Do NOT replace the AI path.
+Best simple combo seen: geometric mean of AI+cap and pm-1 → median 37.5 / mean 60.7 (n=32, too small to adopt).
+
+**Verdict:** pm-1 beats own-comps in every price band and both seller types → candidate to replace own-comps as the comps engine, in shadow first.
+It does not beat AI+cap on the AI cases.
+
+**Size / speed:** `priceModelData.ts` 1.07 MB (≈410 KB gzipped); 0.12 ms per prediction in Deno; parity with Python LightGBM worst 0.003%
+(`priceModel.test.ts`, 200 fixtures). No deps, no network, no paid calls. `REF_YEAR=2026` is baked in: retrain (not edit) next year.
+
+**Rebuild:** `WORK=<dir with clean.json> RAW=<harvest listings.csv.gz> OC_PREDS=<strat_preds.json> EXPORT=1 TS_OUT=supabase/functions/_shared/priceModelData.ts
+python scripts/pricemodel/train.py` (lightgbm 4.7, pandas; ~20 s on 8 CPUs), then copy `$WORK/pm_parity.json` to `_shared/priceModel.parity.json` and run
+`deno test --no-lock supabase/functions/_shared/priceModel.test.ts` (delete any deno.lock).
+
+**Shadow plan (prepared, not deployed):** in `analyse-vehicle`, after the existing own-comps shadow, call
+`pricePmBoth({make, model, variant, year, mileage, fuel, gearbox, body, engine_cc, desc: adText})` inside try/catch and attach
+`report.pmShadow = {version, private, dealer, low, high, known, blend}` (blend = `blendWithOwnComps(pm, ownCompsPrice)`); no change to any shown price.
+Promotion: after ≥200 shadow rows with a real outcome, if pm-1/blend median error ≤ own-comps − 1.5 pts, make it the comps engine
+(AI + cap remains for AI-estimate cases; consider pm-1 as the cap reference instead of own-comps).
