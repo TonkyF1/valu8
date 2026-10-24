@@ -38,6 +38,7 @@ interface LookupResult {
   colour?: string;
   firstRegistered?: string;
   engineCapacity?: number;
+  bodyStyle?: string;
   co2Emissions?: number;
   motExpiry?: string;
   motStatus?: "Valid" | "Expired" | "Unknown";
@@ -285,6 +286,8 @@ export default function NewValuation() {
           fuelType: lookup?.fuelType || undefined,
           transmission: lookup?.transmission || undefined,
           engineCapacity: lookup?.engineCapacity || undefined,
+          bodyStyle: lookup?.bodyStyle || undefined,
+          firstRegistered: lookup?.firstRegistered || undefined,
           motAdvisories: lookup?.recentAdvisories?.length ? lookup.recentAdvisories : undefined,
           photoUrls,
           photos: photos_labeled,

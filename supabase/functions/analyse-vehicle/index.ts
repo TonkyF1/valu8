@@ -16,7 +16,10 @@ import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts
 import { detectPerformanceVariant, filterCompsByPerformance, downgradeConfidence, type PerfVariant, type PerfMatch } from "../_shared/performance.ts";
 import { shrinkThinAnchor, aiAgeFactor, THIN_COMP_FULL_WEIGHT } from "../_shared/calibration.ts";
 import { valueWithOwnComps } from "../_shared/ownCompsAdjust.ts";
-import { pricePmBoth, blendWithOwnComps } from "../_shared/priceModel.ts";
+import { pricePmBoth, blendWithOwnComps, resolveBody } from "../_shared/priceModel.ts";
+import { motSignals, motAdjustment as motSignalAdjustment } from "../_shared/motSignals.ts";
+import { similarAdverts, anchorPrice, anchorBlock, anchorDeviation, anchorArm, DEVIATION_REASON_PROPERTY } from "../_shared/aiAnchor.ts";
+import { ensemble } from "../_shared/ensemble.ts";
 import { coherentPricing } from "../_shared/coherentPricing.ts";
 import { aiSafetyCap } from "../_shared/aiCap.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
@@ -372,6 +375,8 @@ interface AnalyseRequest {
   fuelType?: string;
   transmission?: string;
   engineCapacity?: number;
+  bodyStyle?: string;
+  firstRegistered?: string;
   motAdvisories?: string[];
   photoUrls: string[];
   photos?: { slot: string; url: string }[];
@@ -879,6 +884,26 @@ Deno.serve(async (req) => {
     const pricedMiles = mileageCheck.miles;
     const mileageNote = mileageNoteText(mileageCheck);
 
+    // PRE-AI shadow figures (shadow only — never affect displayed prices; never throw).
+    let preAi: { pm: any; motAdj: any; pmWithMot: number | null; ocBase: any; similar: any[] } | null = null;
+    try {
+      const pmIn = {
+        make: body.make, model: body.model, variant: body.variant ?? null, year: body.year, mileage: pricedMiles,
+        fuel: body.fuelType ?? null, gearbox: body.transmission ?? null, body: body.bodyStyle ?? null,
+        engine_cc: Number(body.engineCapacity ?? (body.guestSave?.vehicle as any)?.engineCapacity) || null,
+        desc: [body.serviceNotes, body.modifications].filter(Boolean).join(" ") || null,
+      };
+      const pm = pricePmBoth(pmIn);
+      const motAdj = motSignalAdjustment(motSignals(motEntries as any, { year: body.year }), pm.private.price);
+      const ocBase = valueWithOwnComps({ // NO conditionScore/photoInsights: neutral base, computable before the AI
+        make: body.make, model: body.model, variant: body.variant, year: body.year, mileage: pricedMiles,
+        fuel: body.fuelType, gearbox: body.transmission, adText: body.variant, currentYear: CURRENT_YEAR,
+      } as any);
+      const similar = similarAdverts({ make: body.make, model: body.model, variant: body.variant, year: body.year, mileage: pricedMiles,
+        fuel: body.fuelType, gearbox: body.transmission }, 5);
+      preAi = { pm, motAdj, pmWithMot: Math.round(pm.private.price * motAdj.factor / 50) * 50, ocBase, similar };
+    } catch (e) { console.warn("preAi shadow failed", e); preAi = null; }
+
     // Build a mileage-weighted anchor from the actual live listings.
     // Use a fully deterministic sort so identical inputs yield identical anchors
     // even when MarketCheck returns the same listings in a different order.
@@ -945,6 +970,22 @@ ONLY consider advisories and failures from the LATEST test when pricing and writ
         ? `MOT HISTORY: No DVSA records returned for this registration.`
         : `MOT HISTORY: No registration provided.`;
 
+    // AI anchor arm — prompt change behind ANCHOR_MODE (default off = unchanged request).
+    const anchorMode = Deno.env.get("ANCHOR_MODE") || "off"; // off | split | on
+    const armKey = `${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`;
+    const arm = preAi ? anchorArm(anchorMode, armKey) : "control";
+    let anchorInput: any = null;
+    if (arm === "anchor" && preAi) {
+      const f = preAi.motAdj.factor;
+      anchorInput = {
+        pm: { private: preAi.pm.private.price * f, dealer: preAi.pm.dealer.price * f, low: preAi.pm.private.low * f, high: preAi.pm.private.high * f, known: preAi.pm.private.known },
+        motAdjPct: preAi.motAdj.pct,
+        ownComps: preAi.ocBase && !preAi.ocBase.unavailable ? { privatePrice: preAi.ocBase.privatePrice, low: preAi.ocBase.finalLow, high: preAi.ocBase.finalHigh,
+          nComps: preAi.ocBase.nComps, level: preAi.ocBase.level, confidenceScore: preAi.ocBase.confidenceScore } : null,
+        similar: preAi.similar,
+      };
+    }
+
     const userContent: any[] = [
       {
         type: "text",
@@ -969,7 +1010,7 @@ ${marketBlock}
 
 ${motBlock}
 
-Be honest and conservative. Lean lower if there are negatives. Call out high mileage, corrosion and history gaps explicitly. If you mention the car's year, you must say ${body.year}. If you mention the current year or today's market, you must say ${CURRENT_YEAR}. Call the valu8_report function.`,
+Be honest and conservative. Lean lower if there are negatives. Call out high mileage, corrosion and history gaps explicitly. If you mention the car's year, you must say ${body.year}. If you mention the current year or today's market, you must say ${CURRENT_YEAR}. Call the valu8_report function.` + (arm === "anchor" && anchorInput ? "\n\n" + anchorBlock(anchorInput) : ""),
       },
       ...photoUrls.map((url) => ({ type: "image_url", image_url: { url } })),
     ];
@@ -985,7 +1026,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userContent },
         ],
-        tools: [TOOL],
+        tools: [arm === "anchor" && anchorInput
+          ? { ...TOOL, function: { ...TOOL.function, parameters: { ...TOOL.function.parameters, properties: { ...TOOL.function.parameters.properties, ...DEVIATION_REASON_PROPERTY } } } }
+          : TOOL],
         tool_choice: { type: "function", function: { name: "valu8_report" } },
         // Determinism: same inputs -> same output. Gemini honours all three.
         temperature: 0,
@@ -1437,7 +1480,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     try {
       const pm = pricePmBoth({
         make: body.make, model: body.model, variant: body.variant ?? null, year: body.year, mileage: pricedMiles,
-        fuel: body.fuelType ?? null, gearbox: body.transmission ?? null, body: null,
+        fuel: body.fuelType ?? null, gearbox: body.transmission ?? null, body: body.bodyStyle ?? null,
         engine_cc: Number(body.engineCapacity ?? (body.guestSave?.vehicle as any)?.engineCapacity) || null,
         desc: [body.serviceNotes, body.modifications].filter(Boolean).join(" ") || null,
       });
@@ -1445,6 +1488,11 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         version: pm.private.version, private: pm.private.price, dealer: pm.dealer.price,
         low: pm.private.low, high: pm.private.high, known: pm.private.known,
         blend: blendWithOwnComps(pm.private.price, ownForCap && !ownForCap.unavailable ? ownForCap.privatePrice : null),
+        bodySource: resolveBody(body.make, body.model, body.bodyStyle ?? null).source,
+        motAdj: preAi ? { pct: preAi.motAdj.pct, band: preAi.motAdj.band, parts: preAi.motAdj.parts } : null,
+        motSignals: preAi?.motAdj.signals ?? null,
+        pmWithMot: preAi?.pmWithMot ?? null,
+        firstRegistered: body.firstRegistered ?? null,
       };
       debugInfo.pm = pmShadow;
     } catch (e) { console.warn("pm shadow failed", e); pmShadow = null; }
@@ -1466,6 +1514,20 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         rangeHigh = Math.max(roundToGrain(rangeHigh * k), values.privateSale);
       }
     }
+
+    // Ensemble shadow (never affects displayed prices; never throws).
+    let ensembleShadow: Record<string, unknown> | null = null;
+    try {
+      const pmE = preAi ? { private: preAi.pmWithMot ?? preAi.pm.private.price, low: preAi.pm.private.low * preAi.motAdj.factor, high: preAi.pm.private.high * preAi.motAdj.factor } : null;
+      ensembleShadow = ensemble({ pm: pmE, ownComps: ownForCap, ai: dataSource === "ai_estimate" && !valuationUnavailable ? values.privateSale : null } as any) as any;
+    } catch (e) { console.warn("ensemble shadow failed", e); }
+    const anchorShadow = {
+      mode: anchorMode, arm, price: anchorInput ? anchorPrice(anchorInput) : null,
+      deviation: anchorInput && Number(ai.privateSaleValue) > 0 ? anchorDeviation(Number(ai.privateSaleValue), anchorPrice(anchorInput)) : null,
+      deviationReason: arm === "anchor" ? (typeof (ai as any).deviationReason === "string" ? (ai as any).deviationReason.slice(0, 300) : "") : null,
+    };
+    debugInfo.ensemble = ensembleShadow;
+    debugInfo.anchor = anchorShadow;
 
     // Negotiation buffer: trust AI if reasonable (2-8% of privateSale), else default to ~4%.
     const aiBuffer = Number(ai.negotiationBuffer) || 0;
@@ -1663,6 +1725,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       engineVersion: "v2.2-ledger",
       ...(ownCompsShadow ? { ownCompsShadow } : {}),
       pmShadow,
+      ensembleShadow,
+      anchor: anchorShadow,
       inputsHash: computeInputsHash({
         make: body.make,
         model: body.model,
