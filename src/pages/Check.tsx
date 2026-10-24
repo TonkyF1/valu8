@@ -39,7 +39,7 @@ export default function Check() {
   const [res, setRes] = useState<(AdvertCheck & { asking: number; sample: number; basis: string; source?: string }) | null>(null);
   const [noData, setNoData] = useState(false);
   const [guestLimit, setGuestLimit] = useState<string | null>(null);
-  useSeo({ title: "Is this used car a fair price? Free advert price checker | Valu8", description: "Paste a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against UK market data.", path: "/check" });
+  useSeo({ title: "Is this used car a fair price? Free advert price checker | Valu8", description: "Enter a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against UK market data.", path: "/check" });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
