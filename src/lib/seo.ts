@@ -23,12 +23,14 @@ export function useSeo({ title, description, path, noindex = false }: { title: s
     if (!link) { link = document.createElement("link"); link.rel = "canonical"; document.head.appendChild(link); }
     const prevCanon = link.href;
     link.href = SITE_URL + path;
-    let robots: HTMLMetaElement | null = null;
+    let robots = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
     if (noindex) {
-      robots = document.createElement("meta");
+      if (!robots) { robots = document.createElement("meta"); document.head.appendChild(robots); }
       robots.name = "robots"; robots.content = "noindex, follow";
-      document.head.appendChild(robots);
+    } else if (robots && /\bnoindex\b/i.test(robots.content)) {
+      robots.remove();
+      robots = null;
     }
-    return () => { document.title = prevTitle; if (link) link.href = prevCanon; robots?.remove(); };
+    return () => { document.title = prevTitle; if (link) link.href = prevCanon; if (noindex) robots?.remove(); };
   }, [title, description, path, noindex]);
 }
