@@ -17,6 +17,7 @@ import { detectPerformanceVariant, filterCompsByPerformance, downgradeConfidence
 import { shrinkThinAnchor, aiAgeFactor, THIN_COMP_FULL_WEIGHT } from "../_shared/calibration.ts";
 import { valueWithOwnComps } from "../_shared/ownCompsAdjust.ts";
 import { coherentPricing } from "../_shared/coherentPricing.ts";
+import { aiSafetyCap } from "../_shared/aiCap.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
 
@@ -1371,6 +1372,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     // logged alongside the live figure for evaluation. It does NOT set the price yet —
     // held-out accuracy has not beaten the current path (see docs/own-comps-pricing.md).
     let ownCompsShadow: Record<string, unknown> | undefined;
+    let ownForCap: { privatePrice: number; level: string; nComps: number; confidenceScore: number; unavailable?: boolean } | null = null;
     try {
       const oc = valueWithOwnComps({
         make: body.make, model: body.model, variant: body.variant, year: body.year, mileage: pricedMiles,
@@ -1384,8 +1386,27 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         adjustments: oc.adjustments.map((a) => ({ key: a.key, pct: a.pct, basis: a.basis })),
       };
       debugInfo.ownComps = { ...ownCompsShadow, nearest: oc.nearest, perfKey: oc.perfKey, trimUpliftPct: oc.trimUpliftPct };
+      ownForCap = { privatePrice: oc.privatePrice, level: oc.level, nComps: oc.nComps, confidenceScore: oc.confidenceScore, unavailable: oc.unavailable };
     } catch (e) {
       console.warn("ownComps shadow failed", e);
+    }
+
+    // AI safety cap: on the AI-only path, pull clear blowups down to a bounded multiple of a CONFIDENT
+    // own-comps figure (see _shared/aiCap.ts). All figures and the private range are scaled together so
+    // trade < private range (containing the realistic price) < retail still holds before coherentPricing.
+    if (dataSource === "ai_estimate" && !valuationUnavailable && values.privateSale > 0) {
+      const cap = aiSafetyCap({ aiPrivate: values.privateSale, own: ownForCap });
+      debugInfo.aiCap = cap;
+      if (cap.applied && cap.capped < values.privateSale) {
+        const k = cap.capped / values.privateSale;
+        values = {
+          dealerTradeIn: roundToGrain(values.dealerTradeIn * k),
+          privateSale: cap.capped,
+          dealerRetail: roundToGrain(values.dealerRetail * k),
+        };
+        rangeLow = Math.min(roundToGrain(rangeLow * k), values.privateSale);
+        rangeHigh = Math.max(roundToGrain(rangeHigh * k), values.privateSale);
+      }
     }
 
     // Negotiation buffer: trust AI if reasonable (2-8% of privateSale), else default to ~4%.

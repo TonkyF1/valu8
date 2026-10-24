@@ -111,3 +111,13 @@ Root causes found:
 
 Dealer median error on tuning 12.9% -> 10.8%. Tried with no gain: kernel bandwidth/shrinkage grids, dealer-conversion grid, seller-match weighting, engine-cc matching, junk-text filters, high-mileage hinge, model-string cleaning.
 Own-comps is still behind the AI estimate on the 18 shared held cases (35.0% vs 19.1% median), so it stays in shadow.
+
+## 2026-10-24 — AI safety cap (`_shared/aiCap.ts`)
+
+On the AI-only path, if own-comps is confident (exact-model level, >= 50 comps, confidenceScore >= 0.6) and the AI
+private figure is > 1.8x own-comps, the private figure is capped at 1.6x own-comps; trade, retail and the private
+range are scaled by the same factor before `coherentPricing`. Logged in `debugInfo.aiCap`
+(`applied, aiRaw, ownComps, capped, ratio, reason`). Calibration (confident private adverts): 3.8% (tuning) / 3.5%
+(newest-10%) of asking prices exceed 1.6x own-comps. Simulated with the stored AI error distribution: tuning
+median 36.1% -> 26.1%, newest-10% 36.7% -> 27.0%, fires on ~14-15% of rows, makes ~0.2% worse. Real stored AI rows:
+held-out 18 never fire (median unchanged 17.0%); cal 13 fire twice, neither worse.
