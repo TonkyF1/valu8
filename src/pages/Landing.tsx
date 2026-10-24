@@ -8,6 +8,7 @@ import { AccuracyDisclaimer } from "@/components/AccuracyDisclaimer";
 import { useAuth } from "@/contexts/AuthContext";
 import { CAR_MODELS } from "@/data/carModels";
 import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 
 const FAQS = [
   { q: "How accurate is the valuation?", a: "Prices are estimated from thousands of real UK adverts in our database for your make and model, corrected for your car's exact age and mileage. Every report shows its confidence level and how the figure was built." },
@@ -38,7 +39,7 @@ export default function Landing() {
     const io = new IntersectionObserver(([e]) => setShowSticky(!e.isIntersecting && e.boundingClientRect.top < 0));
     io.observe(el); return () => io.disconnect();
   }, []);
-  useSeo({ title: "Valu8: what's my car worth? Free UK car valuation", description: "Free UK car valuation for private sellers. Thousands of real UK adverts, DVSA MOT history and photo checks give you a realistic private sale price and asking price.", path: "/" });
+  useSeo(getRouteMeta("/"));
 
   // Returning from sign-in with an unfinished valuation: carry on where they left off.
   let pending = false;

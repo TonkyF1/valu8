@@ -4,6 +4,37 @@ import path from "path";
 import fs from "fs";
 import type { Plugin } from "vite";
 import { componentTagger } from "lovable-tagger";
+import { ALL_ROUTES, getRouteMeta } from "./src/data/routeMeta";
+import { routeHtml } from "./scripts/routeHtml";
+import { buildSitemap } from "./scripts/sitemap";
+
+function routeMetadataHtml(): Plugin {
+  let outDir = "";
+  return {
+    name: "valu8-route-metadata-html",
+    apply: "build",
+    configResolved(config) { outDir = path.resolve(config.root, config.build.outDir); },
+    closeBundle() {
+      const indexPath = path.join(outDir, "index.html");
+      const shell = fs.readFileSync(indexPath, "utf8");
+      // Validate and update the homepage from the same source as every route.
+      fs.writeFileSync(indexPath, routeHtml(shell, getRouteMeta("/")));
+      for (const meta of ALL_ROUTES) {
+        if (meta.path === "/") continue;
+        const fileBase = path.join(outDir, meta.path.slice(1));
+        const html = routeHtml(shell, meta);
+        fs.mkdirSync(fileBase, { recursive: true });
+        fs.writeFileSync(path.join(fileBase, "index.html"), html);
+        fs.writeFileSync(`${fileBase}.html`, html);
+      }
+      fs.writeFileSync(path.join(outDir, "404.html"), routeHtml(shell, {
+        path: "/404", title: "Page not found — Valu8",
+        description: "This page doesn't exist. Value your car free with Valu8.", noindex: true,
+      }, true));
+      fs.writeFileSync(path.join(outDir, "sitemap.xml"), buildSitemap());
+    },
+  };
+}
 
 // Branding PNGs live in branding/*.png.b64 (text-only commit tooling). Serve them in dev and
 // emit them at the site root on build so https://valu8.uk/og-v2.png, /logo-v2.png, /favicon-v2.ico,
@@ -44,7 +75,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), brandingAssets(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), brandingAssets(), routeMetadataHtml(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

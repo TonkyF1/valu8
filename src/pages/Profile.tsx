@@ -1,3 +1,5 @@
+import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header, TestModeBanner } from "@/components/Layout";
@@ -30,7 +32,7 @@ export default function Profile() {
 
   const hasGoogle = user?.identities?.some((i) => i.provider === "google");
 
-  useEffect(() => { document.title = "Profile — Valu8"; }, []);
+  useSeo(getRouteMeta("/profile"));
 
   useEffect(() => {
     if (profile) {

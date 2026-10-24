@@ -1,23 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, FlaskConical, HandCoins, Target } from "lucide-react";
+import { ArrowRight, HandCoins, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 import { summariseSaleFeedback, type AccuracySummary } from "@/lib/saleFeedback";
 
 /** Publish public stats only once the sample is big enough to mean something. */
 const MIN_PUBLIC_SAMPLE = 20;
 const gbp = (n: number) => `£${n.toLocaleString("en-GB")}`;
-
-// Blind tests: we valued real adverts without seeing the price, then compared with the asking price.
-const BLIND_TESTS = [
-  { car: "2023 Skoda Octavia vRS", predicted: 22200, asking: 26250 },
-  { car: "2025 Ford Transit Custom", predicted: 20750, asking: 32000 },
-];
 
 function Stats({ s, title, note }: { s: AccuracySummary; title: string; note: string }) {
   return (
@@ -38,7 +33,7 @@ export default function Accuracy() {
   const { user } = useAuth();
   const [pub, setPub] = useState<AccuracySummary | null>(null);
   const [mine, setMine] = useState<AccuracySummary | null>(null);
-  useSeo({ title: "How accurate is Valu8? Predicted vs real sale prices", description: "We publish how our car valuations compare with the prices people actually sell for. Here's what we've measured so far.", path: "/accuracy" });
+  useSeo(getRouteMeta("/accuracy"));
 
   useEffect(() => {
     // Optional backend aggregate (see docs/backend/public_accuracy_stats.sql). Fails quietly if not deployed.
@@ -56,7 +51,7 @@ export default function Accuracy() {
     });
   }, [user]);
 
-  const showPublic = pub && pub.count >= MIN_PUBLIC_SAMPLE;
+  const showPublic = pub !== null && pub.count >= MIN_PUBLIC_SAMPLE;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -67,7 +62,7 @@ export default function Accuracy() {
         <p className="text-sm text-muted-foreground mt-2">Most valuation sites never tell you. We compare our private-sale estimates with the prices our users actually sell for, and publish the results here.</p>
 
         {showPublic ? (
-          <Stats s={pub!} title="Predicted vs reported sale price" note="Self-reported by Valu8 users after selling. Compared with our private-sale estimate at the time of valuation." />
+          <Stats s={pub} title="Predicted vs reported sale price" note="Self-reported by Valu8 users after selling. Compared with our private-sale estimate at the time of valuation." />
         ) : (
           <section className="premium-card p-5 sm:p-6 mt-6">
             <h2 className="font-semibold flex items-center gap-2"><HandCoins className="h-4 w-4 text-primary" aria-hidden /> Collecting results</h2>
@@ -80,24 +75,9 @@ export default function Accuracy() {
         {mine && mine.count > 0 && <Stats s={mine} title="Your reported sales" note="Only visible to you." />}
 
         <section className="mt-8">
-          <h2 className="font-semibold flex items-center gap-2"><FlaskConical className="h-4 w-4 text-primary" aria-hidden /> Blind tests against real adverts</h2>
-          <p className="text-sm text-muted-foreground mt-1">We valued real UK adverts without looking at the price. These compare our private-sale estimate with the dealer <em>asking</em> price, not a sold price. Dealer asking prices normally sit well above private sale.</p>
-          <div className="grid gap-3 mt-4">
-            {BLIND_TESTS.map((t) => {
-              const gap = Math.round(((t.asking - t.predicted) / t.predicted) * 100);
-              return (
-                <div key={t.car} className="rounded-xl border border-border bg-card/60 p-4">
-                  <p className="font-medium">{t.car}</p>
-                  <dl className="grid grid-cols-3 gap-2 mt-3 text-sm">
-                    <div><dt className="text-xs text-muted-foreground">Our private estimate</dt><dd className="font-semibold tabular-nums">{gbp(t.predicted)}</dd></div>
-                    <div><dt className="text-xs text-muted-foreground">Advert asking</dt><dd className="font-semibold tabular-nums">{gbp(t.asking)}</dd></div>
-                    <div><dt className="text-xs text-muted-foreground">Gap</dt><dd className="font-semibold tabular-nums">+{gap}%</dd></div>
-                  </dl>
-                </div>
-              );
-            })}
-          </div>
-          <p className="text-xs text-muted-foreground mt-3">We'll replace these with confirmed sold prices as results come in.</p>
+          <h2 className="font-semibold">Why our estimate is usually below dealer adverts</h2>
+          <p className="text-sm text-muted-foreground mt-2">Dealer asking prices include preparation, warranty and margin, and are a starting point for negotiation. A private-sale estimate normally sits below them.</p>
+          <p className="text-sm text-muted-foreground mt-2">We'll publish predicted-vs-sold results here once enough owners report their sale prices.</p>
         </section>
 
         <div className="mt-8 flex flex-col sm:flex-row gap-2">

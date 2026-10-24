@@ -19,16 +19,20 @@ export function useSeo({ title, description, path, noindex = false }: { title: s
     setMeta('meta[property="og:title"]', "property", "og:title", title);
     setMeta('meta[property="og:description"]', "property", "og:description", description);
     setMeta('meta[property="og:url"]', "property", "og:url", SITE_URL + path);
+    setMeta('meta[name="twitter:title"]', "name", "twitter:title", title);
+    setMeta('meta[name="twitter:description"]', "name", "twitter:description", description);
     let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!link) { link = document.createElement("link"); link.rel = "canonical"; document.head.appendChild(link); }
     const prevCanon = link.href;
     link.href = SITE_URL + path;
-    let robots: HTMLMetaElement | null = null;
+    let robots = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
     if (noindex) {
-      robots = document.createElement("meta");
+      if (!robots) { robots = document.createElement("meta"); document.head.appendChild(robots); }
       robots.name = "robots"; robots.content = "noindex, follow";
-      document.head.appendChild(robots);
+    } else if (robots && /\bnoindex\b/i.test(robots.content)) {
+      robots.remove();
+      robots = null;
     }
-    return () => { document.title = prevTitle; if (link) link.href = prevCanon; robots?.remove(); };
+    return () => { document.title = prevTitle; if (link) link.href = prevCanon; if (noindex) robots?.remove(); };
   }, [title, description, path, noindex]);
 }

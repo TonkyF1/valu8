@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Gauge, Mail, Lock, Sparkles } from "lucide-react";
 import { getAttribution } from "@/lib/attribution";
 import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 import { getReturnTo } from "@/lib/guest";
 
 const emailSchema = z.string().trim().email("Enter a valid email").max(255);
@@ -39,7 +40,7 @@ export default function Auth() {
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  useSeo({ title: "Sign in — Valu8", description: "Sign in or create a free Valu8 account to save your car valuations.", path: "/auth", noindex: true });
+  useSeo(getRouteMeta("/auth"));
 
   const hasPendingIntent = () => {
     try { return !!sessionStorage.getItem("valu8_pending_intent"); } catch { return false; }

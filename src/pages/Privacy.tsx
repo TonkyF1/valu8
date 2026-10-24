@@ -4,9 +4,10 @@ import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 
 export default function Privacy() {
-  useSeo({ title: "Privacy Policy — Valu8", description: "How Valu8 collects, uses and protects your data under UK GDPR.", path: "/privacy" });
+  useSeo(getRouteMeta("/privacy"));
   return (
     <div className="min-h-screen flex flex-col">
       <TestModeBanner /><Header />
