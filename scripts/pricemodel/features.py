@@ -16,7 +16,12 @@ def norm_body(b):
     if "van" in b: return "van"
     if "4x4" in b or "suv" in b: return "suv"
     if "pick" in b: return "pick up"
-    return b if b in BODIES else "other"
+    if b in BODIES: return b
+    # DVLA / VDG spellings (mirrors priceModel.ts normBody); exact Gumtree labels never reach here
+    for keys, out in [(("hatch",), "hatchback"), (("estate", "tourer"), "estate"), (("saloon", "limousine"), "saloon"), (("mpv", "people"), "mpv"),
+                      (("coupe",), "coupe"), (("convertible", "cabrio", "roadster"), "convertible")]:
+        if any(k in b for k in keys): return out
+    return "other"
 PERF = r"\b(?:st(?:-?[23])?|rs\d?|gti|gtd|r32|type ?r|amg|m[2-8]\b|m ?performance|vrs|cupra|n performance|gr|svr|sv|quadrifoglio|abarth|nismo|s[3-8]|rs[3-7]|john cooper works|jcw|renaultsport|gsi|vxr|opc|sti|evo|wrx)\b"
 TEXT = {  # name: regex over variant + ad text (lower-case)
     "t_spares": r"spares (?:or|and|/) repair|non[- ]?runner|not running|won.t start|breaking|needs (?:a )?(?:new )?(?:clutch|engine|gearbox|turbo)|engine (?:fault|problem|issue)|gearbox (?:fault|problem|issue)",

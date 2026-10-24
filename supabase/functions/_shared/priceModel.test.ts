@@ -30,3 +30,14 @@ Deno.test("spares/repair text pulls the price down; unknown make still prices", 
   const u = pricePm({ make: "Zzz", model: "Nothing", year: 2015, mileage: 80000 }); assertEquals(u.known, "none"); assert(u.price > 0);
 });
 Deno.test("blend helper", () => { assertEquals(blendWithOwnComps(5000, null), 5000); assert(blendWithOwnComps(5000, 4000) < 5000); });
+Deno.test("resolveBody: DVLA spellings, SUV/missing -> model mode, unknown model stays missing", async () => {
+  const { resolveBody, normBody } = await import("./priceModel.ts");
+  assertEquals(normBody("5 DOOR HATCHBACK"), "hatchback"); assertEquals(normBody("4 DOOR SALOON"), "saloon"); assertEquals(normBody("Cabriolet"), "convertible");
+  assertEquals(normBody("Panel Van"), "van"); assertEquals(normBody("Estate"), "estate");
+  assertEquals(resolveBody("Ford", "Fiesta", "ESTATE"), { body: "estate", source: "given" });
+  assertEquals(resolveBody("Ford", "Fiesta", null).source, "model_mode"); assertEquals(resolveBody("Ford", "Transit", "").body, "other"); // Gumtree files most Transits under "Other": match training
+  assertEquals(resolveBody("Zzz", "Nope", null), { body: "", source: "none" });
+  // a missing body must no longer price like "other" (the old behaviour cost ~2.6pts median error on the held-out set)
+  const x = { make: "Ford", model: "Fiesta", variant: "Zetec", year: 2016, mileage: 60000, seller: "private" as const };
+  assertEquals(pricePm(x).price, pricePm({ ...x, body: resolveBody("Ford", "Fiesta", null).body }).price);
+});

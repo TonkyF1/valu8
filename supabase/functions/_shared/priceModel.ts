@@ -3,6 +3,7 @@
 // SHADOW ONLY until promoted — see docs/own-comps-pricing.md "Trained price model (pm-1)".
 import { PM_MODEL } from "./priceModelData.ts";
 import { normMake, normModel } from "./ownComps.ts"; // same make/model normalisation the training data (clean.py) used
+import { PM_BODY_MODE } from "./priceModelBody.ts";
 
 export interface PmInput {
   make: string; model: string; variant?: string | null; year: number; mileage: number;
@@ -38,7 +39,24 @@ export function normFuel(f: unknown): string {
 export function normBody(b: unknown): string {
   const v = s(b).toLowerCase();
   if (v.includes("van")) return "van"; if (v.includes("4x4") || v.includes("suv")) return "suv"; if (v.includes("pick")) return "pick up";
-  return BODIES.includes(v) ? v : "other";
+  if (BODIES.includes(v)) return v;
+  // DVLA / VDG spellings ("5 DOOR HATCHBACK", "4 DOOR SALOON", "CABRIOLET", "TOURER"...). Exact training labels never reach here.
+  if (v.includes("hatch")) return "hatchback"; if (v.includes("estate") || v.includes("tourer")) return "estate";
+  if (v.includes("saloon") || v.includes("limousine")) return "saloon"; if (v.includes("mpv") || v.includes("people")) return "mpv";
+  if (v.includes("coupe")) return "coupe"; if (v.includes("convertible") || v.includes("cabrio") || v.includes("roadster")) return "convertible";
+  return "other";
+}
+/**
+ * Body type actually fed to the model. The frontend does not send one for most requests, and the harvest has almost
+ * no "suv" labels (Gumtree files them under "Other"), so a missing or SUV body falls back to the most common advert
+ * body for that make|model. Held-out: 17.8% median error with body missing -> 15.6% with this fill (15.2% true body).
+ */
+export function resolveBody(make: unknown, model: unknown, body: unknown): { body: string; source: "given" | "model_mode" | "none" } {
+  const nb = s(body).trim() ? normBody(body) : "";
+  if (nb && nb !== "suv" && nb !== "other") return { body: nb, source: "given" };
+  const idx = PM_BODY_MODE[normMake(s(make)) + "|" + normModel(s(make), s(model))];
+  if (idx !== undefined) return { body: BODIES[idx], source: "model_mode" };
+  return { body: nb || "", source: "none" };
 }
 const normTrim = (v: unknown) => s(v).toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 type Tab = Record<string, readonly [number, number]>;
@@ -89,7 +107,7 @@ const bandOf = (p: number) => (BANDS.find(([b]) => p < b)?.[1] ?? "40k+");
 const r50 = (x: number) => Math.round(x / 50) * 50;
 /** Price one car for one seller type, with a calibrated ~80% range (conformal, from out-of-fold residuals). */
 export function pricePm(x: PmInput): PmResult {
-  const ft = featurize(x); const p = Math.exp(score(ft.vec));
+  const ft = featurize({ ...x, body: resolveBody(x.make, x.model, x.body).body }); const p = Math.exp(score(ft.vec));
   const R = PM_MODEL.range as unknown as Record<string, readonly [number, number, number]>;
   const q = R[bandOf(p) + "|" + (x.seller === "dealer" ? "dealer" : "private")] ?? R["*"];
   return { version: PM_MODEL.version, price: r50(p), low: r50(p * Math.exp(q[0])), high: r50(p * Math.exp(q[1])), n_model: ft.n_model, n_trim: ft.n_trim, known: ft.known };
