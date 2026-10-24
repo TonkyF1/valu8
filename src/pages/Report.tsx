@@ -61,6 +61,11 @@ export default function Report() {
   const { user, loading: authLoading } = useAuth();
   // Guest = no account; their own report is read via the share endpoint (unguessable UUID).
   const isGuest = !isShared && !authLoading && !user;
+  // A guest opening someone else's guest report (e.g. a copied URL) gets the read-only shared view,
+  // since signing up from here couldn't claim it.
+  useEffect(() => {
+    if (isGuest && id && !isGuestValuation(id)) navigate(`/shared/${id}`, { replace: true });
+  }, [isGuest, id, navigate]);
   const [v, setV] = useState<Valuation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
