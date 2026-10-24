@@ -3,13 +3,14 @@
   <url><loc>https://valu8.uk/</loc><priority>1.0</priority></url>
   <url><loc>https://valu8.uk/valuation/new</loc><priority>0.9</priority></url>
   <url><loc>https://valu8.uk/check</loc><priority>0.8</priority></url>
+  <url><loc>https://valu8.uk/accuracy</loc><priority>0.6</priority></url>
   <url><loc>https://valu8.uk/car-values</loc><priority>0.8</priority></url>
   <url><loc>https://valu8.uk/pricing</loc><priority>0.6</priority></url>
+  <url><loc>https://valu8.uk/about</loc><priority>0.4</priority></url>
+  <url><loc>https://valu8.uk/contact</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.uk/privacy</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.uk/terms</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.uk/disclaimers</loc><priority>0.3</priority></url>
-  <url><loc>https://valu8.uk/about</loc><priority>0.4</priority></url>
-  <url><loc>https://valu8.uk/contact</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.uk/car-values/ford/fiesta</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/car-values/ford/focus</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/car-values/ford/puma</loc><priority>0.7</priority></url>

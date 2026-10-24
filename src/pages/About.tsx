@@ -4,15 +4,12 @@ import { Footer } from "@/components/Footer";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { LEGAL_NAME } from "@/lib/legal";
 import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 
 export default function About() {
   const { pathname } = useLocation();
   const isContact = pathname.startsWith("/contact");
-  useSeo({
-    title: isContact ? "Contact Valu8" : "About Valu8: who we are and how valuations work",
-    description: "Valu8 is an independent UK car valuation service for private sellers and buyers. How our valuations work, and how to get in touch.",
-    path: isContact ? "/contact" : "/about",
-  });
+  useSeo(getRouteMeta(isContact ? "/contact" : "/about"));
   const operator = LEGAL_NAME.trim() || "Valu8";
   return (
     <div className="min-h-screen flex flex-col">

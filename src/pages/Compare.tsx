@@ -1,3 +1,5 @@
+import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeftRight } from "lucide-react";
@@ -41,7 +43,7 @@ export default function Compare() {
   const [params, setParams] = useSearchParams();
   const [rows, setRows] = useState<Row[]>([]);
   const a = params.get("a") ?? "", b = params.get("b") ?? "";
-  useEffect(() => { document.title = "Compare cars — Valu8"; }, []);
+  useSeo(getRouteMeta("/compare"));
   useEffect(() => {
     if (!user) return;
     supabase.from("valuations").select("id, make, model, year, mileage, registration, report, created_at, photo_urls")
