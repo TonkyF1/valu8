@@ -44,15 +44,14 @@ hype, no fake urgency. Prices are placeholders (£4.99 / £7.99 / £4.99).
   - Unlimited advert checks
   - Save cars and come back to them
   - Price alerts when a saved car's verdict changes
-  - Full Report sections on every car you check *(if `SUBSCRIPTION_INCLUDES_REPORT` stays true)*
+  - The Full Report on every car you check
 - **CTA:** Start Buyer
-- **Small print:** Cancel any time in two clicks. You keep access until the end of the month you've paid for.
+- **Small print:** Cancel any time. You keep access until the end of the month you've paid for.
 
 ### Seller strip (below cards)
 **Selling instead?** The Seller pack gives you a defensible asking price and a ready-to-post advert for your car — **£4.99**, one-off. **CTA:** Get the Seller pack
 
-**Trust line under cards:** Secure payment by Stripe. We never see your card details. Prices include VAT where applicable.
-*(Check VAT status before launch — only say "include VAT" if Valu8 is VAT-registered; otherwise "No VAT is charged.")*
+**Trust line under cards:** Secure payment by Stripe. We never see your card details.
 
 ---
 
@@ -74,6 +73,11 @@ Pattern: show the section header + one real, non-sensitive teaser fact from *thi
 | Advert text (seller) | **Your advert, written.** | Ready to paste into any site — honest, specific, and built to get serious buyers. | Get the Seller pack — £4.99 |
 
 Under every lock (muted): *One-off payment for this car. Secure checkout by Stripe.*
+
+**Checkout consent checkbox (required for Full Report and Seller pack):**
+☐ *Start my report now. I understand that once it's delivered I lose my 14-day right to cancel.*
+
+**Subscription checkout line:** *£7.99 a month. Cancel any time — you keep access until the end of the month you've paid for. No partial refunds.*
 Signed-out variant of the button: **Sign in to unlock** (purchases attach to an account so you never lose them).
 
 ---
@@ -95,7 +99,7 @@ Signed-out variant of the button: **Sign in to unlock** (purchases attach to an 
 | Suggested asking price | — | — | — | ✓ |
 | Ready-to-post advert | — | — | — | ✓ |
 
-\* While subscribed, on every car you check (open decision — `SUBSCRIPTION_INCLUDES_REPORT`).
+\* The Full Report on every car you check while your subscription is active.
 Guests: 3 free valuations a day. Signing up is free.
 
 ---
@@ -109,11 +113,14 @@ Yes, and it'll stay that way. You only pay if you want the Full Report, the Buye
 The Full Report for one car: its MOT history explained in plain English with the red flags highlighted, the safety recalls that cover its model and build period, a straight verdict on the asking price, what to offer, and the questions to ask the seller. It's yours to keep — come back to it any time.
 
 **Is it a subscription?**
-The Full Report and Seller pack are one-off payments. Buyer is monthly and you can cancel any time from your account; you keep access until the end of the period you've paid for.
+The Full Report and Seller pack are one-off payments. Buyer is £7.99 a month and you can cancel any time from your account. You keep access until the end of the month you've paid for, and you won't be charged again.
 
 **Can I get a refund?**
-Because the report is digital and delivered straight away, you'll be asked to agree that it starts immediately, which means the usual 14-day cancellation right doesn't apply once you've seen it. That doesn't affect your legal rights: if a report is faulty — for example it's for the wrong car or doesn't load — email us and we'll put it right or refund you. If you cancel Buyer, you won't be charged again.
-*(Legal check before launch — wording must match Terms.tsx and Consumer Contracts Regulations 2013 / Consumer Rights Act 2015.)*
+Reports are digital and delivered straight away. When you pay, we'll ask you to agree to that — and to confirm you understand that once the report is delivered you lose the usual 14-day right to cancel. That's the law for digital content (the Consumer Contracts Regulations 2013), and it doesn't affect your other legal rights.
+
+If a report won't load or is clearly broken, email hello@valu8.uk and we'll give you a full refund.
+
+Buyer subscriptions: cancel any time and you keep access until the end of the month you've paid for. We don't give partial refunds for the rest of a month.
 
 **How accurate are your valuations?**
 Every figure is an estimate, not a guarantee. We test ourselves against real sale prices people report back to us, and we publish the results — good or bad — on our Accuracy page. We won't start charging until those results meet the standard we've set ourselves. A car's true value also depends on things we can't see from an advert, so always inspect the car and check its paperwork.
@@ -132,4 +139,4 @@ By card through Stripe. Valu8 never sees or stores your card details.
 
 **How do I contact you?**
 Email only: hello@valu8.uk. We aim to reply within two working days.
-*(Trading name: Valu8, operated by Tony Fisher.)*
+Valu8 is Tony Fisher trading as Valu8. We're contactable by email only.

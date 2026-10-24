@@ -63,8 +63,8 @@ export const FREE_LIMITS = Object.freeze({
 });
 
 /**
- * Open decision (placeholder): does the buyer subscription also unlock the Full Report
- * sections on every car? Default yes — subscribers are buyers checking several cars.
+ * Decided (Oct 2026): the buyer subscription also unlocks the Full Report sections on
+ * every car while it's active. Subscribers are buyers checking several cars.
  */
 export const SUBSCRIPTION_INCLUDES_REPORT = true;
 

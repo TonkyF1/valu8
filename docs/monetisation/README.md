@@ -15,7 +15,7 @@ Files here:
 |---|---|---|
 | Free | £0 | Basic valuation (guest 3/day), MOT summary, advert checker (10/day/IP) |
 | Full Report | £4.99 per car | MOT red flags in plain English, recall check, fair-price verdict, offer guidance, seller questions |
-| Buyer subscription | £7.99/month | Unlimited advert checks, saved cars, price alerts (+ Full Report sections — open decision, see `SUBSCRIPTION_INCLUDES_REPORT`) |
+| Buyer subscription | £7.99/month | Unlimited advert checks, saved cars, price alerts, and the Full Report on every car while subscribed (`SUBSCRIPTION_INCLUDES_REPORT = true`) |
 | Seller pack | £4.99 per car (placeholder) | Suggested asking price + ready-to-post advert text |
 
 Charging starts only when the readiness gate in `readiness.md` passes (≥200 real outcomes, £5–20k cars, median abs error ≤12%, <5% of misses >30%).
@@ -52,9 +52,16 @@ Charging starts only when the readiness gate in `readiness.md` passes (≥200 re
 5. `useProfile`: stop hard-coding premium.
 6. Outcome tracking for advert checks (Prompt A) so the readiness gate can be met faster.
 7. **Full Report content mostly doesn't exist yet.** Today's report is seller-oriented. Buyer-facing sections — MOT red flags in plain English, offer guidance (opening offer / walk-away), seller questions — need building (Prompt B §7, deterministic, no extra AI cost). Recall campaigns and the fair-price band already exist.
-8. Refund/cancellation terms in `Terms.tsx` (Consumer Contracts Regs: digital content — get express consent + acknowledgement that the 14-day cancellation right is lost once the report is delivered).
+8. Refund/cancellation terms in `Terms.tsx` — wording decided (see Decisions below and copy.md FAQ).
 
 ### Build split
 - **Local / free (done here):** audit, copy, entitlement helper + tests, readiness spec + SQL, draft prompts.
 - **Needs Lovable (DB migration / deploy / UI):** Prompt A, then Prompt B. Prompt A can be merged with the accuracy worker's pending prompt.
-- **Needs Tony:** Stripe account + 3 prices, final prices, Terms/refund wording sign-off, flipping flags (only after the readiness gate passes).
+- **Needs Tony:** Stripe account + 3 prices, final prices, flipping flags (only after the readiness gate passes).
+
+## Decisions (24 Oct 2026)
+1. **Subscription includes the Full Report** on every car while active — `SUBSCRIPTION_INCLUDES_REPORT = true`.
+2. **Gumtree re-checks allowed** for adverts users enter themselves (robots.txt-compliant, slow, no personal data — same rules as our collector). Never fetched: AutoTrader, PistonHeads, Motors, CarGurus, Exchange & Mart, eBay, Facebook/Marketplace, Car & Classic, auction sites (plus Carwow, heycar, cinch, Cazoo, kept as a precaution). Outcomes for those come only from the user's follow-up.
+3. **No VAT line** — not VAT-registered. Prices are shown as-is, no "inc. VAT".
+4. **Refunds:** digital content — buyers consent at checkout to immediate delivery and acknowledge they lose the 14-day cancellation right once the report is delivered (Consumer Contracts Regulations 2013). Full refund if a report fails to load or is clearly broken (email support). Subscriptions: cancel any time, access until the end of the paid month, no partial refunds.
+5. **Legal name:** Tony Fisher trading as Valu8. Contact by email only (hello@valu8.uk).
