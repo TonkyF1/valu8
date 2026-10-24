@@ -56,7 +56,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            {/* Unprotected so anonymous visitors can enter a reg; NewValuation stores the intent and sends them to /auth. */}
+            {/* Unprotected: guests can get a full valuation without an account (capped per day server-side). */}
             <Route path="/valuation/new" element={<NewValuation />} />
             <Route path="/buyer" element={<Navigate to="/check" replace />} />
             <Route path="/check" element={<Check />} />
@@ -65,7 +65,8 @@ const App = () => (
             <Route path="/compare" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/valuation/:id/analysing" element={<ProtectedRoute><Analysing /></ProtectedRoute>} />
-            <Route path="/valuation/:id" element={<ProtectedRoute><ReportErrorBoundary><Report /></ReportErrorBoundary></ProtectedRoute>} />
+            {/* Unprotected so guests can open their own report; Report loads guest reports via get-shared-valuation. */}
+            <Route path="/valuation/:id" element={<ReportErrorBoundary><Report /></ReportErrorBoundary>} />
             <Route path="/shared/:id" element={<ReportErrorBoundary><Report /></ReportErrorBoundary>} />
             <Route path="/valuation/:id/edit" element={<ProtectedRoute><EditValuation /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

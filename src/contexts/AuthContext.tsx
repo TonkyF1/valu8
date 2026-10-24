@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { claimGuestValuations } from "@/lib/guest";
 
 interface AuthCtx {
   user: User | null;
@@ -26,6 +27,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // A guest who signs in or signs up keeps the valuations they made as a guest.
+  const uid = session?.user?.id ?? null;
+  useEffect(() => {
+    if (uid) void claimGuestValuations(uid);
+  }, [uid]);
 
   return (
     <Ctx.Provider value={{

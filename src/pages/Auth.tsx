@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Gauge, Mail, Lock, Sparkles } from "lucide-react";
 import { getAttribution } from "@/lib/attribution";
 import { useSeo } from "@/lib/seo";
+import { getReturnTo } from "@/lib/guest";
 
 const emailSchema = z.string().trim().email("Enter a valid email").max(255);
 const passwordSchema = z.string().min(8, "Min 8 characters").max(72);
@@ -30,7 +31,9 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export default function Auth() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup">(() => {
+    try { return new URLSearchParams(window.location.search).get("mode") === "signup" ? "signup" : "signin"; } catch { return "signin"; }
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,7 +49,8 @@ export default function Auth() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaKey, setCaptchaKey] = useState(0);
   const resetCaptcha = () => { setCaptchaToken(null); setCaptchaKey((k) => k + 1); };
-  const postAuthPath = () => (hasPendingIntent() ? "/valuation/new" : "/dashboard");
+  // Pending reg lookup first, then wherever a guest asked to save from (e.g. their report), else the dashboard.
+  const postAuthPath = () => (hasPendingIntent() ? "/valuation/new" : getReturnTo() ?? "/dashboard");
 
   if (!loading && user) return <Navigate to={postAuthPath()} replace />;
 
