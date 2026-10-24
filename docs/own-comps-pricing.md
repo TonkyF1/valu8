@@ -121,3 +121,46 @@ range are scaled by the same factor before `coherentPricing`. Logged in `debugIn
 (newest-10%) of asking prices exceed 1.6x own-comps. Simulated with the stored AI error distribution: tuning
 median 36.1% -> 26.1%, newest-10% 36.7% -> 27.0%, fires on ~14-15% of rows, makes ~0.2% worse. Real stored AI rows:
 held-out 18 never fire (median unchanged 17.0%); cal 13 fire twice, neither worse.
+
+## 2026-10-24 (evening): coverage-gap harvesting, stratified held-out set, hybrid simulation
+
+### Gumtree collector: coverage-gap priority jobs (no new collector, robots-compliant)
+Harvest coverage at 24,901 rows was thin in these areas: MG 8 rows, smart 7, Abarth 0, Porsche 142, private >£20k 169, anything >£40k 151, dealer <£2k 172.
+Model-level MG/smart/Abarth URLs were returning 0 ads, because of wrong model slugs. Make-level pages
+(`/cars-vans-motorbikes/cars/<make>[/<facet>][/uk/<town>]?seller_type=<x>`) do return 26–30 ads per page.
+Gumtree ignores `?price=` on these pages, and `min_price`/`max_price` are disallowed by robots.txt. So the price gaps are
+targeted through model choice instead: the models with the most >£20k/£40k listings for private sellers, and the models with the most sub-£2k listings for trade.
+`scripts/harvest/priority_jobs.mjs` builds 1,219 page-1 jobs. `collect_robots.mjs` runs them before the normal list on every start.
+Progress is stored in `state/priority_next.txt`. These jobs log as `qN/M`, so autorun.sh's resume index (`^pN/`) is unchanged. Set `PRIORITY=0` to disable them.
+
+### Stratified time-split held-out set (`scripts/owncomps/strat_eval.ts`)
+The pool is 23,891 harvested Gumtree rows (excluding non-runners, the fixed held set and rows under £300). Strata are price band × seller.
+Within each stratum, the newest 20% by Gumtree id are held out (4,784 test rows). Own-comps is fitted on the older rows only.
+Test ids are in `strat_test_ids.json` and the full output is in `strat_eval_2026-10-24.json`.
+
+| stratum | n | median abs err % | within 25% | median signed % |
+|---|---|---|---|---|
+| overall | 4784 | 17.0 | 65 | +1.7 |
+| confident (model, n≥50, conf≥0.6) | 2283 | 15.6 | 69 | |
+| dealer | 1703 | 10.8 | 81 | +3.8 |
+| private | 3081 | 21.5 | 57 | 0 |
+| <£2k | 1165 | 27.3 | 48 | +21.4 |
+| £2–5k | 1366 | 20.0 | 60 | −2.0 |
+| £5–10k | 1056 | 14.5 | 73 | −3.4 |
+| £10–20k | 889 | 11.5 | 81 | −0.5 |
+| £20–40k | 283 | 9.3 | 85 | −3.5 |
+| £40k+ | 25 | 23.1 | 56 | −21.1 |
+| dealer <£2k | 32 | 135.1 | 0 | +135.1 |
+| private £20–40k | 28 | 28.9 | 39 | −27.8 |
+| Porsche | 21 | 33.3 | 38 | −9.6 |
+
+A pure global time split (newest 20% overall, 4,779 rows) gives a median of 17.1, within-25% of 64 and a bias of +3.3.
+Banding by *actual* price builds regression to the mean into the signed figures. Banded by *predicted* price, the bias stays within ±6.5% in every
+cell except dealer £2–5k (+11.4%). The extreme signed errors (dealer <£2k, private >£20k) mostly come from that selection effect and from sparse data.
+The level of error in those cells is real, though, and those are the cells the priority jobs target.
+
+### Hybrid AI / own-comps rules (`hybrid_dump.ts`, `hybrid_sim.py`)
+Live shadow logs: only 5 valuations carry `ownCompsShadow` (4 unique, all test calls), and `sale_feedback` is empty, so there is no ground truth there.
+The simulation instead used the 32 listings with a stored AI-estimate baseline (`results_baseline.json`, AI source only), with own-comps fitted excluding all of them.
+On those 32, AI plus the live cap gives a median of 29.6 and a mean of 73.8. No rule beat it on median: own-comps alone 41.9, OC-if-confident 37.2, 30/70 blend 33.9.
+The geometric mean cut the mean error to 63.1 (19 wins / 11 losses), but the median went up to 39.2. No hybrid clearly beats AI+cap, so none was adopted.
