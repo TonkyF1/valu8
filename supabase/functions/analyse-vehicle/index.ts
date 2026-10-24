@@ -16,6 +16,7 @@ import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts
 import { detectPerformanceVariant, filterCompsByPerformance, downgradeConfidence, type PerfVariant, type PerfMatch } from "../_shared/performance.ts";
 import { shrinkThinAnchor, aiAgeFactor, THIN_COMP_FULL_WEIGHT } from "../_shared/calibration.ts";
 import { valueWithOwnComps } from "../_shared/ownCompsAdjust.ts";
+import { pricePmBoth, blendWithOwnComps } from "../_shared/priceModel.ts";
 import { coherentPricing } from "../_shared/coherentPricing.ts";
 import { aiSafetyCap } from "../_shared/aiCap.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
@@ -370,6 +371,7 @@ interface AnalyseRequest {
   colour?: string;
   fuelType?: string;
   transmission?: string;
+  engineCapacity?: number;
   motAdvisories?: string[];
   photoUrls: string[];
   photos?: { slot: string; url: string }[];
