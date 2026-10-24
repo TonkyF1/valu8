@@ -1433,6 +1433,22 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       console.warn("ownComps shadow failed", e);
     }
 
+    let pmShadow: Record<string, unknown> | null = null;
+    try {
+      const pm = pricePmBoth({
+        make: body.make, model: body.model, variant: body.variant ?? null, year: body.year, mileage: pricedMiles,
+        fuel: body.fuelType ?? null, gearbox: body.transmission ?? null, body: null,
+        engine_cc: Number(body.engineCapacity ?? (body.guestSave?.vehicle as any)?.engineCapacity) || null,
+        desc: [body.serviceNotes, body.modifications].filter(Boolean).join(" ") || null,
+      });
+      pmShadow = {
+        version: pm.private.version, private: pm.private.price, dealer: pm.dealer.price,
+        low: pm.private.low, high: pm.private.high, known: pm.private.known,
+        blend: blendWithOwnComps(pm.private.price, ownForCap && !ownForCap.unavailable ? ownForCap.privatePrice : null),
+      };
+      debugInfo.pm = pmShadow;
+    } catch (e) { console.warn("pm shadow failed", e); pmShadow = null; }
+
     // AI safety cap: on the AI-only path, pull clear blowups down to a bounded multiple of a CONFIDENT
     // own-comps figure (see _shared/aiCap.ts). All figures and the private range are scaled together so
     // trade < private range (containing the realistic price) < retail still holds before coherentPricing.
@@ -1646,6 +1662,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       generatedAt: new Date().toISOString(),
       engineVersion: "v2.2-ledger",
       ...(ownCompsShadow ? { ownCompsShadow } : {}),
+      pmShadow,
       inputsHash: computeInputsHash({
         make: body.make,
         model: body.model,
