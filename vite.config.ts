@@ -6,14 +6,15 @@ import type { Plugin } from "vite";
 import { componentTagger } from "lovable-tagger";
 
 // Branding PNGs live in branding/*.png.b64 (text-only commit tooling). Serve them in dev and
-// emit them at the site root on build so https://valu8.uk/og-v2.png (and legacy /og.png, /logo.png) exist.
+// emit them at the site root on build so https://valu8.uk/og-v2.png, /logo-v2.png, /favicon-v2.ico,
+// /apple-touch-icon-v2.png and /icon-512-v2.png exist (legacy /og.png, /logo.png kept but unreferenced).
 function brandingAssets(): Plugin {
   const dir = path.resolve(__dirname, "branding");
   const read = (name: string) => {
     const f = path.join(dir, `${name}.b64`);
     return fs.existsSync(f) ? Buffer.from(fs.readFileSync(f, "utf8").replace(/\s+/g, ""), "base64") : null;
   };
-  const names = ["og.png", "og-v2.png", "logo.png"];
+  const names = ["og.png", "og-v2.png", "logo.png", "logo-v2.png", "favicon-v2.ico", "apple-touch-icon-v2.png", "icon-512-v2.png"];
   return {
     name: "valu8-branding-assets",
     configureServer(server) {
@@ -21,7 +22,7 @@ function brandingAssets(): Plugin {
         const name = (req.url || "").split("?")[0].replace(/^\//, "");
         const buf = names.includes(name) ? read(name) : null;
         if (!buf) return next();
-        res.setHeader("Content-Type", "image/png");
+        res.setHeader("Content-Type", name.endsWith(".ico") ? "image/x-icon" : "image/png");
         res.end(buf);
       });
     },
