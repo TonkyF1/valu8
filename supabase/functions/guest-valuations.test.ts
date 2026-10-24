@@ -9,7 +9,8 @@ const request = (body: unknown) => new Request("https://example.test", { method:
 function load(name: string, overrides: Record<string, unknown> = {}) {
   let handler: (req: Request) => Promise<Response> = async () => json({}, 500);
   const source = readFileSync(new URL(`./${name}/index.ts`, import.meta.url), "utf8")
-    .replace(/^import[\s\S]*?;\s*$/gm, "");
+    .replace(/^import[\s\S]*?;\s*$/gm, "")
+    .replace(/^export\s+/gm, "");
   const mocks = {
     Deno: { env: { get: () => undefined }, serve: (fn: typeof handler) => { handler = fn; } },
     corsHeaders: {}, json, guard: async () => ({ userId: null }),
