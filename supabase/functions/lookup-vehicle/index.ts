@@ -61,7 +61,7 @@ async function fetchVdg(reg: string) {
     return {
       make: ident?.DvlaMake ?? ident?.Make,
       model: ident?.DvlaModel ?? ident?.Model,
-      variant: ident?.ModelVariant ?? ident?.Derivative,
+      variant: r?.ModelDetails?.ModelIdentification?.ModelVariant ?? ident?.ModelVariant ?? ident?.Derivative,
       year: Number.isFinite(year) ? year : undefined,
       fuelType: ident?.DvlaFuelType ?? ident?.FuelType ?? engine?.FuelType,
       transmission: trans?.TransmissionType ?? ident?.Transmission,
