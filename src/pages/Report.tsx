@@ -53,6 +53,9 @@ interface Valuation {
   photo_urls: string[]; report: ValuationReport; created_at: string;
 }
 
+/** MarketCheck is off unless the deployment sets VITE_MARKETCHECK_ENABLED=true (mirrors the server-side MARKETCHECK_ENABLED). */
+const MARKETCHECK_ENABLED = import.meta.env.VITE_MARKETCHECK_ENABLED === "true";
+
 export default function Report() {
   const { id } = useParams();
   const location = useLocation();
@@ -124,8 +127,10 @@ export default function Report() {
   });
 
 
+  // Live advert count only exists when MarketCheck is switched on (off by default), so don't call
+  // the function at all otherwise — it just logs an error per report view.
   useEffect(() => {
-    if (!v) return;
+    if (!v || !MARKETCHECK_ENABLED) return;
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 8000);
     supabase.functions
@@ -133,7 +138,7 @@ export default function Report() {
         body: { make: v.make, model: v.model, year: v.year },
       })
       .then(({ data, error }) => {
-        if (error || (data as any)?.error) return;
+        if (error || (data as any)?.error || (data as any)?.disabled) return;
         const n = Number((data as any)?.totalCount);
         if (Number.isFinite(n)) setLiveCount(n);
       })
