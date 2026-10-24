@@ -34,6 +34,19 @@ d['model']=[norm_model(a,b,c) for a,b,c in zip(d.make,d.model,d.variant)]
 d['variant']=d.variant.fillna('').astype(str).str.strip()
 d['fuel']=d.fuel.fillna('Petrol').str.lower().str.replace('hybrid electric','hybrid')
 d['gearbox']=d.gearbox.fillna('Manual').str.lower().replace({'semi-auto':'automatic'})
+# Gumtree "Other" gearbox is mostly automatics (~93% private ads); left as-is it was encoded manual, biasing
+# those ads ~-28%. Resolve from the ad text; "other" is automatic unless the text says manual. Also fix manual-labelled
+# rows whose model/variant text names an automatic box (e.g. "estima 2wd auto").
+_AUTO=r'\bauto(?:matic)?\b|\bdsg\b|\bcvt\b|tiptronic|s[- ]?tronic|steptronic|powershift|\bdct\b|semi[- ]?auto|\bedc\b|\bamt\b|multitronic|easytronic|dualogic|\bpdk\b'
+_MAN=r'\bmanual\b|\b[56][- ]?speed\b|\bstick\b'
+_mv=(d.model.fillna('').astype(str)+' '+d.variant.fillna('').astype(str))
+_txt=(_mv+' '+d['desc'].fillna('').astype(str))
+_a=_txt.str.contains(_AUTO,case=False,regex=True); _m=_txt.str.contains(_MAN,case=False,regex=True)
+_o=d.gearbox.eq('other')
+d.loc[_o&_m,'gearbox']='manual'; d.loc[_o&~_m,'gearbox']='automatic'
+log['gearbox_other_resolved']=int(_o.sum())
+_fx=d.gearbox.eq('manual')&_mv.str.contains(_AUTO,case=False,regex=True)
+d.loc[_fx,'gearbox']='automatic'; log['gearbox_manual_text_auto']=int(_fx.sum())
 for c in ['year','mileage','price']: d[c]=pd.to_numeric(d[c],errors='coerce')
 bad=~d.seller.isin(['dealer','private']) | ~d.year.between(1985,2026) | ~(d.price>=300) | (d.price>=150000) | d.mileage.isna() | (d.mileage>350000)
 log['malformed_or_impossible']=int(bad.sum()); d=d[~bad].copy()

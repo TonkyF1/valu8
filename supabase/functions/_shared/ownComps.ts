@@ -69,7 +69,7 @@ export function segmentOf(make: string, model: string, perf: string | null, body
   return PREMIUM.test(mk) ? "premium" : "mainstream";
 }
 
-interface Row { mk: string; md: string; fam: string; perf: string | null; seg: OwnSegment; age: number; lnMi: number; dealer: number; cond: number; auto: number; diesel: number; lp: number; w: number; toks: string[]; year: number; mileage: number; price: number; seller: string; res?: number }
+interface Row { fu: number; mk: string; md: string; fam: string; perf: string | null; seg: OwnSegment; age: number; lnMi: number; dealer: number; cond: number; auto: number; diesel: number; lp: number; w: number; toks: string[]; year: number; mileage: number; price: number; seller: string; res?: number }
 
 export const trimTokens = (v?: string) => Array.from(new Set(String(v ?? "").toLowerCase().replace(/[^a-z+ ]/g, " ").split(/\s+/).filter((t) => t.length >= 2)));
 const lnMiles = (mi: number) => Math.log1p(Math.max(0, mi) / 10000);
@@ -82,6 +82,7 @@ function toRow(l: CompListing | CompQuery, refYear: number, price = 0, seller = 
   const perf = perfInfo(mk, md, l.variant, text);
   const body = `${l.variant ?? ""} ${(l as CompListing).body ?? ""}`;
   return {
+    fu: /diesel/i.test(l.fuel ?? "") ? 1 : /hybrid/i.test(l.fuel ?? "") ? 2 : 0,
     mk, md, fam: family(md), perf, seg: segmentOf(mk, md, perf, body),
     age: Math.max(0, refYear - l.year), lnMi: lnMiles(l.mileage), dealer: seller === "dealer" ? 1 : 0,
     cond: l.cat_sn || l.non_runner || l.no_mot ? 1 : 0,
@@ -165,17 +166,29 @@ function curve(p: OwnCompsParams, r: Row): number {
   return s.a + s.age * r.age + s.h3 * h(3) + s.h8 * h(8) + s.h15 * h(15) + s.mi * r.lnMi + p.dealer * r.dealer + p.cond * r.cond + p.auto * r.auto + p.diesel * r.diesel + p.privOld * (1 - r.dealer) * r.age + p.hiMi * (1 - r.dealer) * r.lnMi;
 }
 
-// Kernel-weighted residual mean over a pool, shrunk toward `prior` with pseudo-count k. Huber-style
-// down-weighting of comps far from the prior stops one odd listing dragging a thin segment.
+// Kernel-weighted residual offset over a pool, shrunk toward `prior` with pseudo-count k. Comps with a
+// different gearbox or fuel count at MISMATCH_W (the auto/diesel premium varies a lot by model, so a single
+// global dummy mis-prices mixed pools). The offset is a weighted MEDIAN of residuals (robust to odd ads),
+// with Huber-style down-weighting of comps far from the prior feeding the spread.
+const MISMATCH_W = { gearbox: 0.3, fuel: 0.3 };
 function pooled(pool: Row[], q: Row, p: OwnCompsParams, prior: number, k: number) {
   let sw = 0, swr = 0, sw2 = 0, gap = 99;
-  const hub = 2 * p.sigma;
+  const hub = 2 * p.sigma, ws: [number, number][] = [];
   for (const c of pool) {
-    const w0 = Math.exp(-Math.abs(c.year - q.year) / p.bw.year - Math.abs(c.lnMi - q.lnMi) / p.bw.lnMi);
+    const w0 = Math.exp(-Math.abs(c.year - q.year) / p.bw.year - Math.abs(c.lnMi - q.lnMi) / p.bw.lnMi)
+      * (c.auto !== q.auto ? MISMATCH_W.gearbox : 1) * (c.fu !== q.fu ? MISMATCH_W.fuel : 1);
     const d = Math.abs((c.res ?? 0) - prior), w = w0 * c.w * (d > hub ? hub / d : 1);
     sw += w; swr += w * (c.res ?? 0); sw2 += w * (c.res ?? 0) ** 2; gap = Math.min(gap, Math.abs(c.year - q.year));
+    ws.push([c.res ?? 0, w0 * c.w]);
   }
-  const off = (swr + k * prior) / (sw + k);
+  let off = (swr + k * prior) / (sw + k);
+  if (ws.length >= 3) {
+    ws.sort((a, b) => a[0] - b[0]);
+    const tot = ws.reduce((a, x) => a + x[1], 0);
+    let acc = 0, wm = ws[0][0];
+    for (const [v, w] of ws) { acc += w; if (acc >= tot / 2) { wm = v; break; } }
+    off = (wm * sw + k * prior) / (sw + k);
+  }
   const sd = sw > 0 ? Math.sqrt(Math.max(0, sw2 / sw - (swr / sw) ** 2)) : p.sigma;
   return { off, neff: sw, sd, gap };
 }
