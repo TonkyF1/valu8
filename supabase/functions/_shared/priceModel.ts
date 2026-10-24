@@ -2,6 +2,7 @@
 // Mirrors scripts/pricemodel/features.py exactly; trees + target-encoding tables live in priceModelData.ts.
 // SHADOW ONLY until promoted — see docs/own-comps-pricing.md "Trained price model (pm-1)".
 import { PM_MODEL } from "./priceModelData.ts";
+import { normMake, normModel } from "./ownComps.ts"; // same make/model normalisation the training data (clean.py) used
 
 export interface PmInput {
   make: string; model: string; variant?: string | null; year: number; mileage: number;
@@ -45,12 +46,12 @@ const TE = PM_MODEL.te as unknown as { g: number; make: Tab; model: Tab; trim: T
 
 /** Feature vector in PM_MODEL.features order (NaN = missing). Exported for parity tests. */
 export function featurize(x: PmInput): { vec: number[]; n_model: number; n_trim: number; known: PmResult["known"] } {
-  const make = s(x.make).toLowerCase(), model = make + "|" + s(x.model).toLowerCase(), trim = model + "|" + normTrim(x.variant);
+  const make = normMake(s(x.make)), mdl = normModel(s(x.make), s(x.model)), model = make + "|" + mdl, trim = model + "|" + normTrim(x.variant);
   const age = Math.min(45, Math.max(0, REF_YEAR - Number(x.year)));
   const mi = Math.min(400000, Math.max(0, Number(x.mileage)));
   const ccRaw = Number(x.engine_cc); const cc = Number.isFinite(ccRaw) && ccRaw > 500 && ccRaw < 8000 ? ccRaw : NaN;
   const txt = (s(x.variant) + " " + s(x.desc)).toLowerCase();
-  const perf = PERF.test(s(x.model).toLowerCase() + " " + s(x.variant).toLowerCase()) ? 1 : 0;
+  const perf = PERF.test(mdl + " " + s(x.variant).toLowerCase()) ? 1 : 0;
   const f: Record<string, number> = {
     age, lmiles: Math.log1p(mi / 1000), mpy: mi / Math.max(age, 0.5) / 1000, cc,
     fuel: FUELS.indexOf(normFuel(x.fuel)), gear: s(x.gearbox).toLowerCase().startsWith("auto") ? 1 : 0,
