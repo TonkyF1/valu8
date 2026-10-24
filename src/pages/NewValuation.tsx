@@ -23,12 +23,15 @@ import {
 import { cn } from "@/lib/utils";
 import { getAttribution } from "@/lib/attribution";
 import { useSeo } from "@/lib/seo";
+import { inferPerformanceTrim, type TrimHint } from "@/lib/perfTrim";
 import { GUEST_DAILY_CAP, functionErrorBody, getGuestToken, photoToDataUrl, rememberGuestValuation } from "@/lib/guest";
 
 interface LookupResult {
   registration: string;
   make?: string;
   model?: string;
+  /** Trim from the vehicle-data provider, when it has one (DVLA never does). */
+  variant?: string;
   year?: number;
   fuelType?: string;
   transmission?: string;
@@ -67,6 +70,9 @@ export default function NewValuation() {
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
   const [variant, setVariant] = useState("");
+  // Performance trim implied by the engine (e.g. a 1.6 petrol Clio is a Renaultsport).
+  const [trimHint, setTrimHint] = useState<TrimHint | null>(null);
+  const [trimAuto, setTrimAuto] = useState(false);
   const [year, setYear] = useState("");
 
   // Manual additions
@@ -127,7 +133,16 @@ export default function NewValuation() {
       setMake(result.make ?? "");
       setModel(result.model ?? "");
       setYear(result.year ? String(result.year) : "");
-      setVariant("");
+      // DVLA gives a bare model ("Clio"), so a Clio RS was valued as a base 1.6. Keep any provider
+      // trim, else infer the performance version from the engine and show it for the owner to confirm.
+      const providerTrim = (result.variant ?? "").trim();
+      const hint = providerTrim ? null : inferPerformanceTrim({
+        make: result.make, model: result.model, fuel: result.fuelType, cc: result.engineCapacity,
+        year: result.year, gearbox: result.transmission,
+      });
+      setTrimHint(hint);
+      setVariant(providerTrim || (hint?.confident ? hint.variant : ""));
+      setTrimAuto(!providerTrim && !!hint?.confident);
       if (result.lastMileage && !mileage) setMileage(String(result.lastMileage));
       toast.success("Vehicle found");
     } catch (err: any) {
@@ -165,7 +180,7 @@ export default function NewValuation() {
   function resetLookup() {
     setLookup(null);
     setEditing(false);
-    setMake(""); setModel(""); setVariant(""); setYear("");
+    setMake(""); setModel(""); setVariant(""); setYear(""); setTrimHint(null); setTrimAuto(false);
     setMileage(""); setServiceNotes(""); setModifications("");
     setPhotos([]);
   }
@@ -269,6 +284,7 @@ export default function NewValuation() {
           colour: lookup?.colour || undefined,
           fuelType: lookup?.fuelType || undefined,
           transmission: lookup?.transmission || undefined,
+          engineCapacity: lookup?.engineCapacity || undefined,
           motAdvisories: lookup?.recentAdvisories?.length ? lookup.recentAdvisories : undefined,
           photoUrls,
           photos: photos_labeled,
@@ -537,6 +553,45 @@ export default function NewValuation() {
                   <Field label="Model" value={model} onChange={setModel} error={errors.model} placeholder="e.g. 3 Series" />
                   <Field label="Variant / Trim" value={variant} onChange={setVariant} placeholder="e.g. M Sport 320d" optional />
                   <Field label="Year" value={year} onChange={setYear} error={errors.year} placeholder="2019" type="number" />
+                </div>
+              )}
+
+              {!editing && (
+                <div className="mt-5 pt-5 border-t border-border/40 space-y-2">
+                  <Label htmlFor="variant">Trim / version <span className="text-muted-foreground font-normal">(optional, but it can change the value a lot)</span></Label>
+                  <Input
+                    id="variant" className="h-11" maxLength={60} autoComplete="off"
+                    placeholder="e.g. Renaultsport 200, ST-2, GTI, M Sport, AMG"
+                    value={variant} onChange={(e) => { setVariant(e.target.value); setTrimAuto(false); }}
+                  />
+                  {trimHint ? (
+                    <div className="flex flex-wrap items-center gap-2 text-xs" data-testid="trim-hint">
+                      <span className="text-muted-foreground">
+                        {trimHint.confident
+                          ? trimHint.options.length === 1
+                            ? `The ${trimHint.reason} was only sold as the ${trimHint.options[0]}.`
+                            : `The ${trimHint.reason} was only sold as a performance version. Which is yours?`
+                          : `The ${trimHint.reason} is often a performance version. Is yours one of these?`}
+                      </span>
+                      {[...trimHint.options, ...(trimHint.confident ? [] : ["Neither"])].map((o) => {
+                        const value = o === "Neither" ? "" : o;
+                        const active = o === "Neither" ? !variant : variant === o;
+                        return (
+                          <button
+                            key={o} type="button" aria-pressed={active}
+                            onClick={() => { setVariant(value); setTrimAuto(false); }}
+                            className={cn(
+                              "rounded-full border px-3 py-1 min-h-[32px] transition-colors",
+                              active ? "border-primary bg-primary/15 text-foreground" : "border-border/60 text-muted-foreground hover:border-primary/60",
+                            )}
+                          >{o}</button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">DVLA records don't include the trim. Performance versions (RS, ST, GTI, R, AMG, M, vRS, Type R…) are worth much more, so add yours.</p>
+                  )}
+                  {trimAuto && <p className="text-[11px] text-muted-foreground">Filled in from the engine size. Change it if it's wrong.</p>}
                 </div>
               )}
 
