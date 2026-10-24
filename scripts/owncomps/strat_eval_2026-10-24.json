@@ -1,0 +1,786 @@
+{
+ "pool": 23891,
+ "testFrac": 0.2,
+ "stratifiedTime": {
+  "train": 19107,
+  "test": 4784,
+  "overall": {
+   "n": 4784,
+   "median": 17,
+   "p75": 32.2,
+   "mean": 26.3,
+   "within15": 45,
+   "within25": 65
+  },
+  "bias": 1.7,
+  "byBand": {
+   "10-20k": {
+    "n": 889,
+    "median": 11.5,
+    "p75": 21.2,
+    "mean": 15.6,
+    "within15": 59,
+    "within25": 81,
+    "bias": -0.5
+   },
+   "2-5k": {
+    "n": 1366,
+    "median": 20,
+    "p75": 34,
+    "mean": 25.9,
+    "within15": 39,
+    "within25": 60,
+    "bias": -2
+   },
+   "20-40k": {
+    "n": 283,
+    "median": 9.3,
+    "p75": 17.7,
+    "mean": 13.1,
+    "within15": 69,
+    "within25": 85,
+    "bias": -3.5
+   },
+   "40k+": {
+    "n": 25,
+    "median": 23.1,
+    "p75": 40.6,
+    "mean": 24.7,
+    "within15": 36,
+    "within25": 56,
+    "bias": -21.1
+   },
+   "5-10k": {
+    "n": 1056,
+    "median": 14.5,
+    "p75": 26.3,
+    "mean": 19,
+    "within15": 52,
+    "within25": 73,
+    "bias": -3.4
+   },
+   "<2k": {
+    "n": 1165,
+    "median": 27.3,
+    "p75": 58.3,
+    "mean": 44.9,
+    "within15": 30,
+    "within25": 48,
+    "bias": 21.4
+   }
+  },
+  "bySeller": {
+   "dealer": {
+    "n": 1703,
+    "median": 10.8,
+    "p75": 19.9,
+    "mean": 18.1,
+    "within15": 63,
+    "within25": 81,
+    "bias": 3.8
+   },
+   "private": {
+    "n": 3081,
+    "median": 21.5,
+    "p75": 38.1,
+    "mean": 30.9,
+    "within15": 35,
+    "within25": 57,
+    "bias": 0
+   }
+  },
+  "byBandSeller": {
+   "10-20k|dealer": {
+    "n": 666,
+    "median": 9.8,
+    "p75": 17.5,
+    "mean": 13.2,
+    "within15": 67,
+    "within25": 87,
+    "bias": 3.6
+   },
+   "10-20k|private": {
+    "n": 223,
+    "median": 20,
+    "p75": 30.4,
+    "mean": 22.7,
+    "within15": 34,
+    "within25": 64,
+    "bias": -17
+   },
+   "2-5k|dealer": {
+    "n": 174,
+    "median": 20.9,
+    "p75": 39,
+    "mean": 27.2,
+    "within15": 41,
+    "within25": 56,
+    "bias": 20
+   },
+   "2-5k|private": {
+    "n": 1192,
+    "median": 20,
+    "p75": 33.5,
+    "mean": 25.7,
+    "within15": 39,
+    "within25": 61,
+    "bias": -5.8
+   },
+   "20-40k|dealer": {
+    "n": 255,
+    "median": 8.5,
+    "p75": 15.6,
+    "mean": 11.7,
+    "within15": 73,
+    "within25": 90,
+    "bias": -1.3
+   },
+   "20-40k|private": {
+    "n": 28,
+    "median": 28.9,
+    "p75": 35.1,
+    "mean": 25.7,
+    "within15": 25,
+    "within25": 39,
+    "bias": -27.8
+   },
+   "40k+|dealer": {
+    "n": 23,
+    "median": 21.1,
+    "p75": 36.9,
+    "mean": 22.5,
+    "within15": 39,
+    "within25": 61,
+    "bias": -19.3
+   },
+   "40k+|private": {
+    "n": 2,
+    "median": 58.4,
+    "p75": 58.4,
+    "mean": 49.5,
+    "within15": 0,
+    "within25": 0,
+    "bias": -40.6
+   },
+   "5-10k|dealer": {
+    "n": 553,
+    "median": 11,
+    "p75": 18,
+    "mean": 15.3,
+    "within15": 65,
+    "within25": 84,
+    "bias": 2.9
+   },
+   "5-10k|private": {
+    "n": 503,
+    "median": 20,
+    "p75": 31.3,
+    "mean": 23.1,
+    "within15": 37,
+    "within25": 62,
+    "bias": -12.6
+   },
+   "<2k|dealer": {
+    "n": 32,
+    "median": 135.1,
+    "p75": 239.6,
+    "mean": 165.6,
+    "within15": 0,
+    "within25": 0,
+    "bias": 135.1
+   },
+   "<2k|private": {
+    "n": 1133,
+    "median": 26.3,
+    "p75": 55.3,
+    "mean": 41.5,
+    "within15": 31,
+    "within25": 49,
+    "bias": 20
+   }
+  },
+  "byMake": {
+   "audi": {
+    "n": 330,
+    "median": 17.3,
+    "p75": 32.8,
+    "mean": 27.9,
+    "within15": 45,
+    "within25": 64,
+    "bias": -1.4
+   },
+   "bmw": {
+    "n": 351,
+    "median": 18.7,
+    "p75": 35,
+    "mean": 28.1,
+    "within15": 42,
+    "within25": 62,
+    "bias": 3.6
+   },
+   "ford": {
+    "n": 710,
+    "median": 16.7,
+    "p75": 32.7,
+    "mean": 26.5,
+    "within15": 46,
+    "within25": 65,
+    "bias": 3.5
+   },
+   "honda": {
+    "n": 100,
+    "median": 20.2,
+    "p75": 34.9,
+    "mean": 27.7,
+    "within15": 33,
+    "within25": 61,
+    "bias": -3.3
+   },
+   "kia": {
+    "n": 124,
+    "median": 11.7,
+    "p75": 25.3,
+    "mean": 20.3,
+    "within15": 58,
+    "within25": 74,
+    "bias": 0.7
+   },
+   "land rover": {
+    "n": 143,
+    "median": 15.2,
+    "p75": 29.9,
+    "mean": 24.1,
+    "within15": 49,
+    "within25": 66,
+    "bias": 2.5
+   },
+   "mercedes-benz": {
+    "n": 267,
+    "median": 20.3,
+    "p75": 33.1,
+    "mean": 28.2,
+    "within15": 38,
+    "within25": 59,
+    "bias": 1.6
+   },
+   "nissan": {
+    "n": 256,
+    "median": 15.7,
+    "p75": 28.8,
+    "mean": 26.1,
+    "within15": 48,
+    "within25": 70,
+    "bias": 2.1
+   },
+   "other": {
+    "n": 1037,
+    "median": 16,
+    "p75": 31.2,
+    "mean": 25.7,
+    "within15": 48,
+    "within25": 68,
+    "bias": 0.4
+   },
+   "peugeot": {
+    "n": 298,
+    "median": 13.9,
+    "p75": 25,
+    "mean": 24.3,
+    "within15": 54,
+    "within25": 76,
+    "bias": 0.7
+   },
+   "porsche": {
+    "n": 21,
+    "median": 33.3,
+    "p75": 43.7,
+    "mean": 35.8,
+    "within15": 19,
+    "within25": 38,
+    "bias": -9.6
+   },
+   "renault": {
+    "n": 191,
+    "median": 16.9,
+    "p75": 35.3,
+    "mean": 25.4,
+    "within15": 45,
+    "within25": 63,
+    "bias": 0.6
+   },
+   "toyota": {
+    "n": 149,
+    "median": 16.4,
+    "p75": 30,
+    "mean": 24.4,
+    "within15": 48,
+    "within25": 68,
+    "bias": -1.1
+   },
+   "vauxhall": {
+    "n": 290,
+    "median": 20,
+    "p75": 35,
+    "mean": 26.7,
+    "within15": 38,
+    "within25": 59,
+    "bias": 5.2
+   },
+   "volkswagen": {
+    "n": 444,
+    "median": 17.9,
+    "p75": 34,
+    "mean": 27.9,
+    "within15": 41,
+    "within25": 62,
+    "bias": 2.1
+   },
+   "volvo": {
+    "n": 73,
+    "median": 17.1,
+    "p75": 32.8,
+    "mean": 25.1,
+    "within15": 47,
+    "within25": 64,
+    "bias": 7.2
+   }
+  },
+  "byLevel": {
+   "family": {
+    "n": 6,
+    "median": 34.8,
+    "p75": 51.5,
+    "mean": 46.6,
+    "within15": 0,
+    "within25": 33,
+    "bias": -21.8
+   },
+   "global": {
+    "n": 3,
+    "median": 51.8,
+    "p75": 183.6,
+    "mean": 83.7,
+    "within15": 0,
+    "within25": 33,
+    "bias": -15.7
+   },
+   "make_segment": {
+    "n": 22,
+    "median": 32.7,
+    "p75": 47,
+    "mean": 36.8,
+    "within15": 27,
+    "within25": 45,
+    "bias": -7.1
+   },
+   "model": {
+    "n": 4753,
+    "median": 16.9,
+    "p75": 32,
+    "mean": 26.2,
+    "within15": 45,
+    "within25": 65,
+    "bias": 1.8
+   }
+  },
+  "confidentModel": {
+   "n": 2283,
+   "median": 15.6,
+   "p75": 28.7,
+   "mean": 23,
+   "within15": 49,
+   "within25": 69
+  }
+ },
+ "globalTime": {
+  "cutId": 1804069718,
+  "test": 4779,
+  "overall": {
+   "n": 4779,
+   "median": 17.1,
+   "p75": 33.3,
+   "mean": 27.9,
+   "within15": 45,
+   "within25": 64
+  },
+  "bias": 3.3,
+  "byBand": {
+   "10-20k": {
+    "n": 971,
+    "median": 10.8,
+    "p75": 19.6,
+    "mean": 14.6,
+    "within15": 63,
+    "within25": 83,
+    "bias": 1.3
+   },
+   "2-5k": {
+    "n": 1312,
+    "median": 20,
+    "p75": 34.2,
+    "mean": 26,
+    "within15": 39,
+    "within25": 60,
+    "bias": -1.8
+   },
+   "20-40k": {
+    "n": 168,
+    "median": 10.6,
+    "p75": 19.7,
+    "mean": 13.8,
+    "within15": 67,
+    "within25": 85,
+    "bias": -2.2
+   },
+   "40k+": {
+    "n": 23,
+    "median": 22.7,
+    "p75": 42.2,
+    "mean": 25.9,
+    "within15": 30,
+    "within25": 52,
+    "bias": -22.4
+   },
+   "5-10k": {
+    "n": 941,
+    "median": 14,
+    "p75": 25.3,
+    "mean": 18.7,
+    "within15": 53,
+    "within25": 75,
+    "bias": -2.9
+   },
+   "<2k": {
+    "n": 1364,
+    "median": 28.9,
+    "p75": 61.1,
+    "mean": 47.1,
+    "within15": 29,
+    "within25": 46,
+    "bias": 23.5
+   }
+  },
+  "bySeller": {
+   "dealer": {
+    "n": 1733,
+    "median": 10.9,
+    "p75": 20.2,
+    "mean": 19.2,
+    "within15": 63,
+    "within25": 81,
+    "bias": 4
+   },
+   "private": {
+    "n": 3046,
+    "median": 22.2,
+    "p75": 40,
+    "mean": 32.8,
+    "within15": 34,
+    "within25": 55,
+    "bias": 2.7
+   }
+  },
+  "byBandSeller": {
+   "10-20k|dealer": {
+    "n": 809,
+    "median": 9.7,
+    "p75": 17.5,
+    "mean": 13.1,
+    "within15": 69,
+    "within25": 87,
+    "bias": 2.9
+   },
+   "10-20k|private": {
+    "n": 162,
+    "median": 19.7,
+    "p75": 30.2,
+    "mean": 22.6,
+    "within15": 33,
+    "within25": 65,
+    "bias": -15.2
+   },
+   "2-5k|dealer": {
+    "n": 168,
+    "median": 21.8,
+    "p75": 39.4,
+    "mean": 27.4,
+    "within15": 40,
+    "within25": 55,
+    "bias": 20.6
+   },
+   "2-5k|private": {
+    "n": 1144,
+    "median": 19.9,
+    "p75": 33.9,
+    "mean": 25.8,
+    "within15": 39,
+    "within25": 61,
+    "bias": -5.2
+   },
+   "20-40k|dealer": {
+    "n": 146,
+    "median": 9.5,
+    "p75": 16.4,
+    "mean": 12.2,
+    "within15": 73,
+    "within25": 90,
+    "bias": -0.7
+   },
+   "20-40k|private": {
+    "n": 22,
+    "median": 26,
+    "p75": 34.6,
+    "mean": 24.1,
+    "within15": 27,
+    "within25": 45,
+    "bias": -24.7
+   },
+   "40k+|dealer": {
+    "n": 21,
+    "median": 22.4,
+    "p75": 39.5,
+    "mean": 23.6,
+    "within15": 33,
+    "within25": 57,
+    "bias": -21.6
+   },
+   "40k+|private": {
+    "n": 2,
+    "median": 59.1,
+    "p75": 59.1,
+    "mean": 49.8,
+    "within15": 0,
+    "within25": 0,
+    "bias": -40.6
+   },
+   "5-10k|dealer": {
+    "n": 542,
+    "median": 10.8,
+    "p75": 18.4,
+    "mean": 15.2,
+    "within15": 66,
+    "within25": 85,
+    "bias": 2.7
+   },
+   "5-10k|private": {
+    "n": 399,
+    "median": 20.5,
+    "p75": 31.4,
+    "mean": 23.6,
+    "within15": 35,
+    "within25": 61,
+    "bias": -13.1
+   },
+   "<2k|dealer": {
+    "n": 47,
+    "median": 138.2,
+    "p75": 211.1,
+    "mean": 160.8,
+    "within15": 0,
+    "within25": 0,
+    "bias": 138.2
+   },
+   "<2k|private": {
+    "n": 1317,
+    "median": 27.3,
+    "p75": 56.6,
+    "mean": 43.1,
+    "within15": 30,
+    "within25": 48,
+    "bias": 20.9
+   }
+  },
+  "byMake": {
+   "audi": {
+    "n": 317,
+    "median": 16.9,
+    "p75": 33.3,
+    "mean": 28.2,
+    "within15": 44,
+    "within25": 66,
+    "bias": 1.7
+   },
+   "bmw": {
+    "n": 334,
+    "median": 18.4,
+    "p75": 36.8,
+    "mean": 29.7,
+    "within15": 42,
+    "within25": 61,
+    "bias": 4.8
+   },
+   "ford": {
+    "n": 712,
+    "median": 17.4,
+    "p75": 34.2,
+    "mean": 28.6,
+    "within15": 45,
+    "within25": 64,
+    "bias": 5
+   },
+   "honda": {
+    "n": 102,
+    "median": 20,
+    "p75": 39.4,
+    "mean": 30.5,
+    "within15": 35,
+    "within25": 60,
+    "bias": -2.5
+   },
+   "kia": {
+    "n": 134,
+    "median": 11.8,
+    "p75": 26.7,
+    "mean": 22,
+    "within15": 57,
+    "within25": 71,
+    "bias": 2
+   },
+   "land rover": {
+    "n": 143,
+    "median": 14.9,
+    "p75": 29.1,
+    "mean": 25.5,
+    "within15": 50,
+    "within25": 66,
+    "bias": 2.2
+   },
+   "mercedes-benz": {
+    "n": 246,
+    "median": 20.9,
+    "p75": 33.2,
+    "mean": 28.3,
+    "within15": 37,
+    "within25": 59,
+    "bias": 3.1
+   },
+   "nissan": {
+    "n": 268,
+    "median": 16.2,
+    "p75": 31.3,
+    "mean": 28,
+    "within15": 47,
+    "within25": 66,
+    "bias": 3.2
+   },
+   "other": {
+    "n": 1052,
+    "median": 16.2,
+    "p75": 32.2,
+    "mean": 27.2,
+    "within15": 48,
+    "within25": 68,
+    "bias": 2
+   },
+   "peugeot": {
+    "n": 310,
+    "median": 14.1,
+    "p75": 26.9,
+    "mean": 27.9,
+    "within15": 53,
+    "within25": 73,
+    "bias": 3.6
+   },
+   "porsche": {
+    "n": 21,
+    "median": 33.6,
+    "p75": 45.1,
+    "mean": 36,
+    "within15": 19,
+    "within25": 33,
+    "bias": -5.6
+   },
+   "renault": {
+    "n": 184,
+    "median": 17.1,
+    "p75": 34.6,
+    "mean": 25.6,
+    "within15": 45,
+    "within25": 64,
+    "bias": 0.7
+   },
+   "toyota": {
+    "n": 153,
+    "median": 16.4,
+    "p75": 30.8,
+    "mean": 25.1,
+    "within15": 46,
+    "within25": 67,
+    "bias": 1.4
+   },
+   "vauxhall": {
+    "n": 303,
+    "median": 20,
+    "p75": 38.7,
+    "mean": 29.3,
+    "within15": 37,
+    "within25": 57,
+    "bias": 7
+   },
+   "volkswagen": {
+    "n": 431,
+    "median": 18.6,
+    "p75": 35.2,
+    "mean": 29.1,
+    "within15": 41,
+    "within25": 60,
+    "bias": 5.3
+   },
+   "volvo": {
+    "n": 69,
+    "median": 17.1,
+    "p75": 33.8,
+    "mean": 26,
+    "within15": 46,
+    "within25": 61,
+    "bias": 7.3
+   }
+  },
+  "byLevel": {
+   "family": {
+    "n": 8,
+    "median": 30.2,
+    "p75": 57.8,
+    "mean": 39.1,
+    "within15": 13,
+    "within25": 38,
+    "bias": -22.1
+   },
+   "global": {
+    "n": 3,
+    "median": 51.8,
+    "p75": 183.6,
+    "mean": 83.6,
+    "within15": 0,
+    "within25": 33,
+    "bias": -15.3
+   },
+   "make_segment": {
+    "n": 16,
+    "median": 32.7,
+    "p75": 59.1,
+    "mean": 37.8,
+    "within15": 31,
+    "within25": 44,
+    "bias": -5
+   },
+   "model": {
+    "n": 4752,
+    "median": 17,
+    "p75": 33.3,
+    "mean": 27.8,
+    "within15": 45,
+    "within25": 65,
+    "bias": 3.4
+   }
+  },
+  "confidentModel": {
+   "n": 2297,
+   "median": 15.6,
+   "p75": 29.1,
+   "mean": 23.7,
+   "within15": 49,
+   "within25": 69
+  }
+ }
+}
