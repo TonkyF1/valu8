@@ -69,6 +69,11 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
               {[existing.soldTo ? SOLD_TO_LABELS[existing.soldTo] : null, existing.soldOn ? format(new Date(`${existing.soldOn}T00:00:00`), "d MMM yyyy") : null].filter(Boolean).join(" · ") || "Thanks for telling us."}
               {diff !== null && <> · {Math.abs(diff) < 0.5 ? "right on our estimate" : `${Math.abs(diff)}% ${diff > 0 ? "above" : "below"} our estimate`}</>}
             </p>
+            {diff !== null && (
+              <p className="text-xs text-primary mt-1 font-medium">
+                {Math.abs(diff) < 2 ? "Spot on — this helps a lot." : diff > 0 ? "You did better than our estimate." : "Useful data — thanks for sharing."}
+              </p>
+            )}
           </div>
           <Button variant="ghost" size="sm" onClick={() => setEditing(true)}><Pencil className="h-3.5 w-3.5" aria-hidden /> Edit</Button>
         </div>
@@ -81,8 +86,9 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
       <div className="flex items-start gap-3 mb-4">
         <div className="h-11 w-11 rounded-xl bg-primary/15 grid place-items-center ring-1 ring-primary/30 shrink-0"><HandCoins className="h-5 w-5 text-primary" aria-hidden /></div>
         <div>
-          <h3 className="text-lg font-semibold tracking-tight">Sold it? Tell us what for</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">Takes ten seconds. Real sale prices keep our valuations honest, and we publish the results on our <Link to="/accuracy" className="text-primary underline underline-offset-2">accuracy page</Link>. Your individual price is only visible to you and never shown on shared links.</p>
+          <h3 className="text-lg font-semibold tracking-tight">Sold it? Tell us the price</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Takes 10 seconds. Real sale prices make future valuations more accurate for everyone.</p>
+          <p className="text-xs text-primary mt-1.5 font-medium">Submit and help unlock better accuracy — your individual price stays private.</p>
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
