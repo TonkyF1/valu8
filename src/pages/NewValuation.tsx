@@ -23,7 +23,6 @@ import {
 import { cn } from "@/lib/utils";
 import { getAttribution } from "@/lib/attribution";
 import { useSeo } from "@/lib/seo";
-import { getRouteMeta } from "@/data/routeMeta";
 import { inferPerformanceTrim, type TrimHint } from "@/lib/perfTrim";
 import { GUEST_DAILY_CAP, functionErrorBody, getGuestToken, photoToDataUrl, rememberGuestValuation } from "@/lib/guest";
 
@@ -91,7 +90,7 @@ export default function NewValuation() {
   // Set when a guest hits the server-side daily cap.
   const [guestLimit, setGuestLimit] = useState<string | null>(null);
 
-  useSeo(getRouteMeta("/valuation/new"));
+  useSeo({ title: "New valuation — Valu8", description: "Enter a UK registration to get a free private sale valuation in minutes.", path: "/valuation/new" });
 
   // Restore pending intent after sign-in/up
   useEffect(() => {
