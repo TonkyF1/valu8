@@ -1,35 +1,35 @@
 {
- "trainRows": 13350,
+ "trainRows": 29831,
  "overall": {
   "n": 79,
-  "median": 15.3,
-  "mean": 24.1,
-  "within15": 49
+  "median": 17.3,
+  "mean": 23.7,
+  "within15": 47
  },
  "under5kPrivate": {
   "n": 18,
-  "median": 35,
-  "mean": 41.4,
-  "within15": 22
+  "median": 37.8,
+  "mean": 41.9,
+  "within15": 11
  },
  "under5k": {
   "n": 32,
-  "median": 23.8,
-  "mean": 34,
-  "within15": 38
+  "median": 32,
+  "mean": 36.8,
+  "within15": 19
  },
  "private": {
   "n": 24,
-  "median": 31.6,
-  "mean": 37.2,
-  "within15": 29
+  "median": 35.1,
+  "mean": 36.9,
+  "within15": 21
  },
  "vsAI": {
   "ownComps": {
    "n": 18,
-   "median": 35,
-   "mean": 40.5,
-   "within15": 28
+   "median": 38.5,
+   "mean": 43.4,
+   "within15": 11
   },
   "aiEstimate": {
    "n": 18,
