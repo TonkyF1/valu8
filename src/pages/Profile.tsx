@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { MarketingConsentSetting } from "@/components/MarketingConsent";
+import { ReferralCard } from "@/components/ReferralCard";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
@@ -219,6 +220,8 @@ export default function Profile() {
             </div>
           </form>
         </section>
+
+        <ReferralCard />
 
         {/* Email preferences */}
         <section className="premium-card p-6 sm:p-7 mb-4">
