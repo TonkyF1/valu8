@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { CAR_MODELS } from "@/data/carModels";
 import { useSeo } from "@/lib/seo";
 import { getRouteMeta } from "@/data/routeMeta";
+import { CAR_VALUES_H1 } from "@/data/carValueContent";
 
 export default function CarValuesIndex() {
   useSeo(getRouteMeta("/car-values"));
@@ -13,7 +14,8 @@ export default function CarValuesIndex() {
       <TestModeBanner />
       <Header />
       <main id="main" className="flex-1 container max-w-3xl py-10 md:py-14">
-        <h1 className="text-3xl font-semibold tracking-tight mb-6">Car values by make and model</h1>
+        <h1 className="text-3xl font-semibold tracking-tight mb-3">{CAR_VALUES_H1}</h1>
+        <p className="text-muted-foreground mb-6">Free, honest valuations for the UK's most popular used cars. Pick your model to see how we value it, or <Link className="text-primary hover:underline" to="/valuation/new">value your car now</Link>.</p>
         <div className="grid gap-6 sm:grid-cols-2">
           {makes.map((make) => (
             <section key={make} aria-labelledby={`mk-${make}`}>

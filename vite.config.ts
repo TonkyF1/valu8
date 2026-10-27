@@ -8,6 +8,8 @@ import { ALL_ROUTES, getRouteMeta } from "./src/data/routeMeta";
 import { routeHtml } from "./scripts/routeHtml";
 import { buildSitemap } from "./scripts/sitemap";
 import { GUIDES, guideArticleHtml, guideFaqJsonLd, guidesIndexBodyHtml } from "./src/data/guides";
+import { CAR_MODELS } from "./src/data/carModels";
+import { carModelBodyHtml, carModelJsonLd, carPath, carValuesIndexBodyHtml } from "./src/data/carValueContent";
 
 function routeMetadataHtml(): Plugin {
   let outDir = "";
@@ -24,11 +26,16 @@ function routeMetadataHtml(): Plugin {
         if (meta.path === "/") continue;
         const fileBase = path.join(outDir, meta.path.slice(1));
         const guide = GUIDES.find((g) => g.path === meta.path);
+        const car = CAR_MODELS.find((m) => carPath(m) === meta.path);
         const extra = meta.path === "/guides"
           ? { bodyHtml: guidesIndexBodyHtml() }
           : guide
             ? { bodyHtml: guideArticleHtml(guide), headHtml: '<script type="application/ld+json" id="guide-faq-jsonld">' + guideFaqJsonLd(guide) + '</script>' }
-            : undefined;
+            : meta.path === "/car-values"
+              ? { bodyHtml: carValuesIndexBodyHtml() }
+              : car
+                ? { bodyHtml: carModelBodyHtml(car), headHtml: '<script type="application/ld+json" id="car-value-jsonld">' + carModelJsonLd(car) + '</script>' }
+                : undefined;
         const html = routeHtml(shell, meta, false, extra);
         fs.mkdirSync(fileBase, { recursive: true });
         fs.writeFileSync(path.join(fileBase, "index.html"), html);
