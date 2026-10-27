@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { claimGuestValuations } from "@/lib/guest";
+import { recordSignupSource } from "@/lib/attribution";
 
 interface AuthCtx {
   user: User | null;
@@ -31,7 +32,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // A guest who signs in or signs up keeps the valuations they made as a guest.
   const uid = session?.user?.id ?? null;
   useEffect(() => {
-    if (uid) void claimGuestValuations(uid);
+    if (!uid) return;
+    void claimGuestValuations(uid);
+    // Referral + UTM source for new accounts (works for email, magic link and Google sign-up).
+    void recordSignupSource(uid, (fn, args) => (supabase as any).rpc(fn, args));
   }, [uid]);
 
   return (

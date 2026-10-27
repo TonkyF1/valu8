@@ -28,6 +28,7 @@ export default function Privacy() {
               <li>Vehicle data: make, model, year, mileage, registration, MOT expiry, and any notes you submit.</li>
               <li>Photos: images you upload of your vehicle.</li>
               <li>How you found us: if you arrive from a link, we keep the campaign tag (utm_source, utm_medium, utm_campaign) and the referring website's domain with your account and valuations. This is stored in your browser's local storage, not a cookie, and contains no identifiers.</li>
+              <li>Friend links: if you join through a friend's Valu8 link (?ref=…), we record which account shared it. Your friend only sees a count of people who joined, never your name or email. There are no rewards or payments.</li>
               <li>Usage data (only if you accept analytics): pages visited, device type and session recordings with text inputs masked.</li>
             </ul>
           </section>
