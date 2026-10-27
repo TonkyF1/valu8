@@ -7,6 +7,31 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon-v2.png" sizes="180x180">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#111111" />
+    <script>
+      (function () {
+        var p = location.pathname;
+        if (p.length > 1) p = p.replace(/\/+$/, "") || "/";
+        var known = p === "/" || /\.html$/i.test(p);
+        if (!known) {
+          var exact = ["/auth", "/reset-password", "/dashboard", "/valuation/new", "/buyer", "/check", "/accuracy", "/pricing", "/compare", "/admin", "/profile", "/car-values", "/privacy", "/bot", "/terms", "/disclaimers", "/about", "/contact"];
+          for (var i = 0; i < exact.length; i++) if (exact[i] === p) { known = true; break; }
+        }
+        if (!known) {
+          var dyn = [/^\/valuation\/[^/]+$/, /^\/valuation\/[^/]+\/analysing$/, /^\/valuation\/[^/]+\/edit$/, /^\/shared\/[^/]+$/, /^\/car-values\/[^/]+\/[^/]+$/];
+          for (var j = 0; j < dyn.length; j++) if (dyn[j].test(p)) { known = true; break; }
+        }
+        if (known) return;
+        var canon = document.querySelector('link[rel="canonical"]');
+        if (canon && canon.parentNode) canon.parentNode.removeChild(canon);
+        var ogUrl = document.querySelector('meta[property="og:url"]');
+        if (ogUrl && ogUrl.parentNode) ogUrl.parentNode.removeChild(ogUrl);
+        var robots = document.createElement("meta");
+        robots.setAttribute("name", "robots");
+        robots.setAttribute("content", "noindex");
+        document.head.appendChild(robots);
+        document.title = "Page not found — Valu8";
+      })();
+    </script>
     <title>Valu8 — Instant Car Valuation for UK Private Sellers</title>
     <meta name="description" content="Get an honest, AI-powered valuation for your car in minutes. Built for UK private sellers — know your true private sale price before you list.">
     <link rel="canonical" href="https://valu8.uk/" />
