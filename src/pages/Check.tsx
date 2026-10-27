@@ -15,6 +15,7 @@ import { getRouteMeta } from "@/data/routeMeta";
 import { posthog } from "@/lib/posthog";
 import { functionErrorBody, getGuestToken, rememberGuestCheck } from "@/lib/guest";
 import { AdvertFollowupCard } from "@/components/AdvertFollowupCard";
+import { GuestMarketingConsent } from "@/components/MarketingConsent";
 import { checkAdvert, parseMoney, type AdvertCheck, type AdvertVerdict } from "@/lib/advertCheck";
 
 const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
@@ -190,6 +191,7 @@ export default function Check() {
                 ? <>Estimate: AI market estimate, not live listings — treat as a guide only.</>
                 : <>Estimate from {res.basis}, not live listings.</>} Private range is estimated from dealer asking prices. Doesn't account for this car's condition, spec or history.</p>
             <p className="text-xs text-muted-foreground mt-3">We'll ask you later whether you bought it — it helps us keep our prices honest.</p>
+            {!user && <div className="mt-5"><GuestMarketingConsent /></div>}
             <div className="mt-5 flex flex-col sm:flex-row gap-2">
               <Button asChild variant="outline" className="min-h-[44px]"><Link to="/valuation/new">Get a full report with MOT history</Link></Button>
               <Button variant="ghost" className="min-h-[44px]" onClick={() => { setRes(null); setF(EMPTY); }}>Check another advert</Button>

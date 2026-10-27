@@ -38,6 +38,7 @@ import { cleanReportText, marketCountLine } from "@/lib/reportText";
 import { explainValuation } from "@/lib/valuationExplainer";
 import { HowWeValue } from "@/components/HowWeValue";
 import { SaleFeedbackCard } from "@/components/SaleFeedbackCard";
+import { GuestMarketingConsent } from "@/components/MarketingConsent";
 import { stripSaleFeedback } from "@/lib/saleFeedback";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSaleFeedback } from "@/lib/saleFeedback";
@@ -1133,6 +1134,8 @@ export default function Report() {
             />
           </SectionBoundary>
         )}
+
+        {isGuest && <div className="mt-6"><GuestMarketingConsent /></div>}
 
         <div id="r-ownership" className="scroll-mt-44" />
         <SectionBoundary>
