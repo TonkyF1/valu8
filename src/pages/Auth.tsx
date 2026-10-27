@@ -16,6 +16,8 @@ import { getAttribution } from "@/lib/attribution";
 import { useSeo } from "@/lib/seo";
 import { getRouteMeta } from "@/data/routeMeta";
 import { getReturnTo } from "@/lib/guest";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MARKETING_CONSENT_LABEL } from "@/components/MarketingConsent";
 
 const emailSchema = z.string().trim().email("Enter a valid email").max(255);
 const passwordSchema = z.string().min(8, "Min 8 characters").max(72);
@@ -38,6 +40,7 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   useSeo(getRouteMeta("/auth"));
@@ -70,7 +73,7 @@ export default function Auth() {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: `${window.location.origin}${postAuthPath()}`, captchaToken: captchaToken ?? undefined, data: getAttribution() ? { first_touch: getAttribution() } : undefined },
+          options: { emailRedirectTo: `${window.location.origin}${postAuthPath()}`, captchaToken: captchaToken ?? undefined, data: { ...(getAttribution() ? { first_touch: getAttribution() } : {}), marketing_opt_in: marketingOptIn } },
         });
         resetCaptcha();
         if (error) throw error;
@@ -214,6 +217,12 @@ export default function Auth() {
                   {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
                 </div>
 
+                {mode === "signup" && (
+                  <label className="flex items-start gap-3 cursor-pointer text-sm text-muted-foreground">
+                    <Checkbox checked={marketingOptIn} onCheckedChange={(v) => setMarketingOptIn(v === true)} className="mt-0.5" aria-label={MARKETING_CONSENT_LABEL} />
+                    <span>{MARKETING_CONSENT_LABEL}</span>
+                  </label>
+                )}
                 <Turnstile key={captchaKey} onToken={setCaptchaToken} action="auth" />
                 <Button type="submit" variant="hero" size="lg" className="w-full" disabled={busy || (turnstileEnabled() && !captchaToken)}>
                   {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
