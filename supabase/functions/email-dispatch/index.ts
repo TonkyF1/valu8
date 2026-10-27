@@ -1,5 +1,5 @@
 // Valu8 — scheduled email sender (Resend).
-//  mode "reports"   (every 5 min): one "report ready" email per completed valuation / advert check of a signed-in user.
+//  mode "report"    (DB trigger on insert/update): one "report ready" email per completed valuation / advert check of a signed-in user.
 //  mode "followups" (daily): "did you buy / sell it?" 7 days after a report, only to opted-in accounts or consenting guests.
 //                   Re-asks every 14 days while unanswered or "still looking", max 3 sends per item.
 // Every email carries a signed one-click unsubscribe link; suppressed addresses are never emailed.
@@ -53,15 +53,18 @@ async function sendReport(kind: "valuation" | "advert", item: any, to: string, u
   return true;
 }
 
-async function runReports(windowHours = 2) {
+async function runReports(windowHours: number, only?: { kind: "valuation" | "advert"; id: string }) {
   const since = new Date(Date.now() - windowHours * 3600_000).toISOString();
   let sent = 0;
-  const { data: vals } = await admin.from("valuations").select("id, user_id, make, model, registration, private_value, report")
-    .not("user_id", "is", null).gt("private_value", 0).gte("created_at", since).limit(100);
-  const { data: ads } = await admin.from("advert_checks").select("id, user_id, make, model, asking_price, estimate_private, estimate_dealer_low, estimate_dealer_high")
-    .not("user_id", "is", null).gt("estimate_private", 0).gte("created_at", since).limit(100);
-  for (const [kind, rows] of [["valuation", vals ?? []], ["advert", ads ?? []]] as const) {
-    for (const it of rows as any[]) {
+  for (const kind of ["valuation", "advert"] as const) {
+    if (only && only.kind !== kind) continue;
+    let q = kind === "valuation"
+      ? admin.from("valuations").select("id, user_id, make, model, registration, private_value, report").gt("private_value", 0)
+      : admin.from("advert_checks").select("id, user_id, make, model, asking_price, estimate_private, estimate_dealer_low, estimate_dealer_high").gt("estimate_private", 0);
+    q = q.not("user_id", "is", null).gte("created_at", since);
+    if (only) q = q.eq("id", only.id);
+    const { data: rows } = await q.limit(100);
+    for (const it of (rows ?? []) as any[]) {
       const { data: done } = await admin.from("email_log").select("item_id").eq("template", `report-${kind}`).eq("item_id", it.id).maybeSingle();
       if (done) continue;
       const to = await userEmail(it.user_id);
@@ -152,10 +155,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const b = await req.json().catch(() => ({}));
-    const mode = b?.mode === "followups" ? "followups" : "reports";
-    if (!(await checkLimit(`email-dispatch:${mode}`, 60, 2))) return json({ skipped: "rate_limited" });
-    const sent = mode === "followups" ? await runFollowups() : await runReports();
-    return json({ mode, sent });
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (b?.mode === "report") {
+      // Fired by a database trigger when a report row is saved. Only recent rows qualify, and email_log makes it once-only.
+      if (!["valuation", "advert"].includes(b?.kind) || !UUID.test(String(b?.id))) return json({ error: "bad request" }, 400);
+      return json({ mode: "report", sent: await runReports(1, { kind: b.kind, id: b.id }) });
+    }
+    if (b?.mode !== "followups") return json({ error: "bad request" }, 400);
+    if (!(await checkLimit("email-dispatch:followups", 3600, 2))) return json({ skipped: "rate_limited" });
+    // Daily: backstop for any report email a trigger missed in the last day, then follow-ups.
+    const reports = await runReports(26);
+    const sent = await runFollowups();
+    return json({ mode: "followups", reports, sent });
   } catch (e) {
     console.error("email-dispatch", e);
     return json({ error: String(e) }, 500);
