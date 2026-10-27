@@ -21,10 +21,10 @@
           for (var j = 0; j < dyn.length; j++) if (dyn[j].test(p)) { known = true; break; }
         }
         if (known) return;
-        var canon = document.querySelector('link[rel="canonical"]');
+        var canon = document.querySelector("link[rel=canonical]");
         if (canon && canon.parentNode) canon.parentNode.removeChild(canon);
-        var ogUrl = document.querySelector('meta[property="og:url"]');
-        if (ogUrl && ogUrl.parentNode) ogUrl.parentNode.removeChild(ogUrl);
+        var metas = document.head.getElementsByTagName("meta");
+        for (var k = metas.length - 1; k >= 0; k--) if (metas[k].getAttribute("property") === "og:url") metas[k].parentNode.removeChild(metas[k]);
         var robots = document.createElement("meta");
         robots.setAttribute("name", "robots");
         robots.setAttribute("content", "noindex");
