@@ -179,6 +179,54 @@ export type Database = {
         }
         Relationships: []
       }
+      email_followups: {
+        Row: {
+          item_id: string
+          kind: string
+          last_sent_at: string | null
+          next_at: string | null
+          sent_count: number
+          user_id: string
+        }
+        Insert: {
+          item_id: string
+          kind: string
+          last_sent_at?: string | null
+          next_at?: string | null
+          sent_count?: number
+          user_id: string
+        }
+        Update: {
+          item_id?: string
+          kind?: string
+          last_sent_at?: string | null
+          next_at?: string | null
+          sent_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      guest_marketing_consents: {
+        Row: {
+          consented_at: string
+          email: string
+          id: string
+          marketing_opt_in: boolean
+        }
+        Insert: {
+          consented_at?: string
+          email: string
+          id?: string
+          marketing_opt_in?: boolean
+        }
+        Update: {
+          consented_at?: string
+          email?: string
+          id?: string
+          marketing_opt_in?: boolean
+        }
+        Relationships: []
+      }
       market_listings: {
         Row: {
           created_at: string
@@ -246,6 +294,8 @@ export type Database = {
           full_name: string | null
           id: string
           is_premium: boolean
+          marketing_opt_in: boolean
+          marketing_opt_in_at: string | null
           plan: string
           updated_at: string
           user_id: string
@@ -257,6 +307,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_premium?: boolean
+          marketing_opt_in?: boolean
+          marketing_opt_in_at?: string | null
           plan?: string
           updated_at?: string
           user_id: string
@@ -268,6 +320,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_premium?: boolean
+          marketing_opt_in?: boolean
+          marketing_opt_in_at?: string | null
           plan?: string
           updated_at?: string
           user_id?: string
