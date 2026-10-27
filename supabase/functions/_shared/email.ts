@@ -1,11 +1,12 @@
 // Valu8 — Resend email helpers: sending, signed tokens (unsubscribe + one-tap answers), premium table-based layout.
-// Layout rules: tables + inline styles only (Gmail/Outlook/Apple Mail), dark header band so the logo works in light
+// Layout rules: tables + inline styles only (Gmail/Outlook/Apple Mail), dark header band so the wordmark works in light
 // and dark mode, colour-scheme meta + prefers-color-scheme overrides, and a plain-text part for every email.
 export const FROM = "Valu8 <reports@notify.valu8.uk>";
 export const REPLY_TO = "hello@valu8.uk";
 export const SITE = "https://valu8.uk";
-export const LOGO_URL = `${SITE}/email-logo.png`; // 300x126 PNG on #0b1111, shown at 120x50
-export const LEGAL_LINE = "Tony Fisher trading as Valu8";
+// Header uses a live-text wordmark (no image): remote images were shown as a broken "?" in iPhone Mail,
+// and text always renders, even with images blocked.
+export const BRAND_LINE = "Valu8";
 
 const enc = new TextEncoder();
 const b64url = (buf: ArrayBuffer | Uint8Array) =>
@@ -156,7 +157,7 @@ a{text-decoration:none}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="page" style="background:${C.page}" bgcolor="${C.page}"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" class="wrap" style="width:560px;max-width:560px">
 <tr><td align="left" bgcolor="${C.band}" style="background:${C.band};border-radius:14px 14px 0 0;padding:20px 28px">
-<a href="${SITE}" style="text-decoration:none"><img src="${LOGO_URL}" width="120" height="50" alt="Valu8" style="display:block;border:0;outline:none;width:120px;height:50px;color:#f1f5f4;font-family:${FONT};font-size:24px;font-weight:700"></a>
+<a href="${SITE}" style="text-decoration:none;color:#ffffff"><span style="font-family:${FONT};font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.02em;color:#ffffff;text-decoration:none">Valu<span style="color:#2dd4bf">8</span></span></a>
 </td></tr>
 <tr><td class="card" bgcolor="${C.card}" style="background:${C.card};border:1px solid ${C.line};border-top:0;border-radius:0 0 14px 14px;padding:0 0 28px 0">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -172,7 +173,7 @@ ${btns}
 </table></td></tr>
 <tr><td class="foot" style="padding:22px 28px 8px 28px;font-family:${FONT};font-size:12px;line-height:19px;color:${C.muted}" align="center">
 <p class="muted" style="margin:0 0 6px 0;color:${C.muted}">You're getting this because you used Valu8. Questions? Just reply.</p>
-<p class="muted" style="margin:0 0 6px 0;color:${C.muted}">${esc(LEGAL_LINE)} &nbsp;·&nbsp; <a href="${SITE}" style="color:${C.muted};text-decoration:underline">valu8.uk</a></p>
+<p class="muted" style="margin:0 0 6px 0;color:${C.muted}">${esc(BRAND_LINE)} &nbsp;·&nbsp; <a href="${SITE}" style="color:${C.muted};text-decoration:underline">valu8.uk</a></p>
 <p style="margin:0"><a href="${esc(o.unsubscribe)}" style="color:${C.muted};text-decoration:underline">Unsubscribe from all Valu8 emails</a></p>
 </td></tr>
 </table></td></tr></table></body></html>`;
@@ -189,7 +190,7 @@ ${btns}
   if (o.buttonsIntro) t.push(o.buttonsIntro);
   for (const b of o.buttons) t.push(`${b.label}: ${b.url}`);
   if (o.note) t.push("", o.note);
-  t.push("", "--", "You're getting this because you used Valu8. Questions? Just reply.", `${LEGAL_LINE} · ${SITE}`, `Unsubscribe: ${o.unsubscribe}`);
+  t.push("", "--", "You're getting this because you used Valu8. Questions? Just reply.", "Valu8 · valu8.uk", `Unsubscribe: ${o.unsubscribe}`);
   return { html, text: t.join("\n") };
 }
 
