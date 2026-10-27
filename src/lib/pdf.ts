@@ -1,4 +1,5 @@
 import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
+import { normaliseReportPricing } from "@/lib/askingPrice";
 import type jsPDF from "jspdf";
 import type { ValuationReport } from "@/lib/valuation";
 import { format } from "date-fns";
@@ -93,9 +94,9 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   // Three value tiers
   if (!valuationUnavailable) {
     const tiers = [
-      { label: "Dealer Trade-in", value: r.values.dealerTradeIn },
-      { label: "Private Sale (Best)", value: r.values.privateSale, highlight: true },
-      { label: "Dealer Retail", value: r.values.dealerRetail },
+      { label: "Dealer Trade-in", value: normaliseReportPricing(r).tradeIn },
+      { label: "Private Sale (Best)", value: normaliseReportPricing(r).privateSale, highlight: true },
+      { label: "Dealer Retail", value: normaliseReportPricing(r).retail },
     ];
     const tierW = 150;
     const tierStart = pageW - margin - tierW * 3 - 20;
@@ -229,9 +230,9 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
       ensureSpace(28);
       doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...DARK);
       doc.text(format(new Date(m.date), "d MMM yyyy"), margin, y);
-      const color: [number, number, number] = m.result === "Pass" ? TEAL : m.result === "Advisory" ? [245, 158, 11] : [220, 38, 38];
+      const color: [number, number, number] = m.result === "Fail" ? [220, 38, 38] : TEAL;
       doc.setTextColor(...color);
-      doc.text(m.result, margin + 100, y);
+      doc.text(m.result === "Fail" ? "Fail" : "Pass", margin + 100, y);
       doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
       doc.text(`${m.mileage.toLocaleString()} mi`, pageW - margin - 80, y);
       y += 13;

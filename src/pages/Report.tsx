@@ -38,6 +38,7 @@ import { cleanReportText, marketCountLine } from "@/lib/reportText";
 import { explainValuation } from "@/lib/valuationExplainer";
 import { HowWeValue } from "@/components/HowWeValue";
 import { SaleFeedbackCard } from "@/components/SaleFeedbackCard";
+import { GuestMarketingConsent } from "@/components/MarketingConsent";
 import { stripSaleFeedback } from "@/lib/saleFeedback";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSaleFeedback } from "@/lib/saleFeedback";
@@ -109,14 +110,21 @@ export default function Report() {
           // Refresh signed URLs on every load so photos always render even after expiry.
           const signed = refs.length > 0 ? (await signPhotoUrls(refs)).filter(Boolean) : [];
           setV({ ...(data as any), photo_urls: signed, report: data.report as unknown as ValuationReport });
-          document.title = `${vehicleTitle({ year: data.year, make: data.make, model: data.model, engineCapacity: (data.report as any)?.vehicle?.engineCapacity, fuelType: (data.report as any)?.vehicle?.fuelType })} — Valu8`;
         }
         setLoading(false);
       });
   }, [id, isShared, authLoading, user?.id]);
 
+  const [scrolledPastHeader, setScrolledPastHeader] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolledPastHeader(window.scrollY > 220);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const seoVehicle = v ? `${v.year} ${displayMake(v.make)} ${displayModel(v.model)}` : "Car";
-  const seoValue = v && !(v.report as any)?.valuationUnavailable && v.report?.values?.privateSale ? ` Private sale estimate £${Math.round(v.report.values.privateSale).toLocaleString("en-GB")}.` : "";
+  const seoValue = v && !(v.report as any)?.valuationUnavailable && v.report?.values?.privateSale ? ` Private sale estimate £${normaliseReportPricing(v.report).privateSale.toLocaleString("en-GB")}.` : "";
   useSeo({
     title: `${seoVehicle} valuation | Valu8`,
     description: isShared
@@ -393,8 +401,11 @@ export default function Report() {
           <div className="sticky top-16 z-30 -mx-4 sm:mx-0 mb-4 border-y sm:border sm:rounded-xl border-border/60 bg-background/85 backdrop-blur-xl px-4 py-2.5">
             <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{titleDisplay}</p>
-              <p className="text-xs text-muted-foreground">{v.mileage.toLocaleString("en-GB")} miles{v.registration ? ` · ${v.registration.toUpperCase()}` : ""}</p>
+              {/* Title repeats the page heading, so only show it once that heading has scrolled away. */}
+              <div aria-hidden className={cn("transition-opacity", scrolledPastHeader ? "opacity-100" : "opacity-0")}>
+                <p className="truncate text-sm font-semibold">{titleDisplay}</p>
+                <p className="text-xs text-muted-foreground">{v.mileage.toLocaleString("en-GB")} miles{v.registration ? ` · ${v.registration.toUpperCase()}` : ""}</p>
+              </div>
             </div>
             <div className="text-right shrink-0">
               <p className="text-[11px] font-medium text-muted-foreground">Private sale <span className="rounded border border-border px-1 py-px ml-0.5">Estimate</span></p>
@@ -445,7 +456,7 @@ export default function Report() {
                   <li className="flex gap-2.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
-                      Realistic private sale (estimate): <strong className="tabular-nums text-foreground">£{r.values.privateSale.toLocaleString()}</strong>
+                      Realistic private sale (estimate): <strong className="tabular-nums text-foreground">£{normaliseReportPricing(r).privateSale.toLocaleString("en-GB")}</strong>
                     </span>
                   </li>
                   <li className="flex gap-2.5">
@@ -661,7 +672,7 @@ export default function Report() {
                     ) : (
                       <>
                         {isLiveListings ? "Based on live UK market data" : "Based on our AI market estimate"}, a realistic figure for this {v.year} {makeDisplay} {modelDisplay} sits around{" "}
-                        <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>.
+                        <span className="tabular-nums font-medium">£{normaliseReportPricing(r).privateSale.toLocaleString("en-GB")}</span>.
                       </>
                     )}
                   </p>
@@ -889,7 +900,7 @@ export default function Report() {
         {!valuationUnavailable && !isShared && r.photoInsights && r.photoInsights.length > 0 && (
           <WhatIfSimulator
             insights={r.photoInsights}
-            privateSale={r.values.privateSale}
+            privateSale={normaliseReportPricing(r).privateSale}
             recommendedAskingPrice={
               r.recommendedAskingPrice ||
               r.recommendations?.recommendedAskingPrice ||
@@ -1044,7 +1055,7 @@ export default function Report() {
         {(() => {
           const latest = r.motHistory?.[0];
           const previewText = latest
-            ? `${latest.result} · ${format(new Date(latest.date), "d MMM yyyy")}${latest.mileage > 0 ? ` · ${latest.mileage.toLocaleString()} mi` : ""}`
+            ? `${latest.result === "Fail" ? "Fail" : "Pass"} · ${format(new Date(latest.date), "d MMM yyyy")}${latest.mileage > 0 ? ` · ${latest.mileage.toLocaleString()} mi` : ""}`
             : "No prior MOT records";
           const hasFail = r.motHistory?.some((m: any) => m.result === "Fail");
           return (
@@ -1082,8 +1093,8 @@ export default function Report() {
                         <div className="flex items-baseline gap-2.5">
                           <span className={cn(
                             "text-xs font-semibold ",
-                            m.result === "Pass" ? "text-primary" : m.result === "Advisory" ? "text-amber-400" : "text-destructive"
-                          )}>{m.result}</span>
+                            m.result === "Fail" ? "text-destructive" : "text-primary"
+                          )}>{m.result === "Fail" ? "Fail" : "Pass"}</span>
                           <span className="font-medium text-sm">{format(new Date(m.date), "d MMM yyyy")}</span>
                           {m.expiryDate && m.result !== "Fail" && (
                             <span className="text-[11px] text-muted-foreground">· Expires {new Date(m.expiryDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</span>
@@ -1097,7 +1108,7 @@ export default function Report() {
                         <ul className="mt-1.5 space-y-0.5">
                           {m.failures!.map((f, k) => (
                             <li key={k} className="text-xs text-foreground/85 leading-snug">
-                              <span className="font-semibold uppercase tracking-wider text-destructive mr-1.5">Fail</span>{f}
+                              <span className={cn("font-semibold uppercase tracking-wider mr-1.5", m.result === "Fail" ? "text-destructive" : "text-muted-foreground")}>{m.result === "Fail" ? "Fail" : "Rectified"}</span>{f}
                             </li>
                           ))}
                         </ul>
@@ -1129,11 +1140,13 @@ export default function Report() {
             <SaleFeedbackCard
               valuationId={v.id}
               report={v.report}
-              estimate={(v.report as any)?.valuationUnavailable ? null : v.report?.values?.privateSale ?? null}
+              estimate={(v.report as any)?.valuationUnavailable ? null : (v.report?.values?.privateSale ? normaliseReportPricing(v.report).privateSale : null)}
               onSaved={(next) => setV((prev) => (prev ? { ...prev, report: next as unknown as ValuationReport } : prev))}
             />
           </SectionBoundary>
         )}
+
+        {isGuest && <div className="mt-6"><GuestMarketingConsent /></div>}
 
         <div id="r-ownership" className="scroll-mt-44" />
         <SectionBoundary>

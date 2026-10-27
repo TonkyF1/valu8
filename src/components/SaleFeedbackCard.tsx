@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { posthog } from "@/lib/posthog";
 import {
-  type SaleFeedback, type SoldTo, SOLD_TO_LABELS, getSaleFeedback, validateSaleFeedback, withSaleFeedback, saleAccuracy,
+  type SaleFeedback, type SellerChannel, SELLER_CHANNEL_LABELS, SOLD_TO_LABELS, getSaleFeedback, validateSaleFeedback, withSaleFeedback, saleAccuracy,
 } from "@/lib/saleFeedback";
 
 interface Props {
@@ -27,6 +27,7 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
   const [price, setPrice] = useState(existing ? String(existing.salePrice) : "");
   const [soldOn, setSoldOn] = useState(existing?.soldOn ?? "");
   const [soldTo, setSoldTo] = useState<string>(existing?.soldTo ?? "");
+  const [notSold, setNotSold] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +37,28 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
       document.getElementById("sale-feedback")?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
+  // Mirror the answer into the shared outcomes table (outcome_type 'seller') so it counts in Readiness.
+  const recordOutcome = async (channel: SellerChannel, price: number | null, date: string | null) => {
+    const row = { kind: "valuation", item_id: valuationId, source: "user", outcome_type: "seller", seller_type: channel, outcome_price: price, outcome_date: date };
+    const { data: prev } = await supabase.from("check_outcomes").select("id").eq("kind", "valuation").eq("item_id", valuationId).eq("source", "user").maybeSingle();
+    const { error: e } = prev
+      ? await supabase.from("check_outcomes").update({ ...row, recorded_at: new Date().toISOString() }).eq("id", prev.id)
+      : await supabase.from("check_outcomes").insert(row);
+    if (e) throw e;
+  };
+
   const save = async () => {
+    if (soldTo === "not_sold") {
+      setBusy(true); setError(null);
+      try {
+        await recordOutcome("not_sold", null, null);
+        toast.success("Thanks — we'll check in again later.");
+        setNotSold(true);
+      } catch (e) {
+        toast.error("Couldn't save that", { description: (e as Error)?.message ?? "Please try again" });
+      } finally { setBusy(false); }
+      return;
+    }
     const res = validateSaleFeedback({ salePrice: price, soldOn: soldOn || null, soldTo: soldTo || null });
     if (res.ok === false) { setError(res.error); return; }
     setError(null); setBusy(true);
@@ -48,6 +70,7 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
       const next = withSaleFeedback((data.report ?? {}) as Record<string, unknown>, fb);
       const { error: upErr } = await supabase.from("valuations").update({ report: next as any }).eq("id", valuationId);
       if (upErr) throw upErr;
+      try { await recordOutcome(fb.soldTo ?? "private", fb.salePrice, fb.soldOn ?? null); } catch { /* sale already saved on the report */ }
       try { posthog.capture?.("sale_feedback_saved", { sold_to: fb.soldTo ?? null, accuracy_pct: saleAccuracy(fb.salePrice, estimate) }); } catch { /* analytics optional */ }
       toast.success("Thanks — that really helps", { description: "Real sale prices help us make Valu8 more accurate." });
       setEditing(false);
@@ -56,6 +79,15 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
       toast.error("Couldn't save the sale price", { description: (e as Error)?.message ?? "Please try again" });
     } finally { setBusy(false); }
   };
+
+  if (notSold && !existing) {
+    return (
+      <section id="sale-feedback" className="premium-card p-5 sm:p-6 mt-6 scroll-mt-44" aria-label="Sale price feedback">
+        <p className="font-semibold">Not sold yet — got it.</p>
+        <p className="text-sm text-muted-foreground mt-0.5">Come back here once it's gone and tell us what you got.</p>
+      </section>
+    );
+  }
 
   if (existing && !editing) {
     const diff = saleAccuracy(existing.salePrice, existing.estimateAtTime ?? estimate);
@@ -86,33 +118,33 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
       <div className="flex items-start gap-3 mb-4">
         <div className="h-11 w-11 rounded-xl bg-primary/15 grid place-items-center ring-1 ring-primary/30 shrink-0"><HandCoins className="h-5 w-5 text-primary" aria-hidden /></div>
         <div>
-          <h3 className="text-lg font-semibold tracking-tight">Sold it? Tell us the price</h3>
+          <h3 className="text-lg font-semibold tracking-tight">Sold it? Tell us what you got</h3>
           <p className="text-sm text-muted-foreground mt-0.5">Takes 10 seconds. Real sale prices make future valuations more accurate for everyone.</p>
           <p className="text-xs text-primary mt-1.5 font-medium">Submit and help unlock better accuracy — your individual price stays private.</p>
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="grid gap-1.5">
-          <Label htmlFor="sf-price">Sale price (£)</Label>
-          <Input id="sf-price" inputMode="numeric" placeholder="e.g. 8,500" value={price} onChange={(e) => setPrice(e.target.value)} />
+          <Label htmlFor="sf-price">Price you got (£)</Label>
+          <Input id="sf-price" disabled={soldTo === "not_sold"} inputMode="numeric" placeholder="e.g. 8,500" value={price} onChange={(e) => setPrice(e.target.value)} />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="sf-date">Date sold <span className="text-muted-foreground font-normal">(optional)</span></Label>
-          <Input id="sf-date" type="date" max={new Date().toISOString().slice(0, 10)} value={soldOn} onChange={(e) => setSoldOn(e.target.value)} />
+          <Input id="sf-date" disabled={soldTo === "not_sold"} type="date" max={new Date().toISOString().slice(0, 10)} value={soldOn} onChange={(e) => setSoldOn(e.target.value)} />
         </div>
         <div className="grid gap-1.5">
-          <Label>Sold to <span className="text-muted-foreground font-normal">(optional)</span></Label>
+          <Label>How did it go?</Label>
           <Select value={soldTo} onValueChange={setSoldTo}>
-            <SelectTrigger aria-label="Sold to"><SelectValue placeholder="Choose…" /></SelectTrigger>
+            <SelectTrigger aria-label="How did it go?"><SelectValue placeholder="Choose…" /></SelectTrigger>
             <SelectContent>
-              {(Object.keys(SOLD_TO_LABELS) as SoldTo[]).map((k) => <SelectItem key={k} value={k}>{SOLD_TO_LABELS[k]}</SelectItem>)}
+              {(Object.keys(SELLER_CHANNEL_LABELS) as SellerChannel[]).map((k) => <SelectItem key={k} value={k}>{SELLER_CHANNEL_LABELS[k]}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
       </div>
       {error && <p className="text-sm text-destructive mt-2" role="alert">{error}</p>}
       <div className="flex gap-2 mt-4">
-        <Button variant="hero" onClick={save} disabled={busy} className="min-h-[44px]">{busy ? "Saving…" : "Save sale price"}</Button>
+        <Button variant="hero" onClick={save} disabled={busy} className="min-h-[44px]">{busy ? "Saving…" : soldTo === "not_sold" ? "Save" : "Save sale price"}</Button>
         {existing && <Button variant="ghost" onClick={() => setEditing(false)} disabled={busy}>Cancel</Button>}
       </div>
     </section>

@@ -13,6 +13,7 @@ import { LogOut, Mail, KeyRound, ShieldCheck, ArrowLeft, User as UserIcon, Uploa
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { MarketingConsentSetting } from "@/components/MarketingConsent";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
@@ -217,6 +218,18 @@ export default function Profile() {
               </Button>
             </div>
           </form>
+        </section>
+
+        {/* Email preferences */}
+        <section className="premium-card p-6 sm:p-7 mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><Mail className="h-5 w-5" /></span>
+            <div>
+              <h2 className="font-semibold">Email preferences</h2>
+              <p className="text-xs text-muted-foreground">We always email you when a report is ready.</p>
+            </div>
+          </div>
+          <MarketingConsentSetting />
         </section>
 
         {/* Connected Accounts */}

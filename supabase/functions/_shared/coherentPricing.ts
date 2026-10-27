@@ -34,8 +34,14 @@ export type CoherentPricing = {
 const r50 = (v: number) => Math.round(v / 50) * 50;
 const fin = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v > 0;
 
+/** Max shown dealer-retail multiple of the private estimate. */
+export function retailCapMultiplier(privateSale: number): number {
+  return privateSale < 10000 ? 1.25 : 1.2;
+}
+
 export function coherentPricing(input: CoherentInput): CoherentPricing {
-  const P = Math.round(input.privateSale);
+  // One rounded headline figure everywhere (no £5,637 vs £5,650 mismatches).
+  const P = r50(input.privateSale);
   const g = 50;
   // Buffer: 2–8% of the realistic figure, default ~4%, min £100.
   const rawBuf = fin(input.buffer) ? input.buffer : P * 0.04;
@@ -44,7 +50,12 @@ export function coherentPricing(input: CoherentInput): CoherentPricing {
   let askHigh = askLow + Math.max(2 * g, r50(buffer));
 
   // Retail must sit at/above the ask range; if the stored retail is lower, raise it.
-  const retail = Math.max(fin(input.retail) ? Math.round(input.retail) : r50(P * 1.25), askHigh);
+  // Shown dealer retail stays in a sensible band above private: never more than
+  // private × 1.25 under £10k (× 1.20 above), never below private × 1.08.
+  const capMult = retailCapMultiplier(P);
+  const rawRetail = fin(input.retail) ? Math.round(input.retail) : r50(P * 1.18);
+  const bandedRetail = Math.min(Math.max(rawRetail, r50(P * 1.08)), Math.floor((P * capMult) / g) * g);
+  const retail = Math.max(bandedRetail, askHigh);
   askHigh = Math.min(askHigh, retail);
   askLow = Math.min(askLow, askHigh);
 

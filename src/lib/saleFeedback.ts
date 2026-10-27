@@ -14,9 +14,9 @@ export interface SaleFeedback {
 }
 
 export const SOLD_TO_LABELS: Record<SoldTo, string> = {
-  private: "Private buyer",
-  dealer: "Dealer",
-  part_ex: "Part-exchange",
+  private: "Sold privately",
+  part_ex: "Part-exchanged",
+  dealer: "Sold to dealer or buying service",
 };
 
 export const PROMPT_AFTER_DAYS = 14;
@@ -113,3 +113,7 @@ export function summariseSaleFeedback(rows: { report?: unknown; private_value?: 
     meanSignedPct: round1(diffs.reduce((a, b) => a + b, 0) / diffs.length),
   };
 }
+
+/** Seller channel choices for the in-app outcome card ("not sold yet" has no price). */
+export type SellerChannel = SoldTo | "not_sold";
+export const SELLER_CHANNEL_LABELS: Record<SellerChannel, string> = { ...SOLD_TO_LABELS, not_sold: "Not sold yet" };

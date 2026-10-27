@@ -43,6 +43,13 @@
       "when": 1793106846147,
       "tag": "0005_fix_readiness_weekly",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793119148955,
+      "tag": "0006_seller_outcomes_marketing_consent",
+      "breakpoints": true
     }
   ]
 }

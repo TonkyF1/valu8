@@ -12,29 +12,24 @@ interface Props {
 
 const STEPS: { key: UploadPhase; label: string; sublabel: string }[] = [
   { key: "uploading", label: "Uploading photos", sublabel: "Securely sending your images" },
-  { key: "analysing", label: "Reading photos & history", sublabel: "AI scanning condition, panels, wheels" },
+  { key: "analysing", label: "Checking records & photos", sublabel: "DVLA, MOT history and photo condition" },
   { key: "generating", label: "Building your report", sublabel: "Cross-referencing UK market data" },
 ];
 
-const REASSURANCES = [
-  "Comparing against real UK adverts…",
-  "Detecting panel condition and wheel wear…",
-  "Factoring MOT history and recorded mileage…",
-  "Calculating your strongest negotiation angle…",
-  "Finding the closest real-market comparisons…",
-  "Building the data your buyers can't argue with…",
-];
+// Shown in order while the valuation runs; holds on the last stage until the report is ready.
+export const VALUATION_STAGES = ["Checking DVLA…", "Reading MOT history…", "Analysing photos…", "Pricing…"];
 
 export function UploadProgressModal({ open, phase, uploadProgress }: Props) {
   const [tipIndex, setTipIndex] = useState(0);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || phase !== "analysing") return;
+    setTipIndex(0);
     const i = window.setInterval(() => {
-      setTipIndex((v) => (v + 1) % REASSURANCES.length);
-    }, 2600);
+      setTipIndex((v) => Math.min(v + 1, VALUATION_STAGES.length - 1));
+    }, 3500);
     return () => clearInterval(i);
-  }, [open]);
+  }, [open, phase]);
 
   if (!open) return null;
 
@@ -99,7 +94,7 @@ export function UploadProgressModal({ open, phase, uploadProgress }: Props) {
             className="text-sm text-muted-foreground animate-fade-in-up inline-flex items-center gap-1.5"
           >
             <Sparkles className="h-3.5 w-3.5 text-primary/70" />
-            {phase === "done" ? "Taking you to your valuation…" : REASSURANCES[tipIndex]}
+            {phase === "done" ? "Taking you to your valuation…" : phase === "uploading" ? "Uploading photos…" : phase === "generating" ? "Pricing…" : VALUATION_STAGES[tipIndex]}
           </p>
         </div>
 
@@ -144,7 +139,7 @@ export function UploadProgressModal({ open, phase, uploadProgress }: Props) {
                       <span className="text-[11px] text-primary tabular-nums font-semibold">{Math.round(uploadProgress)}%</span>
                     )}
                   </div>
-                  <div className="text-[11px] text-muted-foreground/80">{s.sublabel}</div>
+                  <div className="text-[11px] text-muted-foreground/80">{active && s.key === "analysing" ? VALUATION_STAGES[tipIndex] : s.sublabel}</div>
                 </div>
               </li>
             );

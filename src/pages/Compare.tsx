@@ -1,4 +1,5 @@
 import { useSeo } from "@/lib/seo";
+import { normaliseReportPricing } from "@/lib/askingPrice";
 import { getRouteMeta } from "@/data/routeMeta";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -23,9 +24,9 @@ function facts(v: Row) {
   const adv = r.motSource === "dvsa" ? r.motHistory?.[0]?.advisories ?? [] : [];
   const costs = summariseAdvisoryCosts(adv);
   return [
-    ["Private sale", gbp(r.values?.privateSale)],
-    ["Dealer retail", gbp(r.values?.dealerRetail)],
-    ["Trade-in", gbp(r.values?.dealerTradeIn)],
+    ["Private sale", gbp(r.values?.privateSale ? normaliseReportPricing(r).privateSale : undefined)],
+    ["Dealer retail", gbp(r.values?.privateSale ? normaliseReportPricing(r).retail : undefined)],
+    ["Trade-in", gbp(r.values?.privateSale ? normaliseReportPricing(r).tradeIn : undefined)],
     ["Condition", r.conditionScore != null && hasPhotos(v.photo_urls) ? `${r.conditionScore}/10 (${r.conditionLabel})` : "Add photos to score"],
     ["Year", String(v.year)],
     ["Mileage", `${v.mileage.toLocaleString("en-GB")} mi`],

@@ -482,9 +482,8 @@ async function fetchDvsaMotHistory(registration: string): Promise<{ entries: Mot
         .filter(d => /(fail|major|dangerous)/i.test(String(d?.type ?? "")))
         .map(d => String(d?.text ?? "").trim()).filter(Boolean);
       const passed = String(t?.testResult ?? "").toUpperCase() === "PASSED";
-      const result: MotEntryOut["result"] = passed
-        ? (advisories.length > 0 ? "Advisory" : "Pass")
-        : "Fail";
+      // Label by the actual DVSA testResult; advisories are listed separately.
+      const result: MotEntryOut["result"] = passed ? "Pass" : "Fail";
       const note = !passed
         ? (failures[0] ?? "Failed test")
         : advisories.length > 0
@@ -538,7 +537,7 @@ function simulateMotHistory(year: number, currentMileage: number, seed: number) 
     const roll = rand();
     records.push({
       date: `${yr}-${month}-${day}`,
-      result: roll > 0.82 ? "Advisory" : "Pass",
+      result: "Pass",
       note: roll > 0.82 ? advisories[Math.floor(rand() * advisories.length)] : "No advisories — clean test",
       mileage: mi,
     });

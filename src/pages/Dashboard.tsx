@@ -314,7 +314,7 @@ export default function Dashboard() {
                     <p className="text-muted-foreground mt-0.5">If you've sold {feedbackDue.length > 1 ? "any of these cars" : "it"}, telling us the price takes a few seconds and helps us make our valuations more accurate. Totally optional. <Link to="/accuracy" className="text-primary underline underline-offset-2">See our accuracy results</Link>.</p>
                   </div>
                   <Button asChild size="sm" variant="hero" className="shrink-0 min-h-[44px] w-full sm:w-auto">
-                    <Link to={`/valuation/${feedbackDue[0].id}#sale-feedback`}>Tell us what it sold for</Link>
+                    <Link to={`/valuation/${feedbackDue[0].id}#sale-feedback`}>Sold it? Tell us what you got</Link>
                   </Button>
                 </div>
               )}
@@ -358,7 +358,7 @@ export default function Dashboard() {
                           )}
                         </div>
                         <p className="sm:hidden mt-1 text-base font-bold tabular-nums text-primary">
-                          {valuationUnavailable ? <span className="text-sm font-semibold text-amber-300">Specialist valuation recommended</span> : <>£{(r.private_value || 0).toLocaleString()} <span className="text-[11px] font-medium text-muted-foreground">private sale</span></>}
+                          {valuationUnavailable ? <span className="text-sm font-semibold text-amber-300">Specialist valuation recommended</span> : <>£{(Math.round((r.private_value || 0) / 50) * 50).toLocaleString("en-GB")} <span className="text-[11px] font-medium text-muted-foreground">private sale</span></>}
                         </p>
                         <div className="flex items-center gap-x-2.5 gap-y-1 mt-1.5 text-xs text-muted-foreground flex-wrap">
                           <span className="tabular-nums">{r.mileage.toLocaleString()} mi</span>
@@ -405,7 +405,7 @@ export default function Dashboard() {
                           </div>
                         ) : (
                           <div className="font-bold text-gradient-primary text-lg sm:text-2xl tabular-nums leading-tight mt-0.5">
-                            £{(r.private_value || 0).toLocaleString()}
+                            £{(Math.round((r.private_value || 0) / 50) * 50).toLocaleString("en-GB")}
                           </div>
                         )}
                       </div>
