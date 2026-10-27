@@ -7,6 +7,7 @@ import { componentTagger } from "lovable-tagger";
 import { ALL_ROUTES, getRouteMeta } from "./src/data/routeMeta";
 import { routeHtml } from "./scripts/routeHtml";
 import { buildSitemap } from "./scripts/sitemap";
+import { GUIDES, guideArticleHtml, guideFaqJsonLd, guidesIndexBodyHtml } from "./src/data/guides";
 
 function routeMetadataHtml(): Plugin {
   let outDir = "";
@@ -22,7 +23,13 @@ function routeMetadataHtml(): Plugin {
       for (const meta of ALL_ROUTES) {
         if (meta.path === "/") continue;
         const fileBase = path.join(outDir, meta.path.slice(1));
-        const html = routeHtml(shell, meta);
+        const guide = GUIDES.find((g) => g.path === meta.path);
+        const extra = meta.path === "/guides"
+          ? { bodyHtml: guidesIndexBodyHtml() }
+          : guide
+            ? { bodyHtml: guideArticleHtml(guide), headHtml: '<script type="application/ld+json" id="guide-faq-jsonld">' + guideFaqJsonLd(guide) + '</script>' }
+            : undefined;
+        const html = routeHtml(shell, meta, false, extra);
         fs.mkdirSync(fileBase, { recursive: true });
         fs.writeFileSync(path.join(fileBase, "index.html"), html);
         fs.writeFileSync(`${fileBase}.html`, html);

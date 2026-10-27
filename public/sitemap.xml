@@ -11,6 +11,12 @@
   <url><loc>https://valu8.uk/privacy</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.uk/terms</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.uk/disclaimers</loc><priority>0.3</priority></url>
+  <url><loc>https://valu8.uk/guides</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/guides/what-is-my-car-worth</loc><priority>0.6</priority></url>
+  <url><loc>https://valu8.uk/guides/part-exchange-vs-private-sale</loc><priority>0.6</priority></url>
+  <url><loc>https://valu8.uk/guides/how-to-tell-if-a-used-car-is-overpriced</loc><priority>0.6</priority></url>
+  <url><loc>https://valu8.uk/guides/how-to-sell-a-car-privately-safely</loc><priority>0.6</priority></url>
+  <url><loc>https://valu8.uk/guides/check-mot-and-mileage-history-before-buying</loc><priority>0.6</priority></url>
   <url><loc>https://valu8.uk/car-values/ford/fiesta</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/car-values/ford/focus</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/car-values/ford/puma</loc><priority>0.7</priority></url>

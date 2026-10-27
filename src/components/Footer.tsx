@@ -10,6 +10,7 @@ const COLS: { title: string; links: { to: string; label: string }[] }[] = [
     { to: "/accuracy", label: "Accuracy" },
   ] },
   { title: "Guides", links: [
+    { to: "/guides", label: "Guides" },
     { to: "/car-values", label: "Car values by model" },
     { to: "/about", label: "About & contact" },
   ] },
