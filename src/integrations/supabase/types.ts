@@ -348,6 +348,9 @@ export type Database = {
           marketing_opt_in: boolean
           marketing_opt_in_at: string | null
           plan: string
+          referral_code: string | null
+          referred_by: string | null
+          signup_attribution: Json | null
           updated_at: string
           user_id: string
           username: string | null
@@ -361,6 +364,9 @@ export type Database = {
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
           plan?: string
+          referral_code?: string | null
+          referred_by?: string | null
+          signup_attribution?: Json | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -374,6 +380,9 @@ export type Database = {
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
           plan?: string
+          referral_code?: string | null
+          referred_by?: string | null
+          signup_attribution?: Json | null
           updated_at?: string
           user_id?: string
           username?: string | null
@@ -649,6 +658,7 @@ export type Database = {
       }
     }
     Functions: {
+      admin_growth_stats: { Args: never; Returns: Json }
       admin_stats: { Args: never; Returns: Json }
       beta_signup_count: { Args: never; Returns: number }
       check_rate_limit: {
@@ -663,6 +673,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      my_referral: { Args: never; Returns: Json }
       public_accuracy_stats: {
         Args: never
         Returns: {
@@ -673,6 +684,10 @@ export type Database = {
         }[]
       }
       readiness_stats: { Args: { p_engine?: string }; Returns: Json }
+      record_signup_source: {
+        Args: { p_first_touch: Json; p_ref: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
