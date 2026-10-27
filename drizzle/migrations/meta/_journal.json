@@ -50,6 +50,13 @@
       "when": 1793119148955,
       "tag": "0006_seller_outcomes_marketing_consent",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793125909928,
+      "tag": "0007_resend_emails",
+      "breakpoints": true
     }
   ]
 }
