@@ -109,14 +109,13 @@ export default function Report() {
           // Refresh signed URLs on every load so photos always render even after expiry.
           const signed = refs.length > 0 ? (await signPhotoUrls(refs)).filter(Boolean) : [];
           setV({ ...(data as any), photo_urls: signed, report: data.report as unknown as ValuationReport });
-          document.title = `${vehicleTitle({ year: data.year, make: data.make, model: data.model, engineCapacity: (data.report as any)?.vehicle?.engineCapacity, fuelType: (data.report as any)?.vehicle?.fuelType })} — Valu8`;
         }
         setLoading(false);
       });
   }, [id, isShared, authLoading, user?.id]);
 
   const seoVehicle = v ? `${v.year} ${displayMake(v.make)} ${displayModel(v.model)}` : "Car";
-  const seoValue = v && !(v.report as any)?.valuationUnavailable && v.report?.values?.privateSale ? ` Private sale estimate £${Math.round(v.report.values.privateSale).toLocaleString("en-GB")}.` : "";
+  const seoValue = v && !(v.report as any)?.valuationUnavailable && v.report?.values?.privateSale ? ` Private sale estimate £${normaliseReportPricing(v.report).privateSale.toLocaleString("en-GB")}.` : "";
   useSeo({
     title: `${seoVehicle} valuation | Valu8`,
     description: isShared
@@ -445,7 +444,7 @@ export default function Report() {
                   <li className="flex gap-2.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
-                      Realistic private sale (estimate): <strong className="tabular-nums text-foreground">£{r.values.privateSale.toLocaleString()}</strong>
+                      Realistic private sale (estimate): <strong className="tabular-nums text-foreground">£{normaliseReportPricing(r).privateSale.toLocaleString("en-GB")}</strong>
                     </span>
                   </li>
                   <li className="flex gap-2.5">
@@ -661,7 +660,7 @@ export default function Report() {
                     ) : (
                       <>
                         {isLiveListings ? "Based on live UK market data" : "Based on our AI market estimate"}, a realistic figure for this {v.year} {makeDisplay} {modelDisplay} sits around{" "}
-                        <span className="tabular-nums font-medium">£{r.values.privateSale.toLocaleString()}</span>.
+                        <span className="tabular-nums font-medium">£{normaliseReportPricing(r).privateSale.toLocaleString("en-GB")}</span>.
                       </>
                     )}
                   </p>
@@ -889,7 +888,7 @@ export default function Report() {
         {!valuationUnavailable && !isShared && r.photoInsights && r.photoInsights.length > 0 && (
           <WhatIfSimulator
             insights={r.photoInsights}
-            privateSale={r.values.privateSale}
+            privateSale={normaliseReportPricing(r).privateSale}
             recommendedAskingPrice={
               r.recommendedAskingPrice ||
               r.recommendations?.recommendedAskingPrice ||
@@ -1044,7 +1043,7 @@ export default function Report() {
         {(() => {
           const latest = r.motHistory?.[0];
           const previewText = latest
-            ? `${latest.result} · ${format(new Date(latest.date), "d MMM yyyy")}${latest.mileage > 0 ? ` · ${latest.mileage.toLocaleString()} mi` : ""}`
+            ? `${latest.result === "Fail" ? "Fail" : "Pass"} · ${format(new Date(latest.date), "d MMM yyyy")}${latest.mileage > 0 ? ` · ${latest.mileage.toLocaleString()} mi` : ""}`
             : "No prior MOT records";
           const hasFail = r.motHistory?.some((m: any) => m.result === "Fail");
           return (
@@ -1082,8 +1081,8 @@ export default function Report() {
                         <div className="flex items-baseline gap-2.5">
                           <span className={cn(
                             "text-xs font-semibold ",
-                            m.result === "Pass" ? "text-primary" : m.result === "Advisory" ? "text-amber-400" : "text-destructive"
-                          )}>{m.result}</span>
+                            m.result === "Fail" ? "text-destructive" : "text-primary"
+                          )}>{m.result === "Fail" ? "Fail" : "Pass"}</span>
                           <span className="font-medium text-sm">{format(new Date(m.date), "d MMM yyyy")}</span>
                           {m.expiryDate && m.result !== "Fail" && (
                             <span className="text-[11px] text-muted-foreground">· Expires {new Date(m.expiryDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</span>
@@ -1129,7 +1128,7 @@ export default function Report() {
             <SaleFeedbackCard
               valuationId={v.id}
               report={v.report}
-              estimate={(v.report as any)?.valuationUnavailable ? null : v.report?.values?.privateSale ?? null}
+              estimate={(v.report as any)?.valuationUnavailable ? null : (v.report?.values?.privateSale ? normaliseReportPricing(v.report).privateSale : null)}
               onSaved={(next) => setV((prev) => (prev ? { ...prev, report: next as unknown as ValuationReport } : prev))}
             />
           </SectionBoundary>
