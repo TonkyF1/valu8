@@ -34,6 +34,8 @@ const Check = lazy(() => import("./pages/Check"));
 const Accuracy = lazy(() => import("./pages/Accuracy"));
 const CarValue = lazy(() => import("./pages/CarValue"));
 const CarValuesIndex = lazy(() => import("./pages/CarValuesIndex"));
+const GuidesIndex = lazy(() => import("./pages/GuidesIndex"));
+const Guide = lazy(() => import("./pages/Guide"));
 
 const PageFallback = () => (
   <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite">
@@ -75,6 +77,8 @@ const App = () => (
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/car-values" element={<CarValuesIndex />} />
             <Route path="/car-values/:make/:model" element={<CarValue />} />
+            <Route path="/guides" element={<GuidesIndex />} />
+            <Route path="/guides/:slug" element={<Guide />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/bot" element={<Bot />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
