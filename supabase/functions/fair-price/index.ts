@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
     const variant = String(b?.variant ?? "").trim().slice(0, 80) || undefined;
     const ctx = { userId: g.userId, body: b, make, model, variant, year, mileage, asking };
     const ok = async (payload: any) => {
-      const checkId = await logCheck(ctx, payload);
+      const checkId = await Promise.race([logCheck(ctx, payload), new Promise<null>((r) => setTimeout(() => r(null), 4000))]);
       return json(checkId ? { ...payload, checkId } : payload);
     };
     if (!key) {
