@@ -15,6 +15,8 @@ import { getRouteMeta } from "@/data/routeMeta";
 import { posthog } from "@/lib/posthog";
 import { functionErrorBody, getGuestToken, rememberGuestCheck } from "@/lib/guest";
 import { AdvertFollowupCard } from "@/components/AdvertFollowupCard";
+import { CheckOutcomePrompt } from "@/components/OutcomePrompt";
+import { ShareButtons } from "@/components/ShareResult";
 import { GuestMarketingConsent } from "@/components/MarketingConsent";
 import { checkAdvert, parseMoney, type AdvertCheck, type AdvertVerdict } from "@/lib/advertCheck";
 
@@ -41,7 +43,7 @@ export default function Check() {
   const navigate = useNavigate();
   const [f, setF] = useState<Form>(loadDraft);
   const [busy, setBusy] = useState(false);
-  const [res, setRes] = useState<(AdvertCheck & { asking: number; sample: number; basis: string; source?: string }) | null>(null);
+  const [res, setRes] = useState<(AdvertCheck & { asking: number; sample: number; basis: string; source?: string; checkId: string | null; car: { make: string; model: string; year: number | null } }) | null>(null);
   const [noData, setNoData] = useState(false);
   const [guestLimit, setGuestLimit] = useState<string | null>(null);
   useSeo(getRouteMeta("/check"));
@@ -79,7 +81,7 @@ export default function Check() {
       const out = d?.verdict === "unknown" ? null : checkAdvert(asking, { low: d.low, mid: d.mid, high: d.high });
       if (!out) { setNoData(true); return; }
       if (!user && typeof d?.checkId === "string") rememberGuestCheck(d.checkId);
-      setRes({ ...out, asking, sample: d.sample, basis: d.basis, source: d.source });
+      setRes({ ...out, asking, sample: d.sample, basis: d.basis, source: d.source, checkId: typeof d?.checkId === "string" ? d.checkId : null, car: { make: f.make.trim(), model: f.model.trim(), year: Number(f.year) || null } });
       try { posthog.capture?.("advert_check", { verdict: out.verdict, has_link: !!f.link }); } catch { /* optional */ }
       try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     } catch (err: any) {
@@ -190,7 +192,16 @@ export default function Check() {
               : res.source === "ai_estimate"
                 ? <>Estimate: AI market estimate, not live listings — treat as a guide only.</>
                 : <>Estimate from {res.basis}, not live listings.</>} Private range is estimated from dealer asking prices. Doesn't account for this car's condition, spec or history.</p>
-            <p className="text-xs text-muted-foreground mt-3">We'll ask you later whether you bought it — it helps us keep our prices honest.</p>
+            <CheckOutcomePrompt checkId={res.checkId} signedIn={!!user} />
+            <div className="mt-5">
+              <p className="text-sm font-medium mb-2">Share this check</p>
+              <ShareButtons
+                campaign="check_result"
+                make={res.car.make}
+                model={res.car.model}
+                text={`Valu8 says this ${res.car.year ? `${res.car.year} ` : ""}${res.car.make} ${res.car.model} is ${V.label.toLowerCase()}: private sale range ${gbp(res.privateLow)}–${gbp(res.privateHigh)}. Check any used car advert free:`}
+              />
+            </div>
             {!user && <div className="mt-5"><GuestMarketingConsent /></div>}
             <div className="mt-5 flex flex-col sm:flex-row gap-2">
               <Button asChild variant="outline" className="min-h-[44px]"><Link to="/valuation/new">Get a full report with MOT history</Link></Button>

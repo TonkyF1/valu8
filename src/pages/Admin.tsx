@@ -8,6 +8,7 @@ import { Header, TestModeBanner } from "@/components/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReadinessPanel } from "@/components/admin/ReadinessPanel";
+import { GrowthPanel } from "@/components/admin/GrowthPanel";
 
 // Access is enforced in the database: admin_stats() raises 'forbidden' unless
 // the caller has the 'admin' role in public.user_roles. This page only hides UI.
@@ -53,7 +54,7 @@ export default function Admin() {
             ))}
           </dl>
             </TabsContent>
-            <TabsContent value="readiness"><ReadinessPanel /></TabsContent>
+            <TabsContent value="readiness"><GrowthPanel /><ReadinessPanel /></TabsContent>
           </Tabs>
         )}
       </main>
