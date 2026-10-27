@@ -1,11 +1,13 @@
 // Valu8 — scheduled email sender (Resend).
 //  mode "report"    (DB trigger on insert/update): one "report ready" email per completed valuation / advert check of a signed-in user.
 //  mode "followups" (daily): "did you buy / sell it?" 7 days after a report, only to opted-in accounts or consenting guests.
-//                   Re-asks every 14 days while unanswered or "still looking", max 3 sends per item.
+//                   Re-asks every 14 days while unanswered, "still looking" or "not sold yet", max 3 sends per item.
+//                   One-tap answers (no price) go through signed links → /email-answer page → email-answer function.
 // Every email carries a signed one-click unsubscribe link; suppressed addresses are never emailed.
 // Safe to call repeatedly: email_log (template,item_id) and email_followups make sends idempotent.
 import { corsHeaders, json, adminClient, checkLimit } from "../_shared/guard.ts";
-import { layout, sendEmail, makeUnsubToken, unsubUrl, gbp, SITE } from "../_shared/email.ts";
+import { sendEmail, makeUnsubToken, unsubUrl } from "../_shared/email.ts";
+import { buildReportEmail, buildFollowupEmail } from "../_shared/emailTemplates.ts";
 
 const DAY = 86400_000;
 const MAX_ASKS = 3;
@@ -24,30 +26,14 @@ async function suppressed(email: string): Promise<boolean> {
   const { data } = await admin.from("email_suppressions").select("email").eq("email", email).maybeSingle();
   return !!data;
 }
-const title = (v: { registration?: string | null; make: string; model: string }) =>
-  v.registration?.trim() ? v.registration.trim().toUpperCase() : `${v.make} ${v.model}`;
-
 async function sendReport(kind: "valuation" | "advert", item: any, to: string, uid: string): Promise<boolean> {
   const template = `report-${kind}`;
   const { error: claim } = await admin.from("email_log").insert({ template, item_id: item.id, recipient: to });
   if (claim) return false; // already sent (or being sent)
   const token = await makeUnsubToken({ e: to, u: uid });
-  const name = title(item);
-  const price = kind === "valuation" ? item.private_value : item.estimate_private;
-  const low = kind === "valuation" ? item.report?.valueRange?.privateSaleLow : item.estimate_dealer_low;
-  const high = kind === "valuation" ? item.report?.valueRange?.privateSaleHigh : item.estimate_dealer_high;
-  const lines = [
-    `${kind === "valuation" ? "Private sale value" : "Fair private price"}: ${gbp(price)}`,
-    ...(low > 0 && high > 0 ? [`${kind === "valuation" ? "Realistic range" : "Dealer range"}: ${gbp(low)} – ${gbp(high)}`] : []),
-    ...(kind === "advert" ? [`Asking price: ${gbp(item.asking_price)}`] : []),
-    "Your full report is saved in your account.",
-  ];
-  const url = kind === "valuation" ? `${SITE}/valuation/${item.id}` : `${SITE}/dashboard`;
-  const r = await sendEmail({
-    to, subject: `Your Valu8 report for ${name} is ready`, unsubscribe: unsubUrl(token), idempotencyKey: `${template}-${item.id}`,
-    html: layout({ preview: `${name}: ${gbp(price)} private value`, heading: `Your report for ${name} is ready`, lines,
-      buttons: [{ label: "View your report", url }], unsubscribe: unsubUrl(token) }),
-  });
+  const unsubscribe = unsubUrl(token);
+  const m = buildReportEmail(kind, item, unsubscribe);
+  const r = await sendEmail({ to, subject: m.subject, html: m.html, text: m.text, unsubscribe, idempotencyKey: `${template}-${item.id}` });
   if (!r.ok) { await admin.from("email_log").delete().eq("template", template).eq("item_id", item.id); return false; }
   if (r.id) await admin.from("email_log").update({ provider_id: r.id }).eq("template", template).eq("item_id", item.id);
   return true;
@@ -59,8 +45,8 @@ async function runReports(windowHours: number, only?: { kind: "valuation" | "adv
   for (const kind of ["valuation", "advert"] as const) {
     if (only && only.kind !== kind) continue;
     let q = kind === "valuation"
-      ? admin.from("valuations").select("id, user_id, make, model, registration, private_value, report").gt("private_value", 0)
-      : admin.from("advert_checks").select("id, user_id, make, model, asking_price, estimate_private, estimate_dealer_low, estimate_dealer_high").gt("estimate_private", 0);
+      ? admin.from("valuations").select("id, user_id, make, model, year, mileage, registration, private_value, report, photo_urls, mot_expiry").gt("private_value", 0)
+      : admin.from("advert_checks").select("id, user_id, make, model, year, mileage, asking_price, estimate_private, estimate_dealer_low, estimate_dealer_high").gt("estimate_private", 0);
     q = q.not("user_id", "is", null).gte("created_at", since);
     if (only) q = q.eq("id", only.id);
     const { data: rows } = await q.limit(100);
@@ -76,8 +62,10 @@ async function runReports(windowHours: number, only?: { kind: "valuation" | "adv
 }
 
 async function answered(kind: "advert" | "valuation", item: any): Promise<boolean> {
-  const { data } = await admin.from("check_outcomes").select("outcome_type").eq("kind", kind).eq("item_id", item.id).eq("source", "user");
-  if ((data ?? []).some((o: any) => o.outcome_type !== "still_looking")) return true;
+  const { data } = await admin.from("check_outcomes").select("outcome_type, seller_type").eq("kind", kind).eq("item_id", item.id).eq("source", "user");
+  // "Still looking" and "Not sold yet" keep the re-ask going; anything else is a final answer.
+  const open = (o: any) => o.outcome_type === "still_looking" || (o.outcome_type === "seller" && o.seller_type === "not_sold");
+  if ((data ?? []).some((o: any) => !open(o))) return true;
   if (kind === "valuation" && (item.report?.saleFeedback || item.report?.followupDeclined)) return true;
   return false;
 }
@@ -108,8 +96,8 @@ async function runFollowups() {
 
   for (const kind of ["advert", "valuation"] as const) {
     const q = kind === "advert"
-      ? admin.from("advert_checks").select("id, user_id, guest_token_hash, make, model, year, asking_price, created_at")
-      : admin.from("valuations").select("id, user_id, guest_token_hash, make, model, year, registration, report, created_at").gt("private_value", 0);
+      ? admin.from("advert_checks").select("id, user_id, guest_token_hash, make, model, year, mileage, asking_price, created_at")
+      : admin.from("valuations").select("id, user_id, guest_token_hash, make, model, year, mileage, registration, report, created_at").gt("private_value", 0);
     const { data: rows } = await q.lte("created_at", due).gte("created_at", oldest).order("created_at", { ascending: false }).limit(300);
     for (const it of (rows ?? []) as any[]) {
       let to: string | null = null;
@@ -121,24 +109,9 @@ async function runFollowups() {
       if (await answered(kind, it)) continue;
       const count = (f?.sent_count ?? 0) + 1;
       const token = await makeUnsubToken({ e: to, u: it.user_id ?? undefined });
-      const name = kind === "valuation" ? title(it) : `${it.year} ${it.make} ${it.model}`;
-      const advert = kind === "advert";
-      const url = advert ? `${SITE}${it.user_id ? "/dashboard" : "/check"}` : `${SITE}/valuation/${it.id}`;
-      const r = await sendEmail({
-        to, unsubscribe: unsubUrl(token), idempotencyKey: `followup-${kind}-${it.id}-${count}`,
-        subject: advert ? `Did you buy the ${name}? What did you pay?` : `Did you sell or part-ex your ${name}? What did you get?`,
-        html: layout({
-          preview: advert ? "Tell us what you paid — it takes 10 seconds." : "Tell us what you got — it takes 10 seconds.",
-          heading: advert ? `Did you buy the ${name}?` : `Did you sell or part-ex your ${name}?`,
-          lines: [
-            advert ? `You checked this car${it.asking_price ? ` at ${gbp(it.asking_price)}` : ""}. What did you end up paying?`
-                   : "If you've sold it or traded it in, what did you get?",
-            "Real prices help us keep every Valu8 valuation honest. Still looking? Just say so and we'll check back later.",
-          ],
-          buttons: [{ label: advert ? "Tell us what you paid" : "Tell us what you got", url }],
-          unsubscribe: unsubUrl(token),
-        }),
-      });
+      const unsubscribe = unsubUrl(token);
+      const m = await buildFollowupEmail(kind, it, unsubscribe);
+      const r = await sendEmail({ to, subject: m.subject, html: m.html, text: m.text, unsubscribe, idempotencyKey: `followup-${kind}-${it.id}-${count}` });
       if (!r.ok) continue;
       mailedThisRun.add(to);
       sent++;
@@ -169,6 +142,6 @@ Deno.serve(async (req) => {
     return json({ mode: "followups", reports, sent });
   } catch (e) {
     console.error("email-dispatch", e);
-    return json({ error: String(e) }, 500);
+    return json({ error: "internal error" }, 500);
   }
 });
