@@ -75,15 +75,18 @@ export function ReportNav({ sections, active, variant }: Props) {
   );
 }
 
-/** Compact owner-only nudge near the price; the full form lives further down (#sale-feedback). */
+/** Owner-only prompt near the price; the full form lives further down (#sale-feedback). Real sale prices keep Valu8 honest. */
 export function SoldItPrompt() {
   return (
     <a
       href="#sale-feedback"
-      className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card/50 px-4 py-3 text-sm hover:border-primary/40 transition-colors"
+      className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border-2 border-primary/50 bg-primary/10 px-5 py-4 hover:border-primary transition-colors"
     >
-      <span><span className="font-medium">Sold it?</span> <span className="text-muted-foreground">Tell us the price to improve our accuracy.</span></span>
-      <span className="shrink-0 text-primary font-medium">Add price</span>
+      <span>
+        <span className="block text-base font-semibold">Sold it? What did you get?</span>
+        <span className="block text-sm text-muted-foreground mt-0.5">Tell us the price (takes 10 seconds). Real sale prices are how we keep every valuation honest.</span>
+      </span>
+      <span className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold text-sm px-4 min-h-[44px]">Add sale price</span>
     </a>
   );
 }

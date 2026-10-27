@@ -46,6 +46,7 @@ import { GuestSavePrompt } from "@/components/report/GuestSavePrompt";
 import { claimGuestValuations, clearReturnTo, isGuestValuation, setReturnTo } from "@/lib/guest";
 import { priceBandGeometry } from "@/lib/priceBand";
 import { ReportNav, SoldItPrompt, useReportSections } from "@/components/report/ReportNav";
+import { ShareResult } from "@/components/ShareResult";
 import { MiniTier, Section, CollapsibleSection, RecBlock, SLOT_LABELS, PhotoFeedback, InsightRow } from "@/components/report/ReportParts";
 
 interface Valuation {
@@ -1133,6 +1134,16 @@ export default function Report() {
           );
         })()}
 
+
+        {/* Share card: car + range + confidence only (no reg, mileage, photos or report link) */}
+        {!isShared && !valuationUnavailable && (isGuest || (user && (v as any).user_id === user.id)) && (() => {
+          const sp = normaliseReportPricing(r);
+          return sp.privateLow > 0 && sp.privateHigh > 0 ? (
+            <SectionBoundary>
+              <ShareResult kind="valuation" year={v.year} make={v.make} model={v.model} low={sp.privateLow} high={sp.privateHigh} verdict={`${liveTier} confidence`} />
+            </SectionBoundary>
+          ) : null;
+        })()}
 
         {/* Sale feedback: placed after the detail sections (end of the reading flow) so it does not interrupt the report; real sale prices power /accuracy */}
         {!isShared && user && (v as any).user_id === user.id && (
