@@ -2,7 +2,8 @@
 // - only link_fetchable rows aged 7–60 days, recheck_count < 4, not rechecked in 7 days, max 50 per run
 // - never fetches denylisted domains (re-checked here too, not just trusted from the row)
 // - obeys robots.txt for Valu8Bot (falls back to *), honours Crawl-delay, skips if robots can't be read
-// - one request per domain per run; Gumtree up to 20, at least 10 s apart
+// - one request per domain per run (www. and bare host count as one); Gumtree up to 20, at least 10 s apart
+// - redirects followed only within the same site (max 3), never onto a denylisted domain
 // - stores only listing_status, a price from JSON-LD offers.price / og:price:amount, and timestamps
 import { json, corsHeaders, adminClient, checkLimit } from "../_shared/guard.ts";
 import { isDenylisted } from "../_shared/adverts.ts";
@@ -16,8 +17,25 @@ const GUMTREE_GAP_MS = 10_000;
 const BUDGET_MS = 130_000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const baseDomain = (h: string) => h.toLowerCase().replace(/\.$/, "").replace(/^www\./, "");
+
+// Redirects are followed by hand (max 3) and only within the same site, so a fetchable link can never
+// bounce us onto a denylisted domain or a different site whose robots.txt we haven't read.
 async function fetchText(url: string, maxBytes: number): Promise<{ status: number; text: string }> {
-  const r = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml,text/plain" }, redirect: "follow", signal: AbortSignal.timeout(10_000) });
+  const site = baseDomain(new URL(url).hostname);
+  let r: Response | null = null;
+  for (let hop = 0; hop <= 3; hop++) {
+    r = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml,text/plain" }, redirect: "manual", signal: AbortSignal.timeout(10_000) });
+    if (r.status < 300 || r.status >= 400) break;
+    try { await r.body?.cancel(); } catch { /* */ }
+    const loc = r.headers.get("location");
+    let next: URL | null = null;
+    try { next = loc ? new URL(loc, url) : null; } catch { next = null; }
+    if (!next || (next.protocol !== "https:" && next.protocol !== "http:") || baseDomain(next.hostname) !== site || isDenylisted(baseDomain(next.hostname))) return { status: 0, text: "" };
+    url = next.toString();
+    if (hop === 3) return { status: 0, text: "" };
+  }
+  if (!r) return { status: 0, text: "" };
   if (!r.ok || !r.body) { try { await r.body?.cancel(); } catch { /* */ } return { status: r.status, text: "" }; }
   const reader = r.body.getReader();
   const chunks: Uint8Array[] = []; let n = 0;
@@ -58,30 +76,30 @@ Deno.serve(async (req) => {
     if (isDenylisted(domain)) { stats.skipped++; continue; }
     const isGumtree = domain === "gumtree.com" || domain.endsWith(".gumtree.com");
     const cap = isGumtree ? GUMTREE_MAX : 1;
-    if ((perDomain.get(host) ?? 0) >= cap) { stats.skipped++; continue; }
+    if ((perDomain.get(domain) ?? 0) >= cap) { stats.skipped++; continue; }
 
     if (!robotsCache.has(host)) {
       try {
         const r = await fetchText(`${u.protocol}//${host}/robots.txt`, 200_000);
         robotsCache.set(host, r.status === 200 ? parseRobots(r.text, "Valu8Bot") : r.status === 404 ? parseRobots("", "Valu8Bot") : null);
       } catch { robotsCache.set(host, null); }
-      lastHit.set(host, Date.now());
+      lastHit.set(domain, Date.now());
     }
     const rules = robotsCache.get(host);
     if (!rules || !isAllowed(rules, u.pathname)) { stats.skipped++; continue; }
 
     const gap = Math.max(isGumtree ? GUMTREE_GAP_MS : 0, (rules.crawlDelay ?? 0) * 1000);
-    const wait = (lastHit.get(host) ?? 0) + gap - Date.now();
+    const wait = (lastHit.get(domain) ?? 0) + gap - Date.now();
     if (wait > 0) { if (Date.now() - started + wait > BUDGET_MS) break; await sleep(wait); }
 
-    perDomain.set(host, (perDomain.get(host) ?? 0) + 1);
+    perDomain.set(domain, (perDomain.get(domain) ?? 0) + 1);
     let status = 0, price: number | null = null;
     try {
       const r = await fetchText(row.link_url, 1_500_000);
       status = r.status;
       if (r.status === 200) price = extractPrice(r.text); // page content is discarded here
     } catch { status = 0; }
-    lastHit.set(host, Date.now());
+    lastHit.set(domain, Date.now());
     stats.fetched++;
 
     const update: Record<string, unknown> = { last_rechecked_at: new Date().toISOString(), recheck_count: (row.recheck_count ?? 0) + 1 };
