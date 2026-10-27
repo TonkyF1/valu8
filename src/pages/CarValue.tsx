@@ -5,19 +5,14 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { CAR_MODELS, SEGMENT_LABEL, SEGMENT_TIPS, findModel } from "@/data/carModels";
 import { useSeo } from "@/lib/seo";
+import { carModelMeta, getRouteMeta } from "@/data/routeMeta";
 import NotFound from "./NotFound";
 
 export default function CarValue() {
   const { make, model } = useParams();
   const car = findModel(make, model);
   const name = car ? `${car.make} ${car.model}` : "";
-  useSeo({
-    title: car ? `What's my ${name} worth? Free ${name} valuation | Valu8` : "Car values | Valu8",
-    description: car
-      ? `Free ${name} valuation using real UK adverts in our database, your MOT history and photos. See private sale, part-exchange and dealer values for your ${name}.`
-      : "Free UK car valuations.",
-    path: car ? `/car-values/${car.makeSlug}/${car.slug}` : "/car-values",
-  });
+  useSeo(car ? carModelMeta(car) : getRouteMeta("/car-values"));
   if (!car) return <NotFound />;
 
   const seg = SEGMENT_LABEL[car.segment];
