@@ -21,8 +21,7 @@ Deno.serve(async (req) => {
     if (hash) row.guest_token_hash = hash;
     const { error } = await admin.from("guest_marketing_consents").upsert(row, { onConflict: "email" });
     if (error) { console.error("guest consent", error.message); return json({ error: "Couldn't save that." }, 500); }
-    // Opting in again lifts an earlier unsubscribe for this address.
-    await admin.from("email_suppressions").delete().eq("email", email);
+    // Unauthenticated form: never lift an earlier unsubscribe here, or anyone could re-subscribe someone else's address.
     return json({ ok: true });
   } catch (e) {
     console.error("guest consent", e);

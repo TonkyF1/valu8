@@ -38,6 +38,13 @@ export async function readUnsubToken(token: string): Promise<UnsubPayload | null
 }
 
 export const unsubUrl = (token: string) => `${SITE}/unsubscribe?token=${encodeURIComponent(token)}`;
+// RFC 8058 one-click target: mail clients POST here directly, so it must be the edge function, not the SPA page.
+export const unsubPostUrl = (pageUrl: string) => {
+  const base = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/+$/, "");
+  if (!base) return pageUrl;
+  const token = new URL(pageUrl).searchParams.get("token") ?? "";
+  return `${base}/functions/v1/email-unsubscribe?token=${encodeURIComponent(token)}`;
+};
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 export const gbp = (n: number) => "£" + Math.round(n).toLocaleString("en-GB");
@@ -66,7 +73,7 @@ export async function sendEmail(o: { to: string; subject: string; html: string; 
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "Idempotency-Key": o.idempotencyKey.slice(0, 256) },
     body: JSON.stringify({
       from: FROM, to: [o.to], reply_to: REPLY_TO, subject: o.subject, html: o.html,
-      headers: { "List-Unsubscribe": `<${o.unsubscribe}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+      headers: { "List-Unsubscribe": `<${unsubPostUrl(o.unsubscribe)}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
     }),
   });
   const text = await res.text();
