@@ -22,6 +22,7 @@ import { motDue, buildMotIcs, downloadIcs, valueTrends } from "@/lib/retention";
 import { SITE_URL } from "@/lib/site";
 import { needsSaleFeedbackPrompt } from "@/lib/saleFeedback";
 import { HandCoins } from "lucide-react";
+import { AdvertFollowupCard } from "@/components/AdvertFollowupCard";
 import { CalendarPlus, AlertTriangle, TrendingDown, Minus } from "lucide-react";
 
 
@@ -133,6 +134,7 @@ export default function Dashboard() {
             Generate a new valuation, or revisit one of your saved reports.
           </p>
         </div>
+        <div className="mb-6 empty:hidden"><AdvertFollowupCard /></div>
 
         {/* Primary CTA + premium status */}
         <section className={`grid gap-3 mb-10 ${BILLING_ENABLED ? "md:grid-cols-3" : ""}`}>

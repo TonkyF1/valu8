@@ -40,7 +40,16 @@ Deno.serve(async (req) => {
       if (updateError) { console.error("Guest claim update failed", updateError.message); return json({ error: "We couldn't save your reports — please try again." }, 500); }
       claimed += updated?.length ?? 0;
     }
-    return json({ claimed });
+    // Also move this browser's guest advert checks into the account (best effort).
+    let claimedChecks = 0;
+    try {
+      const { data: checks, error: checkErr } = await admin.from("advert_checks")
+        .update({ user_id: userId, guest_token_hash: null })
+        .eq("guest_token_hash", tokenHash).is("user_id", null).select("id");
+      if (checkErr) console.warn("Guest advert check claim failed", checkErr.message);
+      claimedChecks = checks?.length ?? 0;
+    } catch (e) { console.warn("Guest advert check claim failed", e); }
+    return json({ claimed, claimedChecks });
   } catch (e) {
     console.error("claim-guest-valuations error", e);
     return json({ error: "We couldn't save your reports — please try again." }, 500);

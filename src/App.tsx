@@ -18,6 +18,7 @@ const Report = lazy(() => import("./pages/Report"));
 const EditValuation = lazy(() => import("./pages/EditValuation"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const Bot = lazy(() => import("./pages/Bot"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Disclaimers = lazy(() => import("./pages/Disclaimers"));
 const About = lazy(() => import("./pages/About"));
@@ -73,6 +74,7 @@ const App = () => (
             <Route path="/car-values" element={<CarValuesIndex />} />
             <Route path="/car-values/:make/:model" element={<CarValue />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/bot" element={<Bot />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/disclaimers" element={<Disclaimers />} />
             <Route path="/about" element={<About />} />

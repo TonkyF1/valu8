@@ -14,6 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      advert_checks: {
+        Row: {
+          asking_price: number
+          confidence: string | null
+          created_at: string
+          engine_version: string | null
+          estimate_dealer_high: number | null
+          estimate_dealer_low: number | null
+          estimate_dealer_mid: number | null
+          estimate_private: number | null
+          followup_answered_at: string | null
+          followup_next_at: string | null
+          followup_sent_at: string | null
+          followup_snoozes: number
+          guest_token_hash: string | null
+          id: string
+          last_rechecked_at: string | null
+          last_seen_price: number | null
+          link_domain: string | null
+          link_fetchable: boolean
+          link_url: string | null
+          listing_status: string
+          make: string
+          mileage: number
+          model: string
+          pricing_source: string | null
+          recheck_count: number
+          seller_type: string
+          user_id: string | null
+          variant: string | null
+          verdict: string | null
+          year: number
+        }
+        Insert: {
+          asking_price: number
+          confidence?: string | null
+          created_at?: string
+          engine_version?: string | null
+          estimate_dealer_high?: number | null
+          estimate_dealer_low?: number | null
+          estimate_dealer_mid?: number | null
+          estimate_private?: number | null
+          followup_answered_at?: string | null
+          followup_next_at?: string | null
+          followup_sent_at?: string | null
+          followup_snoozes?: number
+          guest_token_hash?: string | null
+          id?: string
+          last_rechecked_at?: string | null
+          last_seen_price?: number | null
+          link_domain?: string | null
+          link_fetchable?: boolean
+          link_url?: string | null
+          listing_status?: string
+          make: string
+          mileage: number
+          model: string
+          pricing_source?: string | null
+          recheck_count?: number
+          seller_type?: string
+          user_id?: string | null
+          variant?: string | null
+          verdict?: string | null
+          year: number
+        }
+        Update: {
+          asking_price?: number
+          confidence?: string | null
+          created_at?: string
+          engine_version?: string | null
+          estimate_dealer_high?: number | null
+          estimate_dealer_low?: number | null
+          estimate_dealer_mid?: number | null
+          estimate_private?: number | null
+          followup_answered_at?: string | null
+          followup_next_at?: string | null
+          followup_sent_at?: string | null
+          followup_snoozes?: number
+          guest_token_hash?: string | null
+          id?: string
+          last_rechecked_at?: string | null
+          last_seen_price?: number | null
+          link_domain?: string | null
+          link_fetchable?: boolean
+          link_url?: string | null
+          listing_status?: string
+          make?: string
+          mileage?: number
+          model?: string
+          pricing_source?: string | null
+          recheck_count?: number
+          seller_type?: string
+          user_id?: string | null
+          variant?: string | null
+          verdict?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       billing_customers: {
         Row: {
           current_period_end: string | null
@@ -41,6 +140,42 @@ export type Database = {
           stripe_subscription_id?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      check_outcomes: {
+        Row: {
+          id: string
+          item_id: string
+          kind: string
+          outcome_date: string | null
+          outcome_price: number | null
+          outcome_type: string
+          recorded_at: string
+          seller_type: string | null
+          source: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          kind: string
+          outcome_date?: string | null
+          outcome_price?: number | null
+          outcome_type: string
+          recorded_at?: string
+          seller_type?: string | null
+          source: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          kind?: string
+          outcome_date?: string | null
+          outcome_price?: number | null
+          outcome_type?: string
+          recorded_at?: string
+          seller_type?: string | null
+          source?: string
         }
         Relationships: []
       }
@@ -388,7 +523,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      readiness_outcomes: {
+        Row: {
+          confidence: string | null
+          engine_version: string | null
+          estimate: number | null
+          estimated_at: string | null
+          item_id: string | null
+          make: string | null
+          mileage: number | null
+          model: string | null
+          outcome_at: string | null
+          outcome_price: number | null
+          pricing_source: string | null
+          sale_type: string | null
+          side: string | null
+          year: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_stats: { Args: never; Returns: Json }
@@ -414,6 +567,7 @@ export type Database = {
           within_10_pct: number
         }[]
       }
+      readiness_stats: { Args: { p_engine?: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user"

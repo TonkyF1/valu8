@@ -51,6 +51,20 @@ Deno.serve(async (req) => {
       }
     } catch (_) { /* ignore */ }
 
+    // Advert checks and every outcome recorded against them or the user's valuations.
+    const { data: checkRows } = await admin.from("advert_checks").select("id").eq("user_id", userId);
+    const checkIds = (checkRows ?? []).map((r: any) => r.id);
+    for (let i = 0; i < checkIds.length; i += 200) {
+      await admin.from("check_outcomes").delete().eq("kind", "advert").in("item_id", checkIds.slice(i, i + 200));
+    }
+    const { data: valRows } = await admin.from("valuations").select("id").eq("user_id", userId);
+    const valIds = (valRows ?? []).map((r: any) => r.id);
+    for (let i = 0; i < valIds.length; i += 200) {
+      await admin.from("check_outcomes").delete().eq("kind", "valuation").in("item_id", valIds.slice(i, i + 200));
+    }
+    const { error: acErr } = await admin.from("advert_checks").delete().eq("user_id", userId);
+    if (acErr) throw acErr;
+
     await admin.from("valuations").delete().eq("user_id", userId);
     await admin.from("profiles").delete().eq("user_id", userId);
 
