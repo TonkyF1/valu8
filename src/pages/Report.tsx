@@ -1096,7 +1096,7 @@ export default function Report() {
                         <ul className="mt-1.5 space-y-0.5">
                           {m.failures!.map((f, k) => (
                             <li key={k} className="text-xs text-foreground/85 leading-snug">
-                              <span className="font-semibold uppercase tracking-wider text-destructive mr-1.5">Fail</span>{f}
+                              <span className={cn("font-semibold uppercase tracking-wider mr-1.5", m.result === "Fail" ? "text-destructive" : "text-muted-foreground")}>{m.result === "Fail" ? "Fail" : "Rectified"}</span>{f}
                             </li>
                           ))}
                         </ul>
