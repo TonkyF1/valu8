@@ -28,6 +28,7 @@ export const STATIC_ROUTES: RouteMeta[] = [
   { path: "/dashboard", title: "Dashboard — Valu8", description: "View and manage your saved Valu8 car valuations and reports.", noindex: true, inSitemap: false },
   { path: "/profile", title: "Profile — Valu8", description: "Manage your Valu8 profile, account details and sign-in settings.", noindex: true, inSitemap: false },
   { path: "/compare", title: "Compare cars — Valu8", description: "Compare two of your saved Valu8 car valuations side by side.", noindex: true, inSitemap: false },
+  { path: "/bot", title: "Valu8Bot — Valu8", description: "What Valu8Bot is, how it re-checks advert links politely, and how to opt out.", noindex: true, inSitemap: false },
   { path: "/admin", title: "Admin — Valu8", description: "Valu8 administration and service statistics for authorised administrators.", noindex: true, inSitemap: false },
 ];
 

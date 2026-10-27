@@ -41,6 +41,7 @@ export default function Privacy() {
               <li>Analytics and session replay (consent, which you can withdraw at any time).</li>
             </ul>
             <p className="mt-2"><strong>Improving our valuations.</strong> We keep the vehicle details you enter (make, model, trim, year, mileage, condition answers and specification), the valuation we produce and, if you tell us, the price your car sold for. We make an anonymised copy of this with your name, email, registration and photos removed, and use it to build our pricing database and make Valu8 valuations more accurate. Our lawful basis is our legitimate interest in providing accurate valuations. Once anonymised, these records no longer identify you and are not personal data. We do not record your location.</p>
+            <p className="mt-2"><strong>Measuring our accuracy.</strong> When you check an advert, we keep the car details, the asking price and the link you entered, and any outcome you tell us later (for example whether you bought it and what you paid). We use this only to measure how accurate our prices are. We do not record your location. These records are deleted when you delete your account.</p>
             <p className="mt-2">We never sell your personal data and we do not use it for advertising.</p>
           </section>
           <section>
