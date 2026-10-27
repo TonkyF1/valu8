@@ -54,6 +54,8 @@ const finalSchema = z.object({
   mileage: z.coerce.number().int().min(0).max(500000),
 });
 
+const LOOKUP_STAGES = ["Checking DVLA…", "Reading MOT history…", "Matching spec…"];
+
 export default function NewValuation() {
   const { user } = useAuth();
   const [tsToken, setTsToken] = useState<string | null>(null);
@@ -63,6 +65,12 @@ export default function NewValuation() {
   // Lookup state
   const [reg, setReg] = useState("");
   const [looking, setLooking] = useState(false);
+  const [lookupStage, setLookupStage] = useState(0);
+  useEffect(() => {
+    if (!looking) { setLookupStage(0); return; }
+    const t = window.setInterval(() => setLookupStage((v) => Math.min(v + 1, LOOKUP_STAGES.length - 1)), 1800);
+    return () => clearInterval(t);
+  }, [looking]);
   const [lookup, setLookup] = useState<LookupResult | null>(null);
   const [editing, setEditing] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -456,7 +464,7 @@ export default function NewValuation() {
               {looking ? (
                 <span className="inline-flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Looking up your vehicle…
+                  {LOOKUP_STAGES[lookupStage]}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2">
