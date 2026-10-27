@@ -6,10 +6,10 @@ import { Check, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
-  { label: "Reading vehicle details", sub: "Pulling official DVSA record" },
-  { label: "Cross-referencing UK market data", sub: "Comparing real UK adverts" },
-  { label: "Analysing photos for condition", sub: "AI vision reading panels & wheels" },
-  { label: "Computing three-tier valuation", sub: "Trade-in, private, and asking price" },
+  { label: "Checking DVLA…", sub: "Official vehicle record" },
+  { label: "Reading MOT history…", sub: "DVSA test results and advisories" },
+  { label: "Analysing photos…", sub: "Condition of panels, wheels and interior" },
+  { label: "Pricing…", sub: "Private sale, part-exchange and dealer" },
   { label: "Generating your full report", sub: "Building the data buyers can't argue with" },
 ];
 
