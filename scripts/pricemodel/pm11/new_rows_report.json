@@ -1,0 +1,12 @@
+{
+ "new_raw": 5586,
+ "new_after_clean": 5337,
+ "new_pool": 5325,
+ "dup_of_heldout": 81,
+ "dup_of_old_train": 26,
+ "new_usable": 5218,
+ "seller": {
+  "dealer": 3298,
+  "private": 1920
+ }
+}
