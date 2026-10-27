@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { getGuestToken } from "@/lib/guest";
 
 export const MARKETING_CONSENT_LABEL = "Email me follow-ups and tips (unsubscribe any time)";
 
@@ -60,7 +61,7 @@ export function GuestMarketingConsent() {
     if (!parsed.success) return toast.error("Enter a valid email");
     if (!checked) return toast.error("Tick the box to get follow-ups");
     setBusy(true);
-    const { error } = await supabase.from("guest_marketing_consents").insert({ email: parsed.data.toLowerCase(), marketing_opt_in: true });
+    const { error } = await supabase.functions.invoke("guest-consent", { body: { email: parsed.data.toLowerCase(), guestToken: getGuestToken() } });
     setBusy(false);
     if (error) return toast.error("Couldn't save that — please try again");
     setDone(true);
