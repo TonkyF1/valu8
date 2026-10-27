@@ -150,7 +150,8 @@ export function CollapsibleSection({
             open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
           )}
         >
-          <div className="overflow-hidden">
+          {/* Collapsed content is hidden from reading/copy/assistive tech so the preview line isn't read twice. */}
+          <div className="overflow-hidden" aria-hidden={!open} {...(!open ? { inert: "" } : {})} style={open ? undefined : { visibility: "hidden" }}>
             <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-1">{children}</div>
           </div>
         </div>

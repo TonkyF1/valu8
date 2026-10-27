@@ -115,6 +115,14 @@ export default function Report() {
       });
   }, [id, isShared, authLoading, user?.id]);
 
+  const [scrolledPastHeader, setScrolledPastHeader] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolledPastHeader(window.scrollY > 220);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const seoVehicle = v ? `${v.year} ${displayMake(v.make)} ${displayModel(v.model)}` : "Car";
   const seoValue = v && !(v.report as any)?.valuationUnavailable && v.report?.values?.privateSale ? ` Private sale estimate £${normaliseReportPricing(v.report).privateSale.toLocaleString("en-GB")}.` : "";
   useSeo({
@@ -393,8 +401,11 @@ export default function Report() {
           <div className="sticky top-16 z-30 -mx-4 sm:mx-0 mb-4 border-y sm:border sm:rounded-xl border-border/60 bg-background/85 backdrop-blur-xl px-4 py-2.5">
             <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{titleDisplay}</p>
-              <p className="text-xs text-muted-foreground">{v.mileage.toLocaleString("en-GB")} miles{v.registration ? ` · ${v.registration.toUpperCase()}` : ""}</p>
+              {/* Title repeats the page heading, so only show it once that heading has scrolled away. */}
+              <div aria-hidden className={cn("transition-opacity", scrolledPastHeader ? "opacity-100" : "opacity-0")}>
+                <p className="truncate text-sm font-semibold">{titleDisplay}</p>
+                <p className="text-xs text-muted-foreground">{v.mileage.toLocaleString("en-GB")} miles{v.registration ? ` · ${v.registration.toUpperCase()}` : ""}</p>
+              </div>
             </div>
             <div className="text-right shrink-0">
               <p className="text-[11px] font-medium text-muted-foreground">Private sale <span className="rounded border border-border px-1 py-px ml-0.5">Estimate</span></p>
