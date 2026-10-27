@@ -12,6 +12,7 @@ import { PostHogTracker } from "@/components/PostHogTracker";
 const NewValuation = lazy(() => import("./pages/NewValuation"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Analysing = lazy(() => import("./pages/Analysing"));
 const Report = lazy(() => import("./pages/Report"));
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/car-values/:make/:model" element={<CarValue />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/bot" element={<Bot />} />
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/disclaimers" element={<Disclaimers />} />
             <Route path="/about" element={<About />} />

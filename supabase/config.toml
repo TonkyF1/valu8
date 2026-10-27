@@ -8,3 +8,12 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.email-unsubscribe]
+verify_jwt = false
+
+[functions.email-dispatch]
+verify_jwt = false
+
+[functions.guest-consent]
+verify_jwt = false

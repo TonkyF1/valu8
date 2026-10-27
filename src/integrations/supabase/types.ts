@@ -185,24 +185,69 @@ export type Database = {
           kind: string
           last_sent_at: string | null
           next_at: string | null
+          recipient: string | null
           sent_count: number
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           item_id: string
           kind: string
           last_sent_at?: string | null
           next_at?: string | null
+          recipient?: string | null
           sent_count?: number
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           item_id?: string
           kind?: string
           last_sent_at?: string | null
           next_at?: string | null
+          recipient?: string | null
           sent_count?: number
-          user_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      email_log: {
+        Row: {
+          item_id: string
+          provider_id: string | null
+          recipient: string
+          sent_at: string
+          template: string
+        }
+        Insert: {
+          item_id: string
+          provider_id?: string | null
+          recipient: string
+          sent_at?: string
+          template: string
+        }
+        Update: {
+          item_id?: string
+          provider_id?: string | null
+          recipient?: string
+          sent_at?: string
+          template?: string
+        }
+        Relationships: []
+      }
+      email_suppressions: {
+        Row: {
+          created_at: string
+          email: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          reason?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          reason?: string
         }
         Relationships: []
       }
@@ -210,20 +255,26 @@ export type Database = {
         Row: {
           consented_at: string
           email: string
+          guest_token_hash: string | null
           id: string
           marketing_opt_in: boolean
+          updated_at: string
         }
         Insert: {
           consented_at?: string
           email: string
+          guest_token_hash?: string | null
           id?: string
           marketing_opt_in?: boolean
+          updated_at?: string
         }
         Update: {
           consented_at?: string
           email?: string
+          guest_token_hash?: string | null
           id?: string
           marketing_opt_in?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
