@@ -3,7 +3,8 @@
 // our own comparable-listings engine (ownComps), falling back to a quick AI
 // estimate when ownComps confidence is low. Response shape is unchanged, plus
 // `source`: "marketcheck" | "own_comps" | "ai_estimate".
-import { corsHeaders, guard, json, checkLimit, clientIp, envInt } from "../_shared/guard.ts";
+import { corsHeaders, guard, json, checkLimit, clientIp, envInt, adminClient } from "../_shared/guard.ts";
+import { sanitiseLink, sellerTypeOf, privateFromDealer, sha256Hex, GUEST_TOKEN_RE } from "../_shared/adverts.ts";
 import { fairPrice } from "../_shared/insights.ts";
 import { valueWithOwnComps } from "../_shared/ownCompsAdjust.ts";
 
@@ -64,6 +65,32 @@ async function comps(key: string, p: Record<string, string>) {
     .map((it) => ({ price: Math.round(Number(it.price)), mileage: Math.round(Number(it.miles ?? 0)), year: Number(it?.build?.year) || undefined, url: it.vdp_url as string | undefined }));
 }
 
+const ENGINE_VERSION = "v2.2-ledger";
+
+// Logging only: records the check after the result is built. Never throws, never changes the result.
+async function logCheck(ctx: { userId: string | null; body: any; make: string; model: string; variant?: string; year: number; mileage: number; asking: number }, payload: any): Promise<string | null> {
+  try {
+    if (!payload || payload.verdict === "unknown" || !(Number(payload.mid) > 0)) return null;
+    const admin = adminClient();
+    if (!admin) return null;
+    const link = sanitiseLink(ctx.body?.link);
+    const tok = !ctx.userId && typeof ctx.body?.guestToken === "string" && GUEST_TOKEN_RE.test(ctx.body.guestToken) ? ctx.body.guestToken : null;
+    const id = crypto.randomUUID();
+    const r = (n: unknown) => (Number.isFinite(Number(n)) && Number(n) > 0 ? Math.round(Number(n)) : null);
+    const { error } = await admin.from("advert_checks").insert({
+      id, user_id: ctx.userId, guest_token_hash: tok ? await sha256Hex(tok) : null,
+      make: ctx.make, model: ctx.model, variant: ctx.variant ?? null, year: Math.round(ctx.year), mileage: Math.round(ctx.mileage),
+      asking_price: Math.round(ctx.asking), seller_type: sellerTypeOf(ctx.body?.sellerType),
+      link_url: link?.url ?? null, link_domain: link?.domain ?? null, link_fetchable: link?.fetchable ?? false,
+      verdict: String(payload.verdict ?? ""), estimate_private: privateFromDealer(Number(payload.mid)),
+      estimate_dealer_low: r(payload.low), estimate_dealer_mid: r(payload.mid), estimate_dealer_high: r(payload.high),
+      pricing_source: payload.source ?? null, confidence: payload.confidence ?? null, engine_version: ENGINE_VERSION,
+    });
+    if (error) { console.warn("advert_checks insert failed", error.message); return null; }
+    return id;
+  } catch (e) { console.warn("advert check logging failed", e); return null; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const g = await guard(req, { feature: "fair-price", requireUser: false, requirePremium: true, perMinute: 6, perDay: 40, ipPerHour: 60 });
@@ -81,14 +108,19 @@ Deno.serve(async (req) => {
     }
     const key = (Deno.env.get("MARKETCHECK_ENABLED") ?? "false").toLowerCase() === "true" ? Deno.env.get("MARKETCHECK_API_KEY") : undefined;
     const variant = String(b?.variant ?? "").trim().slice(0, 80) || undefined;
+    const ctx = { userId: g.userId, body: b, make, model, variant, year, mileage, asking };
+    const ok = async (payload: any) => {
+      const checkId = await logCheck(ctx, payload);
+      return json(checkId ? { ...payload, checkId } : payload);
+    };
     if (!key) {
       const oc = (() => { try { return ownCompsBand(make, model, variant, year, mileage); } catch (e) { console.warn("ownComps failed", e); return null; } })();
       if (oc && oc.confidence !== "Low" && oc.confidence !== "Very Low") {
-        return json({ ...verdictFor(asking, oc.band, oc.nComps), basis: `Valu8 comparable data (${oc.nComps} similar cars)`, asking, comparables: [], source: "own_comps", confidence: oc.confidence });
+        return ok({ ...verdictFor(asking, oc.band, oc.nComps), basis: `Valu8 comparable data (${oc.nComps} similar cars)`, asking, comparables: [], source: "own_comps", confidence: oc.confidence });
       }
       const ai = await aiBand(make, model, variant, year, mileage).catch((e) => { console.error("fair-price AI failed", e); return null; });
-      if (ai) return json({ ...verdictFor(asking, ai, 0), basis: "AI market estimate", asking, comparables: [], source: "ai_estimate", confidence: "Low" });
-      if (oc) return json({ ...verdictFor(asking, oc.band, oc.nComps), basis: `Valu8 comparable data (${oc.nComps} similar cars)`, asking, comparables: [], source: "own_comps", confidence: oc.confidence });
+      if (ai) return ok({ ...verdictFor(asking, ai, 0), basis: "AI market estimate", asking, comparables: [], source: "ai_estimate", confidence: "Low" });
+      if (oc) return ok({ ...verdictFor(asking, oc.band, oc.nComps), basis: `Valu8 comparable data (${oc.nComps} similar cars)`, asking, comparables: [], source: "own_comps", confidence: oc.confidence });
       return json({ verdict: "unknown", low: 0, mid: 0, high: 0, diffPct: null, sample: 0, basis: "", asking, comparables: [], source: "ai_estimate" });
     }
     let list = await comps(key, { make, model, year: String(year), miles_range: `${Math.max(0, mileage - 25000)}-${mileage + 25000}` });
@@ -98,7 +130,7 @@ Deno.serve(async (req) => {
       basis = `${make} ${model} ${year - 1}–${year + 1}`;
     }
     const result = fairPrice(asking, mileage, list);
-    return json({ ...result, basis, asking, comparables: list.slice(0, 8), source: "marketcheck" });
+    return ok({ ...result, basis, asking, comparables: list.slice(0, 8), source: "marketcheck" });
   } catch (e) {
     console.error("fair-price error", e);
     return json({ error: "Could not check the price right now." }, 500);

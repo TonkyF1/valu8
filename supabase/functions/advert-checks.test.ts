@@ -5,7 +5,6 @@ import { extractPrice, isAllowed, parseRobots } from "./_shared/robots";
 describe("advert link denylist", () => {
   it("never marks AutoTrader (or its subdomains) fetchable", () => {
     expect(sanitiseLink("https://www.autotrader.co.uk/car-details/123?x=1")?.fetchable).toBe(false);
-    expect(isDenylisted("m.autotrader.co.uk")).toBe(false || isDenylisted("m.autotrader.co.uk"));
     expect(isDenylisted("m.autotrader.co.uk")).toBe(true);
   });
   it("blocks Facebook, eBay and any domain containing 'auction'", () => {
