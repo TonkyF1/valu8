@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+[functions.email-answer]
+verify_jwt = false
+
 [functions.email-unsubscribe]
 verify_jwt = false
 

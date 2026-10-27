@@ -57,7 +57,7 @@
       if (p.length > 1) p = p.replace(/\/+$/, "") || "/";
       var known = p === "/" || /\.html$/i.test(p);
       if (!known) {
-        var exact = ["/auth", "/reset-password", "/dashboard", "/valuation/new", "/buyer", "/check", "/accuracy", "/pricing", "/compare", "/admin", "/profile", "/car-values", "/privacy", "/bot", "/terms", "/disclaimers", "/about", "/contact", "/unsubscribe"];
+        var exact = ["/auth", "/reset-password", "/dashboard", "/valuation/new", "/buyer", "/check", "/accuracy", "/pricing", "/compare", "/admin", "/profile", "/car-values", "/privacy", "/bot", "/terms", "/disclaimers", "/about", "/contact", "/unsubscribe", "/email-answer"];
         for (var i = 0; i < exact.length; i++) if (exact[i] === p) { known = true; break; }
       }
       if (!known) {
