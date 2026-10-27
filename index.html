@@ -51,6 +51,31 @@
   <meta name="twitter:image:alt" content="Valu8: know what your car is really worth">
   <meta name="twitter:card" content="summary_large_image">
   <style>#lovable-badge{display:none !important;}</style>
+  <script>
+    (function () {
+      var p = location.pathname;
+      if (p.length > 1) p = p.replace(/\/+$/, "") || "/";
+      var known = p === "/" || /\.html$/i.test(p);
+      if (!known) {
+        var exact = ["/auth", "/reset-password", "/dashboard", "/valuation/new", "/buyer", "/check", "/accuracy", "/pricing", "/compare", "/admin", "/profile", "/car-values", "/privacy", "/bot", "/terms", "/disclaimers", "/about", "/contact"];
+        for (var i = 0; i < exact.length; i++) if (exact[i] === p) { known = true; break; }
+      }
+      if (!known) {
+        var dyn = [/^\/valuation\/[^/]+$/, /^\/valuation\/[^/]+\/analysing$/, /^\/valuation\/[^/]+\/edit$/, /^\/shared\/[^/]+$/, /^\/car-values\/[^/]+\/[^/]+$/];
+        for (var j = 0; j < dyn.length; j++) if (dyn[j].test(p)) { known = true; break; }
+      }
+      if (known) return;
+      var canon = document.querySelector("link[rel=canonical]");
+      if (canon && canon.parentNode) canon.parentNode.removeChild(canon);
+      var metas = document.head.getElementsByTagName("meta");
+      for (var k = metas.length - 1; k >= 0; k--) if (metas[k].getAttribute("property") === "og:url") metas[k].parentNode.removeChild(metas[k]);
+      var robots = document.createElement("meta");
+      robots.setAttribute("name", "robots");
+      robots.setAttribute("content", "noindex");
+      document.head.appendChild(robots);
+      document.title = "Page not found — Valu8";
+    })();
+  </script>
 </head>
   <body>
     <div id="root"></div>

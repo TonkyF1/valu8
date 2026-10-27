@@ -9,7 +9,7 @@ import { useSeo } from "@/lib/seo";
 export default function NotFound() {
   const location = useLocation();
   const { user } = useAuth();
-  useSeo({ title: "Page not found — Valu8", description: "This page doesn't exist. Value your car free with Valu8.", path: location.pathname, noindex: true });
+  useSeo({ title: "Page not found — Valu8", description: "This page doesn't exist. Value your car free with Valu8.", path: location.pathname, notFound: true });
   useEffect(() => {
     console.warn("404:", location.pathname);
   }, [location.pathname]);
