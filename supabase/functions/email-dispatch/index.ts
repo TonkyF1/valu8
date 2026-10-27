@@ -53,7 +53,7 @@ async function sendReport(kind: "valuation" | "advert", item: any, to: string, u
   return true;
 }
 
-async function runReports(windowHours = 2) {
+async function runReports(windowHours = 2, only?: { kind: string; id: string }) {
   const since = new Date(Date.now() - windowHours * 3600_000).toISOString();
   let sent = 0;
   const { data: vals } = await admin.from("valuations").select("id, user_id, make, model, registration, private_value, report")
