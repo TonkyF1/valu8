@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const TOKEN_KEY = "valu8_guest_token";
 const IDS_KEY = "valu8_guest_valuations";
+const CHECK_IDS_KEY = "valu8_guest_checks";
 const DISMISS_KEY = "valu8_guest_save_dismissed";
 export const RETURN_KEY = "valu8_return_to";
 
@@ -55,6 +56,21 @@ export function rememberGuestValuation(id: string) {
   } catch { /* storage unavailable */ }
 }
 
+export function getGuestCheckIds(): string[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CHECK_IDS_KEY) || "[]");
+    return Array.isArray(raw) ? raw.filter((x) => typeof x === "string") : [];
+  } catch { return []; }
+}
+
+export function rememberGuestCheck(id: string) {
+  try {
+    const ids = getGuestCheckIds().filter((x) => x !== id);
+    ids.unshift(id);
+    localStorage.setItem(CHECK_IDS_KEY, JSON.stringify(ids.slice(0, 50)));
+  } catch { /* storage unavailable */ }
+}
+
 export function isGuestValuation(id: string | undefined | null): boolean {
   return !!id && getGuestValuationIds().includes(id);
 }
@@ -90,7 +106,7 @@ let claimedFor: string | null = null;
  */
 export function claimGuestValuations(userId: string): Promise<number> {
   const token = peekGuestToken();
-  if (!token || getGuestValuationIds().length === 0) return Promise.resolve(0);
+  if (!token || (getGuestValuationIds().length === 0 && getGuestCheckIds().length === 0)) return Promise.resolve(0);
   if (claimPromise && claimedFor === userId) return claimPromise;
   claimedFor = userId;
   claimPromise = (async () => {
@@ -99,7 +115,7 @@ export function claimGuestValuations(userId: string): Promise<number> {
       if (error || (data as any)?.error) return 0;
       const n = Number((data as any)?.claimed ?? 0);
       // Claimed rows now belong to the account; start a fresh guest identity.
-      try { localStorage.removeItem(IDS_KEY); localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
+      try { localStorage.removeItem(IDS_KEY); localStorage.removeItem(CHECK_IDS_KEY); localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
       return Number.isFinite(n) ? n : 0;
     } catch {
       return 0;

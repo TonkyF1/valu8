@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import { useSeo } from "@/lib/seo";
 import { getRouteMeta } from "@/data/routeMeta";
 import { posthog } from "@/lib/posthog";
-import { functionErrorBody } from "@/lib/guest";
+import { functionErrorBody, getGuestToken, rememberGuestCheck } from "@/lib/guest";
+import { AdvertFollowupCard } from "@/components/AdvertFollowupCard";
 import { checkAdvert, parseMoney, type AdvertCheck, type AdvertVerdict } from "@/lib/advertCheck";
 
 const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
@@ -25,8 +26,10 @@ const VERDICT: Record<AdvertVerdict, { label: string; cls: string; ring: string;
   bargain: { label: "Bargain", cls: "text-emerald-400", ring: "border-emerald-400/40 bg-emerald-400/5", icon: ThumbsUp, tip: "Below what similar cars usually sell for privately. Worth a look, but check why: history, condition, write-off status." },
 };
 
-type Form = { make: string; model: string; year: string; mileage: string; askingPrice: string; link: string };
-const EMPTY: Form = { make: "", model: "", year: "", mileage: "", askingPrice: "", link: "" };
+type SellerType = "dealer" | "private" | "unknown" | "";
+type Form = { make: string; model: string; year: string; mileage: string; askingPrice: string; link: string; sellerType: SellerType };
+const EMPTY: Form = { make: "", model: "", year: "", mileage: "", askingPrice: "", link: "", sellerType: "" };
+const SELLERS: { v: Exclude<SellerType, "">; label: string }[] = [{ v: "dealer", label: "Dealer" }, { v: "private", label: "Private" }, { v: "unknown", label: "Not sure" }];
 
 function loadDraft(): Form {
   try { return { ...EMPTY, ...JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "{}") }; } catch { return EMPTY; }
@@ -51,7 +54,11 @@ export default function Check() {
     setBusy(true); setRes(null); setNoData(false); setGuestLimit(null);
     try {
       const { data, error } = await supabase.functions.invoke("fair-price", {
-        body: { make: f.make.trim(), model: f.model.trim(), year, mileage, askingPrice: asking },
+        body: {
+          make: f.make.trim(), model: f.model.trim(), year, mileage, askingPrice: asking,
+          link: f.link.trim() || undefined, sellerType: f.sellerType || undefined,
+          guestToken: user ? undefined : getGuestToken(),
+        },
       });
       if (error) {
         const { status, body } = await functionErrorBody(error);
@@ -70,6 +77,7 @@ export default function Check() {
       const d = data as any;
       const out = d?.verdict === "unknown" ? null : checkAdvert(asking, { low: d.low, mid: d.mid, high: d.high });
       if (!out) { setNoData(true); return; }
+      if (!user && typeof d?.checkId === "string") rememberGuestCheck(d.checkId);
       setRes({ ...out, asking, sample: d.sample, basis: d.basis, source: d.source });
       try { posthog.capture?.("advert_check", { verdict: out.verdict, has_link: !!f.link }); } catch { /* optional */ }
       try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
@@ -98,6 +106,7 @@ export default function Check() {
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
           <SearchCheck className="h-7 w-7 text-primary shrink-0" aria-hidden /> Is this used car a fair price?
         </h1>
+        {!user && <div className="mt-6"><AdvertFollowupCard guest /></div>}
         <p className="text-sm text-muted-foreground mt-2">Buying a used car? Copy in the details from AutoTrader, eBay, Gumtree or Facebook and we'll tell you how the asking price compares with what similar cars go for in the UK.</p>
 
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 mt-6">
@@ -107,6 +116,16 @@ export default function Check() {
           {field("mileage", "Mileage", { inputMode: "numeric", placeholder: "e.g. 45,000", required: true })}
           <div className="sm:col-span-2">{field("askingPrice", "Asking price (£)", { inputMode: "numeric", placeholder: "e.g. 12,995", required: true })}</div>
           <div className="sm:col-span-2">{field("link", "Advert link (optional)", { type: "url", placeholder: "https://…", autoComplete: "off" })}</div>
+          <fieldset className="sm:col-span-2 space-y-1.5">
+            <legend className="text-sm font-medium leading-none mb-1.5">Who's selling? <span className="text-muted-foreground font-normal">(optional)</span></legend>
+            <div className="flex flex-wrap gap-2" role="radiogroup">
+              {SELLERS.map((o) => (
+                <Button key={o.v} type="button" role="radio" aria-checked={f.sellerType === o.v} size="sm"
+                  variant={f.sellerType === o.v ? "default" : "outline"} className="min-h-[44px]"
+                  onClick={() => setF((s) => ({ ...s, sellerType: s.sellerType === o.v ? "" : o.v }))}>{o.label}</Button>
+              ))}
+            </div>
+          </fieldset>
           <div className="sm:col-span-2">
             <Button type="submit" variant="hero" size="lg" disabled={busy} className="w-full sm:w-auto min-h-[48px]">
               {busy ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Checking…</> : <>Check this advert <ArrowRight className="h-4 w-4" aria-hidden /></>}
@@ -170,6 +189,7 @@ export default function Check() {
               : res.source === "ai_estimate"
                 ? <>Estimate: AI market estimate, not live listings — treat as a guide only.</>
                 : <>Estimate from {res.basis}, not live listings.</>} Private range is estimated from dealer asking prices. Doesn't account for this car's condition, spec or history.</p>
+            <p className="text-xs text-muted-foreground mt-3">We'll ask you later whether you bought it — it helps us keep our prices honest.</p>
             <div className="mt-5 flex flex-col sm:flex-row gap-2">
               <Button asChild variant="outline" className="min-h-[44px]"><Link to="/valuation/new">Get a full report with MOT history</Link></Button>
               <Button variant="ghost" className="min-h-[44px]" onClick={() => { setRes(null); setF(EMPTY); }}>Check another advert</Button>
