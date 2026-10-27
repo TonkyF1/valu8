@@ -1456,7 +1456,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     // logged alongside the live figure for evaluation. It does NOT set the price yet —
     // held-out accuracy has not beaten the current path (see docs/own-comps-pricing.md).
     let ownCompsShadow: Record<string, unknown> | undefined;
-    let ownForCap: { privatePrice: number; level: string; nComps: number; confidenceScore: number; unavailable?: boolean } | null = null;
+    let ownForCap: { privatePrice: number; level: string; nComps: number; confidenceScore: number; unavailable?: boolean; dealerPrice?: number; perf?: boolean } | null = null;
     try {
       const oc = valueWithOwnComps({
         make: body.make, model: body.model, variant: body.variant, year: body.year, mileage: pricedMiles,
@@ -1470,7 +1470,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         adjustments: oc.adjustments.map((a) => ({ key: a.key, pct: a.pct, basis: a.basis })),
       };
       debugInfo.ownComps = { ...ownCompsShadow, nearest: oc.nearest, perfKey: oc.perfKey, trimUpliftPct: oc.trimUpliftPct };
-      ownForCap = { privatePrice: oc.privatePrice, level: oc.level, nComps: oc.nComps, confidenceScore: oc.confidenceScore, unavailable: oc.unavailable };
+      ownForCap = { privatePrice: oc.privatePrice, level: oc.level, nComps: oc.nComps, confidenceScore: oc.confidenceScore, unavailable: oc.unavailable,
+        dealerPrice: oc.dealerPrice, perf: !!oc.perfKey };
     } catch (e) {
       console.warn("ownComps shadow failed", e);
     }
@@ -1518,7 +1519,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     let ensembleShadow: Record<string, unknown> | null = null;
     try {
       const pmE = preAi ? { private: preAi.pmWithMot ?? preAi.pm.private.price, low: preAi.pm.private.low * preAi.motAdj.factor, high: preAi.pm.private.high * preAi.motAdj.factor } : null;
-      ensembleShadow = ensemble({ pm: pmE, ownComps: ownForCap, ai: dataSource === "ai_estimate" && !valuationUnavailable ? values.privateSale : null } as any) as any;
+      // ens-2: confidence-weighted pm/own-comps blend + retail figure (see _shared/ensemble.ts)
+      const ctx = { year: body.year, currentYear: CURRENT_YEAR, pmNModel: preAi?.pm.private.n_model ?? null, ocConfidence: ownForCap?.confidenceScore ?? null,
+        ocLevel: ownForCap?.level ?? null, perf: !!ownForCap?.perf, pmDealer: preAi ? preAi.pm.dealer.price * preAi.motAdj.factor : null, ocDealer: ownForCap?.dealerPrice ?? null };
+      ensembleShadow = ensemble({ pm: pmE, ownComps: ownForCap, ai: dataSource === "ai_estimate" && !valuationUnavailable ? values.privateSale : null, ctx } as any) as any;
     } catch (e) { console.warn("ensemble shadow failed", e); }
     const anchorShadow = {
       mode: anchorMode, arm, price: anchorInput ? anchorPrice(anchorInput) : null,

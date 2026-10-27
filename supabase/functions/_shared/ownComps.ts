@@ -24,7 +24,7 @@ export interface OwnCompsParams {
   seg: Record<OwnSegment, { a: number; age: number; h3: number; h8: number; h15: number; mi: number }>;
   dealer: number; privOld: number; hiMi: number; cond: number; auto: number; diesel: number;
   /** Dealer normalisation: dealer ask = private * (1 + m) + F (fixed prep/warranty cost + margin). null = dummy-variable model. */
-  dn: { F: number; m: number } | null;
+  dn: DealerNorm | null;
   sigma: number; trim: Record<string, number>; k: { model: number; family: number; makeSeg: number }; bw: { year: number; lnMi: number };
 }
 export interface OwnCompsResult {
@@ -117,18 +117,27 @@ function feats(r: Row): number[] {
   return f;
 }
 
-/** Fitted by grid search on held-in CV (scripts/owncomps): dealer ask ~ private x 1.10 + £1,500. */
-export const DEALER_NORM = { F: 1500, m: 0.10 };
+/** Fitted by grid search on held-in CV (scripts/owncomps): dealer ask ~ private x 1.10 + £1,500.
+ * 2026-10-27: when PRICING a dealer figure the fixed add-on ramps in for cheap cars (0 at a £800 private value, full £1,500
+ * from £3,000): harvest split A dealer asks run only ~+£230 over private x1.10 under £1.5k and ~+£800 at £1.5-2.5k.
+ * Held-out B dealer<£5k (ens-2) 15.7% -> 13.6%; 40-car blind dealer<£5k 41.5% -> 28.0%. */
+export const DEALER_NORM: DealerNorm = { F: 1500, m: 0.10, lo: 800, hi: 3000 };
+export interface DealerNorm { F: number; m: number; lo?: number; hi?: number }
+/** Dealer ask for a private-equivalent value p. */
+export function dealerFromPrivate(p: number, dn: DealerNorm): number {
+  const ramp = dn.lo != null && dn.hi != null ? Math.min(1, Math.max(0, (p - dn.lo) / (dn.hi - dn.lo))) : 1;
+  return p * (1 + dn.m) + dn.F * ramp;
+}
 export interface OwnCompsModel { params: OwnCompsParams; rows: Row[] }
 
-export function fitOwnComps(train: CompListing[], opts: Partial<Pick<OwnCompsParams, "k" | "bw">> & { refYear?: number; trimK?: number; priorK?: number; dn?: { F: number; m: number } | null } = {}): OwnCompsModel {
+export function fitOwnComps(train: CompListing[], opts: Partial<Pick<OwnCompsParams, "k" | "bw">> & { refYear?: number; trimK?: number; priorK?: number; dn?: DealerNorm | null } = {}): OwnCompsModel {
   const refYear = opts.refYear ?? 2026;
   const dn = opts.dn === undefined ? DEALER_NORM : opts.dn;
   const rows = train.filter((l) => l.price > 0 && l.year > 1980).map((l) => {
     const seller = String(l.seller ?? "private");
     if (!dn || seller !== "dealer") return toRow(l, refYear, l.price, seller);
     // Dealer asks are converted to private-equivalent before fitting, so every comp speaks the same currency.
-    const r = toRow(l, refYear, l.price, seller); r.dealer = 0; r.lp = Math.log(Math.max(250, (l.price - dn.F) / (1 + dn.m))); return r;
+    const r = toRow(l, refYear, l.price, seller); r.dealer = 0; r.lp = Math.log(Math.max(250, (l.price - dn.F) / (1 + dn.m))); return r; // fixed F here: ramping it in training too was worse on the 40-car blind set
   });
   const X = rows.map(feats), y = rows.map((r) => r.lp);
   // Ridge: intercepts free; slopes shrunk toward a pooled "all cars" prior curve (fitted first) so thin
@@ -224,7 +233,7 @@ export function priceOwnComps(model: OwnCompsModel, q: CompQuery): OwnCompsResul
   const level: OwnCompsResult["level"] = mod.length >= 2 ? "model" : fam.length >= 2 ? "family" : makeSeg.length >= 3 ? "make_segment" : "global";
   const lpPriv = curve(p, r) + off;
   const privatePrice = Math.round(Math.exp(lpPriv) / 50) * 50;
-  const dealerPrice = p.dn ? Math.round((Math.exp(lpPriv) * (1 + p.dn.m) + p.dn.F) / 50) * 50 : Math.round(Math.exp(curve(p, { ...r, dealer: 1 }) + off) / 50) * 50;
+  const dealerPrice = p.dn ? Math.round(dealerFromPrivate(Math.exp(lpPriv), p.dn) / 50) * 50 : Math.round(Math.exp(curve(p, { ...r, dealer: 1 }) + off) / 50) * 50;
   // Confidence: effective comps at the most specific level, how scattered those comps are, and how far
   // (in years) the nearest comp is from this car. make_segment / global levels are capped at Low.
   const L = level === "model" ? L3 : level === "family" ? L2 : L1;
