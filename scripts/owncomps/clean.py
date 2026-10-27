@@ -51,6 +51,9 @@ for c in ['year','mileage','price']: d[c]=pd.to_numeric(d[c],errors='coerce')
 bad=~d.seller.isin(['dealer','private']) | ~d.year.between(1985,2026) | ~(d.price>=300) | (d.price>=150000) | d.mileage.isna() | (d.mileage>350000)
 log['malformed_or_impossible']=int(bad.sum()); d=d[~bad].copy()
 d['year']=d.year.astype(int); d['mileage']=d.mileage.astype(int)
+# implausible mileage on a 3+ year-old car (typically entered in thousands: '71' = 71k); its true mileage is unknown -> drop
+lm=(d.mileage<1000)&(d.year<=2023)
+log['implausible_low_mileage']=int(lm.sum()); d=d[~lm]
 # placeholder prices like 123456 / 1234 / 99999
 ph=d.price.isin([1234,12345,123456,99999,999999,11111])
 log['placeholder_price']=int(ph.sum()); d=d[~ph]

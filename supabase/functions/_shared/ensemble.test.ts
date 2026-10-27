@@ -23,3 +23,15 @@ Deno.test("missing sources degrade gracefully", () => {
   assertEquals(ensemble({ pm: null, ai: 3000 })!.private, 3000);
   assertEquals(ensemble({ pm, ownComps: { privatePrice: 4000, unavailable: true } })!.private, 5000);
 });
+Deno.test("ens-2: confidence-weighted pm/oc blend, perf uplift, retail figure", () => {
+  const ctx = { year: 2018, currentYear: 2026, pmNModel: 300, ocConfidence: 0.7, ocLevel: "model", perf: false, pmDealer: 6200, ocDealer: 6000 };
+  const e = ensemble({ pm, ownComps: { privatePrice: 4600 }, ctx })!;
+  assertEquals(e.version, "ens-2"); assert(e.weights.pm > 0.5 && e.weights.pm < 0.75, String(e.weights.pm));
+  assert(e.private > 4600 && e.private < 5000, String(e.private));
+  assert(e.retail && e.retail.price > e.private && e.retail.low < e.retail.price && e.retail.price < e.retail.high);
+  const thin = ensemble({ pm, ownComps: { privatePrice: 4600 }, ctx: { ...ctx, pmNModel: 3 } })!;
+  assert(thin.weights.pm < e.weights.pm, "fewer pm training examples -> lean on own-comps");
+  const perf = ensemble({ pm, ownComps: { privatePrice: 4600 }, ctx: { ...ctx, perf: true } })!;
+  assert(perf.private > e.private * 1.05, "perf cars get the fitted ~8% uplift");
+  assertEquals(ensemble({ pm, ownComps: { privatePrice: 4000 } })!.version, "ens-1"); // no ctx -> unchanged ens-1
+});

@@ -58,3 +58,15 @@ Deno.test("depreciation curve is monotone in age for nearly-new cars", () => {
     assert(p <= prev, `${y}: ${p} > ${prev}`); prev = p;
   }
 });
+Deno.test("embedded data decodes to the original tuple shape", async () => {
+  const { OWN_COMPS_ROWS } = await import("./ownCompsData.ts");
+  assert(OWN_COMPS_ROWS.length > 20000);
+  const r = OWN_COMPS_ROWS[0];
+  assertEquals(r.length, 10); assert(typeof r[0] === "string" && typeof r[1] === "string" && typeof r[2] === "string" && r[8] > 0);
+});
+Deno.test("dealer add-on ramps in for cheap cars", async () => {
+  const { dealerFromPrivate, DEALER_NORM } = await import("./ownComps.ts");
+  assertEquals(Math.round(dealerFromPrivate(700, DEALER_NORM)), 770);
+  assertEquals(Math.round(dealerFromPrivate(1900, DEALER_NORM)), 2840); // 1900*1.1 + 1500*0.5
+  assertEquals(Math.round(dealerFromPrivate(8000, DEALER_NORM)), 10300);
+});
