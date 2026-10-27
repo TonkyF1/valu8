@@ -1,4 +1,5 @@
 import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
+import { normaliseReportPricing } from "@/lib/askingPrice";
 import type jsPDF from "jspdf";
 import type { ValuationReport } from "@/lib/valuation";
 import { format } from "date-fns";
@@ -93,9 +94,9 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   // Three value tiers
   if (!valuationUnavailable) {
     const tiers = [
-      { label: "Dealer Trade-in", value: r.values.dealerTradeIn },
-      { label: "Private Sale (Best)", value: r.values.privateSale, highlight: true },
-      { label: "Dealer Retail", value: r.values.dealerRetail },
+      { label: "Dealer Trade-in", value: normaliseReportPricing(r).tradeIn },
+      { label: "Private Sale (Best)", value: normaliseReportPricing(r).privateSale, highlight: true },
+      { label: "Dealer Retail", value: normaliseReportPricing(r).retail },
     ];
     const tierW = 150;
     const tierStart = pageW - margin - tierW * 3 - 20;

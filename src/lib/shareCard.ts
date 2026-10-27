@@ -1,4 +1,5 @@
 import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
+import { normaliseReportPricing } from "@/lib/askingPrice";
 // Branded 1200x630 share image for a report, drawn client-side on a canvas.
 // (Per-report OG tags for link previews need server rendering, which this SPA host
 // doesn't provide; this gives users an image they can post or send instead.)
@@ -21,7 +22,7 @@ export function drawShareCard(v: { year: number; make: string; model: string; mi
   g.fillStyle = "#a1a1aa"; g.font = "400 30px system-ui, -apple-system, Segoe UI, sans-serif";
   g.fillText(`${v.mileage.toLocaleString("en-GB")} miles`, 72, 250);
   if (!r.valuationUnavailable && r.values) {
-    const tiers: [string, number][] = [["Part-exchange", r.values.dealerTradeIn], ["Private sale", r.values.privateSale], ["Dealer retail", r.values.dealerRetail]];
+    const tiers: [string, number][] = (() => { const cp = normaliseReportPricing(r); return [["Part-exchange", cp.tradeIn], ["Private sale", cp.privateSale], ["Dealer retail", cp.retail]] as [string, number][]; })();
     tiers.forEach(([label, val], i) => {
       const x = 72 + i * 360, y = 330, hi = i === 1;
       g.fillStyle = hi ? "rgba(0,212,200,0.16)" : "rgba(255,255,255,0.05)";
