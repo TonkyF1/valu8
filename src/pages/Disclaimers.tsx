@@ -4,10 +4,11 @@ import { Footer } from "@/components/Footer";
 import { ShieldAlert, Database, Sparkles, Scale } from "lucide-react";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 import { operatorSentence } from "@/lib/legal";
 
 export default function Disclaimers() {
-  useSeo({ title: "Disclaimers & Data Sources — Valu8", description: "What a Valu8 report is and is not: data sources, AI use and limitations.", path: "/disclaimers" });
+  useSeo(getRouteMeta("/disclaimers"));
   return (
     <div className="min-h-screen flex flex-col">
       <TestModeBanner /><Header />

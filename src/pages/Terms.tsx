@@ -4,9 +4,10 @@ import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 
 export default function Terms() {
-  useSeo({ title: "Terms of Service — Valu8", description: "The terms for using Valu8 car valuations.", path: "/terms" });
+  useSeo(getRouteMeta("/terms"));
   return (
     <div className="min-h-screen flex flex-col">
       <TestModeBanner /><Header />

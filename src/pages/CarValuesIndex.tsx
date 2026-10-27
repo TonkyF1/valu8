@@ -3,9 +3,10 @@ import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { CAR_MODELS } from "@/data/carModels";
 import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 
 export default function CarValuesIndex() {
-  useSeo({ title: "Car values by make and model | Valu8", description: "Free valuations for the UK's most popular cars, from the Ford Fiesta to the Tesla Model 3.", path: "/car-values" });
+  useSeo(getRouteMeta("/car-values"));
   const makes = [...new Set(CAR_MODELS.map((m) => m.make))].sort();
   return (
     <div className="min-h-screen flex flex-col">

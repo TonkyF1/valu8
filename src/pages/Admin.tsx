@@ -1,3 +1,5 @@
+import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { Loader2, ShieldCheck } from "lucide-react";
@@ -11,7 +13,7 @@ export default function Admin() {
   const { user } = useAuth();
   const [state, setState] = useState<"loading" | "forbidden" | "ok">("loading");
   const [stats, setStats] = useState<Record<string, number>>({});
-  useEffect(() => { document.title = "Admin — Valu8"; }, []);
+  useSeo(getRouteMeta("/admin"));
   useEffect(() => {
     if (!user) return;
     (supabase as any).rpc("admin_stats").then(({ data, error }: any) => {

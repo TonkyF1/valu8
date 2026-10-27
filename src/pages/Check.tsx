@@ -11,6 +11,7 @@ import { AccuracyDisclaimer } from "@/components/AccuracyDisclaimer";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 import { posthog } from "@/lib/posthog";
 import { functionErrorBody } from "@/lib/guest";
 import { checkAdvert, parseMoney, type AdvertCheck, type AdvertVerdict } from "@/lib/advertCheck";
@@ -39,7 +40,7 @@ export default function Check() {
   const [res, setRes] = useState<(AdvertCheck & { asking: number; sample: number; basis: string; source?: string }) | null>(null);
   const [noData, setNoData] = useState(false);
   const [guestLimit, setGuestLimit] = useState<string | null>(null);
-  useSeo({ title: "Is this used car a fair price? Free advert price checker | Valu8", description: "Enter a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against UK market data.", path: "/check" });
+  useSeo(getRouteMeta("/check"));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

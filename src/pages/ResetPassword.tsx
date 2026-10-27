@@ -1,3 +1,5 @@
+import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,8 +17,9 @@ export default function ResetPassword() {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
 
+  useSeo(getRouteMeta("/reset-password"));
+
   useEffect(() => {
-    document.title = "Reset password — Valu8";
     // Supabase puts the recovery token in the URL hash; getSession picks it up.
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setReady(true);

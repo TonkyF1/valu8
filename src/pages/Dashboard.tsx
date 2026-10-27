@@ -1,3 +1,5 @@
+import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -50,7 +52,7 @@ export default function Dashboard() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
 
-  useEffect(() => { document.title = "Dashboard — Valu8"; }, []);
+  useSeo(getRouteMeta("/dashboard"));
 
   useEffect(() => {
     if (!user) return;
