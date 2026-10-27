@@ -226,7 +226,7 @@ export default function Profile() {
             <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary grid place-items-center"><Mail className="h-5 w-5" /></span>
             <div>
               <h2 className="font-semibold">Email preferences</h2>
-              <p className="text-xs text-muted-foreground">We always email you when a report is ready.</p>
+              <p className="text-xs text-muted-foreground">Choose whether we send you follow-ups and tips.</p>
             </div>
           </div>
           <MarketingConsentSetting />
