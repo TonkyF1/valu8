@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useSeo } from "@/lib/seo";
-import { getRouteMeta } from "@/data/routeMeta";
 
 // Paid checkout stays hidden until billing is switched on (set VITE_BILLING_ENABLED=true).
 const BILLING_ENABLED = import.meta.env.VITE_BILLING_ENABLED === "true";
@@ -41,7 +40,7 @@ export default function Pricing() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [busy, setBusy] = useState<"checkout" | "portal" | null>(null);
-  useSeo(getRouteMeta("/pricing"));
+  useSeo({ title: "Pricing — Valu8", description: "Valu8 is free during early access: valuations using UK market data from our advert database, MOT history, photo condition analysis and ready-to-post adverts.", path: "/pricing" });
   useEffect(() => { if (params.get("billing") === "cancelled") toast("Checkout cancelled"); }, [params]);
 
   const go = async (fn: "stripe-checkout" | "stripe-portal") => {
