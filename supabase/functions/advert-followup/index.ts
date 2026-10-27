@@ -55,12 +55,8 @@ Deno.serve(async (req) => {
       const { data: row } = await scope(admin.from("advert_checks").select("id, seller_type, followup_snoozes")).eq("id", id).maybeSingle();
       if (!row) return json({ error: "Not found." }, 404);
       const now = new Date();
-      const { error: oErr } = await admin.from("check_outcomes").upsert({
-        kind: "advert", item_id: id, source: "user", outcome_type: outcome, outcome_price: price,
-        outcome_date: date, seller_type: row.seller_type, recorded_at: now.toISOString(),
-      }, { onConflict: "kind,item_id", ignoreDuplicates: false });
-      if (oErr) {
-        // Partial unique index can't be targeted by upsert; fall back to update-or-insert.
+      {
+        // One user outcome per check (partial unique index): update it, or insert the first one.
         const { data: existing } = await admin.from("check_outcomes").select("id").eq("kind", "advert").eq("item_id", id).eq("source", "user").maybeSingle();
         const rec = { outcome_type: outcome, outcome_price: price, outcome_date: date, seller_type: row.seller_type, recorded_at: now.toISOString() };
         const { error } = existing
