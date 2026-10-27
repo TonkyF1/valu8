@@ -47,6 +47,7 @@ import { claimGuestValuations, clearReturnTo, isGuestValuation, setReturnTo } fr
 import { priceBandGeometry } from "@/lib/priceBand";
 import { ReportNav, SoldItPrompt, useReportSections } from "@/components/report/ReportNav";
 import { ShareResult } from "@/components/ShareResult";
+import { MotHistoryByYear } from "@/components/report/MotHistoryByYear";
 import { MiniTier, Section, CollapsibleSection, RecBlock, SLOT_LABELS, PhotoFeedback, InsightRow } from "@/components/report/ReportParts";
 
 interface Valuation {
@@ -1087,48 +1088,7 @@ export default function Report() {
               {r.motHistory.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No prior MOT records (vehicle under 3 years old).</p>
               ) : (
-                <ol className="space-y-3">
-                  {r.motHistory.map((m, i) => (
-                    <li key={i} className={cn(i > 0 && "pt-3 border-t border-border/40")}>
-                      <div className="flex items-baseline justify-between flex-wrap gap-x-3 gap-y-1">
-                        <div className="flex items-baseline gap-2.5">
-                          <span className={cn(
-                            "text-xs font-semibold ",
-                            m.result === "Fail" ? "text-destructive" : "text-primary"
-                          )}>{m.result === "Fail" ? "Fail" : "Pass"}</span>
-                          <span className="font-medium text-sm">{format(new Date(m.date), "d MMM yyyy")}</span>
-                          {m.expiryDate && m.result !== "Fail" && (
-                            <span className="text-[11px] text-muted-foreground">· Expires {new Date(m.expiryDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</span>
-                          )}
-                        </div>
-                        {m.mileage > 0 && (
-                          <span className="text-xs text-muted-foreground tabular-nums">{m.mileage.toLocaleString()} mi</span>
-                        )}
-                      </div>
-                      {(m.failures?.length ?? 0) > 0 && (
-                        <ul className="mt-1.5 space-y-0.5">
-                          {m.failures!.map((f, k) => (
-                            <li key={k} className="text-xs text-foreground/85 leading-snug">
-                              <span className={cn("font-semibold uppercase tracking-wider mr-1.5", m.result === "Fail" ? "text-destructive" : "text-muted-foreground")}>{m.result === "Fail" ? "Fail" : "Rectified"}</span>{f}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {(m.advisories?.length ?? 0) > 0 && (
-                        <ul className="mt-1.5 space-y-0.5">
-                          {m.advisories!.map((a, k) => (
-                            <li key={k} className="text-xs text-foreground/85 leading-snug">
-                              <span className="font-semibold uppercase tracking-wider text-amber-400 mr-1.5">Advisory</span>{a}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {(!m.advisories || m.advisories.length === 0) && (!m.failures || m.failures.length === 0) && m.note && (
-                        <div className="text-xs text-muted-foreground mt-1">{m.note}</div>
-                      )}
-                    </li>
-                  ))}
-                </ol>
+                <MotHistoryByYear history={r.motHistory} />
               )}
             </CollapsibleSection>
           );

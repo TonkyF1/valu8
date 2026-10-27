@@ -1,4 +1,5 @@
 import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
+import { groupMotByYear, motYearSummary } from "@/lib/motGroups";
 import { normaliseReportPricing } from "@/lib/askingPrice";
 import type jsPDF from "jspdf";
 import type { ValuationReport } from "@/lib/valuation";
@@ -226,17 +227,24 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   if (r.motHistory.length > 0) {
     ensureSpace(60);
     y = section(doc, "MOT HISTORY", y, margin, pageW);
-    r.motHistory.forEach(m => {
-      ensureSpace(28);
+    groupMotByYear(r.motHistory).forEach(g => {
+      ensureSpace(40);
       doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...DARK);
-      doc.text(format(new Date(m.date), "d MMM yyyy"), margin, y);
-      const color: [number, number, number] = m.result === "Fail" ? [220, 38, 38] : TEAL;
-      doc.setTextColor(...color);
-      doc.text(m.result === "Fail" ? "Fail" : "Pass", margin + 100, y);
-      doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
-      doc.text(`${m.mileage.toLocaleString()} mi`, pageW - margin - 80, y);
-      y += 13;
-      y = wrappedText(doc, m.note, margin, y, pageW - margin * 2, 9, 12, MUTED);
+      (doc.splitTextToSize(motYearSummary(g), pageW - margin * 2) as string[]).forEach(line => { doc.text(line, margin, y); y += 13; });
+      y += 2;
+      g.tests.forEach(m => {
+        ensureSpace(28);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...DARK);
+        doc.text(format(new Date(m.date), "d MMM yyyy"), margin + 10, y);
+        const color: [number, number, number] = m.result === "Fail" ? [220, 38, 38] : TEAL;
+        doc.setTextColor(...color); doc.setFont("helvetica", "bold");
+        doc.text(m.result === "Fail" ? "Fail" : "Pass", margin + 110, y);
+        doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
+        doc.text(`${m.mileage.toLocaleString()} mi`, pageW - margin - 80, y);
+        y += 12;
+        if (m.note) y = wrappedText(doc, m.note, margin + 10, y, pageW - margin * 2 - 10, 9, 12, MUTED);
+        y += 4;
+      });
       y += 6;
     });
   }
