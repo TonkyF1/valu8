@@ -22,6 +22,7 @@ import { similarAdverts, anchorPrice, anchorBlock, anchorDeviation, anchorArm, D
 import { ensemble } from "../_shared/ensemble.ts";
 import { engineValue, engineLedger } from "../_shared/engine.ts";
 import { coherentPricing } from "../_shared/coherentPricing.ts";
+import { cheapPriceRange } from "../_shared/cheapRange.ts";
 import { aiSafetyCap } from "../_shared/aiCap.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
@@ -1527,6 +1528,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
           ownComps: ownForCap,
           ctx: { year: body.year, currentYear: CURRENT_YEAR, pmNModel: preAi.pm.private.n_model ?? null, ocConfidence: ownForCap.confidenceScore ?? null,
             ocLevel: ownForCap.level ?? null, perf: !!ownForCap.perf, pmDealer: preAi.pm.dealer.price * preAi.motAdj.factor, ocDealer: ownForCap.dealerPrice ?? null },
+          motFactor: preAi.motAdj.factor,
         });
         const engDbg: Record<string, unknown> | null = e ? { version: e.version, private: e.private, low: e.low, high: e.high, retail: e.retail, confident: e.confident, reason: e.reason, aiPrivate: values.privateSale, shown: false } : null;
         debugInfo.engine = engDbg;
@@ -1675,6 +1677,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       conditionLabel: ai.conditionLabel,
       values,
       valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
+      // Below £5,000 (our estimate) the headline is a measured ~70% range; values.privateSale stays the midpoint (see _shared/cheapRange.ts).
+      priceRange: valuationUnavailable ? undefined : (cheapPriceRange(values.privateSale) ?? undefined),
       askRange: askRangeOut,
       valueReasoning: sanitizeNarrativeYears(valuationUnavailable || engineShown ? pricingReasoning : ai.valueReasoning, body.year, CURRENT_YEAR, allowedNarrativeYears),
       marketConfidence: confidence,

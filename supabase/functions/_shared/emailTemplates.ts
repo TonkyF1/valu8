@@ -3,6 +3,7 @@
 // figures the report page shows (normaliseReportPricing mirror); nothing here changes pricing.
 import { renderEmail, makeAnswerToken, answerUrl, gbp, miles, ukDate, SITE } from "./email.ts";
 import { coherentPricing } from "./coherentPricing.ts";
+import { cheapPriceRange, reportPriceRange, formatPriceRange } from "./cheapRange.ts";
 
 export const carTitle = (v: { registration?: string | null; make: string; model: string }) =>
   v.registration?.trim() ? v.registration.trim().toUpperCase() : `${v.make} ${v.model}`;
@@ -63,11 +64,17 @@ export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubs
       ...(pr && pr.tradeIn > 0 ? [{ label: "Part-ex", value: gbp(pr.tradeIn) }] : []),
       ...(pr && pr.retail > 0 ? [{ label: "Dealer", value: gbp(pr.retail) }] : []),
     ];
+    // Under £5,000 (our estimate) the headline is a range, as on the report page (see cheapRange.ts).
+    const cheap = pr ? reportPriceRange(r, price) : cheapPriceRange(price);
     const { html, text } = renderEmail({
-      preview: `${name}: ${gbp(price)} realistic private sale${low > 0 && high > 0 ? `, range ${gbp(low)}–${gbp(high)}` : ""}.`,
+      preview: cheap
+        ? `${name}: realistic private sale ${formatPriceRange(cheap)}.`
+        : `${name}: ${gbp(price)} realistic private sale${low > 0 && high > 0 ? `, range ${gbp(low)}–${gbp(high)}` : ""}.`,
       heading: `Your report for ${name} is ready`,
       carLine: carLine(item),
-      price: { label: "Realistic private sale", value: gbp(price), sub: low > 0 && high > 0 ? `Range ${gbp(low)} – ${gbp(high)}` : null },
+      price: cheap
+        ? { label: "Realistic private sale", value: formatPriceRange(cheap, " – "), sub: "Prices vary more under £5,000, so we show a range" }
+        : { label: "Realistic private sale", value: gbp(price), sub: low > 0 && high > 0 ? `Range ${gbp(low)} – ${gbp(high)}` : null },
       stats,
       facts: [motFact(r, item.mot_expiry), conditionFact(r, item.photo_urls)].filter(Boolean) as string[],
       buttons: [{ label: "View your full report", url: `${SITE}/valuation/${item.id}`, primary: true }],
@@ -77,11 +84,13 @@ export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubs
     return { subject, html, text };
   }
   const low = Number(item.estimate_dealer_low) || 0, high = Number(item.estimate_dealer_high) || 0;
+  const cheap = cheapPriceRange(Number(item.estimate_private));
+  const fair = cheap ? formatPriceRange(cheap, " – ") : gbp(item.estimate_private);
   const { html, text } = renderEmail({
-    preview: `Fair private price ${gbp(item.estimate_private)} vs asking ${gbp(item.asking_price)}.`,
+    preview: `Fair private price ${cheap ? formatPriceRange(cheap) : gbp(item.estimate_private)} vs asking ${gbp(item.asking_price)}.`,
     heading: `Your advert check for ${name} is ready`,
     carLine: carLine(item),
-    price: { label: "Fair private price", value: gbp(item.estimate_private), sub: item.asking_price > 0 ? `Advertised at ${gbp(item.asking_price)}` : null },
+    price: { label: "Fair private price", value: fair, sub: item.asking_price > 0 ? `Advertised at ${gbp(item.asking_price)}` : null },
     stats: low > 0 && high > 0 ? [{ label: "Dealer range", value: `${gbp(low)} – ${gbp(high)}` }] : [],
     buttons: [{ label: "View your check", url: `${SITE}/dashboard`, primary: true }],
     note: "Your check is saved in your Valu8 account.",
