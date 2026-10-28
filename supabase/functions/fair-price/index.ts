@@ -7,6 +7,8 @@ import { corsHeaders, guard, json, checkLimit, clientIp, envInt, adminClient } f
 import { sanitiseLink, sellerTypeOf, privateFromDealer, sha256Hex, GUEST_TOKEN_RE } from "../_shared/adverts.ts";
 import { fairPrice } from "../_shared/insights.ts";
 import { valueWithOwnComps } from "../_shared/ownCompsAdjust.ts";
+import { pricePmBoth } from "../_shared/priceModel.ts";
+import { engineValue } from "../_shared/engine.ts";
 
 type Band = { low: number; mid: number; high: number };
 function verdictFor(asking: number, b: Band, sample: number) {
@@ -19,8 +21,19 @@ function verdictFor(asking: number, b: Band, sample: number) {
 function ownCompsBand(make: string, model: string, variant: string | undefined, year: number, mileage: number) {
   const oc = valueWithOwnComps({ make, model, variant, year, mileage, adText: variant, currentYear: new Date().getUTCFullYear() });
   if (oc.unavailable || !(oc.privatePrice > 0) || !(oc.dealerPrice > 0)) return null;
-  const k = oc.dealerPrice / oc.privatePrice;
   const r = (n: number) => Math.round(n / 50) * 50;
+  // ens-3 dealer (retail) figure when the engine is confident: pm-1 + own-comps blend, retail >= private (_shared/engine.ts).
+  try {
+    const cy = new Date().getUTCFullYear();
+    const pm = pricePmBoth({ make, model, variant: variant ?? null, year, mileage, fuel: null, gearbox: null, body: null, engine_cc: null, desc: null });
+    const e = engineValue({ pm: { private: pm.private.price, low: pm.private.low, high: pm.private.high }, ownComps: { privatePrice: oc.privatePrice, unavailable: oc.unavailable },
+      ctx: { year, currentYear: cy, pmNModel: pm.private.n_model ?? null, ocConfidence: oc.confidenceScore, ocLevel: oc.level, perf: !!oc.perfKey, pmDealer: pm.dealer.price, ocDealer: oc.dealerPrice } });
+    if (e && e.confident) {
+      const k = e.retail / e.private;
+      return { band: { low: r(e.low * k), mid: r(e.retail), high: r(e.high * k) }, confidence: oc.confidence, nComps: oc.nComps, level: oc.level };
+    }
+  } catch (err) { console.warn("engine band failed", err); }
+  const k = oc.dealerPrice / oc.privatePrice;
   return { band: { low: r(oc.low * k), mid: r(oc.dealerPrice), high: r(oc.high * k) }, confidence: oc.confidence, nComps: oc.nComps, level: oc.level };
 }
 

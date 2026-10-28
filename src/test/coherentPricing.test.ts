@@ -14,7 +14,7 @@ function assertOrdered(c: CoherentPricing) {
 }
 
 describe("coherentPricing", () => {
-  it("screenshot regression: £4,850 trade / ~£5,400 private / £4,900–£5,900 range / £7,400 retail / £250 buffer (retail now capped at private × 1.25)", () => {
+  it("screenshot regression: £4,850 trade / ~£5,400 private / £4,900–£5,900 range / £7,400 retail / £250 buffer (retail within the private × 1.5 bound)", () => {
     const c = coherentPricing({ privateSale: 5400, tradeIn: 4850, retail: 7400, privateLow: 4900, privateHigh: 5900, buffer: 250 });
     assertOrdered(c);
     expect(c.askLow).toBe(5650);           // realistic + £250 buffer
@@ -22,19 +22,20 @@ describe("coherentPricing", () => {
     expect(c.privateHigh).toBe(5650);      // private range touches ask range
     expect(c.askLow).toBeLessThan(5700);   // no longer an unrelated +5..15% band
     expect(c.scaleLow).toBe(4850);
-    expect(c.retail).toBe(6750);          // 5400 × 1.25 cap (was 7400)
-    expect(c.scaleHigh).toBe(6750);
+    expect(c.retail).toBe(7400);          // 7400 / 5400 = 1.37x, inside the 1.5x bound (measured dealer premium ~1.25x at £5-10k)
+    expect(c.scaleHigh).toBe(7400);
   });
 
-  it("caps shown dealer retail: MINI Cooper live test (private £5,650, stored retail £7,750)", () => {
-    const c = coherentPricing({ privateSale: 5637, retail: 7750 });
+  it("caps shown dealer retail: MINI Cooper (private £5,650, stored retail £9,750)", () => {
+    const c = coherentPricing({ privateSale: 5637, retail: 9750 });
     assertOrdered(c);
     expect(c.privateSale).toBe(5650);     // one rounded figure everywhere
-    expect(c.retail).toBe(7050);          // ≤ 5650 × 1.25
+    expect(c.retail).toBe(8450);          // ≤ 5650 × 1.5
   });
 
-  it("uses × 1.20 cap at £10k+ private and a × 1.08 floor", () => {
-    expect(coherentPricing({ privateSale: 12000, retail: 20000 }).retail).toBeLessThanOrEqual(14400);
+  it("uses × 1.7 under £5k, × 1.4 cap at £10k+ private and a × 1.08 floor", () => {
+    expect(coherentPricing({ privateSale: 2000, retail: 5000 }).retail).toBe(3400);
+    expect(coherentPricing({ privateSale: 12000, retail: 20000 }).retail).toBeLessThanOrEqual(16800);
     expect(coherentPricing({ privateSale: 8000, retail: 7000 }).retail).toBeGreaterThanOrEqual(8640);
   });
 

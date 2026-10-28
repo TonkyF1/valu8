@@ -20,6 +20,7 @@ import { pricePmBoth, blendWithOwnComps, resolveBody } from "../_shared/priceMod
 import { motSignals, motAdjustment as motSignalAdjustment } from "../_shared/motSignals.ts";
 import { similarAdverts, anchorPrice, anchorBlock, anchorDeviation, anchorArm, DEVIATION_REASON_PROPERTY } from "../_shared/aiAnchor.ts";
 import { ensemble } from "../_shared/ensemble.ts";
+import { engineValue, engineLedger } from "../_shared/engine.ts";
 import { coherentPricing } from "../_shared/coherentPricing.ts";
 import { aiSafetyCap } from "../_shared/aiCap.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
@@ -1456,6 +1457,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     // logged alongside the live figure for evaluation. It does NOT set the price yet —
     // held-out accuracy has not beaten the current path (see docs/own-comps-pricing.md).
     let ownCompsShadow: Record<string, unknown> | undefined;
+    let engineShown = false;
     let ownForCap: { privatePrice: number; level: string; nComps: number; confidenceScore: number; unavailable?: boolean; dealerPrice?: number; perf?: boolean } | null = null;
     try {
       const oc = valueWithOwnComps({
@@ -1513,6 +1515,40 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         rangeLow = Math.min(roundToGrain(rangeLow * k), values.privateSale);
         rangeHigh = Math.max(roundToGrain(rangeHigh * k), values.privateSale);
       }
+    }
+
+    // ens-3 engine = the SHOWN price on the no-MarketCheck path (see _shared/engine.ts): pm-1 + own-comps from our
+    // collected adverts, MOT-history signals, retail >= private. The AI estimate above stays as the fallback when the
+    // engine is not confident (no same-model comps, 25+ year-old car) or anything fails. Never throws.
+    if (dataSource === "ai_estimate" && !valuationUnavailable && values.privateSale > 0 && preAi && ownForCap) {
+      try {
+        const e = engineValue({
+          pm: { private: preAi.pm.private.price * preAi.motAdj.factor, low: preAi.pm.private.low * preAi.motAdj.factor, high: preAi.pm.private.high * preAi.motAdj.factor },
+          ownComps: ownForCap,
+          ctx: { year: body.year, currentYear: CURRENT_YEAR, pmNModel: preAi.pm.private.n_model ?? null, ocConfidence: ownForCap.confidenceScore ?? null,
+            ocLevel: ownForCap.level ?? null, perf: !!ownForCap.perf, pmDealer: preAi.pm.dealer.price * preAi.motAdj.factor, ocDealer: ownForCap.dealerPrice ?? null },
+        });
+        const engDbg: Record<string, unknown> | null = e ? { version: e.version, private: e.private, low: e.low, high: e.high, retail: e.retail, confident: e.confident, reason: e.reason, aiPrivate: values.privateSale, shown: false } : null;
+        debugInfo.engine = engDbg;
+        if (e && e.confident) {
+          // MOT condition is already inside the figures (motSignals); add only declared write-off/spares and clocking.
+          const led = engineLedger({ motParts: preAi.motAdj.parts, motPct: preAi.motAdj.pct, declared: declaredStatusItems(serviceText),
+            clocking: mileageCheck.status === "clocking" && !preAi.motAdj.parts.some((x: any) => x.key === "odometer_drop") });
+          const P = roundToGrain(Math.max(100, e.private * led.factor));
+          const R = roundToGrain(Math.max(e.retail * led.factor, P * 1.08));
+          values = { dealerTradeIn: roundToGrain(tradeFrom(R, P)), privateSale: P, dealerRetail: R };
+          rangeLow = Math.min(roundToGrain(e.low * led.factor), P);
+          rangeHigh = Math.max(roundToGrain(e.high * led.factor), P);
+          adjustments.length = 0;
+          for (const it of led.items) adjustments.push(it);
+          const n = ownForCap.nComps ?? 0;
+          confidence = ownForCap.level === "model" && n >= 20 ? "Medium" : "Low";
+          confidenceReason = `Priced from ${n.toLocaleString("en-GB")} comparable UK adverts we have collected for this ${ownForCap.level === "model" ? "model" : "model family"}, matched on age, mileage, fuel and gearbox, blended with our trained pricing model.`;
+          pricingReasoning = `Based on ${n.toLocaleString("en-GB")} similar UK adverts and our pricing model, adjusted for this car's MOT history.`;
+          engineShown = true;
+          debugInfo.engine = { ...engDbg, shown: true, private: P, retail: R, ledgerPct: led.netPct };
+        }
+      } catch (err) { console.warn("engine failed; keeping AI estimate", err); }
     }
 
     // Ensemble shadow (never affects displayed prices; never throws).
@@ -1640,7 +1676,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       values,
       valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
       askRange: askRangeOut,
-      valueReasoning: sanitizeNarrativeYears(valuationUnavailable ? pricingReasoning : ai.valueReasoning, body.year, CURRENT_YEAR, allowedNarrativeYears),
+      valueReasoning: sanitizeNarrativeYears(valuationUnavailable || engineShown ? pricingReasoning : ai.valueReasoning, body.year, CURRENT_YEAR, allowedNarrativeYears),
       marketConfidence: confidence,
       marketConfidenceReason: confidenceReason,
       pricingSource: dataSource,
@@ -1654,6 +1690,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         if (mc?.count) {
           sources.push(`Priced from the ${mc.count.toLocaleString()} closest-matching UK listings (MarketCheck)`);
         }
+        if (engineShown && ownForCap) sources.push(`Priced from ${(ownForCap.nComps ?? 0).toLocaleString("en-GB")} comparable UK adverts collected by Valu8, plus our trained pricing model`);
         if (photoUrls.length > 0) sources.push(`${photoUrls.length}-photo Vision AI condition scan (${(ai.conditionScore ?? 0).toFixed(1)}/10)`);
         if (motEntries.length > 0) sources.push(`${motEntries.length} DVSA MOT record${motEntries.length === 1 ? "" : "s"}`);
 
