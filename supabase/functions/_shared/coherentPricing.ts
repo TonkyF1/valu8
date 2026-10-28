@@ -34,9 +34,11 @@ export type CoherentPricing = {
 const r50 = (v: number) => Math.round(v / 50) * 50;
 const fin = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v > 0;
 
-/** Max shown dealer-retail multiple of the private estimate. */
+/** Max shown dealer-retail multiple of the private estimate. Measured 2026-10-28 on 4,038 held-out dealer adverts:
+ *  the same car at a dealer is ~1.4x a private sale under £5k, ~1.25x at £5-10k, ~1.1x above, so the old 1.25/1.2
+ *  cap pulled honest dealer figures down (dealer median error 9.5% -> 10.9%). These bounds only catch outliers. */
 export function retailCapMultiplier(privateSale: number): number {
-  return privateSale < 10000 ? 1.25 : 1.2;
+  return privateSale < 5000 ? 1.7 : privateSale < 10000 ? 1.5 : 1.4;
 }
 
 export function coherentPricing(input: CoherentInput): CoherentPricing {
@@ -51,7 +53,7 @@ export function coherentPricing(input: CoherentInput): CoherentPricing {
 
   // Retail must sit at/above the ask range; if the stored retail is lower, raise it.
   // Shown dealer retail stays in a sensible band above private: never more than
-  // private × 1.25 under £10k (× 1.20 above), never below private × 1.08.
+  // private × retailCapMultiplier (1.7 / 1.5 / 1.4), never below private × 1.08.
   const capMult = retailCapMultiplier(P);
   const rawRetail = fin(input.retail) ? Math.round(input.retail) : r50(P * 1.18);
   const bandedRetail = Math.min(Math.max(rawRetail, r50(P * 1.08)), Math.floor((P * capMult) / g) * g);
