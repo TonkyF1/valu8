@@ -30,3 +30,12 @@ Deno.test("engine ledger: MOT parts shown but not re-applied; declared items app
   assertEquals(l.items.length, 2);
   assertEquals(engineLedger({ motParts: [], motPct: 0, declared: [], clocking: true }).factor, 0.85);
 });
+
+Deno.test("engine: MOT factor moves the blended price by the full factor (not diluted by the own-comps leg)", () => {
+  const base = engineValue({ pm: { private: 3000, low: 2500, high: 3500 }, ownComps: { privatePrice: 3200 }, ctx: ctx() })!;
+  const f = 0.7;
+  const e = engineValue({ pm: { private: 3000 * f, low: 2500 * f, high: 3500 * f }, ownComps: { privatePrice: 3200 }, ctx: ctx({ pmDealer: 7000 * f }), motFactor: f })!;
+  assert(Math.abs(e.private / base.private - f) < 0.03);
+  assert(e.retail >= e.private);
+  assertEquals(engineValue({ pm: { private: 3000, low: 2500, high: 3500 }, ownComps: { privatePrice: 3200 }, ctx: ctx(), motFactor: 1 })!.private, base.private);
+});

@@ -15,12 +15,20 @@ export interface EngineIn {
   pm: { private: number; low: number; high: number } | null; // pm-1 private incl. MOT signal factor
   ownComps: { privatePrice: number; unavailable?: boolean } | null;
   ctx: EnsembleCtx;                                          // as ens-2 (pmDealer incl. MOT factor, ocDealer, ocLevel...)
+  // MOT-history factor (motSignals). The pm legs arrive already multiplied; it is applied here to the own-comps legs
+  // too, so the blended price moves by the full factor the report shows (before, the geometric blend diluted it to
+  // ~factor^0.6). Not measurable on the advert holdouts (no regs / DVSA history); sizes stay the bounded, shrunk
+  // text-proxy priors in motSignals.ts. Omitted = 1 (fair-price, harness).
+  motFactor?: number;
 }
 export interface EngineOut { version: string; private: number; low: number; high: number; retail: number; confident: boolean; reason: string; ens: EnsembleResult }
 const r50 = (x: number) => Math.round(x / 50) * 50;
 
 export function engineValue(x: EngineIn): EngineOut | null {
-  const ens = ensemble({ pm: x.pm, ownComps: x.ownComps, ai: null, ctx: x.ctx });
+  const f = x.motFactor && Number.isFinite(x.motFactor) && x.motFactor > 0 ? x.motFactor : 1;
+  const own = x.ownComps && f !== 1 ? { ...x.ownComps, privatePrice: x.ownComps.privatePrice * f } : x.ownComps;
+  const ctx = f !== 1 && x.ctx.ocDealer ? { ...x.ctx, ocDealer: x.ctx.ocDealer * f } : x.ctx;
+  const ens = ensemble({ pm: x.pm, ownComps: own, ai: null, ctx });
   if (!ens || !(ens.private > 0)) return null;
   const age = Math.max(0, (x.ctx.currentYear ?? 2026) - x.ctx.year);
   const P = r50(ens.private);
