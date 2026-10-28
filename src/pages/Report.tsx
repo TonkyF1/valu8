@@ -39,6 +39,7 @@ import { cleanReportText, marketCountLine } from "@/lib/reportText";
 import { explainValuation } from "@/lib/valuationExplainer";
 import { HowWeValue } from "@/components/HowWeValue";
 import { SaleFeedbackCard } from "@/components/SaleFeedbackCard";
+import { ValuationFeedbackCard } from "@/components/ValuationFeedbackCard";
 import { GuestMarketingConsent } from "@/components/MarketingConsent";
 import { stripSaleFeedback } from "@/lib/saleFeedback";
 import { useAuth } from "@/contexts/AuthContext";
@@ -874,6 +875,13 @@ export default function Report() {
           </div>
         </section>
 
+
+        {/* "Does this sound right?" — optional owner feedback (signed-in owner or guest owner; never on share links). Signal only: never changes pricing. */}
+        {!isShared && !valuationUnavailable && (isGuest || (user && (v as any).user_id === user.id)) && (
+          <SectionBoundary>
+            <ValuationFeedbackCard valuationId={v.id} isGuest={isGuest} />
+          </SectionBoundary>
+        )}
 
         {!isShared && user && (v as any).user_id === user.id && !valuationUnavailable && !getSaleFeedback(v.report) && <SoldItPrompt />}
         {isGuest && <GuestSavePrompt valuationId={v.id} />}

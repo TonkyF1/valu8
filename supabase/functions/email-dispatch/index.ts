@@ -1,6 +1,7 @@
 // Valu8 — scheduled email sender (Resend).
 //  mode "report"    (DB trigger on insert/update): one "report ready" email per completed valuation / advert check of a signed-in user.
-//  mode "followups" (daily): "did you buy / sell it?" 7 days after a report, only to opted-in accounts or consenting guests.
+//  mode "followups" (daily): "did you buy / sell it?" 7 days after a report, only to opted-in accounts or consenting guests
+//                   (or a signed-in owner who ticked "Email me later to ask what it sold for" on that valuation).
 //                   Re-asks every 14 days while unanswered, "still looking" or "not sold yet", max 3 sends per item.
 //                   One-tap answers (no price) go through signed links → /email-answer page → email-answer function.
 // Every email carries a signed one-click unsubscribe link; suppressed addresses are never emailed.
@@ -92,6 +93,11 @@ async function runFollowups() {
     }
     return guestEmail.get(hash)!;
   };
+  // "Does this sound right?" card: ticking "Email me later to ask what it sold for" opts in that one valuation.
+  const feedbackOptIn = async (valuationId: string) => {
+    const { data } = await admin.from("valuation_feedback").select("followup_opt_in").eq("valuation_id", valuationId).maybeSingle();
+    return !!data?.followup_opt_in;
+  };
   const mailedThisRun = new Set<string>();
 
   for (const kind of ["advert", "valuation"] as const) {
@@ -101,7 +107,7 @@ async function runFollowups() {
     const { data: rows } = await q.lte("created_at", due).gte("created_at", oldest).order("created_at", { ascending: false }).limit(300);
     for (const it of (rows ?? []) as any[]) {
       let to: string | null = null;
-      if (it.user_id) { if (await optedIn(it.user_id)) to = await userEmail(it.user_id); }
+      if (it.user_id) { if (await optedIn(it.user_id) || (kind === "valuation" && await feedbackOptIn(it.id))) to = await userEmail(it.user_id); }
       else if (it.guest_token_hash) to = await consentFor(it.guest_token_hash);
       if (!to || mailedThisRun.has(to) || await suppressed(to)) continue;
       const { data: f } = await admin.from("email_followups").select("sent_count, next_at").eq("kind", kind).eq("item_id", it.id).maybeSingle();
