@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { cheapPriceRange, formatPriceRange, headlinePrivateText } from "../../supabase/functions/_shared/cheapRange";
 import { Wrench, TrendingUp, RotateCcw, Sparkles, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CountUp } from "@/components/CountUp";
@@ -149,7 +150,7 @@ export function WhatIfSimulator({
           </div>
           <div className="flex items-baseline gap-3 flex-wrap relative">
             <div className="text-[2.5rem] sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight">
-              £<CountUp value={adjustedPrivateSale} />
+              {cheapPriceRange(adjustedPrivateSale) ? formatPriceRange(cheapPriceRange(adjustedPrivateSale)!) : <>£<CountUp value={adjustedPrivateSale} /></>}
             </div>
             {upside > 0 && (
               <span className="inline-flex items-center gap-1 text-[11px] tabular-nums font-semibold rounded-full px-2.5 py-1 border text-primary bg-primary/15 border-primary/40">
@@ -161,8 +162,8 @@ export function WhatIfSimulator({
           {/* Progress bar — before to projected */}
           <div className="mt-4 relative">
             <div className="flex items-baseline justify-between mb-1.5 text-[10px] tabular-nums">
-              <span className="text-muted-foreground">Now <span className="text-foreground/85">£{privateSale.toLocaleString()}</span></span>
-              <span className="text-muted-foreground">Max <span className="text-foreground/85">£{(privateSale + maxPossibleUpside).toLocaleString()}</span></span>
+              <span className="text-muted-foreground">Now <span className="text-foreground/85">{headlinePrivateText(privateSale)}</span></span>
+              <span className="text-muted-foreground">Max <span className="text-foreground/85">{headlinePrivateText(privateSale + maxPossibleUpside)}</span></span>
             </div>
             <div className="relative h-1.5 rounded-full bg-muted/40 overflow-hidden">
               <div

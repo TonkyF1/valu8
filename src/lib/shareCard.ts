@@ -1,4 +1,5 @@
 import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
+import { reportPriceRange, formatPriceRange } from "../../supabase/functions/_shared/cheapRange";
 import { normaliseReportPricing } from "@/lib/askingPrice";
 // Branded 1200x630 share image for a report, drawn client-side on a canvas.
 // (Per-report OG tags for link previews need server rendering, which this SPA host
@@ -22,14 +23,17 @@ export function drawShareCard(v: { year: number; make: string; model: string; mi
   g.fillStyle = "#a1a1aa"; g.font = "400 30px system-ui, -apple-system, Segoe UI, sans-serif";
   g.fillText(`${v.mileage.toLocaleString("en-GB")} miles`, 72, 250);
   if (!r.valuationUnavailable && r.values) {
-    const tiers: [string, number][] = (() => { const cp = normaliseReportPricing(r); return [["Part-exchange", cp.tradeIn], ["Private sale", cp.privateSale], ["Dealer retail", cp.retail]] as [string, number][]; })();
+    const cp = normaliseReportPricing(r);
+    const pr = reportPriceRange(r, cp.privateSale); // under £5,000: the private sale tier is a range
+    const tiers: [string, number][] = [["Part-exchange", cp.tradeIn], ["Private sale", cp.privateSale], ["Dealer retail", cp.retail]];
     tiers.forEach(([label, val], i) => {
       const x = 72 + i * 360, y = 330, hi = i === 1;
       g.fillStyle = hi ? "rgba(0,212,200,0.16)" : "rgba(255,255,255,0.05)";
       g.strokeStyle = hi ? "#00d4c8" : "rgba(255,255,255,0.15)"; g.lineWidth = 2;
       g.beginPath(); g.roundRect?.(x, y, 330, 160, 20); if (!g.roundRect) g.rect(x, y, 330, 160); g.fill(); g.stroke();
       g.fillStyle = "#a1a1aa"; g.font = "500 26px system-ui, sans-serif"; g.fillText(label, x + 28, y + 52);
-      g.fillStyle = hi ? "#00d4c8" : "#ffffff"; g.font = "700 54px system-ui, sans-serif"; g.fillText(gbp(val), x + 28, y + 122);
+      g.fillStyle = hi ? "#00d4c8" : "#ffffff"; if (hi && pr) { g.font = "700 38px system-ui, sans-serif"; g.fillText(formatPriceRange(pr), x + 28, y + 118, 290); }
+      else { g.font = "700 54px system-ui, sans-serif"; g.fillText(gbp(val), x + 28, y + 122); }
     });
   } else {
     g.fillStyle = "#ffffff"; g.font = "600 40px system-ui, sans-serif"; g.fillText("Specialist appraisal recommended", 72, 400);

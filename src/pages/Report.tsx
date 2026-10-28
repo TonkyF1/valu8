@@ -1,5 +1,6 @@
 import { sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
 import { hasPhotos, normaliseReportPricing } from "@/lib/askingPrice";
+import { reportPriceRange, headlinePrivateText } from "../../supabase/functions/_shared/cheapRange";
 import { fixableUpside as computeFixableUpside } from "../../supabase/functions/_shared/photo-insights";
 import { marketConfidenceTier } from "../../supabase/functions/_shared/pricing";
 import { shareLink } from "@/lib/retention";
@@ -126,7 +127,7 @@ export default function Report() {
   }, []);
 
   const seoVehicle = v ? `${v.year} ${displayMake(v.make)} ${displayModel(v.model)}` : "Car";
-  const seoValue = v && !(v.report as any)?.valuationUnavailable && v.report?.values?.privateSale ? ` Private sale estimate £${normaliseReportPricing(v.report).privateSale.toLocaleString("en-GB")}.` : "";
+  const seoValue = v && !(v.report as any)?.valuationUnavailable && v.report?.values?.privateSale ? ` Private sale estimate ${headlinePrivateText(normaliseReportPricing(v.report).privateSale, v.report)}.` : "";
   useSeo({
     title: `${seoVehicle} valuation | Valu8`,
     description: isShared
@@ -411,7 +412,7 @@ export default function Report() {
             </div>
             <div className="text-right shrink-0">
               <p className="text-[11px] font-medium text-muted-foreground">Private sale <span className="rounded border border-border px-1 py-px ml-0.5">Estimate</span></p>
-              <p className="text-lg font-bold tabular-nums text-primary">£{Math.round(normaliseReportPricing(r).privateSale).toLocaleString("en-GB")}</p>
+              <p className="text-lg font-bold tabular-nums text-primary">{headlinePrivateText(Math.round(normaliseReportPricing(r).privateSale), r)}</p>
             </div>
             </div>
             <div className="lg:hidden"><ReportNav variant="chips" sections={navSections} active={navActive} /></div>
@@ -458,7 +459,7 @@ export default function Report() {
                   <li className="flex gap-2.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
-                      Realistic private sale (estimate): <strong className="tabular-nums text-foreground">£{normaliseReportPricing(r).privateSale.toLocaleString("en-GB")}</strong>
+                      Realistic private sale (estimate): <strong className="tabular-nums text-foreground">{headlinePrivateText(normaliseReportPricing(r).privateSale, r)}</strong>
                     </span>
                   </li>
                   <li className="flex gap-2.5">
@@ -586,12 +587,29 @@ export default function Report() {
             ) : (
               <div className="relative">
                 {/* Headline price — bigger, tighter, more Apple */}
-                <div className="text-5xl sm:text-6xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight">
-                  <CountUp value={normaliseReportPricing(r).privateSale} prefix="£" />
-                </div>
-                <p className="text-[12px] text-muted-foreground mt-2 max-w-[44ch]">
-                  Our estimate of a realistic private sale in today's UK market.
-                </p>
+                {(() => {
+                  // Under £5,000 (our estimate) the headline is a range: single figures are much less precise there.
+                  const pr = reportPriceRange(r, normaliseReportPricing(r).privateSale);
+                  return pr ? (
+                    <>
+                      <div className="text-4xl sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight" data-testid="headline-range">
+                        <CountUp value={pr.low} prefix="£" /><span className="mx-1.5">–</span><CountUp value={pr.high} prefix="£" />
+                      </div>
+                      <p className="text-[12px] text-muted-foreground mt-2 max-w-[44ch]">
+                        Our estimated range for a realistic private sale in today's UK market. Prices vary more for cars under £5,000, so we show a range rather than one figure.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-5xl sm:text-6xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight">
+                        <CountUp value={normaliseReportPricing(r).privateSale} prefix="£" />
+                      </div>
+                      <p className="text-[12px] text-muted-foreground mt-2 max-w-[44ch]">
+                        Our estimate of a realistic private sale in today's UK market.
+                      </p>
+                    </>
+                  );
+                })()}
 
                 {/* Live data ticker */}
                 {liveCount != null && liveCount > 0 && (
@@ -673,8 +691,8 @@ export default function Report() {
                       r.headline
                     ) : (
                       <>
-                        {isLiveListings ? "Based on live UK market data" : "Based on our AI market estimate"}, a realistic figure for this {v.year} {makeDisplay} {modelDisplay} sits around{" "}
-                        <span className="tabular-nums font-medium">£{normaliseReportPricing(r).privateSale.toLocaleString("en-GB")}</span>.
+                        {isLiveListings ? "Based on live UK market data" : "Based on our AI market estimate"}, a realistic figure for this {v.year} {makeDisplay} {modelDisplay} {reportPriceRange(r, normaliseReportPricing(r).privateSale) ? "sits in the range" : "sits around"}{" "}
+                        <span className="tabular-nums font-medium">{headlinePrivateText(normaliseReportPricing(r).privateSale, r)}</span>.
                       </>
                     )}
                   </p>
@@ -768,7 +786,7 @@ export default function Report() {
                   </div>
 
                   <p className="text-[12px] text-muted-foreground mt-3 leading-relaxed max-w-[48ch]">
-                    Where you land depends on photos, history file and how quickly you need to sell. Our estimated private-sale range for this car is <span className="tabular-nums text-foreground/85">£{marketLow.toLocaleString()}</span> to <span className="tabular-nums text-foreground/85">£{marketHigh.toLocaleString()}</span>.
+                    Where you land depends on photos, history file and how quickly you need to sell. Our estimated private-sale range for this car is <span className="tabular-nums text-foreground/85">£{(reportPriceRange(r, cp.privateSale)?.low ?? marketLow).toLocaleString()}</span> to <span className="tabular-nums text-foreground/85">£{(reportPriceRange(r, cp.privateSale)?.high ?? marketHigh).toLocaleString()}</span>.
                   </p>
                 </div>
               );
@@ -790,7 +808,11 @@ export default function Report() {
                     <ul className="mt-3 space-y-1.5 text-[13px] leading-[1.55] text-[#E8E8E8]">
                       <li>• List at <strong className="tabular-nums">£{listAt.toLocaleString()}</strong> — small head-room without scaring buyers.</li>
                       <li>• Expect offers between <strong className="tabular-nums">£{offerLow.toLocaleString()}–£{offerHigh.toLocaleString()}</strong>.</li>
-                      <li>• Don't drop below <strong className="tabular-nums">£{cp.privateSale.toLocaleString()}</strong> unless you need a fast sale.</li>
+                      {reportPriceRange(r, cp.privateSale) ? (
+                        <li>• Realistic private sales land in <strong className="tabular-nums">{headlinePrivateText(cp.privateSale, r)}</strong> — the lower end if you need a fast sale.</li>
+                      ) : (
+                        <li>• Don't drop below <strong className="tabular-nums">£{cp.privateSale.toLocaleString()}</strong> unless you need a fast sale.</li>
+                      )}
                     </ul>
                   );
                 })()}
@@ -1098,9 +1120,10 @@ export default function Report() {
         {/* Share card: car + range + confidence only (no reg, mileage, photos or report link) */}
         {!isShared && !valuationUnavailable && (isGuest || (user && (v as any).user_id === user.id)) && (() => {
           const sp = normaliseReportPricing(r);
+          const spr = reportPriceRange(r, sp.privateSale);
           return sp.privateLow > 0 && sp.privateHigh > 0 ? (
             <SectionBoundary>
-              <ShareResult kind="valuation" year={v.year} make={v.make} model={v.model} low={sp.privateLow} high={sp.privateHigh} verdict={`${liveTier} confidence`} />
+              <ShareResult kind="valuation" year={v.year} make={v.make} model={v.model} low={spr?.low ?? sp.privateLow} high={spr?.high ?? sp.privateHigh} verdict={`${liveTier} confidence`} />
             </SectionBoundary>
           ) : null;
         })()}
