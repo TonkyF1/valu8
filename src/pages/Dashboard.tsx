@@ -1,4 +1,5 @@
 import { useSeo } from "@/lib/seo";
+import { headlinePrivateText } from "../../supabase/functions/_shared/cheapRange";
 import { getRouteMeta } from "@/data/routeMeta";
 import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
 import { useEffect, useState } from "react";
@@ -358,7 +359,7 @@ export default function Dashboard() {
                           )}
                         </div>
                         <p className="sm:hidden mt-1 text-base font-bold tabular-nums text-primary">
-                          {valuationUnavailable ? <span className="text-sm font-semibold text-amber-300">Specialist valuation recommended</span> : <>£{(Math.round((r.private_value || 0) / 50) * 50).toLocaleString("en-GB")} <span className="text-[11px] font-medium text-muted-foreground">private sale</span></>}
+                          {valuationUnavailable ? <span className="text-sm font-semibold text-amber-300">Specialist valuation recommended</span> : <>{headlinePrivateText(Math.round((r.private_value || 0) / 50) * 50, r.report)} <span className="text-[11px] font-medium text-muted-foreground">private sale</span></>}
                         </p>
                         <div className="flex items-center gap-x-2.5 gap-y-1 mt-1.5 text-xs text-muted-foreground flex-wrap">
                           <span className="tabular-nums">{r.mileage.toLocaleString()} mi</span>
@@ -405,7 +406,7 @@ export default function Dashboard() {
                           </div>
                         ) : (
                           <div className="font-bold text-gradient-primary text-lg sm:text-2xl tabular-nums leading-tight mt-0.5">
-                            £{(Math.round((r.private_value || 0) / 50) * 50).toLocaleString("en-GB")}
+                            {headlinePrivateText(Math.round((r.private_value || 0) / 50) * 50, r.report)}
                           </div>
                         )}
                       </div>

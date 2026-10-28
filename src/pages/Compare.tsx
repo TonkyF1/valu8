@@ -1,4 +1,5 @@
 import { useSeo } from "@/lib/seo";
+import { headlinePrivateText } from "../../supabase/functions/_shared/cheapRange";
 import { normaliseReportPricing } from "@/lib/askingPrice";
 import { getRouteMeta } from "@/data/routeMeta";
 import { useEffect, useMemo, useState } from "react";
@@ -24,7 +25,7 @@ function facts(v: Row) {
   const adv = r.motSource === "dvsa" ? r.motHistory?.[0]?.advisories ?? [] : [];
   const costs = summariseAdvisoryCosts(adv);
   return [
-    ["Private sale", gbp(r.values?.privateSale ? normaliseReportPricing(r).privateSale : undefined)],
+    ["Private sale", r.values?.privateSale ? headlinePrivateText(normaliseReportPricing(r).privateSale, r) : gbp(undefined)],
     ["Dealer retail", gbp(r.values?.privateSale ? normaliseReportPricing(r).retail : undefined)],
     ["Trade-in", gbp(r.values?.privateSale ? normaliseReportPricing(r).tradeIn : undefined)],
     ["Condition", r.conditionScore != null && hasPhotos(v.photo_urls) ? `${r.conditionScore}/10 (${r.conditionLabel})` : "Add photos to score"],
