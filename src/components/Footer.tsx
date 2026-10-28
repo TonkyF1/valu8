@@ -21,6 +21,13 @@ const COLS: { title: string; links: { to: string; label: string }[] }[] = [
   ] },
 ];
 
+/** Directory badges. Twelve Tools needs a followable link (no nofollow) for its free listing. */
+const BADGES: { href: string; src?: string; label: string; w: number; h: number }[] = [
+  { href: "https://twelve.tools", src: "https://twelve.tools/badge0-dark.svg", label: "Featured on Twelve Tools", w: 200, h: 54 },
+  { href: "https://fazier.com", src: "https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=dark", label: "Featured on Fazier", w: 182, h: 43 },
+  { href: "https://startupbase.io", label: "StartupBase", w: 0, h: 0 },
+];
+
 export function Footer() {
   return (
     <footer className="border-t border-border/60 mt-16 bg-card/40">
@@ -46,6 +53,29 @@ export function Footer() {
             </ul>
           </nav>
         ))}
+      </div>
+      <div className="border-t border-border/40">
+        <nav className="container py-4 flex flex-wrap items-center gap-x-3 gap-y-2" aria-label="Directory listings">
+          <span className="text-xs text-muted-foreground">Find us on</span>
+          {BADGES.map((b) => (
+            <a
+              key={b.href}
+              href={b.href}
+              target="_blank"
+              rel="noopener"
+              title={b.label}
+              className="inline-flex h-7 items-center opacity-70 hover:opacity-100 transition-opacity"
+            >
+              {b.src ? (
+                <img src={b.src} alt={b.label} width={b.w} height={b.h} loading="lazy" className="h-7 w-auto" />
+              ) : (
+                <span className="inline-flex h-7 items-center rounded-md border border-border/60 px-2.5 text-xs font-semibold text-foreground/80">
+                  <span className="mr-1 font-normal text-muted-foreground">Featured on</span>{b.label}
+                </span>
+              )}
+            </a>
+          ))}
+        </nav>
       </div>
       <div className="border-t border-border/40">
         <div className="container py-4 flex flex-col sm:flex-row gap-1 justify-between text-xs text-muted-foreground">
