@@ -9,6 +9,7 @@
 //    1.4 above (see coherentPricing.retailCapMultiplier). Cheap dealer cars really are ~1.4x a private sale.
 import { ensemble, type EnsembleCtx, type EnsembleResult } from "./ensemble.ts";
 import { retailCapMultiplier } from "./coherentPricing.ts";
+import { ageCalib } from "./ageCurve.ts";
 
 export const ENS3 = { VERSION: "ens-3", CONFIDENT_LEVELS: ["model", "family"], CLASSIC_AGE: 25, RETAIL_FLOOR: 1.08 } as const;
 export interface EngineIn {
@@ -20,6 +21,8 @@ export interface EngineIn {
   // ~factor^0.6). Not measurable on the advert holdouts (no regs / DVSA history); sizes stay the bounded, shrunk
   // text-proxy priors in motSignals.ts. Omitted = 1 (fair-price, harness).
   motFactor?: number;
+  // ac-1 age x seller calibration keys (ageCurve.ts); make/model optional (omitted = age-only calibration).
+  vehicle?: { make?: string | null; model?: string | null };
 }
 export interface EngineOut { version: string; private: number; low: number; high: number; retail: number; confident: boolean; reason: string; ens: EnsembleResult }
 const r50 = (x: number) => Math.round(x / 50) * 50;
@@ -31,9 +34,14 @@ export function engineValue(x: EngineIn): EngineOut | null {
   const ens = ensemble({ pm: x.pm, ownComps: own, ai: null, ctx });
   if (!ens || !(ens.private > 0)) return null;
   const age = Math.max(0, (x.ctx.currentYear ?? 2026) - x.ctx.year);
-  const P = r50(ens.private);
-  let R = ens.retail?.price && ens.retail.price > 0 ? ens.retail.price : P * 1.2;
-  R = Math.min(Math.max(R, P * ENS3.RETAIL_FLOOR), P * retailCapMultiplier(P));
+  const P0 = ens.private;
+  let R = ens.retail?.price && ens.retail.price > 0 ? ens.retail.price : P0 * 1.2;
+  R = Math.min(Math.max(R, P0 * ENS3.RETAIL_FLOOR), P0 * retailCapMultiplier(P0));
+  // ac-1: calibrate both legs for age (and older-car model) bias measured on post-snapshot adverts.
+  const ac = ageCalib(age, x.vehicle?.make, x.vehicle?.model);
+  const fp = Math.exp(ac.priv), fr = Math.exp(ac.retail);
+  const P = r50(P0 * fp);
+  R = Math.max(R * fr, P * ENS3.RETAIL_FLOOR);
   const level = x.ctx.ocLevel ?? "";
   let reason = "ok";
   if (!x.ownComps || x.ownComps.unavailable) reason = "no own-comps";
@@ -44,7 +52,7 @@ export function engineValue(x: EngineIn): EngineOut | null {
   // often (80th-pct |log error| 0.6 vs 0.43), so widen their range instead of claiming false precision.
   const thin = x.ctx.pmNModel != null && x.ctx.pmNModel < 30;
   const widen = age >= 20 ? 1.4 : (age > 15 || thin) ? 1.2 : 1;
-  const lo0 = Math.min(ens.low, P), hi0 = Math.max(ens.high, P);
+  const lo0 = Math.min(ens.low * fp, P), hi0 = Math.max(ens.high * fp, P);
   const lo = P * Math.pow(lo0 / P, widen), hi = P * Math.pow(hi0 / P, widen);
   return { version: ENS3.VERSION, private: P, low: Math.min(r50(lo), P), high: Math.max(r50(hi), P), retail: Math.max(r50(R), P), confident: reason === "ok", reason, ens };
 }

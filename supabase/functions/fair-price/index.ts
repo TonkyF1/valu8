@@ -27,7 +27,7 @@ function ownCompsBand(make: string, model: string, variant: string | undefined, 
     const cy = new Date().getUTCFullYear();
     const pm = pricePmBoth({ make, model, variant: variant ?? null, year, mileage, fuel: null, gearbox: null, body: null, engine_cc: null, desc: null });
     const e = engineValue({ pm: { private: pm.private.price, low: pm.private.low, high: pm.private.high }, ownComps: { privatePrice: oc.privatePrice, unavailable: oc.unavailable },
-      ctx: { year, currentYear: cy, pmNModel: pm.private.n_model ?? null, ocConfidence: oc.confidenceScore, ocLevel: oc.level, perf: !!oc.perfKey, pmDealer: pm.dealer.price, ocDealer: oc.dealerPrice } });
+      ctx: { year, currentYear: cy, pmNModel: pm.private.n_model ?? null, ocConfidence: oc.confidenceScore, ocLevel: oc.level, perf: !!oc.perfKey, pmDealer: pm.dealer.price, ocDealer: oc.dealerPrice }, vehicle: { make, model } });
     if (e && e.confident) {
       const k = e.retail / e.private;
       return { band: { low: r(e.low * k), mid: r(e.retail), high: r(e.high * k) }, confidence: oc.confidence, nComps: oc.nComps, level: oc.level };

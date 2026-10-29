@@ -1,13 +1,15 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
 import { engineValue, engineLedger } from "./engine.ts";
 import { retailCapMultiplier } from "./coherentPricing.ts";
+import { ageCalib } from "./ageCurve.ts";
 
 const ctx = (o: Record<string, unknown> = {}) => ({ year: 2016, currentYear: 2026, pmNModel: 200, ocConfidence: 0.7, ocLevel: "model", perf: false, pmDealer: 7000, ocDealer: 7200, ...o });
 
 Deno.test("engine: confident blend, retail >= private and within bounds", () => {
   const e = engineValue({ pm: { private: 6000, low: 5000, high: 7000 }, ownComps: { privatePrice: 6200 }, ctx: ctx() })!;
   assert(e.confident);
-  assert(e.private > 5900 && e.private < 6300);
+  // blend ~6,100 x ac-1 10y private calibration exp(0.072)
+  assert(e.private > 6300 && e.private < 6800);
   assert(e.retail >= e.private * 1.08 - 50 && e.retail <= e.private * retailCapMultiplier(e.private) + 50);
   assert(e.low <= e.private && e.high >= e.private);
 });
@@ -38,4 +40,11 @@ Deno.test("engine: MOT factor moves the blended price by the full factor (not di
   assert(Math.abs(e.private / base.private - f) < 0.03);
   assert(e.retail >= e.private);
   assertEquals(engineValue({ pm: { private: 3000, low: 2500, high: 3500 }, ownComps: { privatePrice: 3200 }, ctx: ctx(), motFactor: 1 })!.private, base.private);
+});
+
+Deno.test("ac-1: age calibration rises with age above 12y; model residual only for older cars", () => {
+  let prev = -1;
+  for (const a of [13, 16, 19, 21, 24, 28, 35]) { const c = ageCalib(a); assert(c.retail >= prev); prev = c.retail; }
+  assertEquals(ageCalib(5, "jaguar", "xkr").model, 0);
+  assert(Math.abs(ageCalib(20, "jaguar", "xkr").model) <= 0.4);
 });
