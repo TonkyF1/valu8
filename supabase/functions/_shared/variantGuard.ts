@@ -117,7 +117,9 @@ export function reconcileProsePrices(text: string | undefined | null, shown: Sho
     const A = amount(a, ak), B = amount(b, bk);
     if (Math.max(A, B) < floor) return all;
     const ok = (x: number) => allowed.some((y) => Math.abs(x / y - 1) <= tol);
-    if (ok(A) && ok(B)) return all;
+    const rt = roleOf(t.slice(0, off), shown).tag;
+    const capR = rt === "settle" || rt === "floor" ? (shown.askLow || shown.rangeHigh || Infinity) * 1.02 : Infinity;
+    if (ok(A) && ok(B) && Math.max(A, B) <= capR) return all;
     const role = roleFor(t.slice(0, off), shown);
     if (role === shown.askHigh && shown.askLow && shown.askHigh) return `${fmt(shown.askLow)}–${fmt(shown.askHigh)}`;
     if (shown.rangeLow && shown.rangeHigh) return `${fmt(shown.rangeLow)}–${fmt(shown.rangeHigh)}`;
@@ -136,9 +138,10 @@ export function reconcileProsePrices(text: string | undefined | null, shown: Sho
       : tag === "list" ? pick(shown.askLow, shown.askHigh, shown.privateSale)
       : tag === "floor" ? pick(shown.rangeLow, shown.privateSale)
       : pick(shown.privateSale, shown.rangeLow, shown.rangeHigh, shown.askLow);
-    const top = tag === "settle" || tag === "floor" ? (shown.askHigh || shown.rangeHigh || Infinity) : Infinity;
+    const top = tag === "settle" || tag === "floor" ? (shown.askLow || shown.rangeHigh || Infinity) : tag === "list" ? (shown.askHigh || Infinity) * 1.01 : Infinity;
+    const bottom = tag === "list" && shown.askLow ? shown.askLow * 0.95 : 0;
     const tl = tag === "list" ? Math.min(tol, 0.06) : tol;
-    if (A <= top * 1.01 && (set.length ? set : privSet).some((y) => Math.abs(A / y - 1) <= tl)) return all;
+    if (A <= top * 1.02 && A >= bottom && (set.length ? set : privSet).some((y) => Math.abs(A / y - 1) <= tl)) return all;
     return fmt(role);
   });
   return out;
