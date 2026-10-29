@@ -113,7 +113,7 @@ export function reconcileProsePrices(text: string | undefined | null, shown: Sho
   const allowed = [shown.privateSale, shown.tradeIn, shown.retail, shown.askLow, shown.askHigh, shown.rangeLow, shown.rangeHigh].filter((x): x is number => !!x && x > 0);
   const floor = Math.max(1000, shown.privateSale * 0.3);
   // Ranges first: "£8,450–£8,795" -> ask range (or private range).
-  let out = t.replace(new RegExp(`${MONEY.source}\\s?(?:–|-|to)\\s?${MONEY.source}`, "gi"), (all, a, ak, b, bk, off: number) => {
+  let out = t.replace(new RegExp(`${MONEY.source}\\s?(?:–|-|to|and)\\s?${MONEY.source}`, "gi"), (all, a, ak, b, bk, off: number) => {
     const A = amount(a, ak), B = amount(b, bk);
     if (Math.max(A, B) < floor) return all;
     const ok = (x: number) => allowed.some((y) => Math.abs(x / y - 1) <= tol);
@@ -122,8 +122,9 @@ export function reconcileProsePrices(text: string | undefined | null, shown: Sho
     const botR = rt === "settle" && shown.rangeLow ? shown.rangeLow * 0.95 : 0;
     if (ok(A) && ok(B) && Math.max(A, B) <= capR && Math.min(A, B) >= botR) return all;
     const role = roleFor(t.slice(0, off), shown);
-    if (role === shown.askHigh && shown.askLow && shown.askHigh) return `${fmt(shown.askLow)}–${fmt(shown.askHigh)}`;
-    if (shown.rangeLow && shown.rangeHigh) return `${fmt(shown.rangeLow)}–${fmt(shown.rangeHigh)}`;
+    const sep = /\band\b/i.test(all) ? " and " : "–";
+    if (role === shown.askHigh && shown.askLow && shown.askHigh) return `${fmt(shown.askLow)}${sep}${fmt(shown.askHigh)}`;
+    if (shown.rangeLow && shown.rangeHigh) return `${fmt(shown.rangeLow)}${sep}${fmt(shown.rangeHigh)}`;
     return fmt(shown.privateSale);
   });
   const privSet = [shown.privateSale, shown.askLow, shown.askHigh, shown.rangeLow, shown.rangeHigh].filter((x): x is number => !!x && x > 0);
