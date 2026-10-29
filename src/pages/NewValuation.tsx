@@ -578,13 +578,13 @@ export default function NewValuation() {
                   {trimHint ? (
                     <div className="flex flex-wrap items-center gap-2 text-xs" data-testid="trim-hint">
                       <span className="text-muted-foreground">
-                        {trimHint.confident
+                        {trimHint.confident || trimHint.allPerf
                           ? trimHint.options.length === 1
                             ? `The ${trimHint.reason} was only sold as the ${trimHint.options[0]}.`
                             : `The ${trimHint.reason} was only sold as a performance version. Which is yours?`
                           : `The ${trimHint.reason} is often a performance version. Is yours one of these?`}
                       </span>
-                      {[...trimHint.options, ...(trimHint.confident ? [] : ["Neither"])].map((o) => {
+                      {[...trimHint.options, ...(trimHint.confident || trimHint.allPerf ? [] : ["Neither"])].map((o) => {
                         const value = o === "Neither" ? "" : o;
                         const active = o === "Neither" ? !variant : variant === o;
                         return (

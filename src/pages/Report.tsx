@@ -221,7 +221,9 @@ export default function Report() {
   if ((r as any).vehicle) (r as any).vehicle = { ...(r as any).vehicle, fuelType: fuelDisplay };
   const modelDisplay = displayModel(v.make, v.model, fuelDisplay);
   const makeDisplay = displayMake(v.make);
-  const titleDisplay = vehicleTitle({ year: v.year, make: v.make, model: v.model, engineCapacity: (r as any).vehicle?.engineCapacity, fuelType: fuelDisplay });
+  // eng-4: engine-detected performance variant (e.g. "Audi RS6") beats the bare DVLA model.
+  const detectedModel = typeof (r as any).detectedModel === "string" ? String((r as any).detectedModel) : "";
+  const titleDisplay = detectedModel ? `${v.year} ${detectedModel}` : vehicleTitle({ year: v.year, make: v.make, model: v.model, engineCapacity: (r as any).vehicle?.engineCapacity, fuelType: fuelDisplay });
   const sampleSize = (r as any).marketSampleSize ?? (r as any).marketBaseline?.sampleSize ?? null;
   const countLine = marketCountLine(liveCount, sampleSize);
   const valuationUnavailable = !!r.valuationUnavailable;
