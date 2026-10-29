@@ -89,18 +89,20 @@ const fmt = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
 const MONEY = /£\s?(\d{1,3}(?:,\d{3})+|\d{3,7})(?:\.\d{2})?(\s?k\b)?/gi;
 const amount = (s: string, k?: string) => Number(s.replace(/,/g, "")) * (k ? 1000 : 1);
 
-function roleFor(before: string, shown: ShownPrices): number {
+type Role = "trade" | "retail" | "list" | "floor" | "settle";
+function roleFor(before: string, shown: ShownPrices): number { return roleOf(before, shown).val; }
+function roleOf(before: string, shown: ShownPrices): { tag: Role; val: number } {
   const ctx = before.slice(-70).toLowerCase();
-  const roles: [RegExp, number][] = [
-    [/(trade|part[- ]?ex|dealer (?:would |will )?(?:offer|pay)|webuyanycar|instant)/g, shown.tradeIn],
-    [/(retail|forecourt|dealers? (?:ask|charge|sell|list))/g, shown.retail],
-    [/(list|advertis|ask(?:ing)?\b|price (?:it|the car)|start(?:ing)? at|put it up)/g, shown.askHigh || shown.privateSale],
-    [/(floor|walk away|below|under|minimum|bottom)/g, shown.rangeLow || shown.privateSale],
-    [/(offer|settle|accept|agreed|sale around|sell for|worth|value)/g, shown.privateSale],
+  const roles: [RegExp, number, Role][] = [
+    [/(trade|part[- ]?ex|dealer (?:would |will )?(?:offer|pay)|webuyanycar|instant)/g, shown.tradeIn, "trade"],
+    [/(retail|forecourt|dealers? (?:ask|charge|sell|list))/g, shown.retail, "retail"],
+    [/(list|advertis|ask(?:ing)?\b|price (?:it|the car)|start(?:ing)? at|put it up)/g, shown.askHigh || shown.privateSale, "list"],
+    [/(floor|walk away|below|under|minimum|bottom)/g, shown.rangeLow || shown.privateSale, "floor"],
+    [/(offer|settle|accept|agreed|sale around|sell for|worth|value)/g, shown.privateSale, "settle"],
   ];
-  let best = -1, val = shown.privateSale; // nearest keyword wins
-  for (const [rx, v] of roles) for (const m of ctx.matchAll(rx)) if ((m.index ?? -1) > best && v > 0) { best = m.index!; val = v; }
-  return val;
+  let best = -1, val = shown.privateSale, tag: Role = "settle"; // nearest keyword wins
+  for (const [rx, v, t] of roles) for (const m of ctx.matchAll(rx)) if ((m.index ?? -1) > best && v > 0) { best = m.index!; val = v; tag = t; }
+  return { tag, val };
 }
 
 /** Replaces AI £ figures that disagree (>tol) with every shown number; small sums (repairs) are left alone. */
@@ -126,10 +128,17 @@ export function reconcileProsePrices(text: string | undefined | null, shown: Sho
     const A = amount(a, k);
     if (A < floor) return all;
     const ctx = whole.slice(Math.max(0, off - 60), off).toLowerCase();
-    const role = roleFor(whole.slice(0, off), shown);
-    // A "list at" / "settle at" figure must match the private/ask numbers, not happen to sit near retail.
-    const set = role === shown.tradeIn ? [shown.tradeIn] : role === shown.retail ? [shown.retail] : privSet;
-    if (set.some((y) => Math.abs(A / y - 1) <= tol)) return all;
+    const { tag, val: role } = roleOf(whole.slice(0, off), shown);
+    // Each role is checked against its own shown numbers: a "settle around" figure above the ask, or a
+    // "list at" figure that is really the retail price, is a contradiction even if it sits near another number.
+    const pick = (...xs: (number | undefined)[]) => xs.filter((x): x is number => !!x && x > 0);
+    const set = tag === "trade" ? pick(shown.tradeIn) : tag === "retail" ? pick(shown.retail)
+      : tag === "list" ? pick(shown.askLow, shown.askHigh, shown.privateSale)
+      : tag === "floor" ? pick(shown.rangeLow, shown.privateSale)
+      : pick(shown.privateSale, shown.rangeLow, shown.rangeHigh, shown.askLow);
+    const top = tag === "settle" || tag === "floor" ? (shown.askHigh || shown.rangeHigh || Infinity) : Infinity;
+    const tl = tag === "list" ? Math.min(tol, 0.06) : tol;
+    if (A <= top * 1.01 && (set.length ? set : privSet).some((y) => Math.abs(A / y - 1) <= tl)) return all;
     return fmt(role);
   });
   return out;

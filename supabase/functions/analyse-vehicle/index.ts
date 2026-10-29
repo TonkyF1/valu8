@@ -1664,6 +1664,22 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       }
     } catch (e) { console.warn("variant guard failed", e); }
 
+    // eng4 audit: 15y+ and especially 20y+ cars miss a narrow range far more often (old-car private range
+    // coverage 68% before), whichever path priced them. Guarantee a minimum width and never claim Medium/High.
+    {
+      const ageY = CURRENT_YEAR - Number(body.year);
+      if (!valuationUnavailable && values.privateSale > 0 && ageY > 15) {
+        const w = ageY >= 20 ? 0.25 : 0.15;
+        rangeLow = roundToGrain(Math.min(rangeLow, values.privateSale * (1 - w)));
+        rangeHigh = roundToGrain(Math.max(rangeHigh, values.privateSale * (1 + w)));
+        if (confidence === "High" || confidence === "Medium") confidence = "Low";
+        if (ageY >= 20 && !guardNote) {
+          guardNote = "Cars of this age sell on condition and history more than on mileage, and prices vary widely — compare your car closely with similar adverts before you list.";
+          confidenceReason = guardNote;
+        }
+      }
+    }
+
     // Negotiation buffer: trust AI if reasonable (2-8% of privateSale), else default to ~4%.
     const aiBuffer = Number(ai.negotiationBuffer) || 0;
     const minBuf = values.privateSale * 0.02;
