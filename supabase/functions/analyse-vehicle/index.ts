@@ -1789,7 +1789,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       values,
       valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
       // Below £5,000 (our estimate) the headline is a measured ~70% range; values.privateSale stays the midpoint (see _shared/cheapRange.ts).
-      priceRange: valuationUnavailable ? undefined : (cheapPriceRange(values.privateSale) ?? undefined),
+      priceRange: valuationUnavailable ? undefined : (cheapPriceRange(values.privateSale, Number(body.year) > 1900 ? new Date().getFullYear() - Number(body.year) : undefined) ?? undefined),
       askRange: askRangeOut,
       valueReasoning: sanitizeNarrativeYears(valuationUnavailable || engineShown ? pricingReasoning : ai.valueReasoning, body.year, CURRENT_YEAR, allowedNarrativeYears),
       marketConfidence: confidence,
