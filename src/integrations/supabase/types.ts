@@ -478,6 +478,53 @@ export type Database = {
         }
         Relationships: []
       }
+      valuation_feedback: {
+        Row: {
+          created_at: string
+          followup_opt_in: boolean
+          guest_token_hash: string | null
+          id: string
+          updated_at: string
+          user_estimate: number | null
+          user_id: string | null
+          valu8_value: number | null
+          valuation_id: string
+          verdict: string | null
+        }
+        Insert: {
+          created_at?: string
+          followup_opt_in?: boolean
+          guest_token_hash?: string | null
+          id?: string
+          updated_at?: string
+          user_estimate?: number | null
+          user_id?: string | null
+          valu8_value?: number | null
+          valuation_id: string
+          verdict?: string | null
+        }
+        Update: {
+          created_at?: string
+          followup_opt_in?: boolean
+          guest_token_hash?: string | null
+          id?: string
+          updated_at?: string
+          user_estimate?: number | null
+          user_id?: string | null
+          valu8_value?: number | null
+          valuation_id?: string
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "valuation_feedback_valuation_id_fkey"
+            columns: ["valuation_id"]
+            isOneToOne: true
+            referencedRelation: "valuations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       valuation_pool: {
         Row: {
           condition_score: number | null
@@ -660,10 +707,15 @@ export type Database = {
     Functions: {
       admin_growth_stats: { Args: never; Returns: Json }
       admin_stats: { Args: never; Returns: Json }
+      admin_valuation_feedback: { Args: never; Returns: Json }
       beta_signup_count: { Args: never; Returns: number }
       check_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
         Returns: boolean
+      }
+      get_valuation_feedback: {
+        Args: { p_guest_token?: string; p_valuation_id: string }
+        Returns: Json
       }
       has_beta_access: { Args: never; Returns: boolean }
       has_role: {
@@ -687,6 +739,20 @@ export type Database = {
       record_signup_source: {
         Args: { p_first_touch: Json; p_ref: string }
         Returns: undefined
+      }
+      submit_valuation_feedback: {
+        Args: {
+          p_followup_opt_in?: boolean
+          p_guest_token?: string
+          p_user_estimate?: number
+          p_valuation_id: string
+          p_verdict?: string
+        }
+        Returns: Json
+      }
+      valuation_feedback_owner: {
+        Args: { p_guest_token: string; p_valuation_id: string }
+        Returns: string
       }
     }
     Enums: {
