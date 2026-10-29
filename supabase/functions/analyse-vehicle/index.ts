@@ -1542,6 +1542,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
           ctx: { year: body.year, currentYear: CURRENT_YEAR, pmNModel: preAi.pm.private.n_model ?? null, ocConfidence: ownForCap.confidenceScore ?? null,
             ocLevel: ownForCap.level ?? null, perf: !!ownForCap.perf, pmDealer: preAi.pm.dealer.price * preAi.motAdj.factor, ocDealer: ownForCap.dealerPrice ?? null },
           motFactor: preAi.motAdj.factor,
+          vehicle: { make: body.make, model: body.model },
         });
         const engDbg: Record<string, unknown> | null = e ? { version: e.version, private: e.private, low: e.low, high: e.high, retail: e.retail, confident: e.confident, reason: e.reason, aiPrivate: values.privateSale, shown: false } : null;
         debugInfo.engine = engDbg;
@@ -1905,6 +1906,22 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       const fixP = (t: any) => typeof t === "string" ? reconcileProsePrices(t, shownP) : t;
       const fixL = (l: any) => Array.isArray(l) ? l.map(fixP).filter((x: any) => typeof x !== "string" || x.trim()) : l;
       if (report.valuationUnavailable) (report as any).headline = "We can’t give a reliable figure for this car yet — see why below.";
+      // eng-5: the two most visible lines are templated from the engine numbers (stable run to run); the AI's own
+      // non-price advice is kept after the template. Other prose keeps the reconciled AI text.
+      if (shownP && shownP.privateSale > 0) {
+        const gbp = (n: number) => "£" + Math.round(n).toLocaleString("en-GB");
+        const lo = Number(rangeLow) || 0, hi = Number(rangeHigh) || 0, P = shownP.privateSale;
+        const aL = Number(askRangeOut?.low) || 0, aH = Number(askRangeOut?.high) || 0;
+        const tipRest = stripPriceSentences(String((report as any).sellerTip ?? ""));
+        const listPart = aL > 0 && aH > aL ? `List at ${gbp(aL)}–${gbp(aH)}` : `List at about ${gbp(Math.round(P * 1.03 / 50) * 50)}`;
+        (report as any).sellerTip = `${listPart} and expect to settle around ${gbp(P)}.` + (tipRest ? " " + tipRest : "");
+        const hl = String((report as any).headline ?? "");
+        if (!hl.trim() || stripPriceSentences(hl) !== hl.trim()) {
+          (report as any).headline = lo > 0 && hi > lo && (lo < P || hi > P)
+            ? `Worth about ${gbp(P)} in a private sale (typically ${gbp(lo)}–${gbp(hi)}).`
+            : `Worth about ${gbp(P)} in a private sale.`;
+        }
+      }
       for (const k of ["sellerTip", "headline", "marketContext", "honestAnalysis", "valueReasoning", "marketPositioning", "photoObservations"] as const) (report as any)[k] = fixP((report as any)[k]);
       for (const k of ["strengths", "watchPoints", "factorsUp", "factorsDown"] as const) (report as any)[k] = fixL((report as any)[k]);
       for (const k of ["whereToSell", "highlights", "documents"] as const) (report.recommendations as any)[k] = fixL((report.recommendations as any)[k]);
