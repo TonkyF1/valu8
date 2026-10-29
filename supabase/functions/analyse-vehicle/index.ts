@@ -1618,8 +1618,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
           const ref = perfCompReference(perfEff, rows, { year: body.year, mileage: pricedMiles, token, base: String(body.model ?? "").split(/\s+/)[0] });
           debugInfo.variantGuard = { ...(debugInfo.variantGuard as any), token, refN: ref.n, refPrivate: Math.round(ref.private) };
           const name = detectedModel ? `${displayMake(body.make)} ${detectedModel}` : perfEff.label;
+          const an = /^[aeiou]/i.test(name) ? "an" : "a";
           if (ref.n < MIN_VARIANT_COMPS && (perfFallback || !perf || (dataSource === "ai_estimate" && ownForCap && !ownForCap.perf))) {
-            markUnavailable(`We can’t value this one accurately yet — it looks like a ${name}, a performance/rare variant, and we only have ${ref.n} comparable ${name} advert${ref.n === 1 ? "" : "s"}. Pricing it against standard models would badly undervalue it, so we'd rather not show a number. A marque specialist will give you a proper figure.`);
+            markUnavailable(`We can’t value this one accurately yet — it looks like ${an} ${name}, a performance/rare variant, and we only have ${ref.n} comparable ${name} advert${ref.n === 1 ? "" : "s"}. Pricing it against standard models would badly undervalue it, so we'd rather not show a number. A marque specialist will give you a proper figure.`);
           } else if (ref.n >= MIN_VARIANT_COMPS) {
             const ratio = values.privateSale / ref.private;
             if (ratio < 0.75 || ratio > 1.33) {
@@ -1631,7 +1632,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
               pricingReasoning = `Based on ${ref.n} ${name} adverts, adjusted for age and mileage.`;
             }
           } else if (perfFallback) {
-            markUnavailable(`We can’t value this one accurately yet — it's a ${name}, a performance/rare variant, and there aren't enough like-for-like adverts to compare against. A marque specialist will give you a proper figure.`);
+            markUnavailable(`We can’t value this one accurately yet — it's ${an} ${name}, a performance/rare variant, and there aren't enough like-for-like adverts to compare against. A marque specialist will give you a proper figure.`);
           }
         } else if (variantRes.ambiguousPerf && variantRes.hint) {
           markUnavailable(`This car's ${variantRes.hint.options.length > 1 ? "engine size matches performance versions (" + variantRes.hint.options.join(" or ") + ")" : "engine size matches the " + variantRes.hint.options[0]}, which are worth far more than a standard ${body.model}. Please confirm the exact model on the details step so we can compare like-for-like.`);
@@ -1878,6 +1879,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       };
       const fixP = (t: any) => typeof t === "string" ? reconcileProsePrices(t, shownP) : t;
       const fixL = (l: any) => Array.isArray(l) ? l.map(fixP).filter((x: any) => typeof x !== "string" || x.trim()) : l;
+      if (report.valuationUnavailable) (report as any).headline = "We can’t give a reliable figure for this car yet — see why below.";
       for (const k of ["sellerTip", "headline", "marketContext", "honestAnalysis", "valueReasoning", "marketPositioning", "photoObservations"] as const) (report as any)[k] = fixP((report as any)[k]);
       for (const k of ["strengths", "watchPoints", "factorsUp", "factorsDown"] as const) (report as any)[k] = fixL((report as any)[k]);
       for (const k of ["whereToSell", "highlights", "documents"] as const) (report.recommendations as any)[k] = fixL((report.recommendations as any)[k]);

@@ -23,6 +23,8 @@ Deno.test("prose prices reconciled", () => {
   const shown = { privateSale: 5450, tradeIn: 4900, retail: 7700, askLow: 5800, askHigh: 6150, rangeLow: 5100, rangeHigh: 5800 };
   const t = reconcileProsePrices("List at £8,795, highlight the low mileage, and leave yourself room to settle around £8,450.", shown);
   assertEquals(t, "List at £6,150, highlight the low mileage, and leave yourself room to settle around £5,450.");
+  assertEquals(reconcileProsePrices("list at £7,995, and expect to settle around £5,450.", shown), "list at £6,150, and expect to settle around £5,450.");
+  assertEquals(reconcileProsePrices("A dealer would retail it at £7,800; trade-in about £4,800.", shown), "A dealer would retail it at £7,800; trade-in about £4,800.");
   assertEquals(reconcileProsePrices("Budget £300 for tyres. Worth £5,500.", shown), "Budget £300 for tyres. Worth £5,500.");
   assertEquals(reconcileProsePrices("Ask £9,000–£9,500 then settle.", shown), "Ask £5,800–£6,150 then settle.");
   assertEquals(reconcileProsePrices("Great car. List at £25,995 to leave room.", null), "Great car.");

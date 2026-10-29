@@ -126,9 +126,11 @@ export function reconcileProsePrices(text: string | undefined | null, shown: Sho
     const A = amount(a, k);
     if (A < floor) return all;
     const ctx = whole.slice(Math.max(0, off - 60), off).toLowerCase();
-    const set = /(settle|accept|offer|take|walk away|haggl|negotiat)/.test(ctx) && !/(trade|part[- ]?ex|retail|forecourt)/.test(ctx) ? privSet : allowed;
+    const role = roleFor(whole.slice(0, off), shown);
+    // A "list at" / "settle at" figure must match the private/ask numbers, not happen to sit near retail.
+    const set = role === shown.tradeIn ? [shown.tradeIn] : role === shown.retail ? [shown.retail] : privSet;
     if (set.some((y) => Math.abs(A / y - 1) <= tol)) return all;
-    return fmt(roleFor(whole.slice(0, off), shown));
+    return fmt(role);
   });
   return out;
 }
