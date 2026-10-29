@@ -25,6 +25,7 @@ import { coherentPricing } from "../_shared/coherentPricing.ts";
 import { cheapPriceRange } from "../_shared/cheapRange.ts";
 import { aiSafetyCap } from "../_shared/aiCap.ts";
 import { displayMake } from "../_shared/vehicle-text.ts";
+import { ccPlausibility } from "../_shared/ccPlausibility.ts";
 import { resolveVariant, perfCompReference, variantToken, reconcileProsePrices, stripPriceSentences, proseRatio, sanityVerdict, aiTextVariant, optionRegex, MIN_VARIANT_COMPS, type ShownPrices, type PerfCompRow } from "../_shared/variantGuard.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
@@ -1556,7 +1557,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
           adjustments.length = 0;
           for (const it of led.items) adjustments.push(it);
           const n = ownForCap.nComps ?? 0;
-          confidence = ownForCap.level === "model" && n >= 20 ? "Medium" : "Low";
+          confidence = ownForCap.level === "model" && n >= 20 && (CURRENT_YEAR - body.year) <= 15 && !(preAi.pm.private.n_model != null && preAi.pm.private.n_model < 30) ? "Medium" : "Low";
           confidenceReason = `Priced from ${n.toLocaleString("en-GB")} comparable UK adverts we have collected for this ${ownForCap.level === "model" ? "model" : "model family"}, matched on age, mileage, fuel and gearbox, blended with our trained pricing model.`;
           pricingReasoning = `Based on ${n.toLocaleString("en-GB")} similar UK adverts and our pricing model, adjusted for this car's MOT history.`;
           engineShown = true;
@@ -1652,6 +1653,14 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
           guardNote = "Our data sources disagree on this car, so treat this figure as a rough guide and check similar adverts before you list.";
           confidenceReason = guardNote;
         }
+      }
+      // Implausible engine size for the model (advisory: lowers certainty, never moves the price).
+      const ccChk = ccPlausibility(body.make, body.model, Number(body.engineCapacity ?? (body.guestSave?.vehicle as any)?.engineCapacity) || null);
+      debugInfo.ccCheck = ccChk;
+      if (ccChk.implausible && !valuationUnavailable && values.privateSale > 0) {
+        confidence = "Very Low";
+        guardNote = guardNote ? `${guardNote} ${ccChk.note}` : ccChk.note;
+        confidenceReason = guardNote ?? confidenceReason;
       }
     } catch (e) { console.warn("variant guard failed", e); }
 

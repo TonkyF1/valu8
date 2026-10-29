@@ -40,7 +40,13 @@ export function engineValue(x: EngineIn): EngineOut | null {
   else if (!(ENS3.CONFIDENT_LEVELS as readonly string[]).includes(level)) reason = `own-comps level ${level || "none"}`;
   else if (age >= ENS3.CLASSIC_AGE) reason = "classic age";
   else if (!x.pm) reason = "no pm";
-  return { version: ENS3.VERSION, private: P, low: Math.min(r50(ens.low), P), high: Math.max(r50(ens.high), P), retail: Math.max(r50(R), P), confident: reason === "ok", reason, ens };
+  // eng4 audit: older (15y+), modern-classic (20y+) and thin-data (<30 model rows) cars miss the range far more
+  // often (80th-pct |log error| 0.6 vs 0.43), so widen their range instead of claiming false precision.
+  const thin = x.ctx.pmNModel != null && x.ctx.pmNModel < 30;
+  const widen = age >= 20 ? 1.4 : (age > 15 || thin) ? 1.2 : 1;
+  const lo0 = Math.min(ens.low, P), hi0 = Math.max(ens.high, P);
+  const lo = P * Math.pow(lo0 / P, widen), hi = P * Math.pow(hi0 / P, widen);
+  return { version: ENS3.VERSION, private: P, low: Math.min(r50(lo), P), high: Math.max(r50(hi), P), retail: Math.max(r50(R), P), confident: reason === "ok", reason, ens };
 }
 
 const MOT_LABEL: Record<string, string> = {
