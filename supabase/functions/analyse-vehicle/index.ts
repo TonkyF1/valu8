@@ -1472,6 +1472,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     // held-out accuracy has not beaten the current path (see docs/own-comps-pricing.md).
     let ownCompsShadow: Record<string, unknown> | undefined;
     let engineShown = false;
+    let engineRepriced = false; // variant guard moved the engine figure -> not an engine price any more
+    let ownNearest: { year: number; mileage: number; price: number; seller: string }[] = [];
     let ownForCap: { privatePrice: number; level: string; nComps: number; confidenceScore: number; unavailable?: boolean; dealerPrice?: number; perf?: boolean } | null = null;
     try {
       const oc = valueWithOwnComps({
@@ -1485,6 +1487,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         level: oc.level, confidence: oc.confidence, confidenceScore: oc.confidenceScore, nComps: oc.nComps, segment: oc.segment,
         adjustments: oc.adjustments.map((a) => ({ key: a.key, pct: a.pct, basis: a.basis })),
       };
+      ownNearest = Array.isArray(oc.nearest) ? oc.nearest : [];
       debugInfo.ownComps = { ...ownCompsShadow, nearest: oc.nearest, perfKey: oc.perfKey, trimUpliftPct: oc.trimUpliftPct };
       ownForCap = { privatePrice: oc.privatePrice, level: oc.level, nComps: oc.nComps, confidenceScore: oc.confidenceScore, unavailable: oc.unavailable,
         dealerPrice: oc.dealerPrice, perf: !!oc.perfKey };
@@ -1626,6 +1629,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
           } else if (ref.n >= MIN_VARIANT_COMPS) {
             const ratio = values.privateSale / ref.private;
             if (ratio < 0.75 || ratio > 1.33) {
+              engineRepriced = true;
               const k = ref.private / values.privateSale;
               values = { dealerTradeIn: roundToGrain(values.dealerTradeIn * k), privateSale: roundToGrain(ref.private), dealerRetail: roundToGrain(values.dealerRetail * k) };
               rangeLow = roundToGrain(Math.min(ref.low, values.privateSale)); rangeHigh = roundToGrain(Math.max(ref.high, values.privateSale));
@@ -1794,11 +1798,14 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       valueReasoning: sanitizeNarrativeYears(valuationUnavailable || engineShown ? pricingReasoning : ai.valueReasoning, body.year, CURRENT_YEAR, allowedNarrativeYears),
       marketConfidence: confidence,
       marketConfidenceReason: confidenceReason,
-      pricingSource: dataSource,
+      // eng-6: the own-comps engine is the shown price whenever it was confident; label it honestly.
+      pricingSource: engineShown && !engineRepriced && !valuationUnavailable ? "valu8_comps" : dataSource,
       marketSampleSize: mc?.count,
       priceAdjustments: adjustments,
       marketBaseline,
-      comparableListings: valuationUnavailable ? [] : exampleListings,
+      comparableListings: valuationUnavailable ? [] : (exampleListings.length || !engineShown || engineRepriced ? exampleListings
+        : ownNearest.filter((c) => c && c.price > 0).slice(0, 5).map((c) => ({ price: Math.round(c.price), mileage: Math.round(c.mileage), year: c.year,
+            source: c.seller === "private" ? "Private UK advert (Valu8 data)" : "Dealer UK advert (Valu8 data)" }))),
       marketAnchor: valuationUnavailable ? undefined : (anchorMedian > 0 ? Math.round(anchorMedian) : undefined),
       expertInsight: (() => {
         const sources: string[] = [];

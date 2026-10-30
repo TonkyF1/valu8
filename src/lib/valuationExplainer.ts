@@ -48,6 +48,11 @@ export function explainValuation(r: ValuationReport, car: { year: number; mileag
       title: "2. Correct each one to your car",
       body: `Every listing is re-priced as if it had your car's age and mileage (${((r as any).pricedMileage ?? car.mileage).toLocaleString("en-GB")} miles, ${car.year}). Roughly: double the mileage is worth about 12% less, and each extra year of age about 12% less. We then take the median of the closest matches${r.marketAnchor ? `, which gave a dealer retail anchor of ${gbp(r.marketAnchor)}` : ""}.`,
     });
+  } else if (r.pricingSource === "valu8_comps") {
+    steps.push({
+      title: "1. Find comparable cars for sale",
+      body: "We matched your car against comparable UK adverts we have collected (same model, similar age, mileage, fuel and gearbox) and blended that with our trained pricing model.",
+    });
   } else {
     steps.push({
       title: "1. Estimate from market knowledge",

@@ -45,7 +45,7 @@ export interface ValuationReport {
   valueReasoning?: string;
   marketConfidence?: "High" | "Medium" | "Low" | "Very Low";
   marketConfidenceReason?: string;
-  pricingSource?: "marketcheck" | "ai_estimate";
+  pricingSource?: "marketcheck" | "ai_estimate" | "valu8_comps";
   marketSampleSize?: number;
   priceAdjustments?: { label: string; impactPct: number }[];
   marketBaseline?: {

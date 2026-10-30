@@ -229,8 +229,9 @@ export default function Report() {
   const valuationUnavailable = !!r.valuationUnavailable;
   // Honest source labelling: only claim live listings when the engine actually used them.
   const isLiveListings = r.pricingSource === "marketcheck" || (!r.pricingSource && !!(r as any).marketBaseline);
-  const isEstimate = !isLiveListings;
-  const marketSourceLabel = isLiveListings ? "MarketCheck UK live pricing" : "AI market estimate";
+  const isOwnComps = (r.pricingSource as string) === "valu8_comps";
+  const isEstimate = !isLiveListings && !isOwnComps;
+  const marketSourceLabel = isLiveListings ? "MarketCheck UK live pricing" : isOwnComps ? "Comparable UK adverts (Valu8 data)" : "AI market estimate";
   // Missing live data is a "limited data" situation, not proof the car is too rare.
   const limitedData = valuationUnavailable && isEstimate && !r.rareCarWarning;
 
