@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isFoundVehicle, isPlausibleUkReg, normaliseReg } from "@/lib/registration";
 import { Turnstile, turnstileEnabled, turnstileHeaders } from "@/components/Turnstile";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { posthog } from "@/lib/posthog";
@@ -99,6 +99,23 @@ export default function NewValuation() {
   const [guestLimit, setGuestLimit] = useState<string | null>(null);
 
   useSeo({ title: "New valuation — Valu8", description: "Enter a UK registration to get a free private sale valuation in minutes.", path: "/valuation/new" });
+
+  // Homepage plate box: /valuation/new?reg=AB12CDE prefills and starts the lookup once.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const regParamHandled = useRef(false);
+  useEffect(() => {
+    const raw = searchParams.get("reg");
+    if (!raw || regParamHandled.current) return;
+    regParamHandled.current = true;
+    const cleaned = normaliseReg(raw);
+    const next = new URLSearchParams(searchParams); next.delete("reg");
+    setSearchParams(next, { replace: true });
+    if (!cleaned) return;
+    setReg(cleaned);
+    if (isPlausibleUkReg(cleaned)) setTimeout(() => { runLookup(cleaned); }, 0);
+    else setLookupError("That doesn't look like a valid UK registration (e.g. AB12 CDE).");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Restore pending intent after sign-in/up
   useEffect(() => {

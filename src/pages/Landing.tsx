@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
-import { ArrowRight, BadgePoundSterling, Camera, Check, FileCheck2, Gauge, SearchCheck, ShieldAlert, Sparkles, Target, Wind } from "lucide-react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { ArrowRight, BadgePoundSterling, Camera, FileCheck2, Gauge, ShieldAlert, Wind } from "lucide-react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,12 @@ import { AccuracyDisclaimer } from "@/components/AccuracyDisclaimer";
 import { useAuth } from "@/contexts/AuthContext";
 import { CAR_MODELS } from "@/data/carModels";
 import { useSeo } from "@/lib/seo";
+import { isPlausibleUkReg, normaliseReg } from "@/lib/registration";
 import { getRouteMeta } from "@/data/routeMeta";
 
 const FAQS = [
-  { q: "How accurate is the valuation?", a: "Prices are estimated from thousands of real UK adverts in our database for your make and model, corrected for your car's exact age and mileage. Every report shows its confidence level and how the figure was built." },
-  { q: "Where does the data come from?", a: "MOT history comes from the official DVSA database. Market prices are estimates built from thousands of real UK adverts in our database plus an AI market estimate, and are clearly labelled as estimates. Photo condition checks are done by AI. Tax and ULEZ figures are estimates with links to the official checkers." },
+  { q: "How is the valuation worked out?", a: "Prices are estimated from comparable UK adverts for your make and model, adjusted for your car's age and mileage. Every report shows its confidence level and how the figure was built." },
+  { q: "Where does the data come from?", a: "MOT history comes from the official DVSA database. Market prices are estimates built from comparable UK adverts plus an AI market estimate, and are clearly labelled as estimates. Photo condition checks are done by AI. Tax and ULEZ figures are estimates with links to the official checkers." },
   { q: "Is it really free?", a: "Yes. All features are free during early access and no card is needed." },
   { q: "Do I need photos?", a: "No, but adding a few lets us spot condition issues and selling points that move the price, and gives you better advert copy." },
   { q: "Who can see my valuation?", a: "Your valuations are private to your account unless you choose to share a report link. See our privacy policy for how data is handled." },
@@ -20,7 +21,7 @@ const FAQS = [
 ];
 
 const FEATURES = [
-  { icon: BadgePoundSterling, title: "Market-based pricing", body: "Private-sale, trade-in and dealer estimates built from thousands of real UK adverts in our database for your make, model, year and mileage." },
+  { icon: BadgePoundSterling, title: "Market-based pricing", body: "Private-sale, trade-in and dealer estimates based on comparable UK adverts for your make, model, year and mileage." },
   { icon: Camera, title: "Photo condition check", body: "Upload a few photos and AI flags visible wear, damage and selling points that move the price." },
   { icon: FileCheck2, title: "Official DVSA MOT history", body: "Every test, advisory and failure, plus indicative repair-cost bands for current advisories." },
   { icon: Gauge, title: "Mileage consistency", body: "MOT mileage charted over time, with any drops flagged for a closer look." },
@@ -31,7 +32,16 @@ const FEATURES = [
 export default function Landing() {
   const { user, loading } = useAuth();
   // Sticky mobile CTA only once the hero CTA has scrolled away, so the first screen has one clear action.
-  const heroCta = useRef<HTMLDivElement>(null);
+  const heroCta = useRef<HTMLFormElement>(null);
+  const navigate = useNavigate();
+  const [plate, setPlate] = useState("");
+  const [plateErr, setPlateErr] = useState<string | null>(null);
+  function onPlateSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const reg = normaliseReg(plate);
+    if (!isPlausibleUkReg(reg)) { setPlateErr("Enter a valid UK number plate, e.g. AB12 CDE."); return; }
+    navigate(`/valuation/new?reg=${encodeURIComponent(reg)}`);
+  }
   const [showSticky, setShowSticky] = useState(false);
   useEffect(() => {
     const el = heroCta.current;
@@ -52,36 +62,52 @@ export default function Landing() {
       <Header />
       <main id="main" className="flex-1">
         <section className="relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-x-0 -top-32 h-96 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.18),transparent_60%)]" aria-hidden />
-          <div className="container relative pt-8 pb-8 sm:pt-12 md:pt-24 md:pb-14 text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-4 sm:mb-5">
-              <Sparkles className="h-3 w-3" aria-hidden /> Free UK car valuations for sellers and buyers
+          <div className="pointer-events-none absolute inset-x-0 -top-32 h-[28rem] bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.14),transparent_60%)]" aria-hidden />
+          <div className="container relative max-w-6xl pt-12 pb-10 sm:pt-16 lg:pt-24 lg:pb-20 grid grid-cols-1 gap-9 lg:grid-cols-[1.1fr_1fr] lg:gap-16 items-center">
+            <div className="text-center lg:text-left">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Free UK car valuation</p>
+              <h1 className="mt-3.5 text-[2.25rem] sm:text-[2.75rem] lg:text-[4rem] font-semibold tracking-tight text-gradient leading-[1.05] text-balance">
+                What's your car worth today?
+              </h1>
+              <p className="hidden lg:block mt-5 text-lg text-muted-foreground max-w-md leading-relaxed">
+                Enter your number plate for a free private-sale, part-exchange and dealer estimate.
+              </p>
             </div>
-            <h1 className="text-[2.25rem] sm:text-[2.6rem] md:text-[3.2rem] font-semibold tracking-tight text-gradient leading-[1.05] text-balance">
-              Know what your car is really worth
-            </h1>
-            <p className="text-[15px] sm:text-base md:text-lg text-muted-foreground mt-4 sm:mt-5 max-w-xl mx-auto leading-relaxed text-pretty">
-              Enter a reg. We check the official DVSA record, thousands of real UK adverts in our database and your photos, then give you a price you can defend.
-            </p>
-            <div ref={heroCta} className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 justify-center max-w-sm sm:max-w-none mx-auto">
-              <Button asChild variant="hero" size="xl" className="w-full sm:w-auto min-h-[52px]">
-                <Link to="/valuation/new">Value my car free <ArrowRight className="h-4 w-4" aria-hidden /></Link>
-              </Button>
-              <Button asChild variant="outline" size="xl" className="w-full sm:w-auto min-h-[52px]">
-                <Link to="/check"><SearchCheck className="h-4 w-4" aria-hidden /> Is this advert fair?</Link>
-              </Button>
+            <div className="w-full min-w-0 max-w-md mx-auto lg:max-w-none">
+              <form
+                ref={heroCta}
+                onSubmit={onPlateSubmit}
+                className="rounded-[20px] border border-primary/20 bg-card/60 p-[18px] sm:p-6 shadow-[0_30px_60px_-30px_hsl(var(--primary)/0.35)] backdrop-blur"
+              >
+                <label htmlFor="home-reg" className="block text-left text-xs text-muted-foreground mb-2 ml-0.5">Your number plate</label>
+                <div className="flex h-16 rounded-xl overflow-hidden bg-[#FDE047] border-2 border-yellow-400/70 shadow-[0_8px_32px_-12px_rgba(255,204,0,0.4)] focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background">
+                  <div className="w-[34px] shrink-0 bg-[#003399] text-[#FDE047] flex flex-col items-center justify-between py-2 text-[11px] font-bold" aria-hidden>
+                    <span className="text-[13px] leading-none">★</span><span>UK</span>
+                  </div>
+                  <input
+                    id="home-reg"
+                    value={plate}
+                    onChange={(e) => { setPlate(e.target.value.toUpperCase()); setPlateErr(null); }}
+                    placeholder="AB12 CDE"
+                    autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={10}
+                    enterKeyHint="go"
+                    aria-invalid={!!plateErr}
+                    size={1} className="flex-1 w-full min-w-0 bg-transparent text-center text-[26px] sm:text-[28px] font-bold font-mono tracking-[0.16em] text-black placeholder:text-black/35 caret-black outline-none uppercase"
+                  />
+                </div>
+                {plateErr && <p className="mt-2 text-left text-xs text-destructive" role="alert">{plateErr}</p>}
+                <Button type="submit" variant="hero" size="xl" className="mt-3 w-full min-h-[56px] text-[17px]">
+                  Value my car <ArrowRight className="h-4 w-4" aria-hidden />
+                </Button>
+              </form>
+              <p className="mt-[18px] text-[13px] text-muted-foreground flex justify-center gap-2">
+                Free<span className="text-border" aria-hidden>•</span>No sign-up<span className="text-border" aria-hidden>•</span>Official DVSA MOT data
+              </p>
             </div>
-            <ul className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-              {["Free during early access", "No card needed", "Official DVSA MOT data"].map((t) => (
-                <li key={t} className="inline-flex items-center gap-1"><Check className="h-3.5 w-3.5 text-primary" aria-hidden /> {t}</li>
-              ))}
-            </ul>
-            <p className="mt-3 text-xs">
-              <Link to="/accuracy" className="inline-flex items-center gap-1 text-primary/90 hover:text-primary underline-offset-2 hover:underline min-h-[32px]">
-                <Target className="h-3.5 w-3.5" aria-hidden /> See how accurate we are
-              </Link>
-            </p>
           </div>
+          <p className="container text-center text-[13px] text-muted-foreground pb-12 pt-[12vh] lg:pt-4 lg:pb-16">
+            Buying instead? <Link to="/check" className="text-primary hover:underline underline-offset-2">Check if an advert is fair →</Link>
+          </p>
         </section>
 
         <section className="container max-w-3xl pb-16" aria-labelledby="sample-h">
