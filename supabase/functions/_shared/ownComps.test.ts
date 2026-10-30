@@ -70,3 +70,16 @@ Deno.test("dealer add-on ramps in for cheap cars", async () => {
   assertEquals(Math.round(dealerFromPrivate(1900, DEALER_NORM)), 2840); // 1900*1.1 + 1500*0.5
   assertEquals(Math.round(dealerFromPrivate(8000, DEALER_NORM)), 10300);
 });
+
+Deno.test("DVLA truncated Land Rover model names resolve to the advert model", async () => {
+  const { normModel } = await import("./ownComps.ts");
+  const { valueWithOwnComps } = await import("./ownCompsAdjust.ts");
+  if (normModel("Land Rover", "R Rover Evoque Dyn SE D Mhev A") !== "range rover evoque dyn se d mhev a") throw new Error("expand r rover");
+  if (normModel("Land Rover", "Range Rover Sport") !== "range rover sport") throw new Error("clean name changed");
+  if (normModel("Land Rover", "Disc Sport HSE TD4 A") !== "discovery sport hse td4 a") throw new Error("expand disc");
+  for (const [m, want] of [["R Rover Evoque Dyn SE D Mhev A", "RANGE ROVER EVOQUE"], ["R Rover Sport Hse Sdv6 A", "Range Rover Sport"]]) {
+    const a = valueWithOwnComps({ make: "Land Rover", model: m, year: 2020, mileage: 40000, fuel: "Diesel", gearbox: "Automatic", currentYear: 2026 } as any);
+    const b = valueWithOwnComps({ make: "Land Rover", model: want, year: 2020, mileage: 40000, fuel: "Diesel", gearbox: "Automatic", currentYear: 2026 } as any);
+    if (a.level !== "model" || a.nComps !== b.nComps) throw new Error(`${m}: ${a.level} ${a.nComps} vs ${b.nComps}`);
+  }
+});

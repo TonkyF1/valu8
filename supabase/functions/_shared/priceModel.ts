@@ -54,9 +54,23 @@ export function normBody(b: unknown): string {
 export function resolveBody(make: unknown, model: unknown, body: unknown): { body: string; source: "given" | "model_mode" | "none" } {
   const nb = s(body).trim() ? normBody(body) : "";
   if (nb && nb !== "suv" && nb !== "other") return { body: nb, source: "given" };
-  const idx = PM_BODY_MODE[normMake(s(make)) + "|" + normModel(s(make), s(model))];
+  const nm = normMake(s(make)); const idx = PM_BODY_MODE[nm + "|" + pmModelKey(nm, normModel(s(make), s(model)))];
   if (idx !== undefined) return { body: BODIES[idx], source: "model_mode" };
   return { body: nb || "", source: "none" };
+}
+/** DVLA-style model strings carry trim ("range rover evoque dyn se d mhev a"): when the exact make|model is not a
+ * trained key, fall back to the longest trained model name that prefixes it (word boundary). Known keys unchanged. */
+let PM_MODELS_BY_MAKE: Map<string, string[]> | null = null;
+export function pmModelKey(make: string, mdl: string): string {
+  const te = (PM_MODEL.te as unknown as { model: Record<string, unknown> }).model;
+  if (te[make + "|" + mdl] !== undefined) return mdl;
+  if (!PM_MODELS_BY_MAKE) {
+    PM_MODELS_BY_MAKE = new Map();
+    for (const k of Object.keys(te)) { const i = k.indexOf("|"); const a = PM_MODELS_BY_MAKE.get(k.slice(0, i)) ?? []; a.push(k.slice(i + 1)); PM_MODELS_BY_MAKE.set(k.slice(0, i), a); }
+  }
+  let best = "";
+  for (const k of PM_MODELS_BY_MAKE.get(make) ?? []) if (mdl.startsWith(k + " ") && k.length > best.length) best = k;
+  return best || mdl;
 }
 const normTrim = (v: unknown) => s(v).toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 type Tab = Record<string, readonly [number, number]>;
@@ -64,7 +78,7 @@ const TE = PM_MODEL.te as unknown as { g: number; make: Tab; model: Tab; trim: T
 
 /** Feature vector in PM_MODEL.features order (NaN = missing). Exported for parity tests. */
 export function featurize(x: PmInput): { vec: number[]; n_model: number; n_trim: number; known: PmResult["known"] } {
-  const make = normMake(s(x.make)), mdl = normModel(s(x.make), s(x.model)), model = make + "|" + mdl, trim = model + "|" + normTrim(x.variant);
+  const make = normMake(s(x.make)), mdl = pmModelKey(make, normModel(s(x.make), s(x.model))), model = make + "|" + mdl, trim = model + "|" + normTrim(x.variant);
   const age = Math.min(45, Math.max(0, REF_YEAR - Number(x.year)));
   const mi = Math.min(400000, Math.max(0, Number(x.mileage)));
   const ccRaw = Number(x.engine_cc); const cc = Number.isFinite(ccRaw) && ccRaw > 500 && ccRaw < 8000 ? ccRaw : NaN;

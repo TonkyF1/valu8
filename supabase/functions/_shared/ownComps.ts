@@ -44,9 +44,30 @@ export const normMake = (s: string) => {
   if (/^mg( motors?( uk)?)?$/.test(m)) return "mg";
   return m === "vw" ? "volkswagen" : m === "mercedes" ? "mercedes-benz" : m;
 };
+/** DVLA/VDG truncate model names to fit their field ("R Rover Evoque Dyn SE D Mhev A", "Disc Sport HSE TD4 A").
+ * Expand the common truncations so the string starts with the advert model name; trailing trim/fuel tokens
+ * (Dyn, SE, D, Mhev, A ...) are then dropped by longest-known-prefix matching (resolveModel / pm lookup).
+ * Only leading tokens are rewritten, so already-clean names are unchanged. */
+const DVLA_MODEL_ABBREV: Record<string, [RegExp, string][]> = {
+  "land rover": [
+    [/^(?:r\.? ?rover|r\/rover|rr|range r|rng rover|range-rover)\b/, "range rover"],
+    [/^range rover (?:evq|evoq)\b/, "range rover evoque"],
+    [/^range rover spt\b/, "range rover sport"],
+    [/^range rover vel\b/, "range rover velar"],
+    [/^(?:disc|discov|discovry)\b(?!\w)/, "discovery"],
+    [/^discovery spt\b/, "discovery sport"],
+    [/^(?:freel|freelandr|f\/lander)\b/, "freelander"],
+    [/^(?:def|dfndr)\b(?!\w)/, "defender"],
+  ],
+};
+export function expandDvlaModel(mk: string, m: string): string {
+  for (const [re, to] of DVLA_MODEL_ABBREV[mk] ?? []) m = m.replace(re, to);
+  return m;
+}
 export function normModel(make: string, model: string): string {
   const mk = normMake(make);
   let m = String(model ?? "").toLowerCase().trim().replace(/-class/g, " class").replace(/[_]+/g, " ").replace(/\s+/g, " ");
+  m = expandDvlaModel(mk, m);
   if (mk === "mini" && /^(hatchback|hatch|cooper|one|convertible)$/.test(m)) m = "hatch";
   if (mk === "vauxhall" && m === "gtc") m = "astra gtc";
   if (mk === "bmw" && /^[1-5]\d\d[a-z]{0,2}$/.test(m)) m = `${m[0]} series`;
