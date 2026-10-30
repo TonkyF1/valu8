@@ -52,7 +52,10 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   let y = margin;
   const valuationUnavailable = !!r.valuationUnavailable;
   const isLiveListings = r.pricingSource === "marketcheck" || (!r.pricingSource && !!(r as any).marketBaseline);
-  const limitedData = valuationUnavailable && !isLiveListings && !r.rareCarWarning;
+  const isOwnComps = (r.pricingSource as string) === "valu8_comps";
+  const isEstimate = !isLiveListings && !isOwnComps;
+  const sourceLabel = isLiveListings ? "MarketCheck UK live listings" : isOwnComps ? "Comparable UK adverts (Valu8 data)" : "AI market estimate (live listings unavailable)";
+  const limitedData = valuationUnavailable && isEstimate && !r.rareCarWarning;
 
   const ensureSpace = (need: number) => {
     if (y + need > pageH - margin) { doc.addPage(); y = margin; }
@@ -71,7 +74,35 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   doc.text(meta, margin, 82);
   y = 120;
 
-  // Condition + values
+  // Three value tiers (full-width row), then condition beneath so they never overlap
+  if (!valuationUnavailable) {
+    const tiers = [
+      { label: "Dealer Trade-in", value: normaliseReportPricing(r).tradeIn },
+      { label: "Private Sale (Best)", value: normaliseReportPricing(r).privateSale, highlight: true },
+      { label: "Dealer Retail", value: normaliseReportPricing(r).retail },
+    ];
+    const tierW = (pageW - margin * 2 - 20) / 3;
+    const tierStart = margin;
+    tiers.forEach((t, i) => {
+      const x = tierStart + i * (tierW + 10);
+      if (t.highlight) {
+        doc.setFillColor(...TEAL); doc.rect(x, y, tierW, 60, "F");
+        doc.setTextColor(...DARK);
+      } else {
+        doc.setDrawColor(220, 220, 225); doc.setLineWidth(0.5);
+        doc.rect(x, y, tierW, 60);
+        doc.setTextColor(...MUTED);
+      }
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+      doc.text(t.label.toUpperCase(), x + 10, y + 16);
+      doc.setTextColor(t.highlight ? 17 : 17, t.highlight ? 17 : 17, t.highlight ? 17 : 17);
+      // Under £5,000 the private sale tier is a range (see cheapRange.ts)
+      const pr = t.highlight ? reportPriceRange(r, t.value) : null;
+      doc.setFontSize(pr ? 13 : 18);
+      doc.text(pr ? formatPriceRange(pr) : `£${t.value.toLocaleString()}`, x + 10, y + 42);
+    });
+    y += 84;
+  }
   doc.setTextColor(...DARK); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
   doc.text(valuationUnavailable ? "VALUATION STATUS" : "CONDITION", margin, y);
   if (valuationUnavailable) {
@@ -93,41 +124,13 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
     }
   }
 
-  // Three value tiers
-  if (!valuationUnavailable) {
-    const tiers = [
-      { label: "Dealer Trade-in", value: normaliseReportPricing(r).tradeIn },
-      { label: "Private Sale (Best)", value: normaliseReportPricing(r).privateSale, highlight: true },
-      { label: "Dealer Retail", value: normaliseReportPricing(r).retail },
-    ];
-    const tierW = 150;
-    const tierStart = pageW - margin - tierW * 3 - 20;
-    tiers.forEach((t, i) => {
-      const x = tierStart + i * (tierW + 10);
-      if (t.highlight) {
-        doc.setFillColor(...TEAL); doc.rect(x, y - 4, tierW, 60, "F");
-        doc.setTextColor(...DARK);
-      } else {
-        doc.setDrawColor(220, 220, 225); doc.setLineWidth(0.5);
-        doc.rect(x, y - 4, tierW, 60);
-        doc.setTextColor(...MUTED);
-      }
-      doc.setFont("helvetica", "bold"); doc.setFontSize(8);
-      doc.text(t.label.toUpperCase(), x + 10, y + 12);
-      doc.setTextColor(t.highlight ? 17 : 17, t.highlight ? 17 : 17, t.highlight ? 17 : 17);
-      // Under £5,000 the private sale tier is a range (see cheapRange.ts)
-      const pr = t.highlight ? reportPriceRange(r, t.value) : null;
-      doc.setFontSize(pr ? 13 : 18);
-      doc.text(pr ? formatPriceRange(pr) : `£${t.value.toLocaleString()}`, x + 10, y + 38);
-    });
-  }
-  y += 90;
+  y += valuationUnavailable ? 90 : 72;
 
   if (valuationUnavailable) {
     y = wrappedText(doc, r.valueReasoning || r.honestAnalysis, margin, y, pageW - margin * 2, 10, 14, MUTED);
     y += 8;
   } else {
-    if (!isLiveListings) {
+    if (isEstimate) {
       ensureSpace(40);
       doc.setFillColor(255, 243, 205); doc.rect(margin, y - 14, pageW - margin * 2, 30, "F");
       doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(120, 80, 0);
@@ -259,7 +262,7 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   for (let i = 1; i <= pages; i++) {
     doc.setPage(i);
     doc.setFontSize(8); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
-    doc.text(`Sources: ${isLiveListings ? "MarketCheck UK live listings" : "AI market estimate (live listings unavailable)"}, DVSA MOT history. Not financial advice.  valu8.uk`, margin, pageH - 20);
+    doc.text(`Sources: ${sourceLabel}, DVSA MOT history. Not financial advice.  valu8.uk`, margin, pageH - 20);
     doc.text(`${i} / ${pages}`, pageW - margin, pageH - 20, { align: "right" });
   }
 

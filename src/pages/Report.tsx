@@ -272,7 +272,9 @@ export default function Report() {
     (strongSingleSignal && rarityReasons.length >= 1) ||
     rarityReasons.length >= 3;
 
-  const liveConfidenceLine = !isLiveListings
+  const liveConfidenceLine = isOwnComps
+    ? "Priced from comparable UK adverts (Valu8 data)."
+    : !isLiveListings
     ? "An estimate built from our UK advert database and AI market analysis, not live listings."
     : liveTier === "High"
       ? "Priced from a deep pool of live UK listings — a well-supported valuation."
@@ -286,12 +288,12 @@ export default function Report() {
     if (r.expertInsight?.reason) return r.expertInsight.reason;
     const top = rarityReasons.slice(0, 2);
     if (top.length === 0) {
-      return `We've layered expert analysis on top of ${isLiveListings ? "live market data" : "our AI market estimate"} to give you a confident figure on a harder-than-average car to price.`;
+      return `We've layered expert analysis on top of ${isLiveListings ? "live market data" : isOwnComps ? "comparable UK adverts" : "our AI market estimate"} to give you a confident figure on a harder-than-average car to price.`;
     }
     if (top.length === 1) {
-      return `Because ${top[0]}, we've layered expert analysis on top of ${isLiveListings ? "live market data" : "our AI market estimate"} to give you a confident figure.`;
+      return `Because ${top[0]}, we've layered expert analysis on top of ${isLiveListings ? "live market data" : isOwnComps ? "comparable UK adverts" : "our AI market estimate"} to give you a confident figure.`;
     }
-    return `Because ${top[0]} and ${top[1]}, we've layered expert analysis on top of ${isLiveListings ? "live market data" : "our AI market estimate"} to give you a confident figure.`;
+    return `Because ${top[0]} and ${top[1]}, we've layered expert analysis on top of ${isLiveListings ? "live market data" : isOwnComps ? "comparable UK adverts" : "our AI market estimate"} to give you a confident figure.`;
   })();
 
   const share = async () => {
@@ -695,7 +697,7 @@ export default function Report() {
                       r.headline
                     ) : (
                       <>
-                        {isLiveListings ? "Based on live UK market data" : "Based on our AI market estimate"}, a realistic figure for this {v.year} {makeDisplay} {modelDisplay} {reportPriceRange(r, normaliseReportPricing(r).privateSale) ? "sits in the range" : "sits around"}{" "}
+                        {isLiveListings ? "Based on live UK market data" : isOwnComps ? "Based on comparable UK adverts" : "Based on our AI market estimate"}, a realistic figure for this {v.year} {makeDisplay} {modelDisplay} {reportPriceRange(r, normaliseReportPricing(r).privateSale) ? "sits in the range" : "sits around"}{" "}
                         <span className="tabular-nums font-medium">{headlinePrivateText(normaliseReportPricing(r).privateSale, r)}</span>.
                       </>
                     )}
@@ -1196,7 +1198,7 @@ export default function Report() {
         <footer className="mt-12 pt-6 border-t border-border/40">
           <div className="text-xs text-muted-foreground/60 font-semibold mb-2">Legal</div>
           <p className="text-xs leading-relaxed text-muted-foreground/70">
-            Sources: {isLiveListings ? "MarketCheck UK live listings" : "AI market estimate (live listings unavailable)"}, DVSA MOT history, AI photo analysis. Estimates are for guidance only — not financial advice or a guaranteed sale price. Always verify vehicle history and MOT independently before transacting.
+            Sources: {marketSourceLabel}, DVSA MOT history, AI photo analysis. Estimates are for guidance only — not financial advice or a guaranteed sale price. Always verify vehicle history and MOT independently before transacting.
           </p>
         </footer>
         </div>

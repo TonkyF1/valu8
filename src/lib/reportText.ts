@@ -29,10 +29,31 @@ type Textish = {
   photoInsights?: Array<{ observation?: string; priceImpact?: number; fixable?: boolean; fixCost?: number; photoIndex?: number; severity?: string; slot?: string }>;
 };
 
+const GUMTREE_RE = /(?:\b[\w.]+(?:\s+[\w.]+)?\s*\/\s*)?\bgumtree(?:\.com)?\b(?:\s*\/\s*[\w.]+)?/gi;
+/** Replaces named classified sites we must not mention with neutral wording. */
+export function neutraliseSites(t: string): string {
+  if (!/gumtree/i.test(t)) return t;
+  return t
+    .replace(GUMTREE_RE, "major UK car sites")
+    .replace(/(major UK car sites)(?:\s*(?:,|and|or|&)\s*major UK car sites)+/gi, "$1");
+}
+/** Deep-walks AI-written text (skipping URLs/ids) and neutralises site names. */
+function neutraliseDeep<T>(v: T, key = ""): T {
+  if (typeof v === "string") return (/^(url|link|href|source|id)$/i.test(key) || /^https?:/i.test(v) ? v : neutraliseSites(v)) as T;
+  if (Array.isArray(v)) return v.map((x) => neutraliseDeep(x, key)) as T;
+  if (v && typeof v === "object") {
+    const o: Record<string, unknown> = {};
+    for (const [k, x] of Object.entries(v as Record<string, unknown>)) o[k] = neutraliseDeep(x, k);
+    return o as T;
+  }
+  return v;
+}
+
 /** Fixes stale "long MOT" claims and source wording in already-saved reports. */
 export function cleanReportText<T extends Textish>(r: T, motExpiry: string | null | undefined, now: Date = new Date()): T {
   const fix = (t?: string) => (t ? sanitizeMotClaim(t, motExpiry, now) : t);
   const keep = (l?: string[]) => motConsistentBullets(Array.isArray(l) ? l.filter((x) => !isFalseLongMotClaim(x, motExpiry, now)) : l, motExpiry, now);
+  r = neutraliseDeep(r);
   return dedupeReportText({
     ...r,
     // Validated in the function too; re-run so reports saved before that are consistent.
