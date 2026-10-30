@@ -22,7 +22,7 @@ const FREE = [
 ];
 
 const PREMIUM = [
-  "Priced against thousands of real UK adverts in our database",
+  "Priced against comparable UK adverts",
   "AI photo condition score and what it does to the price",
   "Suggested asking price and negotiation buffer",
   "Ready-to-post marketplace advert",
