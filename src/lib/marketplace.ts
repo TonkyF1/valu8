@@ -5,7 +5,6 @@ export const MARKETPLACES: { key: Marketplace; label: string; length: "short" | 
   { key: "autotrader", label: "AutoTrader", length: "full", url: "https://www.autotrader.co.uk/selling" },
   { key: "ebay", label: "eBay Motors", length: "full", url: "https://www.ebay.co.uk/sl/sell" },
   { key: "facebook", label: "Facebook Marketplace", length: "short", url: "https://www.facebook.com/marketplace/create/vehicle" },
-  { key: "gumtree", label: "Other classifieds", length: "medium", url: "https://www.gumtree.com/postad" },
 ];
 
 export interface AdVehicle { make: string; model: string; year: number; mileage: number; price?: number; location?: string }
