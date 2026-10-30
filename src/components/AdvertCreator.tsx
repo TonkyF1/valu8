@@ -23,7 +23,7 @@ interface Props {
 }
 
 const LENGTHS: { key: Length; label: string; sub: string }[] = [
-  { key: "short", label: "Short", sub: "Marketplace / Gumtree" },
+  { key: "short", label: "Short", sub: "Marketplace / classifieds" },
   { key: "medium", label: "Medium", sub: "Balanced detail" },
   { key: "full", label: "Full", sub: "AutoTrader-style" },
 ];
@@ -130,7 +130,7 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: P
         </div>
         <h2 className="text-lg font-semibold mb-1.5">Ready to sell?</h2>
         <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-          Generate a polished, ready-to-post advert for AutoTrader, Facebook Marketplace and Gumtree using your valuation data.
+          Generate a polished, ready-to-post advert for AutoTrader, Facebook Marketplace and other UK advert sites using your valuation data.
         </p>
         <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto mb-3">
           <input

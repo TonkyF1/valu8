@@ -110,7 +110,7 @@ export default function Check() {
           <SearchCheck className="h-7 w-7 text-primary shrink-0" aria-hidden /> Is this used car a fair price?
         </h1>
         {!user && <div className="mt-6"><AdvertFollowupCard guest /></div>}
-        <p className="text-sm text-muted-foreground mt-2">Buying a used car? Copy in the details from AutoTrader, eBay, Gumtree or Facebook and we'll tell you how the asking price compares with what similar cars go for in the UK.</p>
+        <p className="text-sm text-muted-foreground mt-2">Buying a used car? Copy in the details from any UK car advert and we'll tell you how the asking price compares with what similar cars go for in the UK.</p>
 
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 mt-6">
           {field("make", "Make", { placeholder: "e.g. Skoda", autoComplete: "off", required: true })}
