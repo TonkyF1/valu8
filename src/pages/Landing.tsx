@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CAR_MODELS } from "@/data/carModels";
 import { useSeo } from "@/lib/seo";
 import { isPlausibleUkReg, normaliseReg } from "@/lib/registration";
+import { track } from "@/lib/funnel";
 import { getRouteMeta } from "@/data/routeMeta";
 
 const FAQS = [
@@ -87,7 +88,7 @@ export default function Landing() {
                   <input
                     id="home-reg"
                     value={plate}
-                    onChange={(e) => { setPlate(e.target.value.toUpperCase()); setPlateErr(null); }}
+                    onChange={(e) => { setPlate(e.target.value.toUpperCase()); setPlateErr(null); if (e.target.value.trim()) track("reg_typed"); }}
                     placeholder="AB12 CDE"
                     autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={10}
                     enterKeyHint="go"

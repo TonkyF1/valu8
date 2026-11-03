@@ -9,6 +9,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ReportErrorBoundary } from "@/components/ReportErrorBoundary";
 import { PostHogTracker } from "@/components/PostHogTracker";
+import { trackLanded } from "@/lib/funnel";
+
+trackLanded();
 const NewValuation = lazy(() => import("./pages/NewValuation"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
