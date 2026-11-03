@@ -24,6 +24,7 @@ export type Feature =
   | "fair_price_verdict"
   | "offer_guidance"
   | "seller_questions"
+  | "premium_report"
   // Buyer subscription
   | "unlimited_advert_checks"
   | "saved_cars"
@@ -42,6 +43,7 @@ export const FEATURE_PLAN: Readonly<Record<Feature, Plan>> = Object.freeze({
   fair_price_verdict: "report",
   offer_guidance: "report",
   seller_questions: "report",
+  premium_report: "report",
   unlimited_advert_checks: "subscription",
   saved_cars: "subscription",
   price_alerts: "subscription",
@@ -136,4 +138,14 @@ export function featuresForPlan(plan: Plan): Feature[] {
 /** "£4.99" style label from pence. */
 export function formatPence(p: number): string {
   return `£${(p / 100).toFixed(2)}`;
+}
+
+/**
+ * Premium report styling (web + PDF). Unlike canUse(), this is OFF while charging is off:
+ * it needs enforcement on AND a real entitlement (admin, subscription or purchase), so
+ * everyone keeps today's report until payment exists.
+ */
+export function showPremiumReport(ctx: EntitlementContext = {}): boolean {
+  const e = entitlementFor("premium_report", ctx);
+  return e.allowed && e.reason !== "not_enforced";
 }
