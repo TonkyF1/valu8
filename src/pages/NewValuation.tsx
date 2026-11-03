@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getAttribution } from "@/lib/attribution";
 import { useSeo } from "@/lib/seo";
+import { track } from "@/lib/funnel";
 import { inferPerformanceTrim, type TrimHint } from "@/lib/perfTrim";
 import { GUEST_DAILY_CAP, functionErrorBody, getGuestToken, photoToDataUrl, rememberGuestValuation } from "@/lib/guest";
 
@@ -170,9 +171,11 @@ export default function NewValuation() {
       setVariant(providerTrim || (hint?.confident ? hint.variant : ""));
       setTrimAuto(!providerTrim && !!hint?.confident);
       if (result.lastMileage && !mileage) setMileage(String(result.lastMileage));
+      track("lookup_success");
       toast.success("Vehicle found");
     } catch (err: any) {
       const msg = err?.message || "We couldn't find a vehicle with that registration.";
+      track("lookup_fail");
       setLookupError(`${msg} Check the plate, or enter the details manually.`);
       toast.error(msg);
     } finally {
@@ -296,6 +299,7 @@ export default function NewValuation() {
         modifications.trim() ? `Modifications / extras: ${modifications.trim()}` : "",
       ].filter(Boolean).join("\n");
 
+      track("submitted");
       const { data: aiData, error: aiErr } = await supabase.functions.invoke("analyse-vehicle", {
         body: {
           make: parsed.data.make,
@@ -406,6 +410,8 @@ export default function NewValuation() {
 
 
   const showVehicleStep = !!lookup;
+  const flowStep = showVehicleStep ? (photos.length > 0 ? 2 : 1) : 0;
+  useEffect(() => { track(flowStep === 0 ? "step_reg" : flowStep === 1 ? "step_details" : "step_photos"); }, [flowStep]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -453,7 +459,7 @@ export default function NewValuation() {
                 aria-label="Vehicle registration number"
                 autoComplete="off"
                 value={reg}
-                onChange={(e) => { setReg(e.target.value.toUpperCase()); setLookupError(null); }}
+                onChange={(e) => { setReg(e.target.value.toUpperCase()); setLookupError(null); if (e.target.value.trim()) track("reg_typed"); }}
                 placeholder="AB12 CDE"
                 maxLength={10}
                 disabled={looking}

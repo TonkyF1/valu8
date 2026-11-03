@@ -40,6 +40,8 @@ import { explainValuation } from "@/lib/valuationExplainer";
 import { HowWeValue } from "@/components/HowWeValue";
 import { SaleFeedbackCard } from "@/components/SaleFeedbackCard";
 import { ValuationFeedbackCard } from "@/components/ValuationFeedbackCard";
+import { PriceAlertOptIn } from "@/components/PriceAlertOptIn";
+import { track } from "@/lib/funnel";
 import { GuestMarketingConsent } from "@/components/MarketingConsent";
 import { stripSaleFeedback } from "@/lib/saleFeedback";
 import { useAuth } from "@/contexts/AuthContext";
@@ -75,6 +77,7 @@ export default function Report() {
     if (isGuest && id && !isGuestValuation(id)) navigate(`/shared/${id}`, { replace: true });
   }, [isGuest, id, navigate]);
   const [v, setV] = useState<Valuation | null>(null);
+  useEffect(() => { if (v && !isShared) track("result_seen"); }, [v, isShared]);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -616,6 +619,8 @@ export default function Report() {
                     </>
                   );
                 })()}
+
+                {!isShared && !authLoading && !(r as any)?.valuationUnavailable && <PriceAlertOptIn valuationId={v.id} isGuest={isGuest} />}
 
                 {/* Live data ticker */}
                 {liveCount != null && liveCount > 0 && (
