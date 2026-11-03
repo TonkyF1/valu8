@@ -1,3 +1,5 @@
+import { PremiumReport } from "@/components/PremiumReport";
+import { showPremiumReport } from "@/lib/entitlements";
 import { sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
 import { hasPhotos, normaliseReportPricing } from "@/lib/askingPrice";
 import { reportPriceRange, headlinePrivateText } from "../../supabase/functions/_shared/cheapRange";
@@ -307,10 +309,14 @@ export default function Report() {
     posthog.capture?.("Report Shared", { method: res });
   };
 
+  // Off while charging is off (VITE_PREMIUM_ENFORCED unset): everyone keeps the standard report.
+  const premium = showPremiumReport({ itemId: v.id });
+
   const downloadPdf = async () => {
     const tid = toast.loading("Generating PDF…");
     try {
-      await (await import("@/lib/pdf")).downloadValuationPdf(v, r, { shareUrl: `${window.location.origin}/shared/${v.id}` });
+      if (premium) await (await import("@/lib/pdfPremium")).downloadPremiumPdf(v, r);
+      else await (await import("@/lib/pdf")).downloadValuationPdf(v, r, { shareUrl: `${window.location.origin}/shared/${v.id}` });
       toast.success("Report downloaded successfully", { id: tid });
     } catch (err) {
       console.error("PDF download failed", err);
@@ -323,6 +329,7 @@ export default function Report() {
       <TestModeBanner />
       <Header />
       <main id="main" className="flex-1 container py-6 md:py-8 pb-28 sm:pb-8 max-w-5xl lg:max-w-6xl">
+        {premium && <PremiumReport r={r} registration={v.registration} />}
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           {isShared || isGuest ? (
             <Button asChild variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0">
