@@ -12,7 +12,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  if (!premiumEnforced() || !stripeConfigured()) {
+  // Checkout-only switch: on by default (Tony approved 4 Nov 2026). The global PREMIUM_ENFORCED
+  // also gates analyse-vehicle/fair-price, so it is NOT required here. REPORT_CHECKOUT_ENABLED=false
+  // turns checkout off without a deploy of code.
+  const checkoutOn = premiumEnforced() || (Deno.env.get("REPORT_CHECKOUT_ENABLED") ?? "true").toLowerCase() !== "false";
+  if (!checkoutOn || !stripeConfigured()) {
     return json({ error: "Payments are not enabled yet.", code: "billing_inactive" }, 503);
   }
   const g = await guard(req, { feature: "report-checkout", perMinute: 5, perDay: 30, ipPerHour: 30 });

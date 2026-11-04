@@ -1,3 +1,4 @@
+import { PREMIUM_ENFORCED_DEFAULT } from "@/config/stripePublic";
 /**
  * Valu8 entitlements — which features need which purchase.
  *
@@ -93,7 +94,10 @@ export interface Entitlement {
 
 export function premiumEnforced(): boolean {
   try {
-    return String(import.meta.env?.VITE_PREMIUM_ENFORCED ?? "").toLowerCase() === "true";
+    const v = String(import.meta.env?.VITE_PREMIUM_ENFORCED ?? "").trim().toLowerCase();
+    if (v === "true") return true;
+    if (v === "false") return false;
+    return PREMIUM_ENFORCED_DEFAULT;
   } catch {
     return false;
   }

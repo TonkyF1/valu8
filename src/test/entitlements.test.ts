@@ -1,16 +1,16 @@
 import { describe, it, expect } from "vitest";
+import { PREMIUM_ENFORCED_DEFAULT } from "@/config/stripePublic";
 import { FEATURE_PLAN, entitlementFor, canUse, featuresForPlan, formatPence, premiumEnforced, type Feature } from "@/lib/entitlements";
 
 const ALL = Object.keys(FEATURE_PLAN) as Feature[];
 
 describe("entitlements", () => {
-  it("is off by default: env flag unset means not enforced", () => {
-    expect(premiumEnforced()).toBe(false);
+  it("follows the committed default when the env flag is unset", () => {
+    expect(premiumEnforced()).toBe(PREMIUM_ENFORCED_DEFAULT);
   });
 
   it("unlocks every feature for everyone while enforcement is off", () => {
     for (const f of ALL) {
-      expect(canUse(f)).toBe(true);
       expect(canUse(f, { enforced: false })).toBe(true);
     }
   });
