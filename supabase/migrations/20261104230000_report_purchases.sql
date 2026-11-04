@@ -27,5 +27,6 @@ CREATE POLICY "Owners read own report purchases" ON public.report_purchases
   FOR SELECT TO authenticated
   USING (EXISTS (SELECT 1 FROM public.valuations v WHERE v.id = valuation_id AND v.user_id = auth.uid()));
 
-REVOKE INSERT, UPDATE, DELETE ON public.report_purchases FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.report_purchases FROM anon, authenticated;
+REVOKE ALL ON public.report_purchases FROM anon;
 GRANT ALL ON public.report_purchases TO service_role;
