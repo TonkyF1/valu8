@@ -1,5 +1,6 @@
 import { PremiumReport } from "@/components/PremiumReport";
-import { showPremiumReport } from "@/lib/entitlements";
+import { premiumEnforced, showPremiumReport } from "@/lib/entitlements";
+import { ReportCheckout, fetchReportPaid } from "@/components/ReportCheckout";
 import { sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
 import { hasPhotos, normaliseReportPricing } from "@/lib/askingPrice";
 import { reportPriceRange, headlinePrivateText } from "../../supabase/functions/_shared/cheapRange";
@@ -9,7 +10,7 @@ import { shareLink } from "@/lib/retention";
 import { useSeo } from "@/lib/seo";
 import { posthog } from "@/lib/posthog";
 import { displayMake, displayModel, normaliseFuel, vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header, TestModeBanner } from "@/components/Layout";
@@ -123,6 +124,34 @@ export default function Report() {
         setLoading(false);
       });
   }, [id, isShared, authLoading, user?.id]);
+
+  // £2.99 Full Report: only active when VITE_PREMIUM_ENFORCED=true. Unlocks from the
+  // webhook-written report_purchases row; ?session_id= only triggers a short re-check.
+  const enforcedPremium = premiumEnforced();
+  const [reportPaid, setReportPaid] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const checkPaid = useCallback(async () => {
+    if (!id) return false;
+    const paid = await fetchReportPaid(id).catch(() => false);
+    if (paid) setReportPaid(true);
+    return paid;
+  }, [id]);
+  useEffect(() => {
+    if (!enforcedPremium || !id || isShared) return;
+    let cancelled = false;
+    const returned = new URLSearchParams(location.search).has("session_id");
+    (async () => {
+      if (await checkPaid()) return;
+      if (!returned) return;
+      setVerifyingPayment(true);
+      for (let i = 0; i < 15 && !cancelled; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        if (cancelled || (await checkPaid())) break;
+      }
+      if (!cancelled) setVerifyingPayment(false);
+    })();
+    return () => { cancelled = true; };
+  }, [enforcedPremium, id, isShared, location.search, checkPaid]);
 
   const [scrolledPastHeader, setScrolledPastHeader] = useState(false);
   useEffect(() => {
@@ -310,7 +339,7 @@ export default function Report() {
   };
 
   // Off while charging is off (VITE_PREMIUM_ENFORCED unset): everyone keeps the standard report.
-  const premium = showPremiumReport({ itemId: v.id });
+  const premium = showPremiumReport({ itemId: v.id, reportItemIds: reportPaid ? [v.id] : [] });
 
   const downloadPdf = async () => {
     const tid = toast.loading("Generating PDF…");
@@ -330,6 +359,9 @@ export default function Report() {
       <Header />
       <main id="main" className="flex-1 container py-6 md:py-8 pb-28 sm:pb-8 max-w-5xl lg:max-w-6xl">
         {premium && <PremiumReport r={r} registration={v.registration} />}
+        {enforcedPremium && !premium && !isShared && !(r as any)?.valuationUnavailable && (
+          <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />
+        )}
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           {isShared || isGuest ? (
             <Button asChild variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0">
