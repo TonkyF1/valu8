@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     const priceId = Deno.env.get("STRIPE_REPORT_PRICE_ID") || DEFAULT_REPORT_PRICE;
     const base = siteUrl(req).replace(/\/$/, "");
     const session = await stripe("checkout/sessions", {
-      ui_mode: "embedded",
+      ui_mode: "embedded_page",  // Stripe renamed "embedded" → "embedded_page"
       mode: "payment",
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
