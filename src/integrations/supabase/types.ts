@@ -251,6 +251,33 @@ export type Database = {
         }
         Relationships: []
       }
+      funnel_events: {
+        Row: {
+          created_at: string
+          detail: string | null
+          device: string
+          id: number
+          session_id: string
+          step: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          device: string
+          id?: number
+          session_id: string
+          step: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          device?: string
+          id?: number
+          session_id?: string
+          step?: string
+        }
+        Relationships: []
+      }
       guest_marketing_consents: {
         Row: {
           consented_at: string
@@ -406,6 +433,59 @@ export type Database = {
           window_start?: string
         }
         Relationships: []
+      }
+      report_purchases: {
+        Row: {
+          amount_total: number | null
+          created_at: string
+          currency: string | null
+          customer_email: string | null
+          id: string
+          livemode: boolean
+          price_id: string | null
+          registration: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string
+          valuation_id: string
+        }
+        Insert: {
+          amount_total?: number | null
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          id?: string
+          livemode?: boolean
+          price_id?: string | null
+          registration?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id: string
+          valuation_id: string
+        }
+        Update: {
+          amount_total?: number | null
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          id?: string
+          livemode?: boolean
+          price_id?: string | null
+          registration?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string
+          valuation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_purchases_valuation_id_fkey"
+            columns: ["valuation_id"]
+            isOneToOne: false
+            referencedRelation: "valuations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sale_feedback: {
         Row: {
@@ -684,6 +764,21 @@ export type Database = {
       }
     }
     Views: {
+      funnel_daily: {
+        Row: {
+          day: string | null
+          landed: number | null
+          lookup_fail: number | null
+          lookup_success: number | null
+          price_alert_opt_in: number | null
+          reg_typed: number | null
+          result_seen: number | null
+          step_details: number | null
+          step_photos: number | null
+          submitted: number | null
+        }
+        Relationships: []
+      }
       readiness_outcomes: {
         Row: {
           confidence: string | null
