@@ -35,7 +35,7 @@ export function Footer() {
         <div className="space-y-3">
           <Logo size="sm" />
           <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-            Independent car valuations for UK private sellers and buyers. Free during early access.
+            Independent car valuations for UK private sellers and buyers. Essentials free; Full seller report £2.99 one-off.
           </p>
         </div>
         {COLS.map((c) => (
