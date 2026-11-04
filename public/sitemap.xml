@@ -50,4 +50,25 @@
   <url><loc>https://valu8.uk/car-values/skoda/octavia</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/car-values/honda/civic</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/car-values/tesla/model-3</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value</loc><priority>0.8</priority></url>
+  <url><loc>https://valu8.uk/value/ford-fiesta</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/volkswagen-golf</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/ford-focus</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/volkswagen-polo</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/bmw-3-series</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/fiat-500</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/bmw-1-series</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/nissan-qashqai</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/renault-clio</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/audi-a3</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/mercedes-benz-c-class</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/toyota-yaris</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/nissan-juke</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/honda-jazz</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/mercedes-benz-a-class</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/peugeot-208</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/ford-kuga</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/audi-a4</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/nissan-micra</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/bmw-5-series</loc><priority>0.7</priority></url>
 </urlset>

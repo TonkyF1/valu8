@@ -1,5 +1,7 @@
 import { CAR_MODELS, type CarModelPage } from "./carModels";
 import { GUIDES } from "./guides";
+import { MODEL_PRICES } from "./modelPriceBands";
+import { VALUE_INDEX_DESCRIPTION, VALUE_INDEX_PATH, VALUE_INDEX_TITLE, valueMeta } from "./valuePages";
 
 export const SITE_URL = "https://valu8.uk";
 
@@ -49,7 +51,11 @@ export const GUIDE_ROUTES: RouteMeta[] = [
   { path: "/guides", title: "Car valuation, buying and selling guides | Valu8", description: "Free, plain-English UK guides to valuing, buying and selling a used car: part-exchange vs private sale, spotting an overpriced advert, selling safely and checking MOT history.", priority: "0.7", inSitemap: true },
   ...GUIDES.map((g): RouteMeta => ({ path: g.path, title: g.title, description: g.description, priority: "0.6", inSitemap: true })),
 ];
-export const ALL_ROUTES = [...STATIC_ROUTES, ...GUIDE_ROUTES, ...CAR_MODEL_ROUTES];
+export const VALUE_ROUTES: RouteMeta[] = [
+  { path: VALUE_INDEX_PATH, title: VALUE_INDEX_TITLE, description: VALUE_INDEX_DESCRIPTION, priority: "0.8", inSitemap: true },
+  ...MODEL_PRICES.map((m): RouteMeta => ({ ...valueMeta(m), priority: "0.7", inSitemap: true })),
+];
+export const ALL_ROUTES = [...STATIC_ROUTES, ...GUIDE_ROUTES, ...CAR_MODEL_ROUTES, ...VALUE_ROUTES];
 
 /** Unknown paths must not silently inherit the homepage's metadata. */
 export function getRouteMeta(path: string): RouteMeta {

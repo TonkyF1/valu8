@@ -37,6 +37,8 @@ const Check = lazy(() => import("./pages/Check"));
 const Accuracy = lazy(() => import("./pages/Accuracy"));
 const CarValue = lazy(() => import("./pages/CarValue"));
 const CarValuesIndex = lazy(() => import("./pages/CarValuesIndex"));
+const ModelValue = lazy(() => import("./pages/ModelValue"));
+const ValueIndex = lazy(() => import("./pages/ModelValue").then((m) => ({ default: m.ValueIndex })));
 const GuidesIndex = lazy(() => import("./pages/GuidesIndex"));
 const Guide = lazy(() => import("./pages/Guide"));
 
@@ -78,6 +80,8 @@ const App = () => (
             <Route path="/shared/:id" element={<ReportErrorBoundary><Report /></ReportErrorBoundary>} />
             <Route path="/valuation/:id/edit" element={<ProtectedRoute><EditValuation /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/value" element={<ValueIndex />} />
+            <Route path="/value/:slug" element={<ModelValue />} />
             <Route path="/car-values" element={<CarValuesIndex />} />
             <Route path="/car-values/:make/:model" element={<CarValue />} />
             <Route path="/guides" element={<GuidesIndex />} />

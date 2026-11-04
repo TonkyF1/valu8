@@ -9,6 +9,8 @@ import { routeHtml } from "./scripts/routeHtml";
 import { buildSitemap } from "./scripts/sitemap";
 import { GUIDES, guideArticleHtml, guideFaqJsonLd, guidesIndexBodyHtml } from "./src/data/guides";
 import { CAR_MODELS } from "./src/data/carModels";
+import { MODEL_PRICES } from "./src/data/modelPriceBands";
+import { valueBodyHtml, valueIndexBodyHtml, valuePath } from "./src/data/valuePages";
 import { carModelBodyHtml, carModelJsonLd, carPath, carValuesIndexBodyHtml } from "./src/data/carValueContent";
 
 function routeMetadataHtml(): Plugin {
@@ -27,7 +29,12 @@ function routeMetadataHtml(): Plugin {
         const fileBase = path.join(outDir, meta.path.slice(1));
         const guide = GUIDES.find((g) => g.path === meta.path);
         const car = CAR_MODELS.find((m) => carPath(m) === meta.path);
-        const extra = meta.path === "/guides"
+        const vm = MODEL_PRICES.find((m) => valuePath(m) === meta.path);
+        const extra = meta.path === "/value"
+          ? { bodyHtml: valueIndexBodyHtml() }
+          : vm
+            ? { bodyHtml: valueBodyHtml(vm) }
+            : meta.path === "/guides"
           ? { bodyHtml: guidesIndexBodyHtml() }
           : guide
             ? { bodyHtml: guideArticleHtml(guide), headHtml: '<script type="application/ld+json" id="guide-faq-jsonld">' + guideFaqJsonLd(guide) + '</script>' }
