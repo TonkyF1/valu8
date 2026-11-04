@@ -9,8 +9,9 @@ import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { Lock, ShieldCheck, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { STRIPE_PUBLISHABLE_KEY } from "@/config/stripePublic";
 
-const PK = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
+const PK = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined) || STRIPE_PUBLISHABLE_KEY;
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
 const getStripe = () => (stripePromise ??= PK ? loadStripe(PK) : Promise.resolve(null));
 
