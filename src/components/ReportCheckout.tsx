@@ -73,7 +73,7 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
               className="min-h-[48px] rounded-xl px-6 text-base font-semibold transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FDE047]"
               style={{ background: "#00D6C8", color: "#111111" }}
             >
-              Get Full Report · £2.99
+              Get my full report · £2.99
             </button>
             <p className="flex items-center gap-1 text-xs opacity-70"><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Secure payment by Stripe · Apple Pay · Google Pay · Card</p>
           </div>

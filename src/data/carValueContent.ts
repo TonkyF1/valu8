@@ -29,7 +29,7 @@ export function carFaqs(m: CarModelPage): { q: string; a: string }[] {
     { q: `How much is my ${name} worth?`, a: `It depends mostly on age, mileage, condition and spec. Valu8 compares your ${name} with similar cars currently for sale in the UK, corrects each one to your car's age and mileage, then adjusts for your MOT history and photos.` },
     { q: `Is a private sale better than part-exchange for a ${name}?`, a: "Usually you'll get more selling privately, because a dealer needs margin to resell. Your report shows both figures so you can decide whether the difference is worth the effort." },
     { q: "Does high mileage hurt the value?", a: `Yes. As a rule of thumb in our model, a car with double the mileage of an otherwise similar ${seg} is worth around 12% less, and very high mileage (over 140,000) carries an extra discount.` },
-    { q: "Is Valu8 free?", a: "Yes, during early access. Enter your registration and mileage to get a full report." },
+    { q: "Is Valu8 free?", a: "The valuation (Essentials) is free. The Full seller report is a one-off £2.99 — no subscription." },
   ];
 }
 

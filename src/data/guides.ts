@@ -80,7 +80,7 @@ Forecourt prices are dealer retail prices. They include preparation, often a war
 Both matter, and they're judged together. A car with high mileage for its age will usually be worth less than the same car with typical miles.
 
 **Is a Valu8 valuation free?**
-Yes. Valu8 is free during early access, with no card needed.
+The valuation (Essentials) is free. The Full seller report is a one-off £2.99 — no subscription. Pay by card, Apple Pay or Google Pay.
 
 ---
 
