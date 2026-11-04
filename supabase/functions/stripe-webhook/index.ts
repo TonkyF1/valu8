@@ -1,5 +1,6 @@
 // Valu8 — Stripe webhook (verify_jwt = false; authenticated by signature).
 // Inactive until STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are set.
+// Full Report (metadata.kind=full_report) -> report_purchases (idempotent).
 // Syncs billing_customers and profiles.is_premium/plan via the service role.
 import { adminClient, json, premiumEnforced } from "../_shared/guard.ts";
 import { stripe, verifyStripeSignature } from "../_shared/stripe.ts";
@@ -10,6 +11,25 @@ async function setPremium(userId: string, on: boolean) {
   // Sandbox: while PREMIUM_ENFORCED is off, never downgrade anyone.
   if (!on && !premiumEnforced()) return;
   await adminClient()!.from("profiles").update({ is_premium: on, plan: on ? "premium" : "free" }).eq("user_id", userId);
+}
+
+/** One-off £2.99 Full Report (Embedded Checkout). Idempotent on stripe_session_id. */
+async function grantReport(obj: any, livemode: boolean) {
+  const valuationId = obj.metadata?.valuation_id || obj.client_reference_id;
+  if (!valuationId || obj.payment_status !== "paid") return;
+  const { error } = await adminClient()!.from("report_purchases").upsert({
+    valuation_id: valuationId,
+    registration: obj.metadata?.reg ?? null,
+    stripe_session_id: obj.id,
+    stripe_payment_intent_id: typeof obj.payment_intent === "string" ? obj.payment_intent : obj.payment_intent?.id ?? null,
+    price_id: obj.metadata?.price_id ?? null,
+    amount_total: obj.amount_total ?? null,
+    currency: obj.currency ?? null,
+    customer_email: obj.customer_details?.email ?? null,
+    status: "paid",
+    livemode,
+  }, { onConflict: "stripe_session_id", ignoreDuplicates: true });
+  if (error) throw error;
 }
 
 async function userForCustomer(customer: string): Promise<string | null> {
@@ -27,7 +47,11 @@ Deno.serve(async (req) => {
   try {
     const db = adminClient()!;
     switch (event.type) {
+      case "checkout.session.async_payment_succeeded":
+        if (obj.metadata?.kind === "full_report") await grantReport(obj, !!event.livemode);
+        break;
       case "checkout.session.completed": {
+        if (obj.metadata?.kind === "full_report") { await grantReport(obj, !!event.livemode); break; }
         const userId = obj.client_reference_id || obj.metadata?.user_id;
         if (!userId) break;
         let status = obj.mode === "payment" ? "active" : "incomplete";

@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.guest-consent]
 verify_jwt = false
+
+[functions.create-checkout-session]
+verify_jwt = false
+
+[functions.report-entitlement]
+verify_jwt = false
