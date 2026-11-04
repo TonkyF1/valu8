@@ -1,10 +1,21 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
 import { PREMIUM_ENFORCED_DEFAULT } from "@/config/stripePublic";
 import { FEATURE_PLAN, entitlementFor, canUse, featuresForPlan, formatPence, premiumEnforced, type Feature } from "@/lib/entitlements";
 
 const ALL = Object.keys(FEATURE_PLAN) as Feature[];
 
 describe("entitlements", () => {
+  it("enables the committed Full Report checkout default", () => {
+    expect(PREMIUM_ENFORCED_DEFAULT).toBe(true);
+  });
+
+  it("enables the checkout-only function default without requiring the global flag", () => {
+    const source = readFileSync("supabase/functions/create-checkout-session/index.ts", "utf8");
+    const match = source.match(/const REPORT_CHECKOUT_DEFAULT = "([^"]+)";/);
+    expect(match?.[1]).toBe("true");
+  });
+
   it("follows the committed default when the env flag is unset", () => {
     expect(premiumEnforced()).toBe(PREMIUM_ENFORCED_DEFAULT);
   });
