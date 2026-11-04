@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
   // Checkout-only switch. The global PREMIUM_ENFORCED also gates analyse-vehicle/fair-price
   // (free valuations), so it is NOT required here. Flip REPORT_CHECKOUT_DEFAULT to true (or set
   // REPORT_CHECKOUT_ENABLED=true) once STRIPE_SECRET_KEY holds a real sk_live_/rk_live_ key.
-  const REPORT_CHECKOUT_DEFAULT = "false";
+  const REPORT_CHECKOUT_DEFAULT = "true";
   const checkoutOn = premiumEnforced() || (Deno.env.get("REPORT_CHECKOUT_ENABLED") ?? REPORT_CHECKOUT_DEFAULT).toLowerCase() === "true";
   if (!checkoutOn || !stripeConfigured()) {
     return json({ error: "Payments are not enabled yet.", code: "billing_inactive" }, 503);
