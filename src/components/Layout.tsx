@@ -114,7 +114,7 @@ export function Header() {
                   ) : (
                     <Button asChild variant="outline" className="w-full"><Link to="/auth" onClick={() => setOpen(false)}>Sign in</Link></Button>
                   )}
-                  <p className="mt-3 px-3 text-xs text-muted-foreground">All features free during early access.</p>
+                  <p className="mt-3 px-3 text-xs text-muted-foreground">Essentials free. Full seller report £2.99 one-off.</p>
                 </div>
               </SheetContent>
             </Sheet>

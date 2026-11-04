@@ -147,7 +147,7 @@ export default function Dashboard() {
               <div>
                                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">New valuation</h2>
                 <p className="text-sm text-muted-foreground mt-1.5 max-w-sm">
-                  About 60 seconds. Add photos for a condition-aware price. Free during early access.
+                  About 60 seconds. Add photos for a condition-aware price. Essentials is free.
                 </p>
               </div>
               <span className="hidden sm:grid h-12 w-12 rounded-2xl bg-primary text-primary-foreground place-items-center flex-shrink-0 group-hover:scale-105 transition-transform">

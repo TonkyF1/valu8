@@ -23,7 +23,7 @@ export default function Terms() {
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">2. The service</h2>
-            <p>Valu8 generates indicative AI valuations for used vehicles in the UK private sale market. The service is provided "as is" and is currently free during early access.</p>
+            <p>Valu8 generates indicative AI valuations for used vehicles in the UK private sale market. The service is provided "as is". Essentials valuations are free; the Full seller report is a one-off £2.99 with no subscription.</p>
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">3. Acceptable use</h2>

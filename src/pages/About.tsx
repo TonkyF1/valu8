@@ -34,9 +34,9 @@ export default function About() {
         </section>
 
         <section aria-labelledby="ea-h" className="rounded-xl border border-primary/30 bg-primary/5 p-5">
-          <h2 id="ea-h" className="text-xl font-semibold mb-2">Early access</h2>
+          <h2 id="ea-h" className="text-xl font-semibold mb-2">Still improving</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Valu8 is new and still improving. All features are free during early access and no card is needed. Some valuations will be less precise than others while we grow our data, and we would rather tell you that than pretend otherwise.
+            Valu8 is new and still improving. Essentials valuations are free; the Full seller report is a one-off £2.99. Some valuations will be less precise than others while we grow our data, and we would rather tell you that than pretend otherwise.
           </p>
         </section>
 
