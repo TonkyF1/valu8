@@ -46,11 +46,11 @@ const APPEARANCE: Appearance = {
 };
 
 const BULLETS = [
-  "MOT red flags & recurring advisories",
-  "Outstanding recall check",
-  "Fair-price verdict & offer guidance",
-  "Questions to ask the seller",
-  "Premium PDF report",
+  "Full comparable sales & price range",
+  "Photo-by-photo condition notes",
+  "Repair upside & seller tips",
+  "Ownership costs & ready-to-post advert",
+  "Shareable report & PDF download",
 ];
 
 function returnUrlFor(valuationId: string): string {
@@ -112,10 +112,6 @@ function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: 
           options={{
             buttonTheme: { applePay: "white-outline", googlePay: "white" },
             buttonHeight: 48,
-            buttonType: {},
-            layout: { overflow: "auto" },
-            paymentMethodOrder: [],
-            paymentMethods: {},
           }}
         />
         <div className="relative my-3 text-center text-xs uppercase tracking-wider opacity-50">
@@ -208,7 +204,7 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
       {verifying ? (
         <div className="flex items-center gap-3" role="status">
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#00D6C8] border-t-transparent" />
-          <p className="text-sm">Confirming your payment… your Full Report will unlock in a moment.</p>
+          <p className="text-sm">Unlocking your report…</p>
         </div>
       ) : !open ? (
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -216,7 +212,7 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#FDE047" }}>
               <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden /> Full Valuation Report
             </p>
-            <h2 className="mt-1 text-xl font-bold md:text-2xl">Unlock the full picture for £2.99</h2>
+            <h2 className="mt-1 text-xl font-bold md:text-2xl">Full report · £2.99 one-off</h2>
             <ul className="mt-3 grid gap-1 text-sm opacity-90 sm:grid-cols-2">
               {BULLETS.map((b) => (
                 <li key={b} className="flex gap-2"><span style={{ color: "#00D6C8" }}>✓</span>{b}</li>
@@ -230,7 +226,7 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
               className="min-h-[48px] rounded-xl px-6 text-base font-semibold transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FDE047]"
               style={{ background: "#00D6C8", color: "#111111" }}
             >
-              Get my full report · £2.99
+              Unlock full report · £2.99
             </button>
             <p className="flex items-center gap-1 text-xs opacity-70"><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Secure payment by Stripe · Apple Pay · Google Pay · Card</p>
           </div>

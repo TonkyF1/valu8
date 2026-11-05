@@ -55,7 +55,6 @@ import { priceBandGeometry } from "@/lib/priceBand";
 import { ReportNav, SoldItPrompt, useReportSections } from "@/components/report/ReportNav";
 import { ShareResult } from "@/components/ShareResult";
 import { MotHistoryByYear } from "@/components/report/MotHistoryByYear";
-import { LockedSection } from "@/components/report/LockedSection";
 import { FREE_TEASER_COMPS, reportPaywallEnabled } from "@/lib/reportPaywall";
 import { MiniTier, Section, CollapsibleSection, RecBlock, SLOT_LABELS, PhotoFeedback, InsightRow } from "@/components/report/ReportParts";
 
@@ -377,9 +376,6 @@ export default function Report() {
       <Header />
       <main id="main" className="flex-1 container py-6 md:py-8 pb-28 sm:pb-8 max-w-5xl lg:max-w-6xl">
         {premium && <PremiumReport r={r} registration={v.registration} />}
-        {enforcedPremium && !premium && !isShared && !(r as any)?.valuationUnavailable && (
-          <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />
-        )}
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           {isShared || isGuest ? (
             <Button asChild variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0">
@@ -481,13 +477,13 @@ export default function Report() {
               <p className="text-lg font-bold tabular-nums text-primary">{headlinePrivateText(Math.round(normaliseReportPricing(r).privateSale), r)}</p>
             </div>
             </div>
-            <div className="lg:hidden"><ReportNav variant="chips" sections={navSections} active={navActive} /></div>
+            {!locked && <div className="lg:hidden"><ReportNav variant="chips" sections={navSections} active={navActive} /></div>}
           </div>
         )}
 
         <div id="r-summary" className="scroll-mt-44" />
         {/* Quick Summary — confident verdict + scannable bullets + trust strip */}
-        {!valuationUnavailable && (() => {
+        {!valuationUnavailable && !locked && (() => {
           const verdict = !hasPhotos(v.photo_urls)
               ? { label: "Sell privately", tone: "primary" as const, line: "A private sale usually gets the most money. Add photos to get a condition score and a sharper price." }
               : r.conditionScore >= 8
@@ -579,8 +575,8 @@ export default function Report() {
           </div>
         )}
 
-        {/* Photo gallery */}
-        {v.photo_urls.length > 0 && (
+        {/* Photo gallery — full report (and unlocked) only; free view stays lean */}
+        {!locked && v.photo_urls.length > 0 && (
           <section className="premium-card p-2 mb-4 animate-fade-in-up">
             <button
               type="button"
@@ -607,9 +603,9 @@ export default function Report() {
 
         <div id="r-price" className="scroll-mt-44" />
         {/* Hero: Private Sale headline + Condition + small tiers */}
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-6">
+        <section className={cn("grid grid-cols-1 gap-3 mb-6", locked ? "" : "lg:grid-cols-5")}>
           {/* Headline private sale price */}
-          <div className="lg:col-span-3 premium-card p-5 sm:p-6 relative overflow-hidden border-primary/30">
+          <div className={cn("premium-card p-5 sm:p-6 relative overflow-hidden border-primary/30", locked ? "" : "lg:col-span-3")}>
             <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-primary/[0.08] blur-3xl pointer-events-none" />
             <div className="absolute -bottom-32 -left-20 w-64 h-64 rounded-full bg-primary/[0.04] blur-3xl pointer-events-none" />
 
@@ -792,12 +788,6 @@ export default function Report() {
               </details>
             )}
 
-            {/* Suggested Asking Price — Full Report (gated) */}
-            {!valuationUnavailable && locked && (
-              <div className="mt-5">
-                <LockedSection title="Suggested asking price" blurb="Ask range, negotiation buffer and price band — £2.99 Full Report" ctaHref="#report-checkout" rows={4} />
-              </div>
-            )}
             {!valuationUnavailable && !locked && (() => {
               const cp = normaliseReportPricing(r);
               const { askLow: rangeLow, askHigh: rangeHigh, buffer, privateLow: marketLow, privateHigh: marketHigh } = cp;
@@ -865,12 +855,6 @@ export default function Report() {
               );
             })()}
 
-            {/* Pro Tip — Full Report (gated); seller-only */}
-            {!valuationUnavailable && !isShared && locked && (
-              <div className="mt-3">
-                <LockedSection title="Listing & offer guidance" blurb="Where to list and what offers to expect" ctaHref="#report-checkout" rows={2} />
-              </div>
-            )}
             {!valuationUnavailable && !isShared && !locked && (
               <details className="mt-3 group">
                 <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-xs  font-semibold text-amber-300/90 hover:text-amber-300">
@@ -902,7 +886,7 @@ export default function Report() {
                 Valued using AI market analysis and our UK advert database.
               </p>
             )}
-            {!valuationUnavailable && (
+            {!valuationUnavailable && !locked && (
               <div className="grid grid-cols-2 gap-2 mt-5 pt-5 border-t border-border/60">
                 <MiniTier label="Trade-in" tag="Estimate" tip="Our estimate of what a dealer would pay you today. Fastest, lowest." value={normaliseReportPricing(r).tradeIn} />
                 <MiniTier label="Retail" tag="Estimate" tip="Our estimate of a dealer forecourt price. Includes their margin." value={normaliseReportPricing(r).retail} />
@@ -910,8 +894,8 @@ export default function Report() {
             )}
           </div>
 
-          {/* Condition score / specialist guidance */}
-          <div className="lg:col-span-2 premium-card py-6 px-5 flex flex-col items-center justify-center text-center">
+          {/* Condition score / specialist guidance — hidden on free locked view */}
+          {!locked && <div className="lg:col-span-2 premium-card py-6 px-5 flex flex-col items-center justify-center text-center">
             {valuationUnavailable ? (
               <>
                 <div className="text-xs  text-muted-foreground mb-4">Recommended route</div>
@@ -924,10 +908,6 @@ export default function Report() {
                     : "Cars like this are too rare for our system to value accurately. A specialist dealer or auction house will give you a much better idea."}
                 </p>
               </>
-            ) : locked ? (
-              <div className="w-full">
-                <LockedSection title="Condition score" blurb="Photo-based condition rating for this car" ctaHref="#report-checkout" rows={3} className="mb-0" />
-              </div>
             ) : (
               <>
                 <div className="text-xs  text-muted-foreground mb-4">Condition score</div>
@@ -953,10 +933,14 @@ export default function Report() {
                 )}
               </>
             )}
-          </div>
+          </div>}
         </section>
 
+        {enforcedPremium && !premium && !isShared && !(r as any)?.valuationUnavailable && (
+          <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />
+        )}
 
+        {!locked && (<>
         {/* "Does this sound right?" — optional owner feedback (signed-in owner or guest owner; never on share links). Signal only: never changes pricing. */}
         {!isShared && !valuationUnavailable && (isGuest || (user && (v as any).user_id === user.id)) && (
           <SectionBoundary>
@@ -1005,25 +989,16 @@ export default function Report() {
               <CollapsibleSection title="How we value your car" icon={Calculator} preview="Comparables, mileage and age corrections, and adjustments in plain English">
                 <HowWeValue ex={teaser} />
               </CollapsibleSection>
-              {locked && (
-                <LockedSection title="Full comparable set & adjustments" blurb="See every comp and the adjustments behind the number" ctaHref="#report-checkout" rows={3} />
-              )}
             </>
           );
         })()}
 
         {/* Per-photo AI feedback — our moat made visible */}
-        {locked && hasPhotos(v.photo_urls) && (
-          <LockedSection title="Photo-by-photo feedback" blurb="What each photo says about condition and value" ctaHref="#report-checkout" rows={3} />
-        )}
         {!locked && r.photoInsights && r.photoInsights.length > 0 && v.photo_urls.length > 0 && (
           <PhotoFeedback insights={r.photoInsights} photoUrls={v.photo_urls} onSelectPhoto={setActivePhoto} onOpenLightbox={setLightboxIndex} />
         )}
 
         {/* What If Simulator — toggle fixable issues to see the upside */}
-        {!valuationUnavailable && !isShared && locked && (
-          <LockedSection title="What-if repair upside" blurb="Toggle fixable issues to see the value uplift" ctaHref="#report-checkout" rows={3} />
-        )}
         {!valuationUnavailable && !isShared && !locked && r.photoInsights && r.photoInsights.length > 0 && (
           <WhatIfSimulator
             insights={r.photoInsights}
@@ -1158,9 +1133,6 @@ export default function Report() {
         })()}
 
         {/* Recommendations */}
-        {!valuationUnavailable && locked && (
-          <LockedSection title="Seller recommendations" blurb="Where to sell, what to highlight, documents to prepare" ctaHref="#report-checkout" rows={3} />
-        )}
         {!valuationUnavailable && !locked && (
           <CollapsibleSection
             title="Seller Recommendations"
@@ -1224,9 +1196,6 @@ export default function Report() {
 
 
         {/* Share card: car + range + confidence only (no reg, mileage, photos or report link) */}
-        {!isShared && !valuationUnavailable && locked && (isGuest || (user && (v as any).user_id === user.id)) && (
-          <LockedSection title="Shareable result card" blurb="A clean card you can send to buyers" ctaHref="#report-checkout" rows={2} />
-        )}
         {!isShared && !valuationUnavailable && !locked && (isGuest || (user && (v as any).user_id === user.id)) && (() => {
           const sp = normaliseReportPricing(r);
           const spr = reportPriceRange(r, sp.privateSale);
@@ -1252,9 +1221,7 @@ export default function Report() {
         {isGuest && <div className="mt-6"><GuestMarketingConsent /></div>}
 
         <div id="r-ownership" className="scroll-mt-44" />
-        {locked ? (
-          <LockedSection title="Ownership costs & repair estimates" blurb="VED, ULEZ, mileage trend and advisory repair bands" ctaHref="#report-checkout" rows={4} />
-        ) : (
+        {!locked && (
           <SectionBoundary>
             <VehicleInsights
               report={r}
@@ -1274,11 +1241,6 @@ export default function Report() {
           </div>
         )}
 
-        {!valuationUnavailable && !isShared && !isGuest && locked && (
-          <div id="advert" className="scroll-mt-44">
-            <LockedSection title="Ready-to-post advert" blurb="Title, description and listing price drafted for you" ctaHref="#report-checkout" rows={4} />
-          </div>
-        )}
         {!valuationUnavailable && !isShared && !isGuest && !locked && (
           <div id="advert" className="scroll-mt-44">
             <AdvertCreator
@@ -1296,6 +1258,8 @@ export default function Report() {
           </div>
         )}
 
+        </>)}
+
         <footer className="mt-12 pt-6 border-t border-border/40">
           <div className="text-xs text-muted-foreground/60 font-semibold mb-2">Legal</div>
           <p className="text-xs leading-relaxed text-muted-foreground/70">
@@ -1303,9 +1267,11 @@ export default function Report() {
           </p>
         </footer>
         </div>
+        {!locked && (
         <aside className="hidden lg:block">
           <ReportNav variant="sidebar" sections={navSections} active={navActive} />
         </aside>
+        )}
         </div>
       </main>
       {/* Sticky mobile CTA */}
@@ -1313,6 +1279,10 @@ export default function Report() {
         {isShared ? (
           <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
             <Link to="/valuation/new">Value your own car free</Link>
+          </Button>
+        ) : locked && !valuationUnavailable ? (
+          <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
+            <a href="#report-checkout">Unlock full report · £2.99</a>
           </Button>
         ) : (
           <div className="flex gap-2">
