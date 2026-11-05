@@ -71,4 +71,12 @@ describe("computeMarketRange", () => {
     expect(bad.center).toBeLessThan(computeMarketRange(base).center);
     expect(computeMarketRange({ ...base, serviceNotes: "no leaks, no issues" }).center).toBe(computeMarketRange(base).center);
   });
+  it("does not apply condition deductions when there are no photos", () => {
+    const withGuess = computeMarketRange({ ...base, photoCount: 0, conditionScore: 4.5 });
+    const neutral = computeMarketRange({ ...base, photoCount: 0, conditionScore: 7.0 });
+    expect(withGuess.center).toBe(neutral.center);
+    expect(withGuess.reasoning).toMatch(/no photo condition score/);
+    const withPhotos = computeMarketRange({ ...base, photoCount: 5, conditionScore: 4.5 });
+    expect(withPhotos.center).toBeLessThan(neutral.center);
+  });
 });

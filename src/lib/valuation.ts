@@ -37,7 +37,7 @@ export interface PhotoInsight {
 }
 
 export interface ValuationReport {
-  conditionScore: number;
+  conditionScore: number | null;
   conditionLabel: string;
   values: { dealerTradeIn: number; privateSale: number; dealerRetail: number };
   valuationUnavailable?: boolean;

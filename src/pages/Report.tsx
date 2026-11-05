@@ -317,8 +317,11 @@ export default function Report() {
     (liveCount != null && liveCount < 3) ||
     !!r.rareCarWarning ||
     aiConfidence === "Very Low";
+  const expertShown = !!r.expertInsight?.shown && !(
+    /photos?/i.test(r.expertInsight?.reason ?? "") && !hasPhotos(v.photo_urls)
+  );
   const showSpecialistBadge =
-    !!r.expertInsight?.shown ||
+    expertShown ||
     (strongSingleSignal && rarityReasons.length >= 1) ||
     rarityReasons.length >= 3;
 
@@ -335,7 +338,9 @@ export default function Report() {
   const specialistExplanation = (() => {
     if (!showSpecialistBadge) return null;
     // Prefer the server-provided reason — it knows exactly which data sources fed the valuation.
-    if (r.expertInsight?.reason) return r.expertInsight.reason;
+    // Guard stale reports: never show "from your photos" when the valuation has none.
+    const serverReason = r.expertInsight?.reason;
+    if (serverReason && !( /photos?/i.test(serverReason) && !hasPhotos(v.photo_urls) )) return serverReason;
     const top = rarityReasons.slice(0, 2);
     if (top.length === 0) {
       return `We've layered expert analysis on top of ${isLiveListings ? "live market data" : isOwnComps ? "comparable UK adverts" : "our AI market estimate"} to give you a confident figure on a harder-than-average car to price.`;
