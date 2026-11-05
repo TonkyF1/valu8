@@ -38,6 +38,9 @@ Deno.serve(async (req) => {
     const reg = String(v.registration ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
     const priceId = Deno.env.get("STRIPE_REPORT_PRICE_ID") || DEFAULT_REPORT_PRICE;
     const base = siteUrl(req).replace(/\/$/, "");
+    // Branding for Embedded Checkout (cannot be set from host CSS). Matches Valu8 dark
+    // theme: #111111 bg, #00D6C8 button, Inter. Logo inherits account branding when set
+    // in Dashboard → Settings → Branding. branding_settings is not allowed with ui_mode=elements.
     const session = await stripe("checkout/sessions", {
       ui_mode: "embedded_page",  // Stripe renamed "embedded" → "embedded_page"
       mode: "payment",
@@ -54,6 +57,10 @@ Deno.serve(async (req) => {
       "payment_intent_data[metadata][valuation_id]": valuationId,
       "payment_intent_data[metadata][reg]": reg || undefined,
       return_url: `${base}/valuation/${valuationId}?session_id={CHECKOUT_SESSION_ID}`,
+      "branding_settings[background_color]": "#111111",
+      "branding_settings[button_color]": "#00D6C8",
+      "branding_settings[font_family]": "inter",
+      "branding_settings[border_style]": "rounded",
     });
     return json({ clientSecret: session.client_secret });
   } catch (e) {

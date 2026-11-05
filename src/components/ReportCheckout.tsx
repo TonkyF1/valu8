@@ -44,6 +44,7 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
 
   return (
     <section
+      id="report-checkout"
       aria-label="Full Valuation Report"
       className="mb-6 rounded-2xl border border-white/10 p-5 md:p-6"
       style={{ background: "#111111", color: "#F7F5F3", fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
@@ -87,9 +88,10 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
           {error ? (
             <p className="text-sm" style={{ color: "#FDE047" }}>{error}</p>
           ) : (
-            // Embedded Checkout renders in a Stripe-hosted iframe; colours/fonts/buttons are set via
-            // Dashboard → Settings → Branding (background #111111, button #00D6C8, Inter).
-            <div className="overflow-hidden rounded-xl bg-white">
+            // Embedded Checkout is a Stripe iframe — host CSS cannot theme it. Colours come from
+            // create-checkout-session branding_settings (+ Dashboard → Settings → Branding).
+            // Keep the wrapper on-brand (no white panel) so it sits inside the site card.
+            <div className="overflow-hidden rounded-xl border border-white/10" style={{ background: "#111111" }}>
               <EmbeddedCheckoutProvider stripe={getStripe()} options={options}>
                 <EmbeddedCheckout />
               </EmbeddedCheckoutProvider>
