@@ -152,7 +152,8 @@ export default function Report() {
     return paid;
   }, [id]);
   useEffect(() => {
-    if (!enforcedPremium || !id || isShared) return;
+    // Poll entitlement on own and shared views so a paid return unlocks the full report.
+    if (!enforcedPremium || !id) return;
     let cancelled = false;
     const returned = new URLSearchParams(location.search).has("session_id");
     (async () => {
@@ -166,7 +167,7 @@ export default function Report() {
       if (!cancelled) setVerifyingPayment(false);
     })();
     return () => { cancelled = true; };
-  }, [enforcedPremium, id, isShared, location.search, checkPaid]);
+  }, [enforcedPremium, id, location.search, checkPaid]);
 
   const [scrolledPastHeader, setScrolledPastHeader] = useState(false);
   useEffect(() => {
@@ -354,9 +355,9 @@ export default function Report() {
   };
 
   // Off while charging is off: everyone keeps the standard report.
-  // Admin / purchase unlock Full Report; share links stay on Essentials when paywall is on.
+  // Admin / purchase unlock Full Report. Unpaid share links stay locked; paid entitlement unlocks.
   const premium = showPremiumReport({ itemId: v.id, reportItemIds: reportPaid ? [v.id] : [], isAdmin });
-  const locked = (enforcedPremium || reportPaywallEnabled()) && (isShared || !premium);
+  const locked = (enforcedPremium || reportPaywallEnabled()) && !premium;
 
   const downloadPdf = async () => {
     const tid = toast.loading("Generating PDF…");
@@ -936,7 +937,7 @@ export default function Report() {
           </div>}
         </section>
 
-        {enforcedPremium && !premium && !isShared && !(r as any)?.valuationUnavailable && (
+        {enforcedPremium && !premium && !(r as any)?.valuationUnavailable && (
           <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />
         )}
 
@@ -1276,13 +1277,13 @@ export default function Report() {
       </main>
       {/* Sticky mobile CTA */}
       <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        {isShared ? (
-          <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
-            <Link to="/valuation/new">Value your own car free</Link>
-          </Button>
-        ) : locked && !valuationUnavailable ? (
+        {locked && !valuationUnavailable ? (
           <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
             <a href="#report-checkout">Unlock full report · £2.99</a>
+          </Button>
+        ) : isShared ? (
+          <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
+            <Link to="/valuation/new">Value your own car free</Link>
           </Button>
         ) : (
           <div className="flex gap-2">
