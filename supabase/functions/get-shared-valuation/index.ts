@@ -71,13 +71,35 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Share links always get Essentials only: strip paid Full Report fields server-side
+    // so buyers cannot read asking/comps/condition/advert/repairs from the JSON.
+    const stripSharedReport = (raw: unknown) => {
+      if (!raw || typeof raw !== "object") return raw;
+      const { saleFeedback: _sf, advert: _ad, photoInsights: _pi,
+        recommendedAskingPrice: _rap, negotiationBuffer: _nb,
+        conditionScore: _cs, conditionLabel: _cl,
+        repairEstimate: _re, repairEstimates: _res, advisoryCosts: _ac,
+        fixableUpside: _fu, ...rest } = raw as Record<string, unknown>;
+      const out: Record<string, unknown> = { ...rest };
+      if (Array.isArray(out.comparableListings)) {
+        out.comparableListings = (out.comparableListings as unknown[])
+          .filter((c: any) => c && c.price > 0)
+          .slice(0, 3);
+      }
+      if (out.recommendations && typeof out.recommendations === "object") {
+        const rec = { ...(out.recommendations as Record<string, unknown>) };
+        delete rec.recommendedAskingPrice;
+        delete rec.negotiationBuffer;
+        delete rec.listingPrice;
+        out.recommendations = rec;
+      }
+      return out;
+    };
+
     return new Response(
       JSON.stringify({
         ...data,
-        // Owner-only sale feedback must never reach buyers.
-        report: data.report && typeof data.report === "object"
-          ? (({ saleFeedback: _sf, ...rest }) => rest)(data.report as Record<string, unknown>)
-          : data.report,
+        report: stripSharedReport(data.report),
         photo_urls: signed,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

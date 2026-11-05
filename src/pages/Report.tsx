@@ -55,6 +55,8 @@ import { priceBandGeometry } from "@/lib/priceBand";
 import { ReportNav, SoldItPrompt, useReportSections } from "@/components/report/ReportNav";
 import { ShareResult } from "@/components/ShareResult";
 import { MotHistoryByYear } from "@/components/report/MotHistoryByYear";
+import { LockedSection } from "@/components/report/LockedSection";
+import { FREE_TEASER_COMPS, reportPaywallEnabled } from "@/lib/reportPaywall";
 import { MiniTier, Section, CollapsibleSection, RecBlock, SLOT_LABELS, PhotoFeedback, InsightRow } from "@/components/report/ReportParts";
 
 interface Valuation {
@@ -130,6 +132,15 @@ export default function Report() {
   const enforcedPremium = premiumEnforced();
   const [reportPaid, setReportPaid] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return; }
+    let cancelled = false;
+    supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle()
+      .then(({ data }) => { if (!cancelled) setIsAdmin(!!data); })
+      .catch(() => { if (!cancelled) setIsAdmin(false); });
+    return () => { cancelled = true; };
+  }, [user?.id]);
   const checkPaid = useCallback(async () => {
     if (!id) return false;
     const paid = await fetchReportPaid(id).catch(() => false);
@@ -338,8 +349,10 @@ export default function Report() {
     posthog.capture?.("Report Shared", { method: res });
   };
 
-  // Off while charging is off (VITE_PREMIUM_ENFORCED unset): everyone keeps the standard report.
-  const premium = showPremiumReport({ itemId: v.id, reportItemIds: reportPaid ? [v.id] : [] });
+  // Off while charging is off: everyone keeps the standard report.
+  // Admin / purchase unlock Full Report; share links stay on Essentials when paywall is on.
+  const premium = showPremiumReport({ itemId: v.id, reportItemIds: reportPaid ? [v.id] : [], isAdmin });
+  const locked = (enforcedPremium || reportPaywallEnabled()) && (isShared || !premium);
 
   const downloadPdf = async () => {
     const tid = toast.loading("Generating PDF…");
@@ -774,8 +787,13 @@ export default function Report() {
               </details>
             )}
 
-            {/* Suggested Asking Price — with visual price band */}
-            {!valuationUnavailable && (() => {
+            {/* Suggested Asking Price — Full Report (gated) */}
+            {!valuationUnavailable && locked && (
+              <div className="mt-5">
+                <LockedSection title="Suggested asking price" blurb="Ask range, negotiation buffer and price band — £2.99 Full Report" ctaHref="#report-checkout" rows={4} />
+              </div>
+            )}
+            {!valuationUnavailable && !locked && (() => {
               const cp = normaliseReportPricing(r);
               const { askLow: rangeLow, askHigh: rangeHigh, buffer, privateLow: marketLow, privateHigh: marketHigh } = cp;
               // Slider scale always spans trade-in → retail.
@@ -842,8 +860,13 @@ export default function Report() {
               );
             })()}
 
-            {/* Pro Tip — negotiation guidance (seller-only; hidden on buyer share links) */}
-            {!valuationUnavailable && !isShared && (
+            {/* Pro Tip — Full Report (gated); seller-only */}
+            {!valuationUnavailable && !isShared && locked && (
+              <div className="mt-3">
+                <LockedSection title="Listing & offer guidance" blurb="Where to list and what offers to expect" ctaHref="#report-checkout" rows={2} />
+              </div>
+            )}
+            {!valuationUnavailable && !isShared && !locked && (
               <details className="mt-3 group">
                 <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-xs  font-semibold text-amber-300/90 hover:text-amber-300">
                   <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
@@ -896,6 +919,10 @@ export default function Report() {
                     : "Cars like this are too rare for our system to value accurately. A specialist dealer or auction house will give you a much better idea."}
                 </p>
               </>
+            ) : locked ? (
+              <div className="w-full">
+                <LockedSection title="Condition score" blurb="Photo-based condition rating for this car" ctaHref="#report-checkout" rows={3} className="mb-0" />
+              </div>
             ) : (
               <>
                 <div className="text-xs  text-muted-foreground mb-4">Condition score</div>
@@ -965,20 +992,34 @@ export default function Report() {
         {(() => {
           const ex = explainValuation(r, { year: v.year, mileage: v.mileage });
           if (!ex) return null;
+          const teaser = locked
+            ? { ...ex, comps: ex.comps.slice(0, FREE_TEASER_COMPS), adjustments: [], steps: ex.steps.slice(0, 2) }
+            : ex;
           return (
-            <CollapsibleSection title="How we value your car" icon={Calculator} preview="Comparables, mileage and age corrections, and adjustments in plain English">
-              <HowWeValue ex={ex} />
-            </CollapsibleSection>
+            <>
+              <CollapsibleSection title="How we value your car" icon={Calculator} preview="Comparables, mileage and age corrections, and adjustments in plain English">
+                <HowWeValue ex={teaser} />
+              </CollapsibleSection>
+              {locked && (
+                <LockedSection title="Full comparable set & adjustments" blurb="See every comp and the adjustments behind the number" ctaHref="#report-checkout" rows={3} />
+              )}
+            </>
           );
         })()}
 
         {/* Per-photo AI feedback — our moat made visible */}
-        {r.photoInsights && r.photoInsights.length > 0 && v.photo_urls.length > 0 && (
+        {locked && hasPhotos(v.photo_urls) && (
+          <LockedSection title="Photo-by-photo feedback" blurb="What each photo says about condition and value" ctaHref="#report-checkout" rows={3} />
+        )}
+        {!locked && r.photoInsights && r.photoInsights.length > 0 && v.photo_urls.length > 0 && (
           <PhotoFeedback insights={r.photoInsights} photoUrls={v.photo_urls} onSelectPhoto={setActivePhoto} onOpenLightbox={setLightboxIndex} />
         )}
 
         {/* What If Simulator — toggle fixable issues to see the upside */}
-        {!valuationUnavailable && !isShared && r.photoInsights && r.photoInsights.length > 0 && (
+        {!valuationUnavailable && !isShared && locked && (
+          <LockedSection title="What-if repair upside" blurb="Toggle fixable issues to see the value uplift" ctaHref="#report-checkout" rows={3} />
+        )}
+        {!valuationUnavailable && !isShared && !locked && r.photoInsights && r.photoInsights.length > 0 && (
           <WhatIfSimulator
             insights={r.photoInsights}
             privateSale={normaliseReportPricing(r).privateSale}
@@ -1112,7 +1153,10 @@ export default function Report() {
         })()}
 
         {/* Recommendations */}
-        {!valuationUnavailable && (
+        {!valuationUnavailable && locked && (
+          <LockedSection title="Seller recommendations" blurb="Where to sell, what to highlight, documents to prepare" ctaHref="#report-checkout" rows={3} />
+        )}
+        {!valuationUnavailable && !locked && (
           <CollapsibleSection
             title="Seller Recommendations"
             icon={Megaphone}
@@ -1175,7 +1219,10 @@ export default function Report() {
 
 
         {/* Share card: car + range + confidence only (no reg, mileage, photos or report link) */}
-        {!isShared && !valuationUnavailable && (isGuest || (user && (v as any).user_id === user.id)) && (() => {
+        {!isShared && !valuationUnavailable && locked && (isGuest || (user && (v as any).user_id === user.id)) && (
+          <LockedSection title="Shareable result card" blurb="A clean card you can send to buyers" ctaHref="#report-checkout" rows={2} />
+        )}
+        {!isShared && !valuationUnavailable && !locked && (isGuest || (user && (v as any).user_id === user.id)) && (() => {
           const sp = normaliseReportPricing(r);
           const spr = reportPriceRange(r, sp.privateSale);
           return sp.privateLow > 0 && sp.privateHigh > 0 ? (
@@ -1200,13 +1247,17 @@ export default function Report() {
         {isGuest && <div className="mt-6"><GuestMarketingConsent /></div>}
 
         <div id="r-ownership" className="scroll-mt-44" />
-        <SectionBoundary>
-          <VehicleInsights
-            report={r}
-            vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, mot_expiry: v.mot_expiry, service_notes: (v as any).service_notes ?? null }}
-            isShared={isShared}
-          />
-        </SectionBoundary>
+        {locked ? (
+          <LockedSection title="Ownership costs & repair estimates" blurb="VED, ULEZ, mileage trend and advisory repair bands" ctaHref="#report-checkout" rows={4} />
+        ) : (
+          <SectionBoundary>
+            <VehicleInsights
+              report={r}
+              vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, mot_expiry: v.mot_expiry, service_notes: (v as any).service_notes ?? null }}
+              isShared={isShared}
+            />
+          </SectionBoundary>
+        )}
 
         {isGuest && (
           <div id="advert" className="scroll-mt-44">
@@ -1218,11 +1269,13 @@ export default function Report() {
           </div>
         )}
 
-        {!valuationUnavailable && !isShared && !isGuest && (
-          <>
-
-
-            <div id="advert" className="scroll-mt-44">
+        {!valuationUnavailable && !isShared && !isGuest && locked && (
+          <div id="advert" className="scroll-mt-44">
+            <LockedSection title="Ready-to-post advert" blurb="Title, description and listing price drafted for you" ctaHref="#report-checkout" rows={4} />
+          </div>
+        )}
+        {!valuationUnavailable && !isShared && !isGuest && !locked && (
+          <div id="advert" className="scroll-mt-44">
             <AdvertCreator
               valuationId={v.id}
               vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, registration: v.registration, mot_expiry: v.mot_expiry }}
@@ -1235,8 +1288,7 @@ export default function Report() {
               }}
               initialAdvert={(r as any).advert ?? null}
             />
-            </div>
-          </>
+          </div>
         )}
 
         <footer className="mt-12 pt-6 border-t border-border/40">
