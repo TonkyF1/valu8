@@ -1,3 +1,4 @@
+import "@/styles/plate.css";
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { ArrowRight, BadgePoundSterling, Camera, FileCheck2, Gauge, ShieldAlert, Wind } from "lucide-react";
@@ -81,9 +82,10 @@ export default function Landing() {
                 className="rounded-[20px] border border-primary/20 bg-card/60 p-[18px] sm:p-6 shadow-[0_30px_60px_-30px_hsl(var(--primary)/0.35)] backdrop-blur"
               >
                 <label htmlFor="home-reg" className="block text-left text-xs text-muted-foreground mb-2 ml-0.5">Your number plate</label>
-                <div className="flex h-16 rounded-xl overflow-hidden bg-[#FDE047] border-2 border-yellow-400/70 shadow-[0_8px_32px_-12px_rgba(255,204,0,0.4)] focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background">
-                  <div className="w-[34px] shrink-0 bg-[#003399] text-[#FDE047] flex flex-col items-center justify-between py-2 text-[11px] font-bold" aria-hidden>
-                    <span className="text-[13px] leading-none">★</span><span>UK</span>
+                <div className="reg-plate">
+                  <div className="reg-plate-inner">
+                  <div className="reg-plate-badge" aria-hidden>
+                    <img src="/uk-flag.svg" alt="" /><b>UK</b>
                   </div>
                   <input
                     id="home-reg"
@@ -93,8 +95,9 @@ export default function Landing() {
                     autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={10}
                     enterKeyHint="go"
                     aria-invalid={!!plateErr}
-                    size={1} className="flex-1 w-full min-w-0 bg-transparent text-center text-[26px] sm:text-[28px] font-bold font-mono tracking-[0.16em] text-black placeholder:text-black/35 caret-black outline-none uppercase"
+                    size={1} className="reg-plate-input"
                   />
+                  </div>
                 </div>
                 {plateErr && <p className="mt-2 text-left text-xs text-destructive" role="alert">{plateErr}</p>}
                 <Button type="submit" variant="hero" size="xl" className="mt-3 w-full min-h-[56px] text-[17px]">

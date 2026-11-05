@@ -1,3 +1,4 @@
+import "@/styles/plate.css";
 import { useEffect, useRef, useState } from "react";
 import { isFoundVehicle, isPlausibleUkReg, normaliseReg } from "@/lib/registration";
 import { Turnstile, turnstileEnabled, turnstileHeaders } from "@/components/Turnstile";
@@ -443,15 +444,10 @@ export default function NewValuation() {
         <section className="w-full max-w-md mx-auto px-4 sm:px-6 pb-4 relative z-10">
           <div className="relative">
             {/* Plate frame */}
-            <div className="flex items-stretch rounded-2xl border-2 border-yellow-400/70 bg-yellow-300 shadow-[0_8px_32px_-12px_hsl(48_100%_50%/0.4)] overflow-hidden transition-all focus-within:border-yellow-500 focus-within:shadow-[0_8px_40px_-8px_hsl(48_100%_50%/0.55)]">
-              {/* GB euroband */}
-              <div className="hidden sm:flex flex-col items-center justify-center w-9 bg-[#003399] text-white border-r-2 border-yellow-400/60 select-none">
-                <div className="flex flex-col items-center -mt-0.5 leading-none">
-                  <span className="text-[10px]" aria-hidden>★★★★</span>
-                  <span className="text-[8px]" aria-hidden>★&nbsp;&nbsp;★</span>
-                  <span className="text-[8px]" aria-hidden>★★★★</span>
-                </div>
-                <span className="text-[10px] font-bold tracking-wider mt-1">GB</span>
+            <div className="reg-plate">
+              <div className="reg-plate-inner">
+              <div className="reg-plate-badge" aria-hidden>
+                <img src="/uk-flag.svg" alt="" /><b>UK</b>
               </div>
 
               <Input
@@ -464,13 +460,9 @@ export default function NewValuation() {
                 maxLength={10}
                 disabled={looking}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleLookup(); } }}
-                className={cn(
-                  "h-14 flex-1 text-center text-xl sm:text-2xl font-bold tracking-[0.22em] uppercase",
-                  "bg-yellow-300 text-black border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
-                  "rounded-none placeholder:text-black/25 placeholder:tracking-[0.12em] placeholder:font-semibold",
-                )}
-                style={{ fontFamily: "'Charles Wright', ui-monospace, monospace" }}
+                className="reg-plate-input"
               />
+              </div>
             </div>
 
             <button
