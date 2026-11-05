@@ -142,8 +142,11 @@ function ElementsCheckout({ valuationId, email, onPaid, onClose }: { valuationId
   const [error, setError] = useState<string | null>(null);
 
   const fetchClientSecret = useCallback(async () => {
+    // Email is collected by ContactDetailsElement (pre-filled via defaultValues when
+    // signed in). Do NOT send it here — create-checkout-session must not set
+    // customer_email, or Elements throws "You cannot update the email…".
     const { data, error: fnErr } = await supabase.functions.invoke("create-checkout-session", {
-      body: { valuationId, email: email || undefined },
+      body: { valuationId },
     });
     const d = data as any;
     if (d?.alreadyPaid) { onPaid?.(); throw new Error("already paid"); }
@@ -152,7 +155,7 @@ function ElementsCheckout({ valuationId, email, onPaid, onClose }: { valuationId
       throw new Error("no client secret");
     }
     return d.clientSecret as string;
-  }, [valuationId, email, onPaid]);
+  }, [valuationId, onPaid]);
 
   const options = useMemo(
     () => ({

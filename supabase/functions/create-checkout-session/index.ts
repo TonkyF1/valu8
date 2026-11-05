@@ -51,12 +51,15 @@ Deno.serve(async (req) => {
       // No payment_method_types => Stripe automatic payment methods (card, Apple Pay,
       // Google Pay, Link…) as enabled in Dashboard → Settings → Payment methods.
       client_reference_id: valuationId,
-      customer_email: email,
+      // Do NOT set customer_email: Checkout Elements ContactDetailsElement +
+      // defaultValues.email collect/pre-fill it. Setting both triggers
+      // "You cannot update the email because a customer_email … is already set".
       "metadata[kind]": "full_report",
       "metadata[valuation_id]": valuationId,
       "metadata[reg]": reg || undefined,
       "metadata[price_id]": priceId,
       "metadata[user_id]": g.userId ?? undefined,
+      "metadata[email]": email,
       "payment_intent_data[metadata][kind]": "full_report",
       "payment_intent_data[metadata][valuation_id]": valuationId,
       "payment_intent_data[metadata][reg]": reg || undefined,
