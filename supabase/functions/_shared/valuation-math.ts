@@ -236,9 +236,12 @@ export function computeMarketRange(params: {
   if (motSoon) center *= 0.98;
   // NOTE: the AI privateSaleValue already reflects condition (see prompt), so only
   // apply a light correction here. Order fixed: the <=5.5 branch was unreachable.
-  if (conditionScore >= 8.8) center *= 1.02;
-  else if (conditionScore <= 5.5) center *= 0.92;
-  else if (conditionScore <= 6.5) center *= 0.96;
+  // Without photos the score is a guess — never price it.
+  if (photoCount > 0) {
+    if (conditionScore >= 8.8) center *= 1.02;
+    else if (conditionScore <= 5.5) center *= 0.92;
+    else if (conditionScore <= 6.5) center *= 0.96;
+  }
 
   if (enthusiast) rangeSpread += 0.01;
   if (photoCount < 4) rangeSpread += 0.025;
@@ -261,7 +264,7 @@ export function computeMarketRange(params: {
 
   const reasons = [
     mileageRatio <= 0.9 ? "lower-than-typical mileage for age" : mileageRatio >= 1.15 ? "above-average mileage for age" : "age-appropriate mileage",
-    conditionScore >= 8 ? "strong visible condition" : conditionScore <= 6.4 ? "condition deductions" : "solid used-market condition",
+    photoCount <= 0 ? "no photo condition score" : conditionScore >= 8 ? "strong visible condition" : conditionScore <= 6.4 ? "condition deductions" : "solid used-market condition",
     hasStrongHistory ? "good service history support" : "limited history evidence",
   ];
   if (enthusiast) reasons.push("healthy enthusiast demand for this spec");

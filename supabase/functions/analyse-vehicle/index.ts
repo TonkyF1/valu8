@@ -29,6 +29,7 @@ import { ccPlausibility } from "../_shared/ccPlausibility.ts";
 import { resolveVariant, perfCompReference, variantToken, reconcileProsePrices, stripPriceSentences, proseRatio, sanityVerdict, aiTextVariant, optionRegex, MIN_VARIANT_COMPS, type ShownPrices, type PerfCompRow } from "../_shared/variantGuard.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
+import { photoConditionScore, neutralConditionScore, expertInsightFromCondition } from "../_shared/photoCondition.ts";
 
 const PHOTO_BUCKET = "vehicle-photos";
 // 1h is plenty — the AI vision call completes in seconds.
@@ -1015,7 +1016,8 @@ ONLY consider advisories and failures from the LATEST test when pricing and writ
 - Modifications / extras: ${body.modifications || "none provided"}
 - Colour: ${body.colour || "not provided"}
 - Fuel: ${body.fuelType || "not provided"}${!(dvsa.entries ?? []).length && body.motAdvisories?.length ? `\n- Latest MOT advisories (from lookup): ${body.motAdvisories.join("; ")}` : ""}
-- Photos attached: ${photoUrls.length}
+- Photos attached: ${photoUrls.length}${photoUrls.length === 0 ? `
+- NO PHOTOS: You cannot assess visible condition. Set conditionScore to 7.0 (neutral, not a visual grade), conditionLabel to "Not scored (no photos)", photoObservations to "", and photoInsights to []. Do NOT invent damage, wear, or photo-based deductions, and do not mention photos in honestAnalysis/valueReasoning/factorsDown.` : ""}
 ${labeledPhotos.length > 0 ? `
 PHOTO LIST — the images below are sent in this exact order. Use the Photo N number as photoIndex in every photoInsight. There are NO slot labels — look at each image and set the slot purely from what you actually see:
 ${labeledPhotos.map((_, i) => `  Photo ${i + 1} — determine what this image shows by looking at it.`).join("\n")}` : ""}
@@ -1143,7 +1145,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     }
 
     // ----- Pricing engine: MarketCheck-anchored, with strong deterministic deductions -----
-    const score = Math.max(1, Math.min(10, ai.conditionScore));
+    // Without photos the AI still invents a conditionScore — treat as unscored.
+    const photoScore = photoConditionScore(ai.conditionScore, photoUrls.length);
+    const score = photoScore ?? neutralConditionScore();
     const aiPrivate = Math.max(500, Number(ai.privateSaleValue) || 0);
 
     let values: { dealerTradeIn: number; privateSale: number; dealerRetail: number };
@@ -1479,7 +1483,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       const oc = valueWithOwnComps({
         make: body.make, model: body.model, variant: body.variant, year: body.year, mileage: pricedMiles,
         fuel: body.fuelType, gearbox: body.transmission, adText: body.variant, currentYear: CURRENT_YEAR,
-        conditionScore: score, photoInsights: Array.isArray(ai.photoInsights) ? ai.photoInsights : [],
+        conditionScore: photoScore ?? undefined, photoInsights: photoUrls.length > 0 && Array.isArray(ai.photoInsights) ? ai.photoInsights : [],
         declaredStatus: serviceText,
       });
       ownCompsShadow = {
@@ -1788,8 +1792,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     }
 
     const report = {
-      conditionScore: Math.round(score * 10) / 10,
-      conditionLabel: ai.conditionLabel,
+      conditionScore: photoScore, // null when no photos — UI already gates on hasPhotos
+      conditionLabel: photoScore == null ? "Not scored (no photos)" : ai.conditionLabel,
       values,
       valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
       // Below £5,000 (our estimate) the headline is a measured ~70% range; values.privateSale stays the midpoint (see _shared/cheapRange.ts).
@@ -1821,13 +1825,17 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         // or when we've leveraged car-specific history. A standard car with
         // plenty of live comparables and a clean condition score shouldn't
         // need an "Expert Insight" overlay.
-        const conditionScore = Number(ai.conditionScore ?? 7);
-        const majorConditionIssue = conditionScore < 6;
+        const condInsight = expertInsightFromCondition({
+          photoCount: photoUrls.length,
+          conditionScore: photoScore,
+          marketSampleLabel: mc?.count?.toLocaleString() ?? "live",
+        });
+        const majorConditionIssue = condInsight.majorConditionIssue;
         const veryThinMarket = !!mc && mc.count < 10;
         const shown = isRare || valuationUnavailable || majorConditionIssue || veryThinMarket;
         let reason = "";
         if (majorConditionIssue) {
-          reason = `Condition signals from your photos (${conditionScore.toFixed(1)}/10) materially affect this car's value, so we've adjusted away from the headline market figure of ${mc?.count?.toLocaleString() ?? "live"} comparable UK listings.`;
+          reason = condInsight.reason;
         } else if (isRare || veryThinMarket) {
           reason = `Limited live market data for this car — figure stress-tested against multiple data sources before being shown.`;
         }
