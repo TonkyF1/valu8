@@ -54,7 +54,7 @@ export const FEATURE_PLAN: Readonly<Record<Feature, Plan>> = Object.freeze({
 
 /** Placeholder prices in pence (GBP). Display only — Stripe Price IDs are the source of truth. */
 export const PLAN_PRICE_PENCE: Readonly<Record<Exclude<Plan, "free">, number>> = Object.freeze({
-  report: 499,
+  report: 299,
   subscription: 799, // per month
   seller_pack: 499,
 });
