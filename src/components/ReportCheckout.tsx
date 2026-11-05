@@ -110,8 +110,12 @@ function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: 
           }}
           onConfirm={(event) => { void confirm({ expressCheckoutConfirmEvent: event }); }}
           options={{
+            buttonType: { applePay: "buy", googlePay: "pay" },
             buttonTheme: { applePay: "white-outline", googlePay: "white" },
             buttonHeight: 48,
+            layout: { overflow: "auto" },
+            paymentMethodOrder: ["apple_pay", "google_pay"],
+            paymentMethods: { applePay: "auto", googlePay: "auto" },
           }}
         />
         <div className="relative my-3 text-center text-xs uppercase tracking-wider opacity-50">
