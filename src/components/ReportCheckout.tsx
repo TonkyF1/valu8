@@ -112,6 +112,10 @@ function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: 
           options={{
             buttonTheme: { applePay: "white-outline", googlePay: "white" },
             buttonHeight: 48,
+            buttonType: {},
+            layout: { overflow: "auto" },
+            paymentMethodOrder: [],
+            paymentMethods: {},
           }}
         />
         <div className="relative my-3 text-center text-xs uppercase tracking-wider opacity-50">
