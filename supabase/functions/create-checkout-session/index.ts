@@ -1,7 +1,8 @@
-// Valu8 — Stripe Embedded Checkout session for the one-off £2.99 Full Valuation Report.
+// Valu8 — Stripe Checkout Session (ui_mode=elements) for the one-off £2.99 Full Report.
 // Public (guests can buy; the valuation UUID is unguessable). Inactive (503) until
-// PREMIUM_ENFORCED=true AND STRIPE_SECRET_KEY is set. Returns { clientSecret }.
-// Entitlement is granted ONLY by stripe-webhook (checkout.session.completed).
+// REPORT_CHECKOUT_ENABLED / REPORT_CHECKOUT_DEFAULT is on AND STRIPE_SECRET_KEY is set.
+// Returns { clientSecret }. Unlock is granted ONLY by stripe-webhook
+// (checkout.session.completed / async_payment_succeeded).
 import { adminClient, corsHeaders, guard, json, premiumEnforced } from "../_shared/guard.ts";
 import { siteUrl, stripe, stripeConfigured } from "../_shared/stripe.ts";
 
@@ -14,7 +15,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   // Checkout-only switch. The global PREMIUM_ENFORCED also gates analyse-vehicle/fair-price
   // (free valuations), so it is NOT required here. Flip REPORT_CHECKOUT_DEFAULT to true (or set
-  // REPORT_CHECKOUT_ENABLED=true) once STRIPE_SECRET_KEY holds a real sk_live_/rk_live_ key.
+  // REPORT_CHECKOUT_ENABLED=true) once STRIPE_SECRET_KEY holds a real live secret/restricted key.
   const REPORT_CHECKOUT_DEFAULT = "true";
   const checkoutOn = premiumEnforced() || (Deno.env.get("REPORT_CHECKOUT_ENABLED") ?? REPORT_CHECKOUT_DEFAULT).toLowerCase() === "true";
   if (!checkoutOn || !stripeConfigured()) {
@@ -27,6 +28,8 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { /* empty */ }
   const valuationId = String(body?.valuationId ?? "");
   if (!UUID.test(valuationId)) return json({ error: "Invalid valuation." }, 400);
+  const emailRaw = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw) ? emailRaw : undefined;
 
   try {
     const db = adminClient()!;
@@ -38,29 +41,27 @@ Deno.serve(async (req) => {
     const reg = String(v.registration ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
     const priceId = Deno.env.get("STRIPE_REPORT_PRICE_ID") || DEFAULT_REPORT_PRICE;
     const base = siteUrl(req).replace(/\/$/, "");
-    // Branding for Embedded Checkout (cannot be set from host CSS). Matches Valu8 dark
-    // theme: #111111 bg, #00D6C8 button, Inter. Logo inherits account branding when set
-    // in Dashboard → Settings → Branding. branding_settings is not allowed with ui_mode=elements.
+    // ui_mode=elements → Checkout Elements (Payment Element + Express Checkout) themed
+    // client-side via Appearance API. branding_settings is NOT allowed with elements.
     const session = await stripe("checkout/sessions", {
-      ui_mode: "embedded_page",  // Stripe renamed "embedded" → "embedded_page"
+      ui_mode: "elements",
       mode: "payment",
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
-      // No payment_method_types => Stripe "automatic payment methods" (card, Apple Pay,
+      // No payment_method_types => Stripe automatic payment methods (card, Apple Pay,
       // Google Pay, Link…) as enabled in Dashboard → Settings → Payment methods.
       client_reference_id: valuationId,
+      customer_email: email,
       "metadata[kind]": "full_report",
       "metadata[valuation_id]": valuationId,
       "metadata[reg]": reg || undefined,
       "metadata[price_id]": priceId,
       "metadata[user_id]": g.userId ?? undefined,
+      "payment_intent_data[metadata][kind]": "full_report",
       "payment_intent_data[metadata][valuation_id]": valuationId,
       "payment_intent_data[metadata][reg]": reg || undefined,
+      "payment_intent_data[metadata][user_id]": g.userId ?? undefined,
       return_url: `${base}/valuation/${valuationId}?session_id={CHECKOUT_SESSION_ID}`,
-      "branding_settings[background_color]": "#111111",
-      "branding_settings[button_color]": "#00D6C8",
-      "branding_settings[font_family]": "inter",
-      "branding_settings[border_style]": "rounded",
     });
     return json({ clientSecret: session.client_secret });
   } catch (e) {
