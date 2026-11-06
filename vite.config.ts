@@ -62,15 +62,15 @@ function routeMetadataHtml(): Plugin {
 }
 
 // Branding PNGs live in branding/*.png.b64 (text-only commit tooling). Serve them in dev and
-// emit them at the site root on build so https://valu8.uk/og-v2.png, /logo-v2.png, /favicon-v2.ico,
-// /apple-touch-icon-v2.png, /icon-512-v2.png and /email-logo.png (email header, 300x126 on #0b1111) exist (legacy /og.png, /logo.png kept but unreferenced).
+// emit them at the site root on build so https://valu8.uk/og-v2.png, /logo-v2.png, /favicon-v3.ico,
+// /favicon-v3.svg, /apple-touch-icon-v3.png, /icon-512-v3.png and /email-logo.png (email header, 300x126 on #0b1111) exist (legacy /og.png, /logo.png, v2 icons kept but unreferenced).
 function brandingAssets(): Plugin {
   const dir = path.resolve(__dirname, "branding");
   const read = (name: string) => {
     const f = path.join(dir, `${name}.b64`);
     return fs.existsSync(f) ? Buffer.from(fs.readFileSync(f, "utf8").replace(/\s+/g, ""), "base64") : null;
   };
-  const names = ["og.png", "og-v2.png", "logo.png", "logo-v2.png", "favicon-v2.ico", "apple-touch-icon-v2.png", "icon-512-v2.png", "email-logo.png"];
+  const names = ["og.png", "og-v2.png", "logo.png", "logo-v2.png", "favicon-v2.ico", "apple-touch-icon-v2.png", "icon-512-v2.png", "email-logo.png", "favicon-v3.ico", "apple-touch-icon-v3.png", "icon-512-v3.png", "favicon-v3.svg"];
   return {
     name: "valu8-branding-assets",
     configureServer(server) {
@@ -78,7 +78,7 @@ function brandingAssets(): Plugin {
         const name = (req.url || "").split("?")[0].replace(/^\//, "");
         const buf = names.includes(name) ? read(name) : null;
         if (!buf) return next();
-        res.setHeader("Content-Type", name.endsWith(".ico") ? "image/x-icon" : "image/png");
+        res.setHeader("Content-Type", name.endsWith(".ico") ? "image/x-icon" : name.endsWith(".svg") ? "image/svg+xml" : "image/png");
         res.end(buf);
       });
     },

@@ -18,3 +18,8 @@ Built from `src/assets/valu8-logo.png` + tagline "Know what your car is really w
 - `logo-v2.png` (512x512): the "Valu" + teal "8" wordmark, used as the JSON-LD Organization logo.
 
 `public/favicon.ico` (Lovable default) and the old `logo.png` are no longer referenced. `resources/icon.png` and `resources/splash.png` (native app icons) are separate and unchanged.
+
+## Icons v3 (UK plate mark)
+
+- `favicon-v3.ico` (16/32/48), `favicon-v3.svg` (paths, no font), `apple-touch-icon-v3.png` (180), `icon-512-v3.png` (512): yellow `#FDE047` UK plate reading "V8" in UKNumberPlate, black `#111` border, on a `#111` rounded square. Tiny sizes fill most of the square for legibility. `index.html` points at the v3 filenames.
+
