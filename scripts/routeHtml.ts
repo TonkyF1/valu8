@@ -15,16 +15,17 @@ function replaceRequired(html: string, pattern: RegExp, replacement: string, lab
 }
 
 /** Only edit the head: the emitted SPA body and asset URLs remain byte-identical. */
-export function routeHtml(shell: string, meta: Pick<RouteMeta, "path" | "title" | "description" | "noindex">, notFound = false, extra?: { bodyHtml?: string; headHtml?: string }): string {
+export function routeHtml(shell: string, meta: Pick<RouteMeta, "path" | "title" | "description" | "noindex" | "canonicalPath">, notFound = false, extra?: { bodyHtml?: string; headHtml?: string }): string {
   const headPattern = /<head\b[^>]*>[\s\S]*?<\/head\s*>/gi;
   if (shell.match(headPattern)?.length !== 1) throw new Error("Route HTML: expected exactly one head");
   let out = shell.replace(headPattern, (originalHead) => {
     let head = replaceRequired(originalHead, /<title\b[^>]*>[\s\S]*?<\/title\s*>/gi, `<title>${escapeHtml(meta.title)}</title>`, "title");
-    const url = escapeHtml(SITE_URL + meta.path);
+    const canonPath = meta.canonicalPath ?? meta.path;
+    const url = escapeHtml(SITE_URL + canonPath);
     head = replaceRequired(head, tagPattern("link", "rel", "canonical"), notFound ? "" : `<link rel="canonical" href="${url}" />`, "canonical");
     const tags: ["name" | "property", string, string][] = [
       ["name", "description", meta.description],
-      ["property", "og:url", SITE_URL + meta.path],
+      ["property", "og:url", SITE_URL + canonPath],
       ["property", "og:title", meta.title],
       ["property", "og:description", meta.description],
       ["name", "twitter:title", meta.title],

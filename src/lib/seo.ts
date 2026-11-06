@@ -11,10 +11,11 @@ function setMeta(selector: string, attr: "name" | "property", key: string, conte
 
 /** Client-side title/description/canonical. Google renders JS so this is indexed;
  *  social crawlers that don't run JS still see index.html defaults. */
-export function useSeo({ title, description, path, noindex = false, notFound = false }: { title: string; description: string; path: string; noindex?: boolean; notFound?: boolean }) {
+export function useSeo({ title, description, path, canonicalPath, noindex = false, notFound = false }: { title: string; description: string; path: string; canonicalPath?: string; noindex?: boolean; notFound?: boolean }) {
   useEffect(() => {
     const prevTitle = document.title;
     document.title = title;
+    const canonPath = canonicalPath ?? path;
     setMeta('meta[name="description"]', "name", "description", description);
     setMeta('meta[property="og:title"]', "property", "og:title", title);
     setMeta('meta[property="og:description"]', "property", "og:description", description);
@@ -22,7 +23,7 @@ export function useSeo({ title, description, path, noindex = false, notFound = f
     if (notFound) {
       prevOgUrl?.remove();
     } else {
-      setMeta('meta[property="og:url"]', "property", "og:url", SITE_URL + path);
+      setMeta('meta[property="og:url"]', "property", "og:url", SITE_URL + canonPath);
     }
     setMeta('meta[name="twitter:title"]', "name", "twitter:title", title);
     setMeta('meta[name="twitter:description"]', "name", "twitter:description", description);
@@ -34,7 +35,7 @@ export function useSeo({ title, description, path, noindex = false, notFound = f
       link = null;
     } else {
       if (!link) { link = document.createElement("link"); link.rel = "canonical"; document.head.appendChild(link); }
-      link.href = SITE_URL + path;
+      link.href = SITE_URL + canonPath;
     }
     let robots = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
     if (notFound) {
@@ -58,5 +59,5 @@ export function useSeo({ title, description, path, noindex = false, notFound = f
         if (noindex) robots?.remove();
       }
     };
-  }, [title, description, path, noindex, notFound]);
+  }, [title, description, path, canonicalPath, noindex, notFound]);
 }

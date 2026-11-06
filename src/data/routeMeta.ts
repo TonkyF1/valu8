@@ -12,6 +12,8 @@ export type RouteMeta = {
   priority?: string;
   noindex?: boolean;
   inSitemap: boolean;
+  /** When set, build HTML + client SEO emit this URL as rel=canonical (and og:url). */
+  canonicalPath?: string;
 };
 
 export const STATIC_ROUTES: RouteMeta[] = [
@@ -37,12 +39,15 @@ export const STATIC_ROUTES: RouteMeta[] = [
 
 export function carModelMeta(m: CarModelPage): RouteMeta {
   const name = `${m.make} ${m.model}`;
+  // /value/* pages carry unique asking-price tables — stronger than the overlapping /car-values/* copy.
+  const valueMatch = MODEL_PRICES.find((p) => p.slug === `${m.makeSlug}-${m.slug}`);
   return {
     path: `/car-values/${m.makeSlug}/${m.slug}`,
     title: `What's my ${name} worth? Free ${name} valuation | Valu8`,
     description: `Free ${name} valuation using real UK adverts in our database, your MOT history and photos. See private sale, part-exchange and dealer values for your ${name}.`,
     priority: "0.7",
-    inSitemap: true,
+    inSitemap: !valueMatch,
+    ...(valueMatch ? { canonicalPath: `/value/${valueMatch.slug}` } : {}),
   };
 }
 
