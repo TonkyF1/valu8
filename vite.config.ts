@@ -12,6 +12,7 @@ import { CAR_MODELS } from "./src/data/carModels";
 import { MODEL_PRICES } from "./src/data/modelPriceBands";
 import { valueBodyHtml, valueIndexBodyHtml, valuePath } from "./src/data/valuePages";
 import { carModelBodyHtml, carModelJsonLd, carPath, carValuesIndexBodyHtml } from "./src/data/carValueContent";
+import { homepageFaqHeadHtml, staticPageBodyHtml } from "./src/data/staticPageContent";
 
 function routeMetadataHtml(): Plugin {
   let outDir = "";
@@ -23,14 +24,17 @@ function routeMetadataHtml(): Plugin {
       const indexPath = path.join(outDir, "index.html");
       const shell = fs.readFileSync(indexPath, "utf8");
       // Validate and update the homepage from the same source as every route.
-      fs.writeFileSync(indexPath, routeHtml(shell, getRouteMeta("/")));
+      fs.writeFileSync(indexPath, routeHtml(shell, getRouteMeta("/"), false, { bodyHtml: staticPageBodyHtml("/"), headHtml: homepageFaqHeadHtml }));
       for (const meta of ALL_ROUTES) {
         if (meta.path === "/") continue;
         const fileBase = path.join(outDir, meta.path.slice(1));
         const guide = GUIDES.find((g) => g.path === meta.path);
         const car = CAR_MODELS.find((m) => carPath(m) === meta.path);
         const vm = MODEL_PRICES.find((m) => valuePath(m) === meta.path);
-        const extra = meta.path === "/value"
+        const pageBody = staticPageBodyHtml(meta.path);
+        const extra = pageBody
+          ? { bodyHtml: pageBody }
+          : meta.path === "/value"
           ? { bodyHtml: valueIndexBodyHtml() }
           : vm
             ? { bodyHtml: valueBodyHtml(vm) }
