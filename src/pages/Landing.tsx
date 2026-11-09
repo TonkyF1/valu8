@@ -65,23 +65,17 @@ export default function Landing() {
       <main id="main" className="flex-1">
         <section className="relative overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 -top-32 h-[28rem] bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.14),transparent_60%)]" aria-hidden />
-          <div className="container relative max-w-6xl pt-12 pb-10 sm:pt-16 lg:pt-24 lg:pb-20 grid grid-cols-1 gap-9 lg:grid-cols-[1.1fr_1fr] lg:gap-16 items-center">
-            <div className="text-center lg:text-left">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Free UK car valuation</p>
-              <h1 className="mt-3.5 text-[2.25rem] sm:text-[2.75rem] lg:text-[4rem] font-semibold tracking-tight text-gradient leading-[1.05] text-balance">
-                What's your car worth today?
-              </h1>
-              <p className="hidden lg:block mt-5 text-lg text-muted-foreground max-w-md leading-relaxed">
-                Enter your number plate for a free private-sale, part-exchange and dealer estimate.
-              </p>
-            </div>
-            <div className="w-full min-w-0 max-w-md mx-auto lg:max-w-none">
-              <form
-                ref={heroCta}
-                onSubmit={onPlateSubmit}
-                className="rounded-[20px] border border-primary/20 bg-card/60 p-[18px] sm:p-6 shadow-[0_30px_60px_-30px_hsl(var(--primary)/0.35)] backdrop-blur"
-              >
-                <label htmlFor="home-reg" className="block text-left text-xs text-muted-foreground mb-2 ml-0.5">Your number plate</label>
+          <div className="container relative max-w-xl pt-14 pb-10 sm:pt-20 lg:pt-24 lg:pb-16 text-center">
+            <p className="inline-flex items-center rounded-full bg-primary/10 px-3.5 py-1.5 text-[13px] font-medium text-primary">Free UK car valuation</p>
+            <h1 className="mt-5 text-[3.25rem] sm:text-[3.5rem] lg:text-[4rem] font-semibold tracking-tight text-gradient leading-[1.05] text-balance">
+              What’s your car worth?
+            </h1>
+            <p className="mt-4 text-[17px] sm:text-lg text-muted-foreground leading-relaxed text-balance">
+              Enter your reg for a private-sale, part-exchange and dealer estimate.
+            </p>
+            <div className="mt-8 w-full min-w-0">
+              <form ref={heroCta} onSubmit={onPlateSubmit}>
+                <label htmlFor="home-reg" className="sr-only">Your number plate</label>
                 <div className="reg-plate">
                   <div className="reg-plate-inner">
                   <div className="reg-plate-badge" aria-hidden>
@@ -99,19 +93,39 @@ export default function Landing() {
                   />
                   </div>
                 </div>
-                {plateErr && <p className="mt-2 text-left text-xs text-destructive" role="alert">{plateErr}</p>}
-                <Button type="submit" variant="hero" size="xl" className="mt-3 w-full min-h-[56px] text-[17px]">
-                  Value my car <ArrowRight className="h-4 w-4" aria-hidden />
+                {plateErr && <p className="mt-2 text-center text-xs text-destructive" role="alert">{plateErr}</p>}
+                <Button type="submit" variant="hero" size="xl" className="mt-4 w-full min-h-[60px] rounded-2xl text-[18px]">
+                  Get my free valuation
                 </Button>
               </form>
-              <p className="mt-[18px] text-[13px] text-muted-foreground flex justify-center gap-2">
-                Free<span className="text-border" aria-hidden>•</span>No sign-up<span className="text-border" aria-hidden>•</span>Official DVSA MOT data
+              <p className="mt-5 text-[14px] text-muted-foreground flex flex-wrap justify-center items-center gap-x-3 gap-y-1">
+                <span>Valuation <b className="font-semibold text-foreground">Free</b></span>
+                <span className="text-border" aria-hidden>•</span>
+                <span>Full seller report <b className="font-semibold text-foreground">£2.99</b> optional</span>
               </p>
             </div>
           </div>
-          <p className="container text-center text-[13px] text-muted-foreground pb-12 pt-[12vh] lg:pt-4 lg:pb-16">
-            Buying instead? <Link to="/check" className="text-primary hover:underline underline-offset-2">Check if an advert is fair →</Link>
-          </p>
+        </section>
+
+        <section className="container max-w-xl pb-14" aria-labelledby="get-h">
+          <div className="border-t border-border/70 pt-10">
+            <h2 id="get-h" className="text-center text-[13px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">What you get</h2>
+            <ul className="mt-6 divide-y divide-border/70 border-b border-border/70 text-center">
+              <li className="py-6">
+                <p className="text-[17px] font-medium">Essentials valuation</p>
+                <p className="mt-1 text-sm text-muted-foreground">Price estimates · DVSA MOT history</p>
+                <p className="mt-2 text-lg font-semibold text-primary">Free</p>
+              </li>
+              <li className="py-6">
+                <p className="text-[17px] font-medium">Full seller report</p>
+                <p className="mt-1 text-sm text-muted-foreground">One-off, no subscription</p>
+                <p className="mt-2 text-lg font-semibold">£2.99</p>
+              </li>
+            </ul>
+            <p className="mt-6 text-center text-[13px] text-muted-foreground">
+              Buying instead? <Link to="/check" className="text-primary hover:underline underline-offset-2">Check if an advert is fair →</Link>
+            </p>
+          </div>
         </section>
 
         <section className="container max-w-3xl pb-16" aria-labelledby="sample-h">
@@ -153,7 +167,7 @@ export default function Landing() {
             ))}
           </ol>
           <div className="text-center mt-8">
-            <Button asChild variant="hero" size="lg"><Link to="/valuation/new">Start free valuation <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+            <Button asChild variant="hero" size="lg"><Link to="/valuation/new">Get my free valuation <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
           </div>
         </section>
 
@@ -207,7 +221,7 @@ export default function Landing() {
       {/* Sticky mobile CTA */}
       <div aria-hidden={!showSticky} className={`sm:hidden fixed inset-x-0 bottom-0 z-40 transition-transform duration-200 ${showSticky ? "translate-y-0" : "translate-y-full pointer-events-none"} border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]`}>
         <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
-          <Link to="/valuation/new" tabIndex={showSticky ? 0 : -1}>Value my car free <ArrowRight className="h-4 w-4" aria-hidden /></Link>
+          <Link to="/valuation/new" tabIndex={showSticky ? 0 : -1}>Get my free valuation <ArrowRight className="h-4 w-4" aria-hidden /></Link>
         </Button>
       </div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
