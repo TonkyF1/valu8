@@ -766,10 +766,13 @@ export type Database = {
     Views: {
       funnel_daily: {
         Row: {
+          checkout_start: number | null
           day: string | null
           landed: number | null
           lookup_fail: number | null
           lookup_success: number | null
+          offer_click: number | null
+          offer_view: number | null
           price_alert_opt_in: number | null
           reg_typed: number | null
           result_seen: number | null
