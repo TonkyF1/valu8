@@ -26,7 +26,7 @@ import { cheapPriceRange } from "../_shared/cheapRange.ts";
 import { aiSafetyCap } from "../_shared/aiCap.ts";
 import { displayMake } from "../_shared/vehicle-text.ts";
 import { ccPlausibility } from "../_shared/ccPlausibility.ts";
-import { canonicalVariantName, variantLikePatterns, tieredVariantReference, rareEvidence, rareAiPrompt, parseRareAi, rareAiFigures, rareNote, type RareAiEstimate } from "../_shared/rareVariant.ts";
+import { canonicalVariantName, variantLikePatterns, tieredVariantReference, rareEvidence, rareAiPrompt, parseRareAi, rareAiFigures, rareNote, type RareAiEstimate, type RareText } from "../_shared/rareVariant.ts";
 import { assessImport, importNote } from "../_shared/importCheck.ts";
 import { resolveVariant, perfCompReference, variantToken, reconcileProsePrices, stripPriceSentences, proseRatio, sanityVerdict, aiTextVariant, optionRegex, MIN_VARIANT_COMPS, type ShownPrices, type PerfCompRow } from "../_shared/variantGuard.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
@@ -1653,14 +1653,13 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
             // rare-cars-1: widen like-for-like evidence step by step instead of refusing. Every step uses only
             // adverts of THIS variant; the AI step is grounded on the adverts we hold and floored at the standard figure.
             const standardPrivate = values.privateSale;
-            const setRare = (p: number, lo: number, hi: number, note: string, tier: string, n: number) => {
+            const setRare = (p: number, lo: number, hi: number, t: RareText, tier: string, n: number) => {
               engineRepriced = true;
               const k = p / Math.max(1, values.privateSale);
               values = { dealerTradeIn: roundToGrain(values.dealerTradeIn * k), privateSale: roundToGrain(p), dealerRetail: roundToGrain(Math.max(values.dealerRetail * k, p * 1.08)) };
               rangeLow = roundToGrain(Math.min(lo, values.privateSale)); rangeHigh = roundToGrain(Math.max(hi, values.privateSale));
               confidence = "Low";
-              confidenceReason = note; pricingReasoning = note;
-              rareCarWarning = note.replace(/^Limited market data:\s*/, "");
+              confidenceReason = t.confidence; pricingReasoning = t.reasoning; rareCarWarning = t.warning;
               rareVariantInfo = { tier, n, name };
             };
             const tiered = tieredVariantReference(perfEff, rows, { year: body.year, mileage: pricedMiles, token, base });
@@ -1682,7 +1681,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
                 setRare(f.private, f.low, f.high, rareNote("ai", name, 0), "ai", 0);
                 if (!perf) {
                   const extra = ` We've assumed it's ${/^[aeiou]/i.test(name) ? "an" : "a"} ${name} from its model and engine — if it isn't, it will be worth less.`;
-                  confidenceReason += extra; pricingReasoning = confidenceReason; rareCarWarning += extra;
+                  rareCarWarning += extra;
                 }
               } else {
                 const an = /^[aeiou]/i.test(name) ? "an" : "a";
@@ -1705,8 +1704,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
           confidence = "Very Low";
           rangeLow = roundToGrain(Math.min(rangeLow, values.privateSale * 0.85));
           rangeHigh = roundToGrain(Math.max(rangeHigh, values.privateSale * 1.15));
-          guardNote = "Our data sources disagree on this car, so treat this figure as a rough guide and check similar adverts before you list.";
-          confidenceReason = guardNote;
+          if (!rareVariantInfo) {
+            guardNote = "Our data sources disagree on this car, so treat this figure as a rough guide and check similar adverts before you list.";
+            confidenceReason = guardNote;
+          }
         }
       }
       // Implausible engine size for the model (advisory: lowers certainty, never moves the price).

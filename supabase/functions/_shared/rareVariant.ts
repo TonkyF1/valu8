@@ -130,9 +130,19 @@ export function rareAiFigures(est: RareAiEstimate, standardPrivate: number): { p
   return { private: mid, low: Math.min(est.low, mid * 0.8), high: Math.max(est.high, mid * 1.3) };
 }
 
-export function rareNote(kind: RareTier | "ai", name: string, n: number, years?: [number, number]): string {
-  if (kind === "same") return `Limited market data: priced from ${n} ${name} adverts, adjusted for age and mileage — treat as a guide.`;
-  if (kind === "nearby") return `Limited market data: few ${name}s come up for sale, so this is priced from ${n} ${name} adverts from ${years?.[0]}–${years?.[1]}, adjusted for age and mileage. Treat it as a guide and compare with any similar cars for sale.`;
-  if (kind === "generations") return `Limited market data: priced from ${n} ${name} adverts across other years — treat it as a rough guide.`;
-  return `Limited market data: very few ${name}s come up for sale, so this is an estimate from the wider market for this kind of car, not from direct comparables. Values for cars like this depend heavily on condition, originality and history — treat it as a rough guide.`;
+export interface RareText { reasoning: string; confidence: string; warning: string }
+/** Three distinct texts (the report dedupes near-identical sentences across fields). No accuracy claims. */
+export function rareNote(kind: RareTier | "ai", name: string, n: number, years?: [number, number]): RareText {
+  const span = years ? (years[0] === years[1] ? ` from ${years[0]}` : ` from ${years[0]}–${years[1]}`) : "";
+  const confidence = "Limited market data for this car, so treat the figure as a guide.";
+  if (kind === "ai") return {
+    reasoning: `${name}s rarely come up for sale, so this figure is estimated from the wider market for cars like this rather than from direct comparables.`,
+    confidence,
+    warning: "Cars like this sell on condition, originality and history, and we hold no direct comparables — treat the figure as a rough guide.",
+  };
+  return {
+    reasoning: `Based on ${n} ${name} adverts${kind === "same" ? "" : span}, each adjusted to this car's age and mileage.`,
+    confidence,
+    warning: `Few ${name}s come up for sale, so the figure rests on a small number of adverts. Compare it with any similar cars for sale before you list.`,
+  };
 }
