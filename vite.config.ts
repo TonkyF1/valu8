@@ -10,7 +10,7 @@ import { buildSitemap } from "./scripts/sitemap";
 import { GUIDES, guideArticleHtml, guideFaqJsonLd, guidesIndexBodyHtml } from "./src/data/guides";
 import { CAR_MODELS } from "./src/data/carModels";
 import { MODEL_PRICES } from "./src/data/modelPriceBands";
-import { valueBodyHtml, valueIndexBodyHtml, valuePath } from "./src/data/valuePages";
+import { valueBodyHtml, valueIndexBodyHtml, valuePath, yearBodyHtml, yearPath } from "./src/data/valuePages";
 import { carModelBodyHtml, carModelJsonLd, carPath, carValuesIndexBodyHtml } from "./src/data/carValueContent";
 import { homepageFaqHeadHtml, staticPageBodyHtml } from "./src/data/staticPageContent";
 
@@ -31,6 +31,7 @@ function routeMetadataHtml(): Plugin {
         const guide = GUIDES.find((g) => g.path === meta.path);
         const car = CAR_MODELS.find((m) => carPath(m) === meta.path);
         const vm = MODEL_PRICES.find((m) => valuePath(m) === meta.path);
+        const vy = MODEL_PRICES.flatMap((m) => m.years.map((y) => ({ m, y }))).find(({ m, y }) => yearPath(m, y) === meta.path);
         const pageBody = staticPageBodyHtml(meta.path);
         const extra = pageBody
           ? { bodyHtml: pageBody }
@@ -38,6 +39,8 @@ function routeMetadataHtml(): Plugin {
           ? { bodyHtml: valueIndexBodyHtml() }
           : vm
             ? { bodyHtml: valueBodyHtml(vm) }
+          : vy
+            ? { bodyHtml: yearBodyHtml(vy.m, vy.y) }
             : meta.path === "/guides"
           ? { bodyHtml: guidesIndexBodyHtml() }
           : guide

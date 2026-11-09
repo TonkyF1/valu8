@@ -39,6 +39,7 @@ const CarValue = lazy(() => import("./pages/CarValue"));
 const CarValuesIndex = lazy(() => import("./pages/CarValuesIndex"));
 const ModelValue = lazy(() => import("./pages/ModelValue"));
 const ValueIndex = lazy(() => import("./pages/ModelValue").then((m) => ({ default: m.ValueIndex })));
+const ModelYearValue = lazy(() => import("./pages/ModelValue").then((m) => ({ default: m.ModelYearValue })));
 const GuidesIndex = lazy(() => import("./pages/GuidesIndex"));
 const Guide = lazy(() => import("./pages/Guide"));
 
@@ -82,6 +83,7 @@ const App = () => (
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/value" element={<ValueIndex />} />
             <Route path="/value/:slug" element={<ModelValue />} />
+            <Route path="/value/:slug/:year" element={<ModelYearValue />} />
             <Route path="/car-values" element={<CarValuesIndex />} />
             <Route path="/car-values/:make/:model" element={<CarValue />} />
             <Route path="/guides" element={<GuidesIndex />} />
