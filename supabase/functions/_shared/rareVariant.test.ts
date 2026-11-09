@@ -47,3 +47,19 @@ Deno.test("AI-identified Type R on an Integra yields a usable token", () => {
   const ev = rareEvidence(v!, [civic(2002, 120000, 6850, "Type-R"), civic(2002, 90000, 1500, "1.6 SE")], { year: 2001, token: "type r", base: "Integra" });
   assertEquals(ev.length, 1);
 });
+
+import { sameGeneration, generationOf, rareNote } from "./rareVariant.ts";
+Deno.test("generations: FK8 never pools with FN2/FK2, E9x M3 with F80, B7 RS4 with B8", () => {
+  const rows = [civic(2008, 100000, 4000), civic(2010, 90000, 4500), civic(2015, 50000, 15000), civic(2018, 30000, 24000), civic(2021, 17000, 29000)];
+  assertEquals(sameGeneration("Honda", "Civic", "type r", 2018, rows).rows.map((r) => r.year), [2018, 2021]);
+  assertEquals(sameGeneration("Honda", "Civic", "type r", 2007, rows).rows.map((r) => r.year), [2008, 2010]);
+  assertEquals(sameGeneration("Honda", "Civic", "type r", 2017, rows).gen, "FK2/FK8");
+  assertEquals(generationOf("BMW", "3 Series", "m3", 2009), ["E9x"]);
+  assertEquals(generationOf("BMW", "3 Series", "m3", 2015), ["F80"]);
+  assertEquals(generationOf("Audi", "A4", "rs4", 2007), ["B7"]);
+  assertEquals(generationOf("Volkswagen", "Golf", "gti", 2016), ["Mk7"]);
+  assertEquals(generationOf("Ford", "Focus", "rs", 2017), ["Mk3"]);
+  assertEquals(generationOf("Ford", "Focus", "st 3", 2008), ["Mk2"]);
+  assertEquals(sameGeneration("Honda", "Integra", "type r", 2001, rows).gen, null);
+  assertEquals(rareNote("ai", "Honda Civic Type R (FK8)", 0).reasoning.startsWith("Honda Civic Type Rs (FK8) rarely"), true);
+});

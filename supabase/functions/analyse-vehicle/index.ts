@@ -26,7 +26,7 @@ import { cheapPriceRange } from "../_shared/cheapRange.ts";
 import { aiSafetyCap } from "../_shared/aiCap.ts";
 import { displayMake } from "../_shared/vehicle-text.ts";
 import { ccPlausibility } from "../_shared/ccPlausibility.ts";
-import { canonicalVariantName, variantLikePatterns, tieredVariantReference, rareEvidence, rareAiPrompt, parseRareAi, rareAiFigures, rareNote, type RareAiEstimate, type RareText } from "../_shared/rareVariant.ts";
+import { canonicalVariantName, variantLikePatterns, tieredVariantReference, rareEvidence, rareAiPrompt, parseRareAi, rareAiFigures, rareNote, sameGeneration, type RareAiEstimate, type RareText } from "../_shared/rareVariant.ts";
 import { assessImport, importNote } from "../_shared/importCheck.ts";
 import { resolveVariant, perfCompReference, variantToken, reconcileProsePrices, stripPriceSentences, proseRatio, sanityVerdict, aiTextVariant, optionRegex, MIN_VARIANT_COMPS, type ShownPrices, type PerfCompRow } from "../_shared/variantGuard.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
@@ -1632,11 +1632,16 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
             rows = (data ?? []) as PerfCompRow[];
           }
           const base = String(body.model ?? "").split(/\s+/)[0];
+          // rare-cars-2: never pool generations (FN2 vs FK8, E46 vs F80...) when we know the boundaries.
+          const allRows = rows;
+          const genSel = sameGeneration(body.make, body.model, token, body.year, rows);
+          rows = genSel.rows;
           const ref = perfCompReference(perfEff, rows, { year: body.year, mileage: pricedMiles, token, base });
           const vName = canonicalVariantName(body.model, token);
           if (vName) detectedModel = vName;
           debugInfo.variantGuard = { ...(debugInfo.variantGuard as any), token, refN: ref.n, refPrivate: Math.round(ref.private), poolN: rows.length };
-          const name = detectedModel ? `${displayMake(body.make)} ${detectedModel}` : perfEff.label;
+          const name = (detectedModel ? `${displayMake(body.make)} ${detectedModel}` : perfEff.label) + (genSel.gen ? ` (${genSel.gen})` : "");
+          debugInfo.variantGuard = { ...(debugInfo.variantGuard as any), generation: genSel.gen, genN: rows.length };
           const guardNeeded = perfFallback || !perf || (dataSource === "ai_estimate" && !!ownForCap && !ownForCap.perf);
           if (ref.n >= MIN_VARIANT_COMPS) {
             const ratio = values.privateSale / ref.private;
@@ -1668,8 +1673,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
             } else {
               let est: RareAiEstimate | null = null;
               try {
-                const evidence = rareEvidence(perfEff, rows, { year: body.year, token, base });
-                const prompt = rareAiPrompt({ make: displayMake(body.make), model: body.model, variantName: detectedModel ?? perfEff.label, year: body.year, mileage: pricedMiles,
+                const evidence = rareEvidence(perfEff, allRows, { year: body.year, token, base });
+                const prompt = rareAiPrompt({ make: displayMake(body.make), model: body.model, variantName: `${detectedModel ?? perfEff.label}${genSel.gen ? ` (${genSel.gen} generation)` : ""}`, year: body.year, mileage: pricedMiles,
                   importNote: importInfo.status !== "no" ? importInfo.reason ?? null : null, variantFromEngineOnly: !perf }, evidence);
                 const r = await fetch(AI_GATEWAY_URL, { method: "POST", headers: { Authorization: `Bearer ${AI_API_KEY}`, "Content-Type": "application/json" },
                   body: JSON.stringify({ model: Deno.env.get("AI_MODEL") || "google/gemini-2.5-flash", messages: [{ role: "user", content: prompt }] }) });

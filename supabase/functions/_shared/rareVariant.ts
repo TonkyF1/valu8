@@ -135,14 +135,65 @@ export interface RareText { reasoning: string; confidence: string; warning: stri
 export function rareNote(kind: RareTier | "ai", name: string, n: number, years?: [number, number]): RareText {
   const span = years ? (years[0] === years[1] ? ` from ${years[0]}` : ` from ${years[0]}–${years[1]}`) : "";
   const confidence = "Limited market data for this car, so treat the figure as a guide.";
+  const names = name.replace(/(\s\([^)]*\))?$/, "s$1"); // "Civic Type R (FK8)" -> "Civic Type Rs (FK8)"
   if (kind === "ai") return {
-    reasoning: `${name}s rarely come up for sale, so this figure is estimated from the wider market for cars like this rather than from direct comparables.`,
+    reasoning: `${names} rarely come up for sale, so this figure is estimated from the wider market for cars like this rather than from direct comparables.`,
     confidence,
     warning: "Cars like this sell on condition, originality and history, and we hold no direct comparables — treat the figure as a rough guide.",
   };
   return {
     reasoning: `Based on ${n} ${name} adverts${kind === "same" ? "" : span}, each adjusted to this car's age and mileage.`,
     confidence,
-    warning: `Few ${name}s come up for sale, so the figure rests on a small number of adverts. Compare it with any similar cars for sale before you list.`,
+    warning: `Few ${names} come up for sale, so the figure rests on a small number of adverts. Compare it with any similar cars for sale before you list.`,
   };
+}
+
+// ---------- generations (rare-cars-2) ----------
+// Performance models change a lot between generations (a 2010 FN2 Type R is not a 2018 FK8), so like-for-like comps
+// are kept to the same generation when we know the boundaries. Years are UK registration years; boundary years that
+// belong to two generations (run-out / launch) count as both, so a car in an overlap year is compared with either.
+export interface GenRule { make: RegExp; model?: RegExp; token: RegExp; label: string; gens: [string, number, number][] }
+export const GENERATIONS: GenRule[] = [
+  { make: /honda/, model: /civic/, token: /type ?r/, label: "Civic Type R",
+    gens: [["EK9", 1997, 2000], ["EP3", 2001, 2006], ["FN2", 2006, 2012], ["FK2", 2015, 2017], ["FK8", 2017, 2022], ["FL5", 2022, 2035]] },
+  { make: /volkswagen|^vw$/, model: /golf/, token: /^(gti|gtd|r|r ?32|clubsport|gti clubsport)$/, label: "Golf",
+    gens: [["Mk4", 1998, 2004], ["Mk5", 2004, 2009], ["Mk6", 2009, 2013], ["Mk7", 2013, 2020], ["Mk8", 2020, 2035]] },
+  { make: /bmw/, token: /^m ?3$/, label: "M3", gens: [["E30", 1986, 1991], ["E36", 1992, 1999], ["E46", 2000, 2006], ["E9x", 2007, 2013], ["F80", 2014, 2019], ["G80", 2020, 2035]] },
+  { make: /bmw/, token: /^m ?4$/, label: "M4", gens: [["F82", 2014, 2020], ["G82", 2020, 2035]] },
+  { make: /bmw/, token: /^m ?2$/, label: "M2", gens: [["F87", 2016, 2021], ["G87", 2023, 2035]] },
+  { make: /bmw/, token: /^m ?5$/, label: "M5", gens: [["E39", 1998, 2004], ["E60", 2005, 2010], ["F10", 2011, 2017], ["F90", 2018, 2035]] },
+  { make: /audi/, token: /^rs ?4$/, label: "RS4", gens: [["B5", 1999, 2002], ["B7", 2006, 2008], ["B8", 2012, 2016], ["B9", 2018, 2035]] },
+  { make: /audi/, token: /^rs ?6$/, label: "RS6", gens: [["C5", 2002, 2005], ["C6", 2008, 2011], ["C7", 2013, 2019], ["C8", 2020, 2035]] },
+  { make: /audi/, token: /^rs ?3$/, label: "RS3", gens: [["8P", 2011, 2013], ["8V", 2015, 2021], ["8Y", 2021, 2035]] },
+  { make: /ford/, model: /focus/, token: /^st/, label: "Focus ST", gens: [["Mk2", 2005, 2011], ["Mk3", 2012, 2019], ["Mk4", 2019, 2035]] },
+  { make: /ford/, model: /focus/, token: /^rs$/, label: "Focus RS", gens: [["Mk1", 2002, 2004], ["Mk2", 2009, 2011], ["Mk3", 2016, 2018]] },
+  { make: /ford/, model: /fiesta/, token: /^st/, label: "Fiesta ST", gens: [["Mk6", 2004, 2008], ["Mk7", 2013, 2018], ["Mk8", 2018, 2023]] },
+  { make: /renault/, model: /megane/, token: /renault ?sport|^rs$|trophy|cup/, label: "Megane RS", gens: [["Mk2", 2004, 2009], ["Mk3", 2010, 2017], ["Mk4", 2018, 2035]] },
+  { make: /mercedes/, token: /^c ?63/, label: "C63 AMG", gens: [["W204", 2007, 2015], ["W205", 2015, 2022], ["W206", 2023, 2035]] },
+];
+
+const gensAt = (r: GenRule, y: number) => r.gens.filter(([, a, b]) => y >= a && y <= b).map(([c]) => c);
+
+export function generationRule(make?: string | null, model?: string | null, token?: string | null): GenRule | null {
+  const mk = normText(make), md = normText(model), t = normText(token);
+  if (!mk || !t) return null;
+  return GENERATIONS.find((g) => g.make.test(mk) && g.token.test(t) && (!g.model || g.model.test(md) || g.model.test(t))) ?? null;
+}
+
+/** Generation code(s) for this car, e.g. ["FK8"], or [] when unknown. */
+export function generationOf(make?: string | null, model?: string | null, token?: string | null, year?: number | null): string[] {
+  const r = generationRule(make, model, token);
+  return r && year ? gensAt(r, Number(year)) : [];
+}
+
+/**
+ * Keep only adverts from the same generation as the car (rows of the same make + badge). Unchanged when we have no
+ * boundaries for this model or the car's year falls outside every known generation.
+ */
+export function sameGeneration<T extends { year: number }>(make: string | null | undefined, model: string | null | undefined, token: string | null | undefined, year: number, rows: T[]): { rows: T[]; gen: string | null } {
+  const r = generationRule(make, model, token);
+  if (!r) return { rows, gen: null };
+  const mine = gensAt(r, year);
+  if (!mine.length) return { rows, gen: null };
+  return { rows: rows.filter((x) => gensAt(r, x.year).some((g) => mine.includes(g))), gen: mine.join("/") };
 }
