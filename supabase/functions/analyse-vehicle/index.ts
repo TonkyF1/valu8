@@ -385,6 +385,8 @@ interface AnalyseRequest {
   engineCapacity?: number;
   bodyStyle?: string;
   firstRegistered?: string;
+  /** DVSA manufacture year from lookup-vehicle, when it differs from the first UK registration (imports). */
+  manufactureYear?: number;
   motAdvisories?: string[];
   photoUrls: string[];
   photos?: { slot: string; url: string }[];
@@ -850,7 +852,9 @@ Deno.serve(async (req) => {
     // eng-4: DVLA gives "A6" for an RS6. Infer the real trim from engine size + seller text
     // before anything is priced, so perf detection / comps / pm all see the true variant.
     // rare-cars-1: imports (e.g. a JDM car first registered here years after it was built).
-    const importInfo = assessImport({ registration: body.registration, firstRegistered: body.firstRegistered, make: body.make, model: body.model });
+    // Age comes only from DVSA (manufactureYear passed through from lookup-vehicle), never from the plate letters.
+    const importInfo = assessImport({ registration: body.registration, firstRegistered: body.firstRegistered,
+      manufactureDate: Number(body.manufactureYear) || null, make: body.make, model: body.model });
     const importNoteText = importNote(importInfo);
     const variantRes = resolveVariant({
       make: body.make, model: body.model, variant: body.variant, fuel: body.fuelType ?? null,

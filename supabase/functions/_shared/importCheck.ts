@@ -1,8 +1,10 @@
-// Import / age-related plate detection (rare-cars-1, after SK51EYX: a JDM Honda Integra built in 2001, first
-// registered in the UK in 2005 on an age-related "51" plate, was valued as a 2005 car).
-// DVSA gives the first UK registration date; for an import that is years after the car was built. The plate's age
-// identifier (or DVSA's manufactureDate, when present) tells us roughly when it was built.
-// Pure TS, no imports: shared by lookup-vehicle, analyse-vehicle and tests.
+// Import detection (rare-cars-1, after SK51EYX: a JDM Honda Integra built in 2001, first registered in the UK in 2005
+// on a "51" plate, was valued as a 2005 car).
+// DVSA gives the first UK registration date and, for most cars, a manufactureDate. A car is a likely import only when
+// it was built 2+ years before its first UK registration, or when the model was never sold new in the UK.
+// The plate's letters/numbers are NEVER used to infer age: cherished/transferred plates (T80GOU on a 2016 Corsa,
+// GB51DLB on a 2012 Smart) don't match the registration date and are not a sign of an import. Only a Q plate (age
+// unknown) gives a "possible" flag. Pure TS, no imports: shared by lookup-vehicle, analyse-vehicle and tests.
 
 const PREFIX_YEAR: Record<string, number> = {
   A: 1983, B: 1984, C: 1985, D: 1986, E: 1987, F: 1988, G: 1989, H: 1990, J: 1991, K: 1992, L: 1993, M: 1994,
@@ -15,7 +17,8 @@ const SUFFIX_YEAR: Record<string, number> = {
 
 const cleanReg = (r?: string | null) => String(r ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-/** Year implied by the plate's age identifier, "Q" for Q plates, or null (dateless / cherished / unknown). */
+/** Year implied by the plate's age identifier, "Q" for Q plates, or null (dateless / cherished / unknown).
+ * Informational only: assessImport never uses the year (a plate can be transferred onto any later car). */
 export function plateAgeYear(reg?: string | null, now: Date = new Date()): number | "Q" | null {
   const r = cleanReg(reg);
   if (/^Q\d{1,3}[A-Z]{3}$/.test(r) || /^[A-Z]{3}\d{1,3}Q$/.test(r)) return "Q";
@@ -56,37 +59,30 @@ export function isJdmImportModel(make?: string | null, model?: string | null, fi
 
 export interface ImportAssessment {
   status: "likely" | "possible" | "no";
-  /** Best estimate of the year the car was built, when it differs from the first UK registration year. */
+  /** Year the car was built (DVSA manufactureDate), when it differs from the first UK registration year. */
   buildYear?: number;
   firstRegYear?: number;
-  plateYear?: number;
   reason?: string;
 }
 
-const yearOf = (d?: string | null) => { const y = Number(String(d ?? "").slice(0, 4)); return y > 1900 && y < 2100 ? y : undefined; };
+const yearOf = (d?: string | number | null) => { const y = Number(String(d ?? "").slice(0, 4)); return y > 1900 && y < 2100 ? y : undefined; };
 
 export function assessImport(v: {
-  registration?: string | null; firstRegistered?: string | null; manufactureDate?: string | null;
+  registration?: string | null; firstRegistered?: string | null; manufactureDate?: string | number | null;
   make?: string | null; model?: string | null; now?: Date;
 }): ImportAssessment {
   const fY = yearOf(v.firstRegistered);
   const mY = yearOf(v.manufactureDate);
-  const plate = plateAgeYear(v.registration, v.now);
-  const pY = typeof plate === "number" ? plate : undefined;
-  const jdm = isJdmImportModel(v.make, v.model, fY);
   if (mY && fY && fY - mY >= 2) {
-    return { status: "likely", buildYear: mY, firstRegYear: fY, plateYear: pY, reason: `built in ${mY} but first registered in the UK in ${fY}` };
+    return { status: "likely", buildYear: mY, firstRegYear: fY, reason: `built in ${mY} but first registered in the UK in ${fY}` };
   }
-  if (plate === "Q") return { status: "possible", firstRegYear: fY, reason: "it carries a Q plate, so its age couldn't be confirmed" };
-  if (pY && fY && fY - pY >= 2) {
-    // An age-related plate older than the UK registration: an import if the model was never sold here new;
-    // otherwise it could equally be a private plate, so flag it without changing the year.
-    return jdm
-      ? { status: "likely", buildYear: pY, firstRegYear: fY, plateYear: pY, reason: `first registered in the UK in ${fY} on an age-related plate, which suggests it was built around ${pY}` }
-      : { status: "possible", firstRegYear: fY, plateYear: pY, reason: `its plate suggests it was built around ${pY}, but it was first registered in the UK in ${fY}` };
+  if (isJdmImportModel(v.make, v.model, fY)) {
+    return { status: "likely", firstRegYear: fY, reason: "this model wasn't sold new in the UK at the time" };
   }
-  if (jdm) return { status: "likely", firstRegYear: fY, plateYear: pY, reason: "this model wasn't sold new in the UK at the time" };
-  return { status: "no", firstRegYear: fY, plateYear: pY };
+  if (plateAgeYear(v.registration, v.now) === "Q") {
+    return { status: "possible", firstRegYear: fY, reason: "it carries a Q plate, so its age couldn't be confirmed" };
+  }
+  return { status: "no", firstRegYear: fY };
 }
 
 /** Short report note for an import (no price claims). */

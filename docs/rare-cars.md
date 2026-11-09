@@ -5,7 +5,7 @@ refused ("0 comparable Honda TYPER adverts"). Civic Type Rs, M3s and RS4s were r
 
 Root causes
 - lookup-vehicle took the year from DVSA `firstUsedDate` (first UK registration) before `manufactureDate`. For imports
-  that is years late. Now the build year comes from `manufactureDate`, or from an age-related plate on a JDM-only model.
+  that is years late. Now the build year comes from `manufactureDate` only.
 - The variant comps query searched `%typer%` for "type r", so it found 0 of our Civic Type R adverts. It now uses `%type%r%`.
 - The variant name was built as `token.toUpperCase()` with spaces removed ("TYPER"). It's now "Integra Type R" / "Civic Type R".
 
@@ -17,9 +17,12 @@ Pricing (analyse-vehicle, eng-4 guard block)
 4. It refuses only when the AI estimate fails too.
 A rare variant is never priced from standard-model adverts. The display rules (`cheapRange.ts`) are unchanged.
 
-Imports (`_shared/importCheck.ts`): "likely" (manufactureDate 2+ years before UK registration, an age-related plate on a
-JDM-only model, or a JDM-only model) or "possible" (an older-looking plate on a model also sold in the UK, or a Q plate).
-For a "possible" import the year isn't changed. Imports get a wider range, confidence capped at Low, and a report note.
+Imports (`_shared/importCheck.ts`): "likely" only when DVSA's manufactureDate is 2+ years before the first UK
+registration, or the model was never sold new in the UK (JDM list); "possible" only for a Q plate. The plate's
+letters/numbers are never used to infer age: a cherished or transferred plate (T80GOU on a 2016 Corsa, GB51DLB on a
+2012 Smart) doesn't match the registration date and is not a sign of an import (fixed 2026-11-09 after both were
+wrongly flagged "possible import"). analyse-vehicle gets the DVSA build year as `manufactureYear` from the lookup.
+Imports get a wider range, confidence capped at Low, and a report note.
 We don't apply an import premium or discount because we hold too few import-labelled adverts to measure one.
 
 Data: the box harvester (collect_fresh.mjs) has targeted model feeds for rare, performance and JDM models (GT_RARE).

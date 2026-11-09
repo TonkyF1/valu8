@@ -333,6 +333,7 @@ export default function NewValuation() {
           engineCapacity: lookup?.engineCapacity || undefined,
           bodyStyle: lookup?.bodyStyle || undefined,
           firstRegistered: lookup?.firstRegistered || undefined,
+          manufactureYear: lookup?.manufactureYear || undefined,
           motAdvisories: lookup?.recentAdvisories?.length ? lookup.recentAdvisories : undefined,
           photoUrls,
           photos: photos_labeled,
