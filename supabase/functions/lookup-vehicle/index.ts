@@ -1,11 +1,16 @@
 // Valu8 — UK vehicle lookup by registration (DVSA MOT History API)
 import { normaliseFuel, normaliseColour, displayModel } from "../_shared/vehicle-text.ts";
 import { motDaysRemaining } from "../_shared/mot.ts";
+import { assessImport } from "../_shared/importCheck.ts";
 import { corsHeaders, guard, checkLimit, clientIp, envInt, json } from "../_shared/guard.ts";
 
 interface LookupResponse {
   registration: string;
   firstRegistered?: string;
+  /** Year the car was built when it differs from the first UK registration (imports). */
+  manufactureYear?: number;
+  importStatus?: "likely" | "possible";
+  importReason?: string;
   make?: string;
   model?: string;
   variant?: string;
@@ -214,6 +219,7 @@ Deno.serve(async (req) => {
     let dvsaColour: string | undefined;
     let dvsaFirstReg: string | undefined;
     let dvsaEngineCc: number | undefined;
+    let dvsaManufacture: string | undefined;
 
     if (data) {
       const tests: any[] = Array.isArray(data?.motTests) ? data.motTests : [];
@@ -221,7 +227,10 @@ Deno.serve(async (req) => {
         String(b?.completedDate ?? "").localeCompare(String(a?.completedDate ?? "")),
       );
       const latest = sorted[0];
+      // First UK registration (firstUsedDate/registrationDate). For an import this can be years after the car was
+      // built, so manufactureDate is kept separately and the build year is resolved below (rare-cars-1).
       const firstUsed: string | undefined = data?.firstUsedDate || data?.registrationDate || data?.manufactureDate;
+      dvsaManufacture = data?.manufactureDate ? String(data.manufactureDate).slice(0, 10).replace(/\./g, "-") : undefined;
       const y = firstUsed ? Number(String(firstUsed).slice(0, 4)) : undefined;
       dvsaYear = Number.isFinite(y) ? y : undefined;
       dvsaFirstReg = firstUsed ? String(firstUsed).slice(0, 10).replace(/\./g, "-") : undefined;
@@ -247,13 +256,17 @@ Deno.serve(async (req) => {
       }
     }
 
+    const imp = assessImport({ registration: reg, firstRegistered: dvsaFirstReg, manufactureDate: dvsaManufacture,
+      make: vdg?.make ?? dvsaMake, model: vdg?.model ?? dvsaModel });
     const out: LookupResponse = {
       registration: reg,
       make: vdg?.make ?? dvsaMake,
       model: displayModel(vdg?.make ?? dvsaMake, vdg?.model ?? dvsaModel, vdg?.fuelType ?? dvsaFuel) || undefined,
       variant: vdg?.variant,
-      year: vdg?.year ?? dvsaYear,
+      year: vdg?.year ?? imp.buildYear ?? dvsaYear,
       firstRegistered: dvsaFirstReg,
+      ...(imp.buildYear && imp.buildYear !== dvsaYear ? { manufactureYear: imp.buildYear } : {}),
+      ...(imp.status !== "no" ? { importStatus: imp.status, importReason: imp.reason } : {}),
       fuelType: normaliseFuel(vdg?.fuelType ?? dvsaFuel),
       transmission: vdg?.transmission,
       engineCapacity: vdg?.engineCapacity ?? dvsaEngineCc,

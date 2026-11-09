@@ -26,6 +26,8 @@ import { cheapPriceRange } from "../_shared/cheapRange.ts";
 import { aiSafetyCap } from "../_shared/aiCap.ts";
 import { displayMake } from "../_shared/vehicle-text.ts";
 import { ccPlausibility } from "../_shared/ccPlausibility.ts";
+import { canonicalVariantName, variantLikePatterns, tieredVariantReference, rareEvidence, rareAiPrompt, parseRareAi, rareAiFigures, rareNote, type RareAiEstimate } from "../_shared/rareVariant.ts";
+import { assessImport, importNote } from "../_shared/importCheck.ts";
 import { resolveVariant, perfCompReference, variantToken, reconcileProsePrices, stripPriceSentences, proseRatio, sanityVerdict, aiTextVariant, optionRegex, MIN_VARIANT_COMPS, type ShownPrices, type PerfCompRow } from "../_shared/variantGuard.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
@@ -847,6 +849,9 @@ Deno.serve(async (req) => {
     const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
     // eng-4: DVLA gives "A6" for an RS6. Infer the real trim from engine size + seller text
     // before anything is priced, so perf detection / comps / pm all see the true variant.
+    // rare-cars-1: imports (e.g. a JDM car first registered here years after it was built).
+    const importInfo = assessImport({ registration: body.registration, firstRegistered: body.firstRegistered, make: body.make, model: body.model });
+    const importNoteText = importNote(importInfo);
     const variantRes = resolveVariant({
       make: body.make, model: body.model, variant: body.variant, fuel: body.fuelType ?? null,
       cc: Number(body.engineCapacity ?? (body.guestSave?.vehicle as any)?.engineCapacity) || null,
@@ -1594,6 +1599,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     // ----- eng-4 guards: performance variant comps + cross-source sanity -----
     let detectedModel: string | undefined = variantRes.displayModel;
     let guardNote: string | null = null;
+    let rareVariantInfo: { tier: string; n: number; name: string } | null = null;
     const markUnavailable = (why: string) => {
       valuationUnavailable = true;
       values = { dealerTradeIn: 0, privateSale: 0, dealerRetail: 0 };
@@ -1609,7 +1615,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       const perfEff = perf ?? aiVar;
       if (!detectedModel && perfEff) {
         const tok = variantToken(perfEff, body.model, `${body.variant ?? ""} ${aiVariantText}`);
-        if (tok) detectedModel = tok.toUpperCase().replace(/\s+/g, "");
+        if (tok) detectedModel = canonicalVariantName(body.model, tok) ?? undefined;
       }
       debugInfo.variantGuard = { resolved: variantRes, aiVariant: aiVariantText || null, perf: perfEff?.key ?? null };
       if (!valuationUnavailable && values.privateSale > 0) {
@@ -1618,19 +1624,21 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
           const admin = adminClient();
           let rows: PerfCompRow[] = [];
           if (admin && token) {
-            const t = token.replace(/\s+/g, ""), sp = t.replace(/^([a-z]+)(\d)/, "$1 $2");
+            // rare-cars-1: "type r" must match "Type-R"/"Type R" (the old "%typer%" pattern found 0 Civic Type Rs),
+            // and no year window here: the tiers below decide how far to widen.
+            const ors = variantLikePatterns(token).flatMap((p) => [`model.ilike.${p}`, `variant.ilike.${p}`]).join(",");
             const { data } = await admin.from("market_listings").select("model,variant,year,mileage,price,seller")
-              .ilike("make", `%${body.make}%`).gte("year", body.year - 4).lte("year", body.year + 4)
-              .or(`model.ilike.%${t}%,variant.ilike.%${t}%,model.ilike.%${sp}%,variant.ilike.%${sp}%`).limit(1000);
+              .ilike("make", `%${body.make}%`).or(ors).limit(2000);
             rows = (data ?? []) as PerfCompRow[];
           }
-          const ref = perfCompReference(perfEff, rows, { year: body.year, mileage: pricedMiles, token, base: String(body.model ?? "").split(/\s+/)[0] });
-          debugInfo.variantGuard = { ...(debugInfo.variantGuard as any), token, refN: ref.n, refPrivate: Math.round(ref.private) };
+          const base = String(body.model ?? "").split(/\s+/)[0];
+          const ref = perfCompReference(perfEff, rows, { year: body.year, mileage: pricedMiles, token, base });
+          const vName = canonicalVariantName(body.model, token);
+          if (vName) detectedModel = vName;
+          debugInfo.variantGuard = { ...(debugInfo.variantGuard as any), token, refN: ref.n, refPrivate: Math.round(ref.private), poolN: rows.length };
           const name = detectedModel ? `${displayMake(body.make)} ${detectedModel}` : perfEff.label;
-          const an = /^[aeiou]/i.test(name) ? "an" : "a";
-          if (ref.n < MIN_VARIANT_COMPS && (perfFallback || !perf || (dataSource === "ai_estimate" && ownForCap && !ownForCap.perf))) {
-            markUnavailable(`We can’t value this one accurately yet — it looks like ${an} ${name}, a performance/rare variant, and we only have ${ref.n} comparable ${name} advert${ref.n === 1 ? "" : "s"}. Pricing it against standard models would badly undervalue it, so we'd rather not show a number. A marque specialist will give you a proper figure.`);
-          } else if (ref.n >= MIN_VARIANT_COMPS) {
+          const guardNeeded = perfFallback || !perf || (dataSource === "ai_estimate" && !!ownForCap && !ownForCap.perf);
+          if (ref.n >= MIN_VARIANT_COMPS) {
             const ratio = values.privateSale / ref.private;
             if (ratio < 0.75 || ratio > 1.33) {
               engineRepriced = true;
@@ -1641,8 +1649,46 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
               confidenceReason = `Priced against ${ref.n} ${name} adverts rather than standard ${body.model}s — treat as a guide.`;
               pricingReasoning = `Based on ${ref.n} ${name} adverts, adjusted for age and mileage.`;
             }
-          } else if (perfFallback) {
-            markUnavailable(`We can’t value this one accurately yet — it's ${an} ${name}, a performance/rare variant, and there aren't enough like-for-like adverts to compare against. A marque specialist will give you a proper figure.`);
+          } else if (guardNeeded) {
+            // rare-cars-1: widen like-for-like evidence step by step instead of refusing. Every step uses only
+            // adverts of THIS variant; the AI step is grounded on the adverts we hold and floored at the standard figure.
+            const standardPrivate = values.privateSale;
+            const setRare = (p: number, lo: number, hi: number, note: string, tier: string, n: number) => {
+              engineRepriced = true;
+              const k = p / Math.max(1, values.privateSale);
+              values = { dealerTradeIn: roundToGrain(values.dealerTradeIn * k), privateSale: roundToGrain(p), dealerRetail: roundToGrain(Math.max(values.dealerRetail * k, p * 1.08)) };
+              rangeLow = roundToGrain(Math.min(lo, values.privateSale)); rangeHigh = roundToGrain(Math.max(hi, values.privateSale));
+              confidence = "Low";
+              confidenceReason = note; pricingReasoning = note;
+              rareCarWarning = note.replace(/^Limited market data:\s*/, "");
+              rareVariantInfo = { tier, n, name };
+            };
+            const tiered = tieredVariantReference(perfEff, rows, { year: body.year, mileage: pricedMiles, token, base });
+            if (tiered) {
+              setRare(tiered.private, tiered.low, tiered.high, rareNote(tiered.tier, name, tiered.n, tiered.years), tiered.tier, tiered.n);
+            } else {
+              let est: RareAiEstimate | null = null;
+              try {
+                const evidence = rareEvidence(perfEff, rows, { year: body.year, token, base });
+                const prompt = rareAiPrompt({ make: displayMake(body.make), model: body.model, variantName: detectedModel ?? perfEff.label, year: body.year, mileage: pricedMiles,
+                  importNote: importInfo.status !== "no" ? importInfo.reason ?? null : null, variantFromEngineOnly: !perf }, evidence);
+                const r = await fetch(AI_GATEWAY_URL, { method: "POST", headers: { Authorization: `Bearer ${AI_API_KEY}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({ model: Deno.env.get("AI_MODEL") || "google/gemini-2.5-flash", messages: [{ role: "user", content: prompt }] }) });
+                if (r.ok) { const j = await r.json(); est = parseRareAi(j?.choices?.[0]?.message?.content); }
+                debugInfo.rareAi = { evidenceN: evidence.length, est };
+              } catch (e) { console.warn("rare AI estimate failed", e); }
+              if (est) {
+                const f = rareAiFigures(est, standardPrivate);
+                setRare(f.private, f.low, f.high, rareNote("ai", name, 0), "ai", 0);
+                if (!perf) {
+                  const extra = ` We've assumed it's ${/^[aeiou]/i.test(name) ? "an" : "a"} ${name} from its model and engine — if it isn't, it will be worth less.`;
+                  confidenceReason += extra; pricingReasoning = confidenceReason; rareCarWarning += extra;
+                }
+              } else {
+                const an = /^[aeiou]/i.test(name) ? "an" : "a";
+                markUnavailable(`We can’t value this one accurately yet — it looks like ${an} ${name}, a performance/rare variant, and we only have ${ref.n} comparable ${name} advert${ref.n === 1 ? "" : "s"}. Pricing it against standard models would badly undervalue it, so we'd rather not show a number. A marque specialist will give you a proper figure.`);
+              }
+            }
           }
         } else if (variantRes.ambiguousPerf && variantRes.hint) {
           markUnavailable(`This car's ${variantRes.hint.options.length > 1 ? "engine size matches performance versions (" + variantRes.hint.options.join(" or ") + ")" : "engine size matches the " + variantRes.hint.options[0]}, which are worth far more than a standard ${body.model}. Please confirm the exact model on the details step so we can compare like-for-like.`);
@@ -1653,9 +1699,9 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         const sv = sanityVerdict({ shown: values.privateSale, aiPrivate: Number(ai.privateSaleValue) || null,
           disagreement: Number((ensembleShadow as any)?.disagreement) || null, proseRatio: pr });
         debugInfo.sanity = { ...sv, proseRatio: pr };
-        if (sv.verdict === "unavailable") {
+        if (sv.verdict === "unavailable" && !rareVariantInfo) {
           markUnavailable("We can’t value this one accurately yet — our data sources disagree too much on this car (it may be a rare or performance version). We'd rather not show a number that could mislead you; a specialist will give you a proper figure.");
-        } else if (sv.verdict === "lessCertain") {
+        } else if (sv.verdict === "lessCertain" || (sv.verdict === "unavailable" && rareVariantInfo)) {
           confidence = "Very Low";
           rangeLow = roundToGrain(Math.min(rangeLow, values.privateSale * 0.85));
           rangeHigh = roundToGrain(Math.max(rangeHigh, values.privateSale * 1.15));
@@ -1688,6 +1734,16 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         }
       }
     }
+
+    // rare-cars-1: imports — we hold too few import-labelled adverts to price an import premium/discount, so the
+    // figure is unchanged but the range is widened and confidence capped, with a note on the report.
+    if (importInfo.status !== "no" && !valuationUnavailable && values.privateSale > 0) {
+      const w = importInfo.status === "likely" ? 0.2 : 0.1;
+      rangeLow = roundToGrain(Math.min(rangeLow || values.privateSale, values.privateSale * (1 - w)));
+      rangeHigh = roundToGrain(Math.max(rangeHigh || values.privateSale, values.privateSale * (1 + w)));
+      if (confidence === "High" || confidence === "Medium") confidence = "Low";
+    }
+    debugInfo.importCheck = importInfo;
 
     // Negotiation buffer: trust AI if reasonable (2-8% of privateSale), else default to ~4%.
     const aiBuffer = Number(ai.negotiationBuffer) || 0;
@@ -1898,6 +1954,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       ensembleShadow,
       anchor: anchorShadow,
       ...(detectedModel ? { detectedModel: `${displayMake(body.make)} ${detectedModel}`.trim() } : {}),
+      ...(importNoteText ? { importStatus: importInfo.status, importNote: importNoteText } : {}),
+      ...(rareVariantInfo ? { rareVariant: rareVariantInfo } : {}),
       ...(variantRes.ambiguousPerf && variantRes.hint && !detectedModel ? { variantOptions: variantRes.hint.options } : {}),
       inputsHash: computeInputsHash({
         make: body.make,

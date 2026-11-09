@@ -745,6 +745,11 @@ export default function Report() {
                 <span className="font-medium text-amber-300">Limited data:</span> {r.rareCarWarning}
               </div>
             )}
+            {typeof (r as any).importNote === "string" && (r as any).importNote && (
+              <div className="mt-3 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] sm:text-xs text-[#E8E8E8]/90 leading-relaxed">
+                <span className="font-medium text-white">Import:</span> {(r as any).importNote}
+              </div>
+            )}
             {valuationUnavailable ? (
               <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8] mt-4 max-w-[44ch]">
                 We'd rather be honest than give you a number that could be way off.

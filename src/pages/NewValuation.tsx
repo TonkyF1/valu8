@@ -39,6 +39,9 @@ interface LookupResult {
   transmission?: string;
   colour?: string;
   firstRegistered?: string;
+  manufactureYear?: number;
+  importStatus?: "likely" | "possible";
+  importReason?: string;
   engineCapacity?: number;
   bodyStyle?: string;
   co2Emissions?: number;
@@ -594,6 +597,13 @@ export default function NewValuation() {
                 </div>
               )}
 
+              {!editing && lookup?.importStatus && (
+                <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
+                  {lookup.importStatus === "likely" ? "Looks like an import" : "May be an import"}
+                  {lookup.importReason ? ` — ${lookup.importReason}.` : "."}
+                  {lookup.manufactureYear ? ` We've used ${lookup.manufactureYear} as the year it was built; tap Edit if that's wrong.` : " If it was built earlier than the year shown, tap Edit and change the year."}
+                </p>
+              )}
               {!editing && (
                 <div className="mt-5 pt-5 border-t border-border/40 space-y-2">
                   <Label htmlFor="variant">Trim / version <span className="text-muted-foreground font-normal">(optional, but it can change the value a lot)</span></Label>
