@@ -3,7 +3,7 @@
  * Dark Appearance API (theme night) + own teal Pay button. Unlock comes from the
  * webhook-written report_purchases row (report-entitlement), never from the return URL.
  */
-import { FormEvent, useCallback, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadStripe, type Appearance } from "@stripe/stripe-js";
 import {
   CheckoutElementsProvider,
@@ -16,6 +16,7 @@ import { Lock, ShieldCheck, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { STRIPE_PUBLISHABLE_KEY } from "@/config/stripePublic";
 import { useAuth } from "@/contexts/AuthContext";
+import { track } from "@/lib/funnel";
 
 const PK = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined) || STRIPE_PUBLISHABLE_KEY;
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
@@ -149,6 +150,7 @@ function ElementsCheckout({ valuationId, email, onPaid, onClose }: { valuationId
     // Email is collected by ContactDetailsElement (pre-filled via defaultValues when
     // signed in). Do NOT send it here — create-checkout-session must not set
     // customer_email, or Elements throws "You cannot update the email…".
+    track("checkout_start");
     const { data, error: fnErr } = await supabase.functions.invoke("create-checkout-session", {
       body: { valuationId },
     });
@@ -198,11 +200,27 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const email = user?.email || undefined;
+  const sectionRef = useRef<HTMLElement>(null);
+
+  // Anonymous funnel: fire offer_view once when the £2.99 offer first scrolls into view.
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) { track("offer_view"); io.disconnect(); }
+      },
+      { threshold: 0.25 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   if (!PK) return null;
 
   return (
     <section
+      ref={sectionRef}
       id="report-checkout"
       aria-label="Full Valuation Report"
       className="mb-6 rounded-2xl border border-white/10 p-5 md:p-6"
@@ -229,7 +247,7 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
           <div className="flex flex-col items-stretch gap-2 md:items-end">
             <button
               type="button"
-              onClick={() => setOpen(true)}
+              onClick={() => { track("offer_click"); setOpen(true); }}
               className="min-h-[48px] rounded-xl px-6 text-base font-semibold transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FDE047]"
               style={{ background: "#00D6C8", color: "#111111" }}
             >

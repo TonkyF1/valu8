@@ -7,7 +7,8 @@ const KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
 export type FunnelStep =
   | "landed" | "reg_typed" | "lookup_success" | "lookup_fail"
-  | "step_reg" | "step_details" | "step_photos" | "submitted" | "result_seen" | "price_alert_opt_in";
+  | "step_reg" | "step_details" | "step_photos" | "submitted" | "result_seen" | "price_alert_opt_in"
+  | "offer_view" | "offer_click" | "checkout_start";
 
 function uuid(): string {
   try { return crypto.randomUUID(); } catch {
