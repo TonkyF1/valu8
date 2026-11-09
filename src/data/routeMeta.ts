@@ -1,7 +1,7 @@
 import { CAR_MODELS, type CarModelPage } from "./carModels";
 import { GUIDES } from "./guides";
 import { MODEL_PRICES } from "./modelPriceBands";
-import { VALUE_INDEX_DESCRIPTION, VALUE_INDEX_PATH, VALUE_INDEX_TITLE, valueMeta } from "./valuePages";
+import { VALUE_INDEX_DESCRIPTION, VALUE_INDEX_PATH, VALUE_INDEX_TITLE, valueMeta, yearMeta } from "./valuePages";
 
 export const SITE_URL = "https://valu8.uk";
 
@@ -59,6 +59,7 @@ export const GUIDE_ROUTES: RouteMeta[] = [
 export const VALUE_ROUTES: RouteMeta[] = [
   { path: VALUE_INDEX_PATH, title: VALUE_INDEX_TITLE, description: VALUE_INDEX_DESCRIPTION, priority: "0.8", inSitemap: true },
   ...MODEL_PRICES.map((m): RouteMeta => ({ ...valueMeta(m), priority: "0.7", inSitemap: true })),
+  ...MODEL_PRICES.flatMap((m) => m.years.map((y): RouteMeta => ({ ...yearMeta(m, y), priority: "0.6", inSitemap: true }))),
 ];
 export const ALL_ROUTES = [...STATIC_ROUTES, ...GUIDE_ROUTES, ...CAR_MODEL_ROUTES, ...VALUE_ROUTES];
 
