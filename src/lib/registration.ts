@@ -1,6 +1,6 @@
-/** Normalise a UK registration for lookup (strip spaces, upper-case). */
+/** Normalise a UK registration for lookup (strip every non-alphanumeric, upper-case). */
 export function normaliseReg(input: string): string {
-  return String(input ?? "").replace(/[\s-]+/g, "").toUpperCase();
+  return String(input ?? "").replace(/[^A-Za-z0-9]+/g, "").toUpperCase();
 }
 
 /**

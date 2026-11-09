@@ -151,6 +151,11 @@ export default function NewValuation() {
         const { status, body } = await functionErrorBody(error);
         if (status === 401 && !user) { sendToAuth({ kind: "lookup", reg: cleaned }); return; }
         if (status === 429 && body?.code === "guest_limit") { setGuestLimit(body.error); return; }
+        if (body?.code === "lookup_unavailable") {
+          const e: any = new Error("Our vehicle lookup is temporarily unavailable.");
+          e.code = "lookup_unavailable";
+          throw e;
+        }
         throw new Error(body?.error || "We couldn't find a vehicle with that registration.");
       }
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -175,10 +180,17 @@ export default function NewValuation() {
       track("lookup_success");
       toast.success("Vehicle found");
     } catch (err: any) {
-      const msg = err?.message || "We couldn't find a vehicle with that registration.";
       track("lookup_fail");
-      setLookupError(`${msg} Check the plate, or enter the details manually.`);
-      toast.error(msg);
+      if (err?.code === "lookup_unavailable") {
+        const m = "Our vehicle lookup is temporarily unavailable. Please enter your car's details manually, or try again in a few minutes.";
+        setLookupError(m);
+        toast.error("Our vehicle lookup is temporarily unavailable.");
+      } else {
+        const raw = String(err?.message || "We couldn't find a vehicle with that registration.").trim();
+        const msg = /[.!?]$/.test(raw) ? raw : `${raw}.`;
+        setLookupError(`${msg} Check the plate, or enter the details manually.`);
+        toast.error(msg);
+      }
     } finally {
       setLooking(false);
     }
