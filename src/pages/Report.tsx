@@ -1284,7 +1284,7 @@ export default function Report() {
       <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {locked && !valuationUnavailable ? (
           <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
-            <a href="#report-checkout">Unlock full report · £2.99</a>
+            <a href="#report-checkout" onClick={() => track("offer_click")}>Unlock full report · £2.99</a>
           </Button>
         ) : isShared ? (
           <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
