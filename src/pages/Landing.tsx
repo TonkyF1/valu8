@@ -67,7 +67,7 @@ export default function Landing() {
           <div className="pointer-events-none absolute inset-x-0 -top-32 h-[28rem] bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.14),transparent_60%)]" aria-hidden />
           <div className="container relative max-w-xl pt-14 pb-10 sm:pt-20 lg:pt-24 lg:pb-16 text-center">
             <p className="inline-flex items-center rounded-full bg-primary/10 px-3.5 py-1.5 text-[13px] font-medium text-primary">Free UK car valuation</p>
-            <h1 className="mt-5 text-[2.75rem] sm:text-[3.25rem] lg:text-[4rem] font-semibold tracking-tight text-gradient leading-[1.05] text-balance">
+            <h1 className="mt-5 text-[3.25rem] sm:text-[3.5rem] lg:text-[4rem] font-semibold tracking-tight text-gradient leading-[1.05] text-balance">
               What’s your car worth?
             </h1>
             <p className="mt-4 text-[17px] sm:text-lg text-muted-foreground leading-relaxed text-balance">
