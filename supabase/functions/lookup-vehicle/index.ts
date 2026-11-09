@@ -27,22 +27,28 @@ interface LookupResponse {
   source?: string;
 }
 
-async function fetchVdg(reg: string) {
+type Reason = "not_found" | "error";
+type VdgResult = { v: any | null; reason?: Reason; detail?: string };
+
+async function fetchVdg(reg: string): Promise<VdgResult> {
   const key = Deno.env.get("VEHICLE_DATA_GLOBAL_API_KEY");
-  if (!key) return null;
+  if (!key) return { v: null, reason: "error", detail: "missing_key" };
   try {
     // VDG's r2 endpoint documents the key as a query parameter (no header auth
     // confirmed). It is only ever used here, server-side; never log `url`.
     const url = `https://uk.api.vehicledataglobal.com/r2/lookup?packagename=VehicleDetails&apikey=${encodeURIComponent(key)}&vrm=${encodeURIComponent(reg)}`;
     const resp = await fetch(url);
     if (!resp.ok) {
-      console.error("VDG error", resp.status, (await resp.text()).slice(0, 200));
-      return null;
+      await resp.text().catch(() => "");
+      return { v: null, reason: resp.status === 404 ? "not_found" : "error", detail: `http ${resp.status}` };
     }
     const json = await resp.json();
     const status = json?.ResponseInformation?.StatusCode ?? json?.StatusCode;
     if (status && String(status).toLowerCase() !== "success" && status !== 0) {
-      console.error("VDG status", status, json?.ResponseInformation?.StatusMessage);
+      const msg = String(json?.ResponseInformation?.StatusMessage ?? "");
+      // No-match style codes are a clean "not found"; sandbox/validation/credit/key codes are errors.
+      const notFound = /no ?match|not ?found|invalidsearchterm|novehicle/i.test(msg);
+      return { v: null, reason: notFound ? "not_found" : "error", detail: `status ${status} ${msg}`.trim() };
     }
     const r = json?.Results ?? json?.results ?? {};
     const vd = r?.VehicleDetails ?? r?.vehicleDetails ?? {};
@@ -58,7 +64,7 @@ async function fetchVdg(reg: string) {
     const yearStr = ident?.YearOfManufacture ?? reg2?.YearOfManufacture;
     const year = yearStr ? Number(String(yearStr).slice(0, 4)) : undefined;
 
-    return {
+    return { v: {
       make: ident?.DvlaMake ?? ident?.Make,
       model: ident?.DvlaModel ?? ident?.Model,
       variant: r?.ModelDetails?.ModelIdentification?.ModelVariant ?? ident?.ModelVariant ?? ident?.Derivative,
@@ -71,10 +77,9 @@ async function fetchVdg(reg: string) {
       colour: reg2?.Colour ?? ident?.Colour,
       vin: ident?.Vin ?? reg2?.Vin,
       co2Emissions: Number(general?.Co2Emissions ?? engine?.Co2) || undefined,
-    };
+    } };
   } catch (e) {
-    console.error("VDG fetch failed", e);
-    return null;
+    return { v: null, reason: "error", detail: `fetch failed ${(e as any)?.name ?? "Error"}` };
   }
 }
 
@@ -105,6 +110,62 @@ async function getDvsaToken(): Promise<string> {
   return token;
 }
 
+function notFoundResponse() {
+  return new Response(JSON.stringify({ error: "We couldn't find a vehicle with that registration.", code: "not_found" }), {
+    status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function unavailableResponse() {
+  return new Response(JSON.stringify({ error: "Our vehicle lookup is temporarily unavailable.", code: "lookup_unavailable" }), {
+    status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function dvsaOnce(reg: string, apiKey: string): Promise<Response> {
+  const token = await getDvsaToken();
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    return await fetch(
+      `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(reg)}`,
+      { headers: { Authorization: `Bearer ${token}`, "x-api-key": apiKey, Accept: "application/json+v6" }, signal: ctrl.signal },
+    );
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function fetchDvsa(reg: string, apiKey: string | undefined): Promise<{ data: any | null; reason?: Reason; detail?: string }> {
+  if (!apiKey) return { data: null, reason: "error", detail: "missing_key" };
+  let retriedNetwork = false;
+  let retriedAuth = false;
+  let lastDetail = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const resp = await dvsaOnce(reg, apiKey);
+      if (resp.ok) return { data: await resp.json() };
+      await resp.text().catch(() => "");
+      lastDetail = `http ${resp.status}`;
+      if (resp.status === 404) return { data: null, reason: "not_found", detail: lastDetail };
+      if ((resp.status === 401 || resp.status === 403) && !retriedAuth) {
+        retriedAuth = true; cachedToken = null; continue;
+      }
+      if ((resp.status >= 500 || resp.status === 429) && !retriedNetwork) {
+        retriedNetwork = true; await sleep(400); continue;
+      }
+      return { data: null, reason: "error", detail: lastDetail };
+    } catch (e: any) {
+      lastDetail = e?.name === "AbortError" ? "timeout" : `network ${e?.name ?? "Error"}: ${String(e?.message ?? "").split("(")[0].trim().slice(0, 80)}`;
+      if (!retriedNetwork) { retriedNetwork = true; await sleep(400); continue; }
+      return { data: null, reason: "error", detail: lastDetail };
+    }
+  }
+  return { data: null, reason: "error", detail: lastDetail };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   {
@@ -117,7 +178,7 @@ Deno.serve(async (req) => {
 
   try {
     const { registration } = await req.json();
-    const reg = String(registration ?? "").replace(/\s+/g, "").toUpperCase();
+    const reg = String(registration ?? "").replace(/[^A-Za-z0-9]+/g, "").toUpperCase();
     if (!/^[A-Z0-9]{2,7}$/.test(reg) || !/[A-Z]/.test(reg) || !/[0-9]/.test(reg)) {
       return new Response(JSON.stringify({ error: "That doesn't look like a valid UK registration." }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -128,31 +189,17 @@ Deno.serve(async (req) => {
 
     // Fetch VDG and DVSA in parallel
     const vdgPromise = fetchVdg(reg);
-    const dvsaPromise = (async () => {
-      if (!apiKey) return null;
-      try {
-        const token = await getDvsaToken();
-        const resp = await fetch(
-          `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(reg)}`,
-          { headers: { Authorization: `Bearer ${token}`, "x-api-key": apiKey, Accept: "application/json+v6" } },
-        );
-        if (!resp.ok) {
-          console.error("DVSA error", resp.status);
-          return null;
-        }
-        return await resp.json();
-      } catch (e) {
-        console.error("DVSA failed", e);
-        return null;
-      }
-    })();
+    const dvsaPromise = fetchDvsa(reg, apiKey);
 
-    const [vdg, data] = await Promise.all([vdgPromise, dvsaPromise]);
+    const [vdgRes, dvsaRes] = await Promise.all([vdgPromise, dvsaPromise]);
+    const vdg = vdgRes.v;
+    const data = dvsaRes.data;
+    if (!vdg) console.error("VDG no vehicle", vdgRes.reason, vdgRes.detail ?? "");
+    if (!data) console.error("DVSA no vehicle", dvsaRes.reason, dvsaRes.detail ?? "");
 
     if (!vdg && !data) {
-      return new Response(JSON.stringify({ error: "No vehicle found for that registration" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (dvsaRes.reason === "not_found") return notFoundResponse();
+      return unavailableResponse();
     }
 
     let motExpiry: string | undefined;
@@ -226,18 +273,14 @@ Deno.serve(async (req) => {
     // A response with no make/model would render as "Vehicle found" with blank
     // fields; treat it as not found so the client shows an error instead.
     if (!out.make || !out.model) {
-      return new Response(JSON.stringify({ error: "No vehicle found for that registration" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return notFoundResponse();
     }
 
     return new Response(JSON.stringify(out), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
-    console.error("lookup-vehicle error", e);
-    return new Response(JSON.stringify({ error: e?.message ?? "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("lookup-vehicle error", e?.name ?? "Error", e?.message ?? "");
+    return unavailableResponse();
   }
 });
