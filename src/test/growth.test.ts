@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { buildSitemap } from "../../scripts/sitemap";
 import { routeHtml } from "../../scripts/routeHtml";
-import { getRouteMeta } from "@/data/routeMeta";
+import { getAnyRouteMeta as getRouteMeta } from "@/data/allRoutes";
 import { cleanUtm, captureUtm, getUtm, parseUtm } from "@/lib/funnel";
 import { findGuide, guideBodyHtml } from "@/data/guides";
 import { findEnrichedYear } from "@/data/enrichedYears";

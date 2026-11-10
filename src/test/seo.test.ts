@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs";
 import { CAR_MODELS, findModel } from "@/data/carModels";
 import { buildSitemap } from "../../scripts/sitemap";
 import { routeHtml } from "../../scripts/routeHtml";
-import { ALL_ROUTES, getRouteMeta } from "@/data/routeMeta";
+import { getRouteMeta } from "@/data/routeMeta";
+import { ALL_ROUTES } from "@/data/allRoutes";
 import { explainValuation } from "@/lib/valuationExplainer";
 import type { ValuationReport } from "@/lib/valuation";
 
