@@ -5,6 +5,11 @@ import { renderEmail, makeAnswerToken, answerUrl, gbp, miles, ukDate, SITE } fro
 import { coherentPricing } from "./coherentPricing.ts";
 import { cheapPriceRange, reportPriceRange, formatPriceRange } from "./cheapRange.ts";
 
+/** £2.99 Full Report link for valuation emails, tagged so sales from email show up in the funnel. */
+export const reportOfferUrl = (id: string, campaign: "report_ready" | "followup") =>
+  `${SITE}/valuation/${id}?utm_source=email&utm_medium=email&utm_campaign=${campaign}#report-checkout`;
+export const REPORT_OFFER_LABEL = "Get the full report · £2.99";
+
 export const carTitle = (v: { registration?: string | null; make: string; model: string }) =>
   v.registration?.trim() ? v.registration.trim().toUpperCase() : `${v.make} ${v.model}`;
 const carName = (v: { year?: number | null; make: string; model: string; variant?: string | null }) =>
@@ -77,8 +82,11 @@ export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubs
         : { label: "Realistic private sale", value: gbp(price), sub: low > 0 && high > 0 ? `Range ${gbp(low)} – ${gbp(high)}` : null },
       stats,
       facts: [motFact(r, item.mot_expiry), conditionFact(r, item.photo_urls)].filter(Boolean) as string[],
-      buttons: [{ label: "View your full report", url: `${SITE}/valuation/${item.id}`, primary: true }],
-      note: "Your report is saved in your Valu8 account.",
+      buttons: [
+        { label: "View your valuation", url: `${SITE}/valuation/${item.id}`, primary: true },
+        { label: REPORT_OFFER_LABEL, url: reportOfferUrl(item.id, "report_ready") },
+      ],
+      note: "The full report adds a suggested asking price, the lowest offer to accept, the UK adverts we compared, MOT repair cost bands and ready-to-post advert text. One-off £2.99, no subscription.",
       unsubscribe,
     });
     return { subject, html, text };
@@ -134,8 +142,9 @@ export async function buildFollowupEmail(kind: "advert" | "valuation", item: any
       { label: "Sold it", url: cardUrl, primary: true },
       { label: "Part-exchanged", url: cardUrl },
       { label: "Not sold yet", url: answerUrl(notYet) },
+      { label: REPORT_OFFER_LABEL, url: reportOfferUrl(item.id, "followup") },
     ],
-    note: "“Sold it” or “Part-exchanged” opens a quick form for the price. “Not sold yet” and we'll check back in two weeks.",
+    note: "“Sold it” or “Part-exchanged” opens a quick form for the price. “Not sold yet” and we'll check back in two weeks. Still selling? The full report gives you a suggested asking price and the lowest offer to accept, for a one-off £2.99.",
     unsubscribe,
   });
   return { subject: `Did you sell or part-ex your ${name}? What did you get?`, html, text };

@@ -29,8 +29,9 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     let id = url.searchParams.get("id");
-    if (!id && req.method !== "GET") {
-      try { const body = await req.json(); id = body?.id ?? null; } catch { /* ignore */ }
+    let guestToken: unknown = null;
+    if (req.method !== "GET") {
+      try { const body = await req.json(); id = id ?? body?.id ?? null; guestToken = body?.guestToken ?? null; } catch { /* ignore */ }
     }
     if (!id) {
       return new Response(JSON.stringify({ error: "missing id" }), {
@@ -45,7 +46,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await admin
       .from("valuations")
-      .select("id, make, model, year, mileage, registration, mot_expiry, photo_urls, report, created_at")
+      .select("id, make, model, year, mileage, registration, mot_expiry, photo_urls, report, created_at, user_id, guest_token_hash")
       .eq("id", id)
       .maybeSingle();
 
@@ -96,10 +97,21 @@ Deno.serve(async (req) => {
       return out;
     };
 
+    // The guest who made this valuation (their token hashes to guest_token_hash) gets their own full
+    // report back, exactly like a signed-in owner reading their row. The page still locks paid
+    // sections until report-entitlement says paid; this just means a paying guest sees real figures.
+    let isOwner = false;
+    if (!data.user_id && data.guest_token_hash && typeof guestToken === "string" && /^[a-f0-9]{64}$/.test(guestToken)) {
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(guestToken));
+      const hash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+      isOwner = hash === data.guest_token_hash;
+    }
+    const { user_id: _uid, guest_token_hash: _gth, ...row } = data as Record<string, unknown>;
+
     return new Response(
       JSON.stringify({
-        ...data,
-        report: stripSharedReport(data.report),
+        ...row,
+        report: isOwner ? data.report : stripSharedReport(data.report),
         photo_urls: signed,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
