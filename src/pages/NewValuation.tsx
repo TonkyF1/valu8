@@ -448,7 +448,7 @@ export default function NewValuation() {
             <FlowSteps current={showVehicleStep ? (photos.length > 0 ? 2 : 1) : 0} className="mb-8" />
 
             <h1 className="text-[2rem] md:text-[2.85rem] font-semibold tracking-tight text-gradient leading-[1.05] animate-fade-in-up">
-              Know exactly what{" "}
+              Find out what{" "}
               <br className="hidden sm:block" />
               your car is worth
             </h1>

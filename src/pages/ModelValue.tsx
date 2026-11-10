@@ -112,9 +112,9 @@ export default function ModelValue() {
         </section>
       )}
       <div className="mt-8 rounded-xl border border-border p-6">
-        <h2 className="text-lg font-semibold">Get a figure for your {m.model}</h2>
+        <h2 className="text-lg font-semibold">Get a figure for your {name}</h2>
         <p className="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p>
-        <Button asChild variant="hero" size="xl" className="mt-4"><Link to="/valuation/new">Value my {m.model} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+        <Button asChild variant="hero" size="xl" className="mt-4"><Link to="/valuation/new">Value my {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
       </div>
       <MoreFromMake slug={m.slug} make={m.make} />
       <p className="mt-10 text-sm"><Link to="/value" className="text-primary hover:underline">See all models</Link></p>
@@ -198,9 +198,9 @@ export function ModelYearValue() {
         />
       )}
       <div className="mt-8 rounded-xl border border-border p-6">
-        <h2 className="text-lg font-semibold">Get a figure for your {y.year} {m.model}</h2>
+        <h2 className="text-lg font-semibold">Get a figure for your {y.year} {name}</h2>
         <p className="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p>
-        <Button asChild variant="hero" size="xl" className="mt-4"><Link to="/valuation/new">Value my {y.year} {m.model} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+        <Button asChild variant="hero" size="xl" className="mt-4"><Link to="/valuation/new">Value my {y.year} {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
       </div>
       <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm">
         {neighbourYears(m, y).map((n) => (

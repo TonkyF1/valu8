@@ -5,7 +5,7 @@ import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { SEGMENT_LABEL, SEGMENT_TIPS, findModel } from "@/data/carModels";
-import { carFaqs, carIntro, carModelJsonLd, carRelated, carSteps, carValueLinkText, carValueMatch } from "@/data/carValueContent";
+import { carFaqs, carIntro, carName, carModelJsonLd, carRelated, carSteps, carValueLinkText, carValueMatch } from "@/data/carValueContent";
 import { useSeo } from "@/lib/seo";
 import { carModelMeta } from "@/data/routeMeta";
 import NotFound from "./NotFound";
@@ -13,7 +13,7 @@ import NotFound from "./NotFound";
 export default function CarValue() {
   const { make, model } = useParams();
   const car = findModel(make, model);
-  const name = car ? `${car.make} ${car.model}` : "";
+  const name = car ? carName(car) : "";
   useSeo(car ? carModelMeta(car) : null);
   // One head JSON-LD block (the build emits it for crawlers; keep it in sync on client navigation).
   useEffect(() => {
@@ -46,8 +46,8 @@ export default function CarValue() {
         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">What's my {name} worth?</h1>
         <p className="text-muted-foreground mt-4 leading-relaxed">{carIntro(car)}</p>
         <div className="mt-6 flex flex-col sm:flex-row gap-3">
-          <Button asChild variant="hero" size="xl"><Link to="/valuation/new">Value my {car.model} <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
-          <Button asChild variant="outline" size="xl"><Link to="/check">Check a {car.model} asking price</Link></Button>
+          <Button asChild variant="hero" size="xl"><Link to="/valuation/new">Value my {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+          <Button asChild variant="outline" size="xl"><Link to="/check">Check a {name} asking price</Link></Button>
         </div>
         {carValueMatch(car) && (
           <p className="mt-5 text-sm">
