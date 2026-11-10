@@ -13,6 +13,7 @@ import { MODEL_PRICES } from "./src/data/modelPriceBands";
 import { valueBodyHtml, valueIndexBodyHtml, valuePath, yearBodyHtml, yearPath } from "./src/data/valuePages";
 import { carModelBodyHtml, carModelJsonLd, carPath, carValuesIndexBodyHtml } from "./src/data/carValueContent";
 import { homepageFaqHeadHtml, staticPageBodyHtml } from "./src/data/staticPageContent";
+import { enrichedYearFaqJsonLd, findEnrichedYear } from "./src/data/enrichedYears";
 
 function routeMetadataHtml(): Plugin {
   let outDir = "";
@@ -40,7 +41,7 @@ function routeMetadataHtml(): Plugin {
           : vm
             ? { bodyHtml: valueBodyHtml(vm) }
           : vy
-            ? { bodyHtml: yearBodyHtml(vy.m, vy.y) }
+            ? { bodyHtml: yearBodyHtml(vy.m, vy.y), ...(findEnrichedYear(vy.m.slug, vy.y.year) ? { headHtml: '<script type="application/ld+json" id="year-faq-jsonld">' + enrichedYearFaqJsonLd(findEnrichedYear(vy.m.slug, vy.y.year)!, vy.m, vy.y) + '</script>' } : {}) }
             : meta.path === "/guides"
           ? { bodyHtml: guidesIndexBodyHtml() }
           : guide
@@ -56,7 +57,7 @@ function routeMetadataHtml(): Plugin {
         fs.writeFileSync(`${fileBase}.html`, html);
       }
       fs.writeFileSync(path.join(outDir, "404.html"), routeHtml(shell, {
-        path: "/404", title: "Page not found — Valu8",
+        path: "/404", title: "Page not found | Valu8",
         description: "This page doesn't exist. Value your car free with Valu8.", noindex: true,
       }, true));
       fs.writeFileSync(path.join(outDir, "sitemap.xml"), buildSitemap());

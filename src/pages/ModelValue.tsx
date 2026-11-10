@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
@@ -8,6 +8,8 @@ import { getRouteMeta } from "@/data/routeMeta";
 import { MODEL_PRICES, findModelPrices, findYearPrices } from "@/data/modelPriceBands";
 import { VALUE_INDEX_H1, VALUE_INDEX_INTRO, VALUE_TABLE_NOTE, VALUE_YEARS_INTRO, YEAR_NOTE, gbp, miles, neighbourYears, valueIntro, valueName, valuePath, yearIntro, yearPath } from "@/data/valuePages";
 import NotFound from "./NotFound";
+import { useEffect, type MouseEvent } from "react";
+import { enrichedYearFaqJsonLd, enrichedYearHtml, findEnrichedYear } from "@/data/enrichedYears";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -43,7 +45,7 @@ export function ValueIndex() {
 export default function ModelValue() {
   const { slug } = useParams();
   const m = findModelPrices(slug);
-  useSeo(getRouteMeta(m ? valuePath(m) : "/value"));
+  useSeo(m ? getRouteMeta(valuePath(m)) : null);
   if (!m) return <NotFound />;
   const name = valueName(m);
   return (
@@ -102,8 +104,23 @@ export function ModelYearValue() {
   const { slug, year } = useParams();
   const m = findModelPrices(slug);
   const y = findYearPrices(m, year);
-  useSeo(getRouteMeta(m && y ? yearPath(m, y) : "/value"));
+  useSeo(m && y ? getRouteMeta(yearPath(m, y)) : null);
+  const enriched = m && y ? findEnrichedYear(m.slug, y.year) : undefined;
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!enriched || !m || !y) return;
+    let el = document.getElementById("year-faq-jsonld") as HTMLScriptElement | null;
+    if (!el) { el = document.createElement("script"); el.type = "application/ld+json"; el.id = "year-faq-jsonld"; document.head.appendChild(el); }
+    el.textContent = enrichedYearFaqJsonLd(enriched, m, y);
+    return () => { document.getElementById("year-faq-jsonld")?.remove(); };
+  }, [enriched, m, y]);
   if (!m || !y) return <NotFound />;
+  const onArticleClick = (e: MouseEvent<HTMLElement>) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const href = (e.target as HTMLElement).closest("a")?.getAttribute("href");
+    if (!href || !href.startsWith("/") || href.startsWith("//")) return;
+    e.preventDefault(); navigate(href);
+  };
   const name = valueName(m);
   const stats: [string, string][] = [
     ["Median asking price", gbp(y.median)],
@@ -151,6 +168,13 @@ export function ModelYearValue() {
         </section>
       )}
       <p className="text-xs text-muted-foreground mt-3 leading-relaxed">{YEAR_NOTE(m, y)}</p>
+      {enriched && (
+        <article
+          className="mt-8 text-foreground/85 leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-10 [&_h2]:mb-3 [&_p]:my-4 [&_strong]:text-foreground [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-4 [&_li]:my-1.5 [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2"
+          onClick={onArticleClick}
+          dangerouslySetInnerHTML={{ __html: enrichedYearHtml(enriched, m, y) }}
+        />
+      )}
       <div className="mt-8 rounded-xl border border-border p-6">
         <h2 className="text-lg font-semibold">Get a figure for your {y.year} {m.model}</h2>
         <p className="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p>

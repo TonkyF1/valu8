@@ -22,7 +22,7 @@ export const STATIC_ROUTES: RouteMeta[] = [
   { path: "/check", title: "Is this used car a fair price? Free advert price checker | Valu8", description: "Enter a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against UK market data.", priority: "0.8", inSitemap: true },
   { path: "/accuracy", title: "How accurate is Valu8? Predicted vs real sale prices", description: "We compare our car valuations with the prices people actually sell for, and will publish the results once enough owners report a sale.", priority: "0.6", inSitemap: true },
   { path: "/car-values", title: "Car values by make and model | Valu8", description: "Free valuations for the UK's most popular cars, from the Ford Fiesta to the Tesla Model 3.", priority: "0.8", inSitemap: true },
-  { path: "/pricing", title: "Pricing — Valu8", description: "Essentials valuations are free. The Full seller report is a one-off £2.99 — no subscription. Pay by card, Apple Pay or Google Pay.", priority: "0.6", inSitemap: true },
+  { path: "/pricing", title: "Pricing | Valu8", description: "Essentials valuations are free. The Full seller report is a one-off £2.99, no subscription. Pay by card, Apple Pay or Google Pay.", priority: "0.6", inSitemap: true },
   { path: "/about", title: "About Valu8: who we are and how valuations work", description: "Valu8 is an independent UK car valuation service for private sellers and buyers. How our valuations work, and how to get in touch.", priority: "0.4", inSitemap: true },
   { path: "/contact", title: "Contact Valu8 — get in touch", description: "Get in touch with Valu8 about your UK car valuation, account or feedback.", priority: "0.3", inSitemap: true },
   { path: "/privacy", title: "Privacy Policy — Valu8", description: "How Valu8 collects, uses and protects your data under UK GDPR.", priority: "0.3", inSitemap: true },
@@ -59,7 +59,8 @@ export const GUIDE_ROUTES: RouteMeta[] = [
 export const VALUE_ROUTES: RouteMeta[] = [
   { path: VALUE_INDEX_PATH, title: VALUE_INDEX_TITLE, description: VALUE_INDEX_DESCRIPTION, priority: "0.8", inSitemap: true },
   ...MODEL_PRICES.map((m): RouteMeta => ({ ...valueMeta(m), priority: "0.7", inSitemap: true })),
-  ...MODEL_PRICES.flatMap((m) => m.years.map((y): RouteMeta => ({ ...yearMeta(m, y), priority: "0.6", inSitemap: true }))),
+  // Templated year pages: noindex,follow and not in the sitemap (yearMeta). Enriched years are indexable.
+  ...MODEL_PRICES.flatMap((m) => m.years.map((y): RouteMeta => { const ym = yearMeta(m, y); return { ...ym, priority: "0.6", inSitemap: !ym.noindex }; })),
 ];
 export const ALL_ROUTES = [...STATIC_ROUTES, ...GUIDE_ROUTES, ...CAR_MODEL_ROUTES, ...VALUE_ROUTES];
 
