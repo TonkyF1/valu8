@@ -100,7 +100,7 @@ export function ValuationFeedbackCard({ valuationId, isGuest }: Props) {
   return (
     <section className="premium-card p-5 sm:p-6 mt-6" aria-labelledby="vf-title">
       <h3 id="vf-title" className="text-lg font-semibold tracking-tight">Does this sound right?</h3>
-      <p className="text-sm text-muted-foreground mt-0.5">Optional. It helps us make Valu8 more accurate for everyone.</p>
+      <p className="text-sm text-muted-foreground mt-0.5">Optional. It helps us improve Valu8 for everyone.</p>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4" role="group" aria-label="Does this valuation sound right?">
         {VERDICTS.map((v) => {

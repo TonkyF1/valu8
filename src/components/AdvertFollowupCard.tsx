@@ -51,7 +51,7 @@ export function AdvertFollowupCard({ guest = false }: { guest?: boolean }) {
         <HandCoins className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden />
         <div className="flex-1 min-w-0">
           <p className="font-semibold">Did you buy the {item.year} {item.make} {item.model}? What did you pay?</p>
-          <p className="text-xs text-muted-foreground mt-0.5">You checked it at £{item.askingPrice.toLocaleString("en-GB")}. Your answer helps us measure how accurate we are.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">You checked it at £{item.askingPrice.toLocaleString("en-GB")}. Your answer helps us check our figures against real outcomes.</p>
           {mode === "ask" ? (
             <div className="mt-3 flex flex-wrap gap-2">
               <Button size="sm" variant="hero" className="min-h-[44px]" disabled={busy} onClick={() => setMode("bought")}>Bought it</Button>

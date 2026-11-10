@@ -72,7 +72,7 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
       if (upErr) throw upErr;
       try { await recordOutcome(fb.soldTo ?? "private", fb.salePrice, fb.soldOn ?? null); } catch { /* sale already saved on the report */ }
       try { posthog.capture?.("sale_feedback_saved", { sold_to: fb.soldTo ?? null, accuracy_pct: saleAccuracy(fb.salePrice, estimate) }); } catch { /* analytics optional */ }
-      toast.success("Thanks — that really helps", { description: "Real sale prices help us make Valu8 more accurate." });
+      toast.success("Thanks — that really helps", { description: "Real sale prices help us improve Valu8's valuations." });
       setEditing(false);
       onSaved?.(next);
     } catch (e) {
@@ -119,8 +119,8 @@ export function SaleFeedbackCard({ valuationId, report, estimate, onSaved }: Pro
         <div className="h-11 w-11 rounded-xl bg-primary/15 grid place-items-center ring-1 ring-primary/30 shrink-0"><HandCoins className="h-5 w-5 text-primary" aria-hidden /></div>
         <div>
           <h3 className="text-lg font-semibold tracking-tight">Sold it? Tell us what you got</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">Takes 10 seconds. Real sale prices make future valuations more accurate for everyone.</p>
-          <p className="text-xs text-primary mt-1.5 font-medium">Submit and help unlock better accuracy — your individual price stays private.</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Takes 10 seconds. Real sale prices help us improve future valuations for everyone.</p>
+          <p className="text-xs text-primary mt-1.5 font-medium">Submit to help improve our valuations. Your individual price stays private.</p>
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
