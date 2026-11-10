@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>What's my car worth? | Valu8</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+<link href="/embed/plate-font.css" rel="stylesheet" />
+<style>
+  /* Valu8 embeddable reg box. No cookies, no tracking in the frame: the site name travels as utm_campaign. */
+  :root { --bg:#111111; --fg:#F7F5F3; --muted:#ADADAD; --teal:#00D6C8; --plate:#FDE047; --border:#292929; }
+  :root.light { --bg:#F7F5F3; --fg:#111111; --muted:#555555; --border:#dddddd; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { background:transparent; }
+  body { font-family:Inter, ui-sans-serif, system-ui, sans-serif; color:var(--fg); -webkit-font-smoothing:antialiased; }
+  .box { background:var(--bg); border:1px solid var(--border); border-radius:16px; padding:16px; max-width:520px; margin:0 auto; }
+  h1 { font-size:18px; font-weight:700; letter-spacing:-0.01em; }
+  .sub { font-size:13px; color:var(--muted); margin-top:4px; }
+  form { margin-top:12px; display:flex; flex-direction:column; gap:10px; }
+  .plate { display:flex; align-items:center; height:64px; background:linear-gradient(180deg,#FFE14A,#FDD017); border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,.35); }
+  .plate:focus-within { outline:2px solid var(--teal); outline-offset:3px; }
+  .inner { flex:1; display:flex; align-items:center; height:100%; border:2.5px solid #111; border-radius:8px; padding-left:10px; min-width:0; }
+  .badge { display:flex; flex-direction:column; align-items:center; gap:5px; width:34px; flex:none; user-select:none; }
+  .badge img { width:30px; height:15px; display:block; }
+  .badge b { color:#1F4FD8; font:700 15px Inter, Arial, sans-serif; letter-spacing:.5px; line-height:1; }
+  input { flex:1 1 0; width:0; min-width:0; height:100%; background:none; border:0; outline:0; font-family:'UKNumberPlate', sans-serif; font-size:38px; color:#111; text-align:center; text-transform:uppercase; letter-spacing:2px; }
+  input::placeholder { color:rgba(0,0,0,.28); letter-spacing:1px; }
+  button { min-height:48px; border:0; border-radius:12px; background:var(--teal); color:#111; font:600 16px Inter, sans-serif; cursor:pointer; }
+  button:hover { filter:brightness(1.08); }
+  button:focus-visible { outline:2px solid var(--plate); outline-offset:2px; }
+  .err { font-size:13px; color:#F87171; min-height:0; }
+  .foot { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px; font-size:12px; color:var(--muted); }
+  .foot a { color:var(--fg); text-decoration:none; font-weight:700; }
+  .foot a span { color:var(--teal); }
+  @media (min-width:440px) { form { flex-direction:row; } .plate { flex:1; } button { padding:0 18px; } }
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>What's my car worth?</h1>
+  <p class="sub">Free UK car valuation from your number plate. We don't buy cars.</p>
+  <form id="f" novalidate>
+    <div class="plate"><div class="inner">
+      <div class="badge" aria-hidden="true"><img src="/uk-flag.svg" alt="" /><b>UK</b></div>
+      <input id="reg" name="reg" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="9" placeholder="AB12 CDE" aria-label="Your registration number" />
+    </div></div>
+    <button type="submit">Value my car free</button>
+  </form>
+  <p class="err" id="err" role="alert"></p>
+  <div class="foot"><span>Private sale estimate and MOT history</span><a href="https://valu8.uk/?utm_source=embed&amp;utm_medium=widget" target="_blank" rel="noopener" id="home">valu8<span>.uk</span></a></div>
+</div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  if (q.get("theme") === "light") document.documentElement.classList.add("light");
+  // Site name for utm_campaign: ?site= from the snippet, else the embedding page's host.
+  var clean = function (v) { return String(v || "").toLowerCase().trim().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\s+/g, "_").replace(/[^a-z0-9_.+-]/g, "").slice(0, 64); };
+  var site = clean(q.get("site"));
+  if (!site) { try { site = clean(new URL(document.referrer).hostname); } catch (e) { site = ""; } }
+  if (!site) site = "unknown";
+  var home = document.getElementById("home");
+  home.href = "https://valu8.uk/?utm_source=embed&utm_medium=widget&utm_campaign=" + encodeURIComponent(site);
+  var f = document.getElementById("f"), reg = document.getElementById("reg"), err = document.getElementById("err");
+  f.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var r = reg.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (r.length < 2 || r.length > 8 || !/[A-Z]/.test(r) || !/[0-9]/.test(r)) { err.textContent = "Enter a valid UK number plate, e.g. AB12 CDE."; reg.focus(); return; }
+    err.textContent = "";
+    var url = "https://valu8.uk/valuation/new?reg=" + encodeURIComponent(r) + "&utm_source=embed&utm_medium=widget&utm_campaign=" + encodeURIComponent(site);
+    var w = window.open(url, "_blank");
+    if (w) { try { w.opener = null; } catch (x) { /* ignore */ } }
+    else { try { window.top.location.href = url; } catch (x) { location.href = url; } }
+  });
+})();
+</script>
+</body>
+</html>
