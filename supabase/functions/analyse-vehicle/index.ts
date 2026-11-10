@@ -392,7 +392,7 @@ interface AnalyseRequest {
   photos?: { slot: string; url: string }[];
   guestToken?: unknown;
   guestPhotos?: { slot: string; dataUrl: string }[];
-  guestSave?: { displayModel?: string; serviceNotes?: string; vehicle?: unknown; attribution?: unknown };
+  guestSave?: { displayModel?: string; serviceNotes?: string; vehicle?: unknown; attribution?: unknown; utm?: { utm_source?: unknown; utm_medium?: unknown; utm_campaign?: unknown } };
 }
 
 type PhotoSlot = "front" | "rear" | "side" | "interior" | "odometer" | "engine" | "other";
@@ -748,6 +748,13 @@ const TOOL = {
     },
   },
 };
+
+/** Campaign tag as stored on valuations (matches the DB check); anything else becomes null. */
+function cleanUtmTag(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.toLowerCase().trim().replace(/\s+/g, "_").replace(/[^a-z0-9_.+-]/g, "").slice(0, 64);
+  return t || null;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -2024,6 +2031,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         photo_urls: guestLabeled.map((p) => p.ref), condition_score: report.conditionScore,
         private_value: report.valuationUnavailable ? null : report.values?.privateSale ?? null,
         report: { ...cleanReport, vehicle: body.guestSave?.vehicle ?? null, ...(body.guestSave?.attribution ? { attribution: body.guestSave.attribution } : {}) },
+        // Campaign tags from the landing URL (sanitised to the DB check: [a-z0-9_.+-]{1,64}). Never affects pricing.
+        utm_source: cleanUtmTag(body.guestSave?.utm?.utm_source),
+        utm_medium: cleanUtmTag(body.guestSave?.utm?.utm_medium),
+        utm_campaign: cleanUtmTag(body.guestSave?.utm?.utm_campaign),
       });
       if (error) {
         console.error("Guest valuation save failed", error.message);

@@ -30,6 +30,11 @@ Deno.serve(async (req) => {
   if (!UUID.test(valuationId)) return json({ error: "Invalid valuation." }, 400);
   const emailRaw = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw) ? emailRaw : undefined;
+  // Anonymous funnel id for this page load, so stripe-webhook can log report_purchased against it.
+  const funnelSession = typeof body?.funnelSession === "string" && UUID.test(body.funnelSession) ? body.funnelSession.toLowerCase() : undefined;
+  // Only "1" when the visitor accepted advertising cookies; stripe-webhook sends a Meta Purchase only then.
+  const metaConsent = body?.metaConsent === true ? "1" : undefined;
+  const funnelDevice = ["mobile", "tablet", "desktop"].includes(body?.funnelDevice) ? String(body.funnelDevice) : undefined;
 
   try {
     const db = adminClient()!;
@@ -60,6 +65,9 @@ Deno.serve(async (req) => {
       "metadata[price_id]": priceId,
       "metadata[user_id]": g.userId ?? undefined,
       "metadata[email]": email,
+      "metadata[funnel_session]": funnelSession,
+      "metadata[meta_consent]": metaConsent,
+      "metadata[funnel_device]": funnelDevice,
       "payment_intent_data[metadata][kind]": "full_report",
       "payment_intent_data[metadata][valuation_id]": valuationId,
       "payment_intent_data[metadata][reg]": reg || undefined,

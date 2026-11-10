@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ReportErrorBoundary } from "@/components/ReportErrorBoundary";
 import { PostHogTracker } from "@/components/PostHogTracker";
+import { MetaPixelTracker } from "@/components/MetaPixelTracker";
 import { trackLanded } from "@/lib/funnel";
 
 trackLanded();
@@ -61,6 +62,7 @@ const App = () => (
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <PostHogTracker />
+          <MetaPixelTracker />
           <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<Landing />} />
