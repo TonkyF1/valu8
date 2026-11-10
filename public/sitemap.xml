@@ -11,6 +11,7 @@
   <url><loc>https://valu8.uk/privacy</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.uk/terms</loc><priority>0.3</priority></url>
   <url><loc>https://valu8.uk/disclaimers</loc><priority>0.3</priority></url>
+  <url><loc>https://valu8.uk/embed-info</loc><priority>0.5</priority></url>
   <url><loc>https://valu8.uk/guides</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/guides/what-is-my-car-worth</loc><priority>0.6</priority></url>
   <url><loc>https://valu8.uk/guides/part-exchange-vs-private-sale</loc><priority>0.6</priority></url>
@@ -19,15 +20,9 @@
   <url><loc>https://valu8.uk/guides/check-mot-and-mileage-history-before-buying</loc><priority>0.6</priority></url>
   <url><loc>https://valu8.uk/guides/part-exchange-offer-too-low</loc><priority>0.6</priority></url>
   <url><loc>https://valu8.uk/guides/mot-advisories-car-value</loc><priority>0.6</priority></url>
-  <url><loc>https://valu8.uk/car-values/ford/puma</loc><priority>0.7</priority></url>
-  <url><loc>https://valu8.uk/car-values/vauxhall/astra</loc><priority>0.7</priority></url>
-  <url><loc>https://valu8.uk/car-values/vauxhall/mokka</loc><priority>0.7</priority></url>
-  <url><loc>https://valu8.uk/car-values/volkswagen/t-roc</loc><priority>0.7</priority></url>
-  <url><loc>https://valu8.uk/car-values/toyota/corolla</loc><priority>0.7</priority></url>
-  <url><loc>https://valu8.uk/car-values/toyota/c-hr</loc><priority>0.7</priority></url>
-  <url><loc>https://valu8.uk/car-values/kia/ceed</loc><priority>0.7</priority></url>
-  <url><loc>https://valu8.uk/car-values/mini/hatch</loc><priority>0.7</priority></url>
-  <url><loc>https://valu8.uk/car-values/tesla/model-3</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/guides/how-to-price-a-car-for-private-sale</loc><priority>0.6</priority></url>
+  <url><loc>https://valu8.uk/guides/what-lowers-a-cars-value</loc><priority>0.6</priority></url>
+  <url><loc>https://valu8.uk/guides/private-sale-vs-dealer-prices</loc><priority>0.6</priority></url>
   <url><loc>https://valu8.uk/value</loc><priority>0.8</priority></url>
   <url><loc>https://valu8.uk/value/ford-fiesta</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/value/ford-focus</loc><priority>0.7</priority></url>
@@ -57,6 +52,7 @@
   <url><loc>https://valu8.uk/value/seat-leon</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/value/peugeot-3008</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/value/kia-sportage</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/mini-hatch</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/value/volkswagen-tiguan</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/value/peugeot-2008</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/value/skoda-fabia</loc><priority>0.7</priority></url>
@@ -79,5 +75,13 @@
   <url><loc>https://valu8.uk/value/land-rover-discovery-sport</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/value/bmw-x1</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/value/audi-tt</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/kia-ceed</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/ford-puma</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/volkswagen-t-roc</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/toyota-c-hr</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/toyota-corolla</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/tesla-model-3</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/vauxhall-astra</loc><priority>0.7</priority></url>
+  <url><loc>https://valu8.uk/value/vauxhall-mokka</loc><priority>0.7</priority></url>
   <url><loc>https://valu8.uk/value/ford-fiesta/2016</loc><priority>0.6</priority></url>
 </urlset>

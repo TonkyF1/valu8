@@ -13,10 +13,13 @@ const SLUGS = [
   "check-mot-and-mileage-history-before-buying",
   "part-exchange-offer-too-low",
   "mot-advisories-car-value",
+  "how-to-price-a-car-for-private-sale",
+  "what-lowers-a-cars-value",
+  "private-sale-vs-dealer-prices",
 ];
 
 describe("guides", () => {
-  it("has the seven expected guides", () => {
+  it("has the ten expected guides", () => {
     expect(GUIDES.map((g) => g.slug)).toEqual(SLUGS);
   });
 
@@ -46,7 +49,7 @@ describe("guides", () => {
     expect(html).toContain('"@type":"FAQPage"');
   });
 
-  it("sitemap lists the guides index and all seven guides", () => {
+  it("sitemap lists the guides index and all ten guides", () => {
     const xml = buildSitemap();
     expect(xml).toContain("<loc>https://valu8.uk/guides</loc>");
     for (const s of SLUGS) expect(xml).toContain(`<loc>https://valu8.uk/guides/${s}</loc>`);
