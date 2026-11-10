@@ -698,10 +698,10 @@ export type Database = {
           report: Json
           service_notes: string | null
           user_id: string | null
-          year: number
           utm_campaign: string | null
           utm_medium: string | null
           utm_source: string | null
+          year: number
         }
         Insert: {
           condition_score?: number | null
@@ -718,10 +718,10 @@ export type Database = {
           report?: Json
           service_notes?: string | null
           user_id?: string | null
-          year: number
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          year: number
         }
         Update: {
           condition_score?: number | null
@@ -738,10 +738,10 @@ export type Database = {
           report?: Json
           service_notes?: string | null
           user_id?: string | null
-          year?: number
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          year?: number
         }
         Relationships: []
       }
@@ -793,10 +793,14 @@ export type Database = {
           offer_view: number | null
           price_alert_opt_in: number | null
           reg_typed: number | null
+          report_checkout: number | null
+          report_purchased: number | null
           result_seen: number | null
           step_details: number | null
           step_photos: number | null
           submitted: number | null
+          valuation_completed: number | null
+          valuation_started: number | null
         }
         Relationships: []
       }
