@@ -4,9 +4,10 @@ import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { useSeo } from "@/lib/seo";
-import { getRouteMeta } from "@/data/routeMeta";
-import { MODEL_PRICES, findModelPrices, findYearPrices } from "@/data/modelPriceBands";
-import { VALUE_INDEX_H1, VALUE_INDEX_INTRO, VALUE_TABLE_NOTE, VALUE_YEARS_INTRO, YEAR_NOTE, gbp, miles, neighbourYears, valueIntro, valueName, valuePath, yearIntro, yearPath } from "@/data/valuePages";
+import { getValueRouteMeta } from "@/data/valueRoutes";
+import { valueModelName, valueModelPath, valueModelsByMake } from "@/data/valueModels";
+import { findModelPrices, findYearPrices } from "@/data/modelPriceBands";
+import { VALUE_INDEX_H1, VALUE_INDEX_INTRO, sameMakeModels, VALUE_TABLE_NOTE, VALUE_YEARS_INTRO, YEAR_NOTE, gbp, miles, neighbourYears, valueIntro, valueName, valuePath, yearIntro, yearPath } from "@/data/valuePages";
 import NotFound from "./NotFound";
 import { useEffect, type MouseEvent } from "react";
 import { enrichedYearFaqJsonLd, enrichedYearHtml, findEnrichedYear } from "@/data/enrichedYears";
@@ -22,21 +23,41 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function MoreFromMake({ slug, make }: { slug: string; make: string }) {
+  const others = sameMakeModels(slug, make);
+  if (!others.length) return null;
+  return (
+    <section className="mt-10" aria-labelledby="more-make">
+      <h2 id="more-make" className="text-lg font-semibold mb-2">More {make} asking prices</h2>
+      <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+        {others.map((v) => (
+          <li key={v.slug}><Link to={valueModelPath(v)} className="inline-flex min-h-[44px] items-center text-primary hover:underline">{valueModelName(v)}</Link></li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function ValueIndex() {
-  useSeo(getRouteMeta("/value"));
+  useSeo(getValueRouteMeta("/value"));
   return (
     <Shell>
       <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{VALUE_INDEX_H1}</h1>
       <p className="text-muted-foreground mt-4 leading-relaxed">{VALUE_INDEX_INTRO}</p>
-      <ul className="mt-8 grid gap-2 sm:grid-cols-2">
-        {MODEL_PRICES.map((m) => (
-          <li key={m.slug}>
-            <Link to={valuePath(m)} className="flex min-h-[44px] items-center justify-between rounded-xl border border-border px-4 py-3 hover:border-primary/50">
-              <span>{valueName(m)}</span><ArrowRight className="h-4 w-4 text-primary" aria-hidden />
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {valueModelsByMake().map((g) => (
+        <section key={g.make} className="mt-8" aria-labelledby={`make-${g.make}`}>
+          <h2 id={`make-${g.make}`} className="text-lg font-semibold mb-2">{g.make}</h2>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {g.models.map((v) => (
+              <li key={v.slug}>
+                <Link to={valueModelPath(v)} className="flex min-h-[44px] items-center justify-between rounded-xl border border-border px-4 py-3 hover:border-primary/50">
+                  <span>{valueModelName(v)}</span><ArrowRight className="h-4 w-4 text-primary" aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
       <div className="mt-10"><Button asChild variant="hero" size="xl"><Link to="/valuation/new">Value my car free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button></div>
     </Shell>
   );
@@ -45,7 +66,7 @@ export function ValueIndex() {
 export default function ModelValue() {
   const { slug } = useParams();
   const m = findModelPrices(slug);
-  useSeo(m ? getRouteMeta(valuePath(m)) : null);
+  useSeo(m ? getValueRouteMeta(valuePath(m)) : null);
   if (!m) return <NotFound />;
   const name = valueName(m);
   return (
@@ -95,6 +116,7 @@ export default function ModelValue() {
         <p className="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p>
         <Button asChild variant="hero" size="xl" className="mt-4"><Link to="/valuation/new">Value my {m.model} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
       </div>
+      <MoreFromMake slug={m.slug} make={m.make} />
       <p className="mt-10 text-sm"><Link to="/value" className="text-primary hover:underline">See all models</Link></p>
     </Shell>
   );
@@ -104,7 +126,7 @@ export function ModelYearValue() {
   const { slug, year } = useParams();
   const m = findModelPrices(slug);
   const y = findYearPrices(m, year);
-  useSeo(m && y ? getRouteMeta(yearPath(m, y)) : null);
+  useSeo(m && y ? getValueRouteMeta(yearPath(m, y)) : null);
   const enriched = m && y ? findEnrichedYear(m.slug, y.year) : undefined;
   const navigate = useNavigate();
   useEffect(() => {

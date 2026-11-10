@@ -4,7 +4,8 @@ import { Footer } from "@/components/Footer";
 import { CAR_MODELS } from "@/data/carModels";
 import { useSeo } from "@/lib/seo";
 import { getRouteMeta } from "@/data/routeMeta";
-import { CAR_VALUES_H1 } from "@/data/carValueContent";
+import { CAR_VALUES_H1, VALUE_HUB_H2, VALUE_HUB_INTRO } from "@/data/carValueContent";
+import { VALUE_MODELS, valueModelName, valueModelPath, valueModelsByMake } from "@/data/valueModels";
 
 export default function CarValuesIndex() {
   useSeo(getRouteMeta("/car-values"));
@@ -28,6 +29,23 @@ export default function CarValuesIndex() {
             </section>
           ))}
         </div>
+        <section className="mt-12" aria-labelledby="value-hub">
+          <h2 id="value-hub" className="text-2xl font-semibold tracking-tight mb-2">{VALUE_HUB_H2}</h2>
+          <p className="text-muted-foreground mb-6">{VALUE_HUB_INTRO(VALUE_MODELS.length)}</p>
+          <div className="grid gap-6 sm:grid-cols-2">
+            {valueModelsByMake().map((g) => (
+              <section key={g.make} aria-labelledby={`vm-${g.make}`}>
+                <h3 id={`vm-${g.make}`} className="font-semibold mb-1">{g.make}</h3>
+                <ul>
+                  {g.models.map((v) => (
+                    <li key={v.slug}><Link className="inline-flex min-h-[44px] items-center text-primary hover:underline" to={valueModelPath(v)}>{valueModelName(v)} asking prices</Link></li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+          <p className="mt-6"><Link className="text-primary hover:underline" to="/value">All models</Link></p>
+        </section>
       </main>
       <Footer />
     </div>

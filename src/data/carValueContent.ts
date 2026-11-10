@@ -3,10 +3,13 @@
 // without running JavaScript. Deliberately no prices: figures only come from a live valuation.
 import { CAR_MODELS, SEGMENT_LABEL, SEGMENT_TIPS, type CarModelPage } from "./carModels";
 import { SITE_URL } from "./routeMeta";
-import { MODEL_PRICES, type ModelPrices } from "./modelPriceBands";
+import { VALUE_MODELS, valueModelName, valueModelPath, valueModelsByMake, type ValueModel } from "./valueModels";
 
 /** The matching /value/<make-model> asking-price page, when we have one. */
-export const carValueMatch = (m: CarModelPage): ModelPrices | undefined => MODEL_PRICES.find((p) => p.slug === `${m.makeSlug}-${m.slug}`);
+export const carValueMatch = (m: CarModelPage): ValueModel | undefined => VALUE_MODELS.find((p) => p.slug === `${m.makeSlug}-${m.slug}`);
+
+export const VALUE_HUB_H2 = "Typical asking prices for every model";
+export const VALUE_HUB_INTRO = (n: number) => `Typical asking prices from UK adverts, by year, for ${n} makes and models. Each page shows the middle asking price and typical range for each year group.`;
 export const carValueLinkText = (m: CarModelPage) => `Typical ${carName(m)} asking prices by year`;
 
 export const carName = (m: CarModelPage) => `${m.make} ${m.model}`;
@@ -90,5 +93,8 @@ export function carValuesIndexBodyHtml(): string {
   return `<main id="main"><h1>${CAR_VALUES_H1}</h1>`
     + `<p>Free, honest valuations for the UK's most popular used cars. Pick your model to see how we value it, or <a href="/valuation/new">value your car now</a>.</p>`
     + makes.map((make) => `<section><h2>${esc(make)}</h2><ul>${CAR_MODELS.filter((m) => m.make === make).map((m) => `<li><a href="${carPath(m)}">${esc(carName(m))} value</a></li>`).join("")}</ul></section>`).join("")
+    + `<section><h2>${VALUE_HUB_H2}</h2><p>${esc(VALUE_HUB_INTRO(VALUE_MODELS.length))}</p>`
+    + valueModelsByMake().map((g) => `<h3>${esc(g.make)}</h3><ul>${g.models.map((v) => `<li><a href="${valueModelPath(v)}">${esc(valueModelName(v))} asking prices</a></li>`).join("")}</ul>`).join("")
+    + `<p><a href="/value">All models</a></p></section>`
     + `</main>`;
 }

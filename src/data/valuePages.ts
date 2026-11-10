@@ -2,6 +2,7 @@
 // Figures are typical asking prices from UK adverts (generated into modelPriceBands.ts), not valuations.
 import { MODEL_PRICES, PRICE_DATA_UPDATED, type ModelPrices, type YearPrices } from "./modelPriceBands";
 import { enrichedYearHtml, findEnrichedYear } from "./enrichedYears";
+import { VALUE_MODELS, valueModelName, valueModelPath, valueModelsByMake, type ValueModel } from "./valueModels";
 
 export const VALUE_INDEX_PATH = "/value";
 export const VALUE_INDEX_TITLE = "What's my car worth? Typical UK asking prices by model | Valu8";
@@ -35,6 +36,12 @@ export const VALUE_TABLE_NOTE = (m: ModelPrices) =>
 
 export const VALUE_YEARS_INTRO = (m: ModelPrices) =>
   `Pick a year for typical ${valueName(m)} asking prices, mileage and how mileage moves the price. Years with fewer than 15 adverts are not listed.`;
+
+/** Other /value pages for the same make (internal links), A–Z. */
+export function sameMakeModels(slug: string, make: string): ValueModel[] {
+  return VALUE_MODELS.filter((v) => v.make === make && v.slug !== slug)
+    .sort((a, b) => a.model.localeCompare(b.model, "en-GB", { numeric: true, sensitivity: "base" }));
+}
 
 // ---------- Per-year pages (/value/:slug/:year) ----------
 
@@ -73,12 +80,19 @@ function yearLinksHtml(m: ModelPrices): string {
     + m.years.map((y) => `<li><a href="${yearPath(m, y)}">${y.year} ${esc(valueName(m))}</a></li>`).join("") + `</ul>`;
 }
 
+function moreFromMakeHtml(m: ModelPrices): string {
+  const others = sameMakeModels(m.slug, m.make);
+  if (!others.length) return "";
+  return `<h2>More ${esc(m.make)} asking prices</h2><ul>` + others.map((v) => `<li><a href="${valueModelPath(v)}">${esc(valueModelName(v))}</a></li>`).join("") + `</ul>`;
+}
+
 export function valueBodyHtml(m: ModelPrices): string {
   const name = esc(valueName(m));
   return `<main id="main"><h1>What's my ${name} worth?</h1><p>${esc(valueIntro(m))}</p>`
     + `<table><caption>Typical ${name} asking prices by year</caption><thead><tr><th>Year</th><th>Median asking price</th><th>Typical range</th></tr></thead><tbody>`
     + m.bands.map((b) => `<tr><td>${esc(b.band)}</td><td>${gbp(b.median)}</td><td>${gbp(b.low)} – ${gbp(b.high)}</td></tr>`).join("")
     + `</tbody></table><p>${esc(VALUE_TABLE_NOTE(m))}</p>${yearLinksHtml(m)}<p><a href="/valuation/new">Value my ${esc(m.model)} free</a></p>`
+    + moreFromMakeHtml(m)
     + `<p><a href="/value">All models</a></p></main>`;
 }
 
@@ -98,7 +112,7 @@ export function yearBodyHtml(m: ModelPrices, y: YearPrices): string {
 }
 
 export function valueIndexBodyHtml(): string {
-  return `<main id="main"><h1>${esc(VALUE_INDEX_H1)}</h1><p>${esc(VALUE_INDEX_INTRO)}</p><ul>`
-    + MODEL_PRICES.map((m) => `<li><a href="${valuePath(m)}">What's my ${esc(valueName(m))} worth?</a></li>`).join("")
-    + `</ul><p><a href="/valuation/new">Value my car free</a></p></main>`;
+  return `<main id="main"><h1>${esc(VALUE_INDEX_H1)}</h1><p>${esc(VALUE_INDEX_INTRO)}</p>`
+    + valueModelsByMake().map((g) => `<section><h2>${esc(g.make)}</h2><ul>` + g.models.map((v) => `<li><a href="${valueModelPath(v)}">What's my ${esc(valueModelName(v))} worth?</a></li>`).join("") + `</ul></section>`).join("")
+    + `<p><a href="/valuation/new">Value my car free</a></p></main>`;
 }
