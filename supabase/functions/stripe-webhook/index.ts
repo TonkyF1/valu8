@@ -4,6 +4,7 @@
 // Syncs billing_customers and profiles.is_premium/plan via the service role.
 import { adminClient, json, premiumEnforced } from "../_shared/guard.ts";
 import { stripe, verifyStripeSignature } from "../_shared/stripe.ts";
+import { sendMetaPurchase } from "../_shared/metaCapi.ts";
 
 const ACTIVE = new Set(["active", "trialing"]);
 
@@ -17,7 +18,7 @@ async function setPremium(userId: string, on: boolean) {
 async function grantReport(obj: any, livemode: boolean) {
   const valuationId = obj.metadata?.valuation_id || obj.client_reference_id;
   if (!valuationId || obj.payment_status !== "paid") return;
-  const { error } = await adminClient()!.from("report_purchases").upsert({
+  const { data: inserted, error } = await adminClient()!.from("report_purchases").upsert({
     valuation_id: valuationId,
     registration: obj.metadata?.reg ?? null,
     stripe_session_id: obj.id,
@@ -28,8 +29,37 @@ async function grantReport(obj: any, livemode: boolean) {
     customer_email: obj.customer_details?.email ?? null,
     status: "paid",
     livemode,
-  }, { onConflict: "stripe_session_id", ignoreDuplicates: true });
+  }, { onConflict: "stripe_session_id", ignoreDuplicates: true }).select("id");
   if (error) throw error;
+  // Only the first delivery of a payment inserts a row; retries and the async event are no-ops.
+  if (!inserted?.length) return;
+  await logPurchased(obj, livemode);
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Anonymous funnel step + consented Meta Purchase. Best effort: never fails the webhook. */
+async function logPurchased(obj: any, livemode: boolean) {
+  try {
+    const fs = obj.metadata?.funnel_session;
+    const dev = obj.metadata?.funnel_device;
+    const { error } = await adminClient()!.from("funnel_events").insert({
+      session_id: typeof fs === "string" && UUID.test(fs) ? fs : crypto.randomUUID(),
+      step: "report_purchased",
+      detail: livemode ? "live" : "test",
+      device: ["mobile", "tablet", "desktop"].includes(dev) ? dev : "desktop",
+    });
+    if (error) console.error("funnel report_purchased", error.message);
+  } catch (e) { console.error("funnel report_purchased", (e as Error)?.message); }
+  if (obj.metadata?.meta_consent === "1" && livemode) {
+    await sendMetaPurchase({
+      eventId: String(obj.id),
+      value: (Number(obj.amount_total) || 0) / 100,
+      currency: String(obj.currency || "gbp"),
+      email: obj.customer_details?.email ?? null,
+      sourceUrl: `https://valu8.uk/valuation/${obj.metadata?.valuation_id ?? ""}`,
+    });
+  }
 }
 
 async function userForCustomer(customer: string): Promise<string | null> {
