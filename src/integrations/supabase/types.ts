@@ -443,6 +443,48 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_shares: {
+        Row: {
+          code: string
+          created_at: string
+          friend_valuation_id: string | null
+          ip_hash: string | null
+          redeemed_at: string | null
+          valuation_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          friend_valuation_id?: string | null
+          ip_hash?: string | null
+          redeemed_at?: string | null
+          valuation_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          friend_valuation_id?: string | null
+          ip_hash?: string | null
+          redeemed_at?: string | null
+          valuation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_shares_friend_valuation_id_fkey"
+            columns: ["friend_valuation_id"]
+            isOneToOne: true
+            referencedRelation: "valuations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_shares_valuation_id_fkey"
+            columns: ["valuation_id"]
+            isOneToOne: true
+            referencedRelation: "valuations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_purchases: {
         Row: {
           amount_total: number | null
