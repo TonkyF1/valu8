@@ -223,7 +223,7 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert, gue
       </div>
       <p className="text-[11px] text-muted-foreground mt-3 flex items-center gap-1.5">
         <Check className="h-3 w-3 text-primary" />
-        Edit freely — your changes are kept when you switch tabs and saved with the valuation.
+        {isGuest ? "Edit freely. Your changes are kept while you switch tabs, so copy or download the version you want." : "Edit freely. Your changes are kept when you switch tabs and saved with the valuation when you press Save."}
       </p>
     </section>
   );
