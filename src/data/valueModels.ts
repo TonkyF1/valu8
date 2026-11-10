@@ -239,7 +239,10 @@ export const VALUE_MODELS: ValueModel[] = [
 {"slug":"vauxhall-combo","make":"Vauxhall","model":"Combo"},
 ];
 export const VALUE_SLUGS = new Set(VALUE_MODELS.map((m) => m.slug));
-export const valueModelName = (m: ValueModel) => `${m.make} ${m.model}`;
+/** "DS" + "DS 3" reads "DS 3", not "DS DS 3": skip the make when the model already starts with it. */
+export const joinMakeModel = (make: string, model: string) =>
+  model.toLowerCase().startsWith(make.toLowerCase() + " ") ? model : `${make} ${model}`;
+export const valueModelName = (m: ValueModel) => joinMakeModel(m.make, m.model);
 export const valueModelPath = (m: ValueModel) => `/value/${m.slug}`;
 /** Makes A–Z, each with its models A–Z. */
 export function valueModelsByMake(): { make: string; models: ValueModel[] }[] {

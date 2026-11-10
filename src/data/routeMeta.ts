@@ -1,6 +1,6 @@
 import { CAR_MODELS, type CarModelPage } from "./carModels";
 import { GUIDES } from "./guides";
-import { VALUE_SLUGS } from "./valueModels";
+import { VALUE_SLUGS, joinMakeModel } from "./valueModels";
 
 export const SITE_URL = "https://valu8.uk";
 
@@ -38,7 +38,7 @@ export const STATIC_ROUTES: RouteMeta[] = [
 ];
 
 export function carModelMeta(m: CarModelPage): RouteMeta {
-  const name = `${m.make} ${m.model}`;
+  const name = joinMakeModel(m.make, m.model);
   // /value/* pages carry unique asking-price tables — stronger than the overlapping /car-values/* copy.
   const valueSlug = `${m.makeSlug}-${m.slug}`;
   const valueMatch = VALUE_SLUGS.has(valueSlug);

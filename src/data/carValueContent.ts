@@ -3,7 +3,7 @@
 // without running JavaScript. Deliberately no prices: figures only come from a live valuation.
 import { CAR_MODELS, SEGMENT_LABEL, SEGMENT_TIPS, type CarModelPage } from "./carModels";
 import { SITE_URL } from "./routeMeta";
-import { VALUE_MODELS, valueModelName, valueModelPath, valueModelsByMake, type ValueModel } from "./valueModels";
+import { VALUE_MODELS, joinMakeModel, valueModelName, valueModelPath, valueModelsByMake, type ValueModel } from "./valueModels";
 
 /** The matching /value/<make-model> asking-price page, when we have one. */
 export const carValueMatch = (m: CarModelPage): ValueModel | undefined => VALUE_MODELS.find((p) => p.slug === `${m.makeSlug}-${m.slug}`);
@@ -12,7 +12,7 @@ export const VALUE_HUB_H2 = "Typical asking prices for every model";
 export const VALUE_HUB_INTRO = (n: number) => `Typical asking prices from UK adverts, by year, for ${n} makes and models. Each page shows the middle asking price and typical range for each year group.`;
 export const carValueLinkText = (m: CarModelPage) => `Typical ${carName(m)} asking prices by year`;
 
-export const carName = (m: CarModelPage) => `${m.make} ${m.model}`;
+export const carName = (m: CarModelPage) => joinMakeModel(m.make, m.model);
 export const carPath = (m: CarModelPage) => `/car-values/${m.makeSlug}/${m.slug}`;
 
 export function carIntro(m: CarModelPage): string {
@@ -24,7 +24,7 @@ export function carSteps(m: CarModelPage): string[] {
   const name = carName(m);
   return [
     `Find ${name}s for sale now across UK dealers, close to your year and mileage.`,
-    "Correct each listing to your car's exact age and mileage, then take the median.",
+    "Adjust each listing for your car's age and mileage, then take the median.",
     "Adjust for your MOT history (advisories, failures, mileage consistency) and photos.",
     "Convert dealer prices into what you'd realistically get selling privately or part-exchanging.",
   ];
@@ -59,7 +59,7 @@ export function carModelBodyHtml(m: CarModelPage): string {
     + `<nav aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/car-values">Car values</a> / <span aria-current="page">${name}</span></nav>`
     + `<h1>What's my ${name} worth?</h1>`
     + `<p>${esc(carIntro(m))}</p>`
-    + `<p><a href="/valuation/new">Value my ${esc(m.model)} free</a> · <a href="/check">Check a ${esc(m.model)} asking price</a></p>`
+    + `<p><a href="/valuation/new">Value my ${esc(carName(m))} free</a> · <a href="/check">Check a ${esc(carName(m))} asking price</a></p>`
     + (carValueMatch(m) ? `<p><a href="/value/${carValueMatch(m)!.slug}">${esc(carValueLinkText(m))}</a></p>` : "")
     + `<h2>How we value a ${name}</h2><ol>${carSteps(m).map((s) => `<li>${esc(s)}</li>`).join("")}</ol>`
     + `<h2>What moves the value of a ${seg}</h2><ul>${SEGMENT_TIPS[m.segment].map((t) => `<li>${esc(t)}</li>`).join("")}</ul>`

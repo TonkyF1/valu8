@@ -2,7 +2,7 @@
 // Figures are typical asking prices from UK adverts (generated into modelPriceBands.ts), not valuations.
 import { MODEL_PRICES, PRICE_DATA_UPDATED, type ModelPrices, type YearPrices } from "./modelPriceBands";
 import { enrichedYearHtml, findEnrichedYear } from "./enrichedYears";
-import { VALUE_MODELS, valueModelName, valueModelPath, valueModelsByMake, type ValueModel } from "./valueModels";
+import { VALUE_MODELS, joinMakeModel, valueModelName, valueModelPath, valueModelsByMake, type ValueModel } from "./valueModels";
 
 export const VALUE_INDEX_PATH = "/value";
 export const VALUE_INDEX_TITLE = "What's my car worth? Typical UK asking prices by model | Valu8";
@@ -10,7 +10,7 @@ export const VALUE_INDEX_DESCRIPTION = `Typical asking prices from UK adverts fo
 export const VALUE_INDEX_H1 = "What's my car worth? Typical asking prices by model";
 export const VALUE_INDEX_INTRO = "Typical asking prices from UK adverts for the most-advertised used cars, grouped by year. Pick your model for a quick guide, then value your own car for free.";
 
-export const valueName = (m: ModelPrices) => `${m.make} ${m.model}`;
+export const valueName = (m: ModelPrices) => joinMakeModel(m.make, m.model);
 export const valuePath = (m: ModelPrices) => `/value/${m.slug}`;
 export const yearPath = (m: ModelPrices, y: YearPrices | number) => `/value/${m.slug}/${typeof y === "number" ? y : y.year}`;
 export const gbp = (n: number) => "£" + n.toLocaleString("en-GB");
@@ -22,13 +22,13 @@ export function valueMeta(m: ModelPrices) {
   return {
     path: valuePath(m),
     title: `What's my ${name} worth? Typical UK asking prices | Valu8`,
-    description: `Typical ${name} asking prices from UK adverts by year, from ${gbp(Math.min(...all))} to ${gbp(Math.max(...all))} (median). Get a free valuation for your own ${m.model}.`,
+    description: `Typical ${name} asking prices from UK adverts by year, from ${gbp(Math.min(...all))} to ${gbp(Math.max(...all))} (median). Get a free valuation for your own ${valueName(m)}.`,
   };
 }
 
 export function valueIntro(m: ModelPrices): string {
   const name = valueName(m);
-  return `Here's what the ${name} is typically advertised for in the UK, grouped by year. It's a guide to asking prices from UK adverts, not a valuation: mileage, condition, trim and history all move the price of an individual car. For a figure for your own ${m.model}, get a free valuation.`;
+  return `Here's what the ${name} is typically advertised for in the UK, grouped by year. It's a guide to asking prices from UK adverts, not a valuation: mileage, condition, trim and history all move the price of an individual car. For a figure for your own ${valueName(m)}, get a free valuation.`;
 }
 
 export const VALUE_TABLE_NOTE = (m: ModelPrices) =>
@@ -53,7 +53,7 @@ export function yearMeta(m: ModelPrices, y: YearPrices) {
   return {
     path: yearPath(m, y),
     title: e?.title ?? `What's my ${y.year} ${name} worth? Typical asking prices | Valu8`,
-    description: e?.description ?? `A ${y.year} ${name} is typically advertised for ${gbp(y.median)} in the UK (most between ${gbp(y.low)} and ${gbp(y.high)}), from ${y.count} adverts. Get a free valuation for your own ${y.year} ${m.model}.`,
+    description: e?.description ?? `A ${y.year} ${name} is typically advertised for ${gbp(y.median)} in the UK (most between ${gbp(y.low)} and ${gbp(y.high)}), from ${y.count} adverts. Get a free valuation for your own ${y.year} ${valueName(m)}.`,
     noindex: !e,
   };
 }
@@ -61,7 +61,7 @@ export function yearMeta(m: ModelPrices, y: YearPrices) {
 export function yearIntro(m: ModelPrices, y: YearPrices): string {
   const name = valueName(m);
   const mil = y.mileage ? `, with a typical advertised mileage of about ${miles(y.mileage)}` : "";
-  return `A ${y.year} ${name} is typically advertised for around ${gbp(y.median)} in the UK, with the middle half of asking prices between ${gbp(y.low)} and ${gbp(y.high)}. That's from ${y.count} UK adverts for the ${y.year} ${m.model}${mil}. It's a guide to asking prices, not a valuation: mileage, condition, trim and history all move the price of an individual car.`;
+  return `A ${y.year} ${name} is typically advertised for around ${gbp(y.median)} in the UK, with the middle half of asking prices between ${gbp(y.low)} and ${gbp(y.high)}. That's from ${y.count} UK adverts for the ${y.year} ${valueName(m)}${mil}. It's a guide to asking prices, not a valuation: mileage, condition, trim and history all move the price of an individual car.`;
 }
 
 export const YEAR_NOTE = (m: ModelPrices, y: YearPrices) =>
@@ -91,7 +91,7 @@ export function valueBodyHtml(m: ModelPrices): string {
   return `<main id="main"><h1>What's my ${name} worth?</h1><p>${esc(valueIntro(m))}</p>`
     + `<table><caption>Typical ${name} asking prices by year</caption><thead><tr><th>Year</th><th>Median asking price</th><th>Typical range</th></tr></thead><tbody>`
     + m.bands.map((b) => `<tr><td>${esc(b.band)}</td><td>${gbp(b.median)}</td><td>${gbp(b.low)} – ${gbp(b.high)}</td></tr>`).join("")
-    + `</tbody></table><p>${esc(VALUE_TABLE_NOTE(m))}</p>${yearLinksHtml(m)}<p><a href="/valuation/new">Value my ${esc(m.model)} free</a></p>`
+    + `</tbody></table><p>${esc(VALUE_TABLE_NOTE(m))}</p>${yearLinksHtml(m)}<p><a href="/valuation/new">Value my ${esc(valueName(m))} free</a></p>`
     + moreFromMakeHtml(m)
     + `<p><a href="/value">All models</a></p></main>`;
 }
@@ -105,7 +105,7 @@ export function yearBodyHtml(m: ModelPrices, y: YearPrices): string {
   return `<main id="main"><h1>What's my ${y.year} ${name} worth?</h1><p>${esc(yearIntro(m, y))}</p>`
     + `<ul><li>Median asking price: ${gbp(y.median)}</li><li>Typical range: ${gbp(y.low)} – ${gbp(y.high)}</li><li>UK adverts: ${y.count}</li>`
     + (y.mileage ? `<li>Typical mileage: ${miles(y.mileage)}</li>` : "") + `</ul>${rows}<p>${esc(YEAR_NOTE(m, y))}</p>`
-    + `<p><a href="/valuation/new">Value my ${y.year} ${esc(m.model)} free</a></p>`
+    + `<p><a href="/valuation/new">Value my ${y.year} ${esc(valueName(m))} free</a></p>`
     + neighbourYears(m, y).map((n) => `<p><a href="${yearPath(m, n)}">${n.year} ${name} prices</a></p>`).join("")
     + (findEnrichedYear(m.slug, y.year) ? `<section>${enrichedYearHtml(findEnrichedYear(m.slug, y.year)!, m, y)}</section>` : "")
     + `<p><a href="${valuePath(m)}">All ${name} years</a></p><p><a href="/value">All models</a></p></main>`;
