@@ -12,6 +12,7 @@ const COLS: { title: string; links: { to: string; label: string }[] }[] = [
   { title: "Guides", links: [
     { to: "/guides", label: "Guides" },
     { to: "/car-values", label: "Car values by model" },
+    { to: "/embed-info", label: "Free valuation box for your site" },
     { to: "/about", label: "About & contact" },
   ] },
   { title: "Legal", links: [

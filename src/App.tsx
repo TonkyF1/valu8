@@ -43,6 +43,7 @@ const ValueIndex = lazy(() => import("./pages/ModelValue").then((m) => ({ defaul
 const ModelYearValue = lazy(() => import("./pages/ModelValue").then((m) => ({ default: m.ModelYearValue })));
 const GuidesIndex = lazy(() => import("./pages/GuidesIndex"));
 const Guide = lazy(() => import("./pages/Guide"));
+const EmbedInfo = lazy(() => import("./pages/EmbedInfo"));
 
 const PageFallback = () => (
   <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite">
@@ -90,6 +91,7 @@ const App = () => (
             <Route path="/car-values/:make/:model" element={<CarValue />} />
             <Route path="/guides" element={<GuidesIndex />} />
             <Route path="/guides/:slug" element={<Guide />} />
+            <Route path="/embed-info" element={<EmbedInfo />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/bot" element={<Bot />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />

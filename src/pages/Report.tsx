@@ -51,10 +51,11 @@ import { stripSaleFeedback } from "@/lib/saleFeedback";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSaleFeedback } from "@/lib/saleFeedback";
 import { GuestSavePrompt } from "@/components/report/GuestSavePrompt";
-import { claimGuestValuations, clearReturnTo, isGuestValuation, setReturnTo } from "@/lib/guest";
+import { claimGuestValuations, clearReturnTo, isGuestValuation, peekGuestToken, setReturnTo } from "@/lib/guest";
 import { priceBandGeometry } from "@/lib/priceBand";
 import { ReportNav, SoldItPrompt, useReportSections } from "@/components/report/ReportNav";
-import { ShareResult } from "@/components/ShareResult";
+import { ShareCard, completeReferral } from "@/components/ShareCard";
+import { clearShareRef, getShareRef } from "@/lib/attribution";
 import { MotHistoryByYear } from "@/components/report/MotHistoryByYear";
 import { FREE_TEASER_COMPS, reportPaywallEnabled } from "@/lib/reportPaywall";
 import { MiniTier, Section, CollapsibleSection, RecBlock, SLOT_LABELS, PhotoFeedback, InsightRow } from "@/components/report/ReportParts";
@@ -96,7 +97,9 @@ export default function Report() {
     if (!isShared && authLoading) return;
     if (isShared || !user) {
       // Public share view: fetch via edge function which signs photo URLs server-side.
-      supabase.functions.invoke("get-shared-valuation", { body: { id } })
+      // The guest's own report: send their token so the server returns the whole report (as for a signed-in owner).
+      const guestToken = !isShared && isGuestValuation(id) ? peekGuestToken() ?? undefined : undefined;
+      supabase.functions.invoke("get-shared-valuation", { body: { id, guestToken } })
         .then(({ data, error }) => {
           if (!error && data && !(data as any).error) {
             const d = data as any;
@@ -174,6 +177,22 @@ export default function Report() {
     })();
     return () => { cancelled = true; };
   }, [enforcedPremium, id, location.search, checkPaid]);
+
+  // Friend side of "share with a friend": this visitor arrived on someone's share link and has now
+  // finished their own valuation, so credit the sharer once (server checks it's a different person and car).
+  useEffect(() => {
+    if (!v || isShared || !id) return;
+    const ownsIt = user ? (v as any).user_id === user.id : isGuestValuation(id);
+    const code = getShareRef();
+    if (!ownsIt || !code || !(Number((v.report as any)?.values?.privateSale) > 0)) return;
+    let live = true;
+    completeReferral(code, v.id).then((res) => {
+      if (!live) return;
+      if (res.ok) track("referral_unlocked");
+      if (res.ok || ["already_redeemed", "unknown_code", "bad_code", "expired", "same_owner", "same_network"].includes(res.reason ?? "")) clearShareRef();
+    }).catch(() => { /* never blocks the report */ });
+    return () => { live = false; };
+  }, [v?.id, isShared, id, user?.id]);
 
   const [scrolledPastHeader, setScrolledPastHeader] = useState(false);
   useEffect(() => {
@@ -957,6 +976,24 @@ export default function Report() {
           <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />
         )}
 
+        {/* Share my valuation (image card + native share sheet). While the report is locked it also carries the
+            referral offer: a friend who values their car through the link unlocks this report free. Owners only. */}
+        {!isShared && !valuationUnavailable && (isGuest || (user && (v as any).user_id === user.id)) && Number(r?.values?.privateSale) > 0 && (
+          <SectionBoundary>
+            <ShareCard
+              valuationId={v.id}
+              locked={enforcedPremium && !premium}
+              onUnlocked={() => { void checkPaid(); }}
+              card={{
+                car: `${v.year} ${makeDisplay} ${modelDisplay}`.trim(),
+                meta: v.mileage > 0 ? `About ${(Math.round(v.mileage / 1000) * 1000).toLocaleString("en-GB")} miles` : null,
+                value: headlinePrivateText(normaliseReportPricing(r).privateSale, r),
+                plate: v.registration,
+              }}
+            />
+          </SectionBoundary>
+        )}
+
         {!locked && (<>
         {/* "Does this sound right?" — optional owner feedback (signed-in owner or guest owner; never on share links). Signal only: never changes pricing. */}
         {!isShared && !valuationUnavailable && (isGuest || (user && (v as any).user_id === user.id)) && (
@@ -1212,16 +1249,6 @@ export default function Report() {
         })()}
 
 
-        {/* Share card: car + range + confidence only (no reg, mileage, photos or report link) */}
-        {!isShared && !valuationUnavailable && !locked && (isGuest || (user && (v as any).user_id === user.id)) && (() => {
-          const sp = normaliseReportPricing(r);
-          const spr = reportPriceRange(r, sp.privateSale);
-          return sp.privateLow > 0 && sp.privateHigh > 0 ? (
-            <SectionBoundary>
-              <ShareResult kind="valuation" year={v.year} make={v.make} model={v.model} low={spr?.low ?? sp.privateLow} high={spr?.high ?? sp.privateHigh} verdict={`${liveTier} confidence`} />
-            </SectionBoundary>
-          ) : null;
-        })()}
 
         {/* Sale feedback: placed after the detail sections (end of the reading flow) so it does not interrupt the report; real sale prices power /accuracy */}
         {!isShared && user && (v as any).user_id === user.id && (

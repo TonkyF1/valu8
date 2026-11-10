@@ -47,13 +47,18 @@ const APPEARANCE: Appearance = {
   },
 };
 
-const BULLETS = [
-  "Suggested asking price and the lowest offer to accept",
-  "Comparable UK adverts for your car",
-  "What your photos and MOT history say about condition",
-  "Repair cost bands for MOT advisories",
+/** Already on the free result. */
+export const FREE_INCLUDES = ["Private sale estimate for your car", "Confidence level and the data behind it"];
+/** Exactly what the £2.99 report adds on top (everything below is in the paid report today). */
+export const REPORT_ADDS = [
+  "A suggested asking price for your advert",
+  "The lowest offer to accept, so you know when to say yes",
+  "The UK adverts we compared your car with",
+  "Your full MOT history, with repair cost bands for advisories",
+  "Strengths and watch points a buyer will spot, from your MOT record and photos",
+  "Where to sell, what to highlight and which documents to have ready",
   "Ready-to-post advert text",
-  "Shareable report and PDF",
+  "A PDF of the full report to keep or send to buyers",
 ];
 
 /** Report preview. Every figure is an example, never the visitor's car, and is labelled as such. */
@@ -277,12 +282,21 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
             </p>
             <h2 className="mt-1 text-xl font-bold md:text-2xl">Know your asking price before you list</h2>
             <p className="mt-2 text-sm opacity-90">Your free valuation shows what the car is worth. The full report shows what to ask, how far to drop and what to fix first.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-white/10 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Free, already yours</p>
+                <ul className="mt-2 grid gap-1 text-sm opacity-90">
+                  {FREE_INCLUDES.map((b) => (<li key={b} className="flex gap-2"><span className="opacity-60">•</span>{b}</li>))}
+                </ul>
+              </div>
+              <div className="rounded-xl border p-3" style={{ borderColor: "rgba(0,214,200,0.4)" }}>
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#00D6C8" }}>The £2.99 report adds</p>
+                <ul className="mt-2 grid gap-1 text-sm opacity-90">
+                  {REPORT_ADDS.map((b) => (<li key={b} className="flex gap-2"><span style={{ color: "#00D6C8" }}>✓</span>{b}</li>))}
+                </ul>
+              </div>
+            </div>
             <ReportPreview />
-            <ul className="mt-4 grid gap-1 text-sm opacity-90">
-              {BULLETS.map((b) => (
-                <li key={b} className="flex gap-2"><span style={{ color: "#00D6C8" }}>✓</span>{b}</li>
-              ))}
-            </ul>
           </div>
           <div className="flex flex-col items-stretch gap-2 md:items-end md:self-end">
             <button
@@ -294,6 +308,7 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
               Get my full report · £2.99
             </button>
             <p className="text-center text-xs opacity-80 md:text-right">One-off payment. No subscription. We don't buy cars.</p>
+            <a href="#share-valuation" className="text-center text-xs font-medium underline underline-offset-2 md:text-right" style={{ color: "#00D6C8" }}>Or share with a friend. When they value their car, your full report is free.</a>
             <p className="flex items-center justify-center gap-1 text-xs opacity-70 md:justify-end"><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Secure payment by Stripe · Apple Pay · Google Pay · Card</p>
           </div>
         </div>
