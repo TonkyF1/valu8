@@ -11,10 +11,12 @@ const SLUGS = [
   "how-to-tell-if-a-used-car-is-overpriced",
   "how-to-sell-a-car-privately-safely",
   "check-mot-and-mileage-history-before-buying",
+  "part-exchange-offer-too-low",
+  "mot-advisories-car-value",
 ];
 
 describe("guides", () => {
-  it("has the five expected guides", () => {
+  it("has the seven expected guides", () => {
     expect(GUIDES.map((g) => g.slug)).toEqual(SLUGS);
   });
 
@@ -44,7 +46,7 @@ describe("guides", () => {
     expect(html).toContain('"@type":"FAQPage"');
   });
 
-  it("sitemap lists the guides index and all five guides", () => {
+  it("sitemap lists the guides index and all seven guides", () => {
     const xml = buildSitemap();
     expect(xml).toContain("<loc>https://valu8.uk/guides</loc>");
     for (const s of SLUGS) expect(xml).toContain(`<loc>https://valu8.uk/guides/${s}</loc>`);
