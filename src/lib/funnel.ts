@@ -11,7 +11,8 @@ export type FunnelStep =
   | "landed" | "reg_typed" | "lookup_success" | "lookup_fail"
   | "step_reg" | "step_details" | "step_photos" | "submitted" | "result_seen" | "price_alert_opt_in"
   | "offer_view" | "offer_click" | "checkout_start"
-  | "valuation_started" | "valuation_completed" | "report_checkout" | "report_purchased";
+  | "valuation_started" | "valuation_completed" | "report_checkout" | "report_purchased"
+  | "share_click" | "referral_unlocked" | "embed_submit";
 
 function uuid(): string {
   try { return crypto.randomUUID(); } catch {
@@ -63,6 +64,8 @@ function device(): "mobile" | "tablet" | "desktop" {
 export function sourceCategory(search: string, referrer: string): string {
   const utm = new URLSearchParams(search).get("utm_source")?.toLowerCase() ?? "";
   if (utm === "v8qa") return "qa";
+  if (utm === "share") return "share";
+  if (utm === "embed") return "embed";
   const s = `${utm} ${referrer.toLowerCase()}`;
   if (/facebook|fb\b|^fb|meta/.test(s)) return "facebook";
   if (/instagram|\big\b/.test(s)) return "instagram";

@@ -48,7 +48,10 @@ export function captureFirstTouch(): void {
   try {
     if (typeof window === "undefined") return;
     const ref = cleanRef(new URLSearchParams(window.location.search).get("ref"));
-    if (ref && !localStorage.getItem(REF_KEY)) localStorage.setItem(REF_KEY, ref);
+    // 10-character codes come from a shared valuation (share card): the latest one wins and it
+    // unlocks the sharer's report once this visitor finishes a valuation. Profile codes are 8 hex.
+    if (ref && isShareCode(ref)) localStorage.setItem(SHARE_REF_KEY, ref);
+    else if (ref && !localStorage.getItem(REF_KEY)) localStorage.setItem(REF_KEY, ref);
     const stored = localStorage.getItem(KEY);
     // Keep the first real touch; a later UTM/referred visit may replace a bare "direct" one.
     if (stored && !stored.includes('"direct":true')) return;
@@ -61,6 +64,16 @@ export function captureFirstTouch(): void {
 
 export function getRef(): string | undefined {
   try { return cleanRef(localStorage.getItem(REF_KEY)); } catch { return undefined; }
+}
+
+const SHARE_REF_KEY = "valu8_share_ref";
+/** Share-card referral codes (see supabase/functions/_shared/referral.ts). */
+export const isShareCode = (s: string | null | undefined) => /^[a-z0-9]{10}$/.test(s ?? "");
+export function getShareRef(): string | undefined {
+  try { const r = localStorage.getItem(SHARE_REF_KEY); return r && isShareCode(r) ? r : undefined; } catch { return undefined; }
+}
+export function clearShareRef(): void {
+  try { localStorage.removeItem(SHARE_REF_KEY); } catch { /* storage blocked */ }
 }
 
 export function getAttribution(): Attribution | undefined {
