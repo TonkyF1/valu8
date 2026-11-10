@@ -60,6 +60,19 @@ export const REPORT_ADDS = [
   "Ready-to-post advert text",
   "A PDF of the full report to keep or send to buyers",
 ];
+/** Guests write their advert from the report once they save it to a free account (AdvertCreator needs one). */
+export const reportAdds = (isGuest = false) =>
+  isGuest ? REPORT_ADDS.map((b) => (b === "Ready-to-post advert text" ? "Ready-to-post advert text, once you save the report to a free account" : b)) : REPORT_ADDS;
+
+/** Offer button: says what you get, not "full report". */
+export const REPORT_CTA = "See my asking price · £2.99";
+
+/** One honest line under the free price: what the £2.99 report actually adds to this figure. */
+export function reportOfferLine({ isRange, isGuest = false }: { isRange: boolean; isGuest?: boolean }): string {
+  const lead = isRange ? "The £2.99 report narrows this range to one suggested asking price" : "The £2.99 report turns this into one suggested asking price";
+  const advert = isGuest ? "plus advert text ready to post once you save it to a free account" : "plus advert text ready to post";
+  return `${lead} and the lowest offer worth accepting, ${advert}.`;
+}
 
 /** Report preview. Every figure is an example, never the visitor's car, and is labelled as such. */
 const PREVIEW: { label: string; value: string; blur?: boolean }[] = [
@@ -72,7 +85,7 @@ const PREVIEW: { label: string; value: string; blur?: boolean }[] = [
 
 function ReportPreview() {
   return (
-    <div className="mt-4 rounded-xl border border-white/10 p-3 sm:p-4" style={{ background: "#1a1a1a" }} aria-label="Report preview with example figures">
+    <div className="rounded-xl border border-white/10 p-3 sm:p-4" style={{ background: "#1a1a1a" }} aria-label="Report preview with example figures">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Report preview</p>
         <span className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider" style={{ background: "#FDE047", color: "#111111" }}>Example</span>
@@ -239,7 +252,7 @@ function ElementsCheckout({ valuationId, email, onPaid, onClose }: { valuationId
   );
 }
 
-export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId: string; verifying?: boolean; onPaid?: () => void }) {
+export function ReportCheckout({ valuationId, verifying, onPaid, isGuest = false }: { valuationId: string; verifying?: boolean; onPaid?: () => void; isGuest?: boolean }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const email = user?.email || undefined;
@@ -275,42 +288,43 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
           <p className="text-sm">Unlocking your report…</p>
         </div>
       ) : !open ? (
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0 md:max-w-md">
+        <div className="flex flex-col gap-4">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#FDE047" }}>
               <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden /> Full report · £2.99
             </p>
             <h2 className="mt-1 text-xl font-bold md:text-2xl">Know your asking price before you list</h2>
             <p className="mt-2 text-sm opacity-90">Your free valuation shows what the car is worth. The full report shows what to ask, how far to drop and what to fix first.</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-white/10 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Free, already yours</p>
-                <ul className="mt-2 grid gap-1 text-sm opacity-90">
-                  {FREE_INCLUDES.map((b) => (<li key={b} className="flex gap-2"><span className="opacity-60">•</span>{b}</li>))}
-                </ul>
-              </div>
-              <div className="rounded-xl border p-3" style={{ borderColor: "rgba(0,214,200,0.4)" }}>
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#00D6C8" }}>The £2.99 report adds</p>
-                <ul className="mt-2 grid gap-1 text-sm opacity-90">
-                  {REPORT_ADDS.map((b) => (<li key={b} className="flex gap-2"><span style={{ color: "#00D6C8" }}>✓</span>{b}</li>))}
-                </ul>
-              </div>
-            </div>
-            <ReportPreview />
           </div>
-          <div className="flex flex-col items-stretch gap-2 md:items-end md:self-end">
+          <div className="flex flex-col items-stretch gap-2 sm:max-w-sm">
             <button
               type="button"
               onClick={() => { track("offer_click"); setOpen(true); }}
               className="min-h-[48px] rounded-xl px-6 text-base font-semibold transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FDE047]"
               style={{ background: "#00D6C8", color: "#111111" }}
+              data-testid="offer-button"
             >
-              Get my full report · £2.99
+              {REPORT_CTA}
             </button>
-            <p className="text-center text-xs opacity-80 md:text-right">One-off payment. No subscription. We don't buy cars.</p>
-            <a href="#share-valuation" className="text-center text-xs font-medium underline underline-offset-2 md:text-right" style={{ color: "#00D6C8" }}>Or share with a friend. When they value their car, your full report is free.</a>
-            <p className="flex items-center justify-center gap-1 text-xs opacity-70 md:justify-end"><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Secure payment by Stripe · Apple Pay · Google Pay · Card</p>
+            <p className="text-center text-xs opacity-80">One-off payment. No subscription. We don't buy cars.</p>
+            <p className="flex items-center justify-center gap-1 text-xs opacity-70"><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Secure payment by Stripe · Apple Pay · Google Pay · Card</p>
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-white/10 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Free, already yours</p>
+              <ul className="mt-2 grid gap-1 text-sm opacity-90">
+                {FREE_INCLUDES.map((b) => (<li key={b} className="flex gap-2"><span className="opacity-60">•</span>{b}</li>))}
+              </ul>
+            </div>
+            <div className="rounded-xl border p-3" style={{ borderColor: "rgba(0,214,200,0.4)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#00D6C8" }}>The £2.99 report adds</p>
+              <ul className="mt-2 grid gap-1 text-sm opacity-90">
+                {reportAdds(isGuest).map((b) => (<li key={b} className="flex gap-2"><span style={{ color: "#00D6C8" }}>✓</span>{b}</li>))}
+              </ul>
+            </div>
+          </div>
+          <ReportPreview />
+          <a href="#share-valuation" className="text-center text-xs font-medium underline underline-offset-2" style={{ color: "#00D6C8" }}>Or share with a friend. When they value their car, your full report is free.</a>
         </div>
       ) : (
         <ElementsCheckout

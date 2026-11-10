@@ -1,6 +1,6 @@
 import { PremiumReport } from "@/components/PremiumReport";
 import { premiumEnforced, showPremiumReport } from "@/lib/entitlements";
-import { ReportCheckout, fetchReportPaid } from "@/components/ReportCheckout";
+import { REPORT_CTA, ReportCheckout, fetchReportPaid, reportOfferLine } from "@/components/ReportCheckout";
 import { metaPurchaseOnce } from "@/lib/metaPixel";
 import { sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
 import { hasPhotos, normaliseReportPricing } from "@/lib/askingPrice";
@@ -389,6 +389,133 @@ export default function Report() {
   const premium = showPremiumReport({ itemId: v.id, reportItemIds: reportPaid ? [v.id] : [], isAdmin });
   const locked = (enforcedPremium || reportPaywallEnabled()) && !premium;
 
+  // Free locked result with the £2.99 offer: price first, then the offer card, then the supporting detail.
+  const offerFirst = enforcedPremium && !premium && !valuationUnavailable;
+  const priceExtras = (
+<>
+                {!isShared && !authLoading && !(r as any)?.valuationUnavailable && <PriceAlertOptIn valuationId={v.id} isGuest={isGuest} />}
+
+                {/* Live data ticker */}
+                {liveCount != null && liveCount > 0 && (
+                  <div className="mt-2.5 inline-flex items-center gap-2 text-[11.5px] text-muted-foreground/90">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inset-0 rounded-full bg-primary opacity-75 animate-ping" />
+                        <span className="relative h-1.5 w-1.5 rounded-full bg-primary" />
+                      </span>
+                      <span>{countLine}</span>
+                    </span>
+                  </div>
+                )}
+
+                {/* Specialist Valuation callout — proper trust block, not a footnote */}
+                {showSpecialistBadge && specialistExplanation && (
+                  <div className="mt-4 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.08] to-primary/[0.02] px-4 py-3 flex gap-3">
+                    <div className="shrink-0 h-7 w-7 rounded-lg bg-primary/15 border border-primary/30 grid place-items-center mt-0.5">
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs  text-primary font-semibold mb-1">
+                        Expert Insight Applied
+                      </div>
+                      <p className="text-[12.5px] leading-[1.55] text-foreground/85">
+                        {specialistExplanation}
+                      </p>
+                      {Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
+                        <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                          {r.expertInsight!.sources.map((s, i) => (
+                            <li key={i} className="inline-flex items-center gap-1.5">
+                              <Check className="h-3 w-3 text-primary/80" />
+                              <span>{s}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Always-on "Data used" strip for the common, well-supported case
+                    where no Expert Insight badge is shown. Keeps transparency. */}
+                {!showSpecialistBadge && Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
+                  <div className="mt-4 rounded-xl border border-border/60 bg-card/40 px-4 py-3">
+                    <div className="text-xs  text-muted-foreground font-semibold mb-1.5">
+                      Data used for this valuation
+                    </div>
+                    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-foreground/75">
+                      {r.expertInsight!.sources.map((s, i) => (
+                        <li key={i} className="inline-flex items-center gap-1.5">
+                          <Check className="h-3 w-3 text-primary/70" />
+                          <span>{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+</>
+  );
+  const whyThisPrice = (
+<>
+            {valuationUnavailable ? (
+              <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8] mt-4 max-w-[44ch]">
+                We'd rather be honest than give you a number that could be way off.
+              </p>
+            ) : (
+              <details className="mt-4 group max-w-[44ch]">
+                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-xs  font-semibold text-primary/90 hover:text-primary">
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                  Why this price
+                </summary>
+                <div className="mt-3 space-y-3">
+                  <p className="text-sm leading-[1.6] text-[#E8E8E8]">
+                    {r.headline ? (
+                      r.headline
+                    ) : (
+                      <>
+                        {isLiveListings ? "Based on live UK market data" : isOwnComps ? "Based on comparable UK adverts" : "Based on our AI market estimate"}, a realistic figure for this {v.year} {makeDisplay} {modelDisplay} {reportPriceRange(r, normaliseReportPricing(r).privateSale) ? "sits in the range" : "sits around"}{" "}
+                        <span className="tabular-nums font-medium">{headlinePrivateText(normaliseReportPricing(r).privateSale, r)}</span>.
+                      </>
+                    )}
+                  </p>
+                  <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">
+                    {r.marketContext || liveConfidenceLine}
+                  </p>
+                  {(() => {
+                    const positives = (r.factorsUp && r.factorsUp.length > 0)
+                      ? r.factorsUp
+                      : (r.priceAdjustments?.filter(a => a.impactPct > 0).map(a => a.label) ?? []);
+                    const negatives = (r.factorsDown && r.factorsDown.length > 0)
+                      ? r.factorsDown
+                      : (r.priceAdjustments?.filter(a => a.impactPct < 0).map(a => a.label) ?? []);
+                    if (positives.length === 0 && negatives.length === 0) {
+                      return r.valueReasoning ? (
+                        <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">{r.valueReasoning}</p>
+                      ) : null;
+                    }
+                    const join = (arr: string[]) =>
+                      arr.length <= 1 ? (arr[0] ?? "") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
+                    return (
+                      <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">
+                        {positives.length > 0 && <>{join(positives)} {positives.length > 1 ? "all push" : "pushes"} the value up. </>}
+                        {negatives.length > 0 && <>We've nudged it down for {join(negatives)}.</>}
+                      </p>
+                    );
+                  })()}
+                </div>
+              </details>
+            )}
+</>
+  );
+  const valuedWith = (
+<>
+            {!valuationUnavailable && liveCount == null && (
+              <p className="text-[11px] text-muted-foreground/70 mt-3">
+                Valued using AI market analysis and our UK advert database.
+              </p>
+            )}
+</>
+  );
+
   const downloadPdf = async () => {
     const tid = toast.loading("Generating PDF…");
     try {
@@ -704,65 +831,11 @@ export default function Report() {
                   );
                 })()}
 
-                {!isShared && !authLoading && !(r as any)?.valuationUnavailable && <PriceAlertOptIn valuationId={v.id} isGuest={isGuest} />}
-
-                {/* Live data ticker */}
-                {liveCount != null && liveCount > 0 && (
-                  <div className="mt-2.5 inline-flex items-center gap-2 text-[11.5px] text-muted-foreground/90">
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inset-0 rounded-full bg-primary opacity-75 animate-ping" />
-                        <span className="relative h-1.5 w-1.5 rounded-full bg-primary" />
-                      </span>
-                      <span>{countLine}</span>
-                    </span>
-                  </div>
-                )}
-
-                {/* Specialist Valuation callout — proper trust block, not a footnote */}
-                {showSpecialistBadge && specialistExplanation && (
-                  <div className="mt-4 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.08] to-primary/[0.02] px-4 py-3 flex gap-3">
-                    <div className="shrink-0 h-7 w-7 rounded-lg bg-primary/15 border border-primary/30 grid place-items-center mt-0.5">
-                      <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs  text-primary font-semibold mb-1">
-                        Expert Insight Applied
-                      </div>
-                      <p className="text-[12.5px] leading-[1.55] text-foreground/85">
-                        {specialistExplanation}
-                      </p>
-                      {Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
-                        <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                          {r.expertInsight!.sources.map((s, i) => (
-                            <li key={i} className="inline-flex items-center gap-1.5">
-                              <Check className="h-3 w-3 text-primary/80" />
-                              <span>{s}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Always-on "Data used" strip for the common, well-supported case
-                    where no Expert Insight badge is shown. Keeps transparency. */}
-                {!showSpecialistBadge && Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
-                  <div className="mt-4 rounded-xl border border-border/60 bg-card/40 px-4 py-3">
-                    <div className="text-xs  text-muted-foreground font-semibold mb-1.5">
-                      Data used for this valuation
-                    </div>
-                    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-foreground/75">
-                      {r.expertInsight!.sources.map((s, i) => (
-                        <li key={i} className="inline-flex items-center gap-1.5">
-                          <Check className="h-3 w-3 text-primary/70" />
-                          <span>{s}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {offerFirst ? (
+                  <p className="mt-3 text-[13px] leading-relaxed text-foreground/90 max-w-[48ch]" data-testid="offer-line">
+                    {reportOfferLine({ isRange: !!reportPriceRange(r, normaliseReportPricing(r).privateSale), isGuest })}
+                  </p>
+                ) : priceExtras}
               </div>
             )}
             {r.rareCarWarning && (
@@ -775,54 +848,7 @@ export default function Report() {
                 <span className="font-medium text-white">Import:</span> {(r as any).importNote}
               </div>
             )}
-            {valuationUnavailable ? (
-              <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8] mt-4 max-w-[44ch]">
-                We'd rather be honest than give you a number that could be way off.
-              </p>
-            ) : (
-              <details className="mt-4 group max-w-[44ch]">
-                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-xs  font-semibold text-primary/90 hover:text-primary">
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-                  Why this price
-                </summary>
-                <div className="mt-3 space-y-3">
-                  <p className="text-sm leading-[1.6] text-[#E8E8E8]">
-                    {r.headline ? (
-                      r.headline
-                    ) : (
-                      <>
-                        {isLiveListings ? "Based on live UK market data" : isOwnComps ? "Based on comparable UK adverts" : "Based on our AI market estimate"}, a realistic figure for this {v.year} {makeDisplay} {modelDisplay} {reportPriceRange(r, normaliseReportPricing(r).privateSale) ? "sits in the range" : "sits around"}{" "}
-                        <span className="tabular-nums font-medium">{headlinePrivateText(normaliseReportPricing(r).privateSale, r)}</span>.
-                      </>
-                    )}
-                  </p>
-                  <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">
-                    {r.marketContext || liveConfidenceLine}
-                  </p>
-                  {(() => {
-                    const positives = (r.factorsUp && r.factorsUp.length > 0)
-                      ? r.factorsUp
-                      : (r.priceAdjustments?.filter(a => a.impactPct > 0).map(a => a.label) ?? []);
-                    const negatives = (r.factorsDown && r.factorsDown.length > 0)
-                      ? r.factorsDown
-                      : (r.priceAdjustments?.filter(a => a.impactPct < 0).map(a => a.label) ?? []);
-                    if (positives.length === 0 && negatives.length === 0) {
-                      return r.valueReasoning ? (
-                        <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">{r.valueReasoning}</p>
-                      ) : null;
-                    }
-                    const join = (arr: string[]) =>
-                      arr.length <= 1 ? (arr[0] ?? "") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
-                    return (
-                      <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">
-                        {positives.length > 0 && <>{join(positives)} {positives.length > 1 ? "all push" : "pushes"} the value up. </>}
-                        {negatives.length > 0 && <>We've nudged it down for {join(negatives)}.</>}
-                      </p>
-                    );
-                  })()}
-                </div>
-              </details>
-            )}
+            {!offerFirst && whyThisPrice}
 
             {!valuationUnavailable && !locked && (() => {
               const cp = normaliseReportPricing(r);
@@ -917,11 +943,7 @@ export default function Report() {
               </details>
             )}
 
-            {!valuationUnavailable && liveCount == null && (
-              <p className="text-[11px] text-muted-foreground/70 mt-3">
-                Valued using AI market analysis and our UK advert database.
-              </p>
-            )}
+            {!offerFirst && valuedWith}
             {!valuationUnavailable && !locked && (
               <div className="grid grid-cols-2 gap-2 mt-5 pt-5 border-t border-border/60">
                 <MiniTier label="Trade-in" tag="Estimate" tip="Our estimate of what a dealer would pay you today. Fastest, lowest." value={normaliseReportPricing(r).tradeIn} />
@@ -973,7 +995,16 @@ export default function Report() {
         </section>
 
         {enforcedPremium && !premium && !(r as any)?.valuationUnavailable && (
-          <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />
+          <ReportCheckout valuationId={v.id} isGuest={isGuest} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />
+        )}
+
+        {/* Free result: the valuation's supporting detail sits below the offer, so the offer is the first thing after the price. */}
+        {offerFirst && (
+          <section className="premium-card p-5 sm:p-6 mb-6 animate-fade-in-up" aria-label="About this valuation">
+            {priceExtras}
+            {whyThisPrice}
+            {valuedWith}
+          </section>
         )}
 
         {/* Share my valuation (image card + native share sheet). While the report is locked it also carries the
@@ -1322,7 +1353,7 @@ export default function Report() {
       <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {locked && !valuationUnavailable ? (
           <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
-            <a href="#report-checkout" onClick={() => track("offer_click")}>Get my full report · £2.99</a>
+            <a href="#report-checkout" onClick={() => track("offer_click")}>{REPORT_CTA}</a>
           </Button>
         ) : isShared ? (
           <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
