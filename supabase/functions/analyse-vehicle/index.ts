@@ -393,6 +393,9 @@ interface AnalyseRequest {
   guestToken?: unknown;
   guestPhotos?: { slot: string; dataUrl: string }[];
   guestSave?: { displayModel?: string; serviceNotes?: string; vehicle?: unknown; attribution?: unknown; utm?: { utm_source?: unknown; utm_medium?: unknown; utm_campaign?: unknown } };
+  /** Guest homepage flow: re-value this guest's own unpaid valuation (same car) in place with the details they added.
+   *  Does not count again against the daily guest cap. Pricing is unchanged: the car is valued from scratch. */
+  refineOf?: unknown;
 }
 
 type PhotoSlot = "front" | "rear" | "side" | "interior" | "odometer" | "engine" | "other";
@@ -767,6 +770,7 @@ Deno.serve(async (req) => {
     const body = (await req.json().catch(() => null)) as AnalyseRequest | null;
     let tokenHash: string | null = null;
     let guestValuationId: string | null = null;
+    let refineExisting = false;
     if (!g.userId) {
       if (typeof body?.guestToken !== "string" || !/^[a-f0-9]{64}$/.test(body.guestToken)) {
         return json({ error: "Please refresh the page and try again." }, 400);
@@ -775,12 +779,27 @@ Deno.serve(async (req) => {
       const ip = clientIp(req);
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body.guestToken));
       tokenHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
-      const okIp = await checkLimit(`analyse:guest:ip:${ip}:d`, 86400, cap);
-      const okTok = await checkLimit(`analyse:guest:t:${tokenHash}:d`, 86400, cap);
-      if (!okIp || !okTok) {
-        return json({ error: "You've used today's free guest valuations. Create a free account to keep going — it takes 30 seconds and your reports are saved.", code: "guest_limit" }, 429);
+      // Refining the guest's own estimate for the same car (within 3 hours, not yet paid) re-uses its id and cap slot.
+      if (typeof body.refineOf === "string" && /^[0-9a-f-]{36}$/i.test(body.refineOf)) {
+        const admin0 = adminClient();
+        if (admin0) {
+          const since = new Date(Date.now() - 3 * 3600 * 1000).toISOString();
+          const [{ data: row }, { data: paid }] = await Promise.all([
+            admin0.from("valuations").select("id, registration").eq("id", body.refineOf).eq("guest_token_hash", tokenHash).is("user_id", null).gte("created_at", since).maybeSingle(),
+            admin0.from("report_purchases").select("id").eq("valuation_id", body.refineOf).limit(1),
+          ]);
+          const sameCar = !row?.registration || !body.registration || String(row.registration).replace(/\s+/g, "").toUpperCase() === String(body.registration).replace(/\s+/g, "").toUpperCase();
+          if (row?.id && sameCar && !(paid && paid.length)) { guestValuationId = row.id; refineExisting = true; }
+        }
       }
-      guestValuationId = crypto.randomUUID();
+      if (!refineExisting) {
+        const okIp = await checkLimit(`analyse:guest:ip:${ip}:d`, 86400, cap);
+        const okTok = await checkLimit(`analyse:guest:t:${tokenHash}:d`, 86400, cap);
+        if (!okIp || !okTok) {
+          return json({ error: "You've used today's free guest valuations. Create a free account to keep going — it takes 30 seconds and your reports are saved.", code: "guest_limit" }, 429);
+        }
+        guestValuationId = crypto.randomUUID();
+      }
     }
     if (!body?.make || !body?.model || !body?.year || body?.mileage == null) {
       return new Response(JSON.stringify({ error: "Missing required vehicle fields" }), {
@@ -2023,8 +2042,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       const displayModel = typeof body.guestSave?.displayModel === "string" ? body.guestSave.displayModel.slice(0, 120) : "";
       const notes = body.guestSave?.serviceNotes ?? body.serviceNotes ?? null;
       const cleanReport = dedupeReportText(report);
-      const { error } = await admin.from("valuations").insert({
-        id: guestValuationId, user_id: null, guest_token_hash: tokenHash,
+      const saveRow = {
         make: body.make, model: displayModel || body.model, year: body.year, mileage: body.mileage,
         registration: body.registration || null, mot_expiry: body.motExpiry || null,
         service_notes: typeof notes === "string" ? notes.slice(0, 4000) : null,
@@ -2035,7 +2053,14 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         utm_source: cleanUtmTag(body.guestSave?.utm?.utm_source),
         utm_medium: cleanUtmTag(body.guestSave?.utm?.utm_medium),
         utm_campaign: cleanUtmTag(body.guestSave?.utm?.utm_campaign),
-      });
+      };
+      if (refineExisting) {
+        // Keep the original row's campaign tags; only the valuation itself is refreshed.
+        delete (saveRow as any).utm_source; delete (saveRow as any).utm_medium; delete (saveRow as any).utm_campaign;
+      }
+      const { error } = refineExisting
+        ? await admin.from("valuations").update(saveRow).eq("id", guestValuationId).eq("guest_token_hash", tokenHash).is("user_id", null)
+        : await admin.from("valuations").insert({ id: guestValuationId, user_id: null, guest_token_hash: tokenHash, ...saveRow });
       if (error) {
         console.error("Guest valuation save failed", error.message);
         return json({ error: "We couldn't save your report — please try again." }, 500);

@@ -1,6 +1,4 @@
-import "@/styles/plate.css";
-import { useEffect, useRef, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { ArrowRight, BadgePoundSterling, Check, Camera, FileCheck2, Gauge, ShieldAlert, Wind } from "lucide-react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
@@ -9,8 +7,7 @@ import { AccuracyDisclaimer } from "@/components/AccuracyDisclaimer";
 import { useAuth } from "@/contexts/AuthContext";
 import { CAR_MODELS } from "@/data/carModels";
 import { useSeo } from "@/lib/seo";
-import { isPlausibleUkReg, normaliseReg } from "@/lib/registration";
-import { track } from "@/lib/funnel";
+import { TeslaFlow } from "@/components/tesla/TeslaFlow";
 import { getRouteMeta } from "@/data/routeMeta";
 
 const FAQS = [
@@ -41,24 +38,6 @@ const FEATURES = [
 
 export default function Landing() {
   const { user, loading } = useAuth();
-  // Sticky mobile CTA only once the hero CTA has scrolled away, so the first screen has one clear action.
-  const heroCta = useRef<HTMLFormElement>(null);
-  const navigate = useNavigate();
-  const [plate, setPlate] = useState("");
-  const [plateErr, setPlateErr] = useState<string | null>(null);
-  function onPlateSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const reg = normaliseReg(plate);
-    if (!isPlausibleUkReg(reg)) { setPlateErr("Enter a valid UK number plate, e.g. AB12 CDE."); return; }
-    navigate(`/valuation/new?reg=${encodeURIComponent(reg)}`);
-  }
-  const [showSticky, setShowSticky] = useState(false);
-  useEffect(() => {
-    const el = heroCta.current;
-    if (!el || typeof IntersectionObserver === "undefined") { setShowSticky(true); return; }
-    const io = new IntersectionObserver(([e]) => setShowSticky(!e.isIntersecting && e.boundingClientRect.top < 0));
-    io.observe(el); return () => io.disconnect();
-  }, []);
   useSeo(getRouteMeta("/"));
 
   // Returning from sign-in with an unfinished valuation: carry on where they left off.
@@ -71,54 +50,15 @@ export default function Landing() {
       <TestModeBanner />
       <Header />
       <main id="main" className="flex-1">
-        <section className="relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-x-0 -top-32 h-[28rem] bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.14),transparent_60%)]" aria-hidden />
-          <div className="container relative max-w-xl pt-6 pb-8 sm:pt-20 lg:pt-24 lg:pb-16 text-center">
-            <p className="hidden sm:inline-flex items-center rounded-full bg-primary/10 px-3.5 py-1.5 text-[13px] font-medium text-primary">Free UK car valuation</p>
-            {/* Mobile: nothing above the reg box but the H1, so it sits above the fold on a 390x844 screen. */}
-            <h1 className="sm:mt-5 font-semibold tracking-tight text-balance">
-              <span className="block text-[2.5rem] sm:text-[3.5rem] lg:text-[4rem] text-gradient leading-[1.05]">What’s your car worth?</span>
-              <span className="mt-2 block text-[1.2rem] sm:text-[1.5rem] leading-snug text-foreground/90">Find out free from your number plate.</span>
-            </h1>
-            <div className="mt-5 sm:mt-8 w-full min-w-0">
-              <form ref={heroCta} onSubmit={onPlateSubmit}>
-                <label htmlFor="home-reg" className="sr-only">Your number plate</label>
-                <div className="reg-plate">
-                  <div className="reg-plate-inner">
-                  <div className="reg-plate-badge" aria-hidden>
-                    <img src="/uk-flag.svg" alt="" /><b>UK</b>
-                  </div>
-                  <input
-                    id="home-reg"
-                    value={plate}
-                    onFocus={() => track("valuation_started")}
-                    onChange={(e) => { setPlate(e.target.value.toUpperCase()); setPlateErr(null); if (e.target.value.trim()) { track("valuation_started"); track("reg_typed"); } }}
-                    placeholder="AB12 CDE"
-                    autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={10}
-                    enterKeyHint="go"
-                    aria-invalid={!!plateErr}
-                    size={1} className="reg-plate-input"
-                  />
-                  </div>
-                </div>
-                {plateErr && <p className="mt-2 text-center text-xs text-destructive" role="alert">{plateErr}</p>}
-                <Button type="submit" variant="hero" size="xl" className="mt-4 w-full min-h-[60px] rounded-2xl text-[18px]">
-                  Value my car free
-                </Button>
-              </form>
-              <p className="mt-4 text-[14px] font-medium text-foreground/90 text-balance">
-                We don't buy cars, so we've no reason to nudge your number up or down.
-              </p>
-              <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed text-balance">
-                Private sale, part-exchange and dealer estimates, plus your full MOT history, in about two minutes. No sign-up.
-              </p>
-              <ul className="mt-5 grid gap-2 text-left text-[14px] text-foreground/85 sm:mx-auto sm:max-w-md" aria-label="Why Valu8">
-                {TRUST.map((t) => (
-                  <li key={t} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />{t}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
+        <TeslaFlow />
+
+        <section className="container max-w-xl pt-12 pb-10" aria-label="Why Valu8">
+          <p className="text-center text-[15px] font-medium text-foreground/90 text-balance">We don't buy cars, so we've no reason to nudge your number up or down.</p>
+          <ul className="mt-5 grid gap-2 text-left text-[14px] text-foreground/85 sm:mx-auto sm:max-w-md">
+            {TRUST.map((t) => (
+              <li key={t} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />{t}</li>
+            ))}
+          </ul>
         </section>
 
         <section className="container max-w-xl pb-14" aria-labelledby="get-h">
@@ -232,12 +172,6 @@ export default function Landing() {
         </section>
       </main>
       <Footer />
-      {/* Sticky mobile CTA */}
-      <div aria-hidden={!showSticky} className={`sm:hidden fixed inset-x-0 bottom-0 z-40 transition-transform duration-200 ${showSticky ? "translate-y-0" : "translate-y-full pointer-events-none"} border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]`}>
-        <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
-          <Link to="/valuation/new" tabIndex={showSticky ? 0 : -1}>Get my free valuation <ArrowRight className="h-4 w-4" aria-hidden /></Link>
-        </Button>
-      </div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         "@context": "https://schema.org", "@type": "FAQPage",
         mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
