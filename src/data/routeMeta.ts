@@ -28,6 +28,7 @@ export const STATIC_ROUTES: RouteMeta[] = [
   { path: "/privacy", title: "Privacy Policy — Valu8", description: "How Valu8 collects, uses and protects your data under UK GDPR.", priority: "0.3", inSitemap: true },
   { path: "/terms", title: "Terms of Service — Valu8", description: "The terms for using Valu8 car valuations.", priority: "0.3", inSitemap: true },
   { path: "/disclaimers", title: "Disclaimers & Data Sources — Valu8", description: "What a Valu8 report is and is not: data sources, AI use and limitations.", priority: "0.3", inSitemap: true },
+  { path: "/embed-info", title: "Free car valuation box for your website | Valu8", description: "Add a free \"What's my car worth?\" number plate box to your garage, blog or car club site. One line of code, no fee, no sign-up.", priority: "0.5", inSitemap: true },
   { path: "/auth", title: "Sign in — Valu8", description: "Sign in or create a free Valu8 account to save your car valuations.", noindex: true, inSitemap: false },
   { path: "/reset-password", title: "Reset password — Valu8", description: "Set a new password for your Valu8 account using your password reset link.", noindex: true, inSitemap: false },
   { path: "/dashboard", title: "Dashboard — Valu8", description: "View and manage your saved Valu8 car valuations and reports.", noindex: true, inSitemap: false },

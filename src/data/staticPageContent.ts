@@ -1,3 +1,4 @@
+import { embedInfoBodyHtml } from "./embedContent";
 import { escapeHtml } from "../../scripts/routeHtml";
 
 /** Render non-interactive page copy into the build-time HTML root. React replaces it on mount. */
@@ -69,6 +70,7 @@ export function staticPageBodyHtml(path: string): string | undefined {
     "/contact": ["Get in touch", "Valu8 is an independent car valuation tool for UK private sellers and buyers.", [["Contact Valu8", "Questions about a valuation, your account or feedback? Email <a href=\"mailto:hello@valu8.uk\">hello@valu8.uk</a>. We aim to reply within a few working days."], ["Using Valu8", "Start a <a href=\"/valuation/new\">free car valuation</a>, check an advert asking price, read our guides or learn more about how valuations work. Figures are estimates and not guaranteed sale prices."]]],
   };
   if (simple[path]) return page(...simple[path]);
+  if (path === "/embed-info") return embedInfoBodyHtml();
   if (path === "/privacy") return page("Privacy Policy", "How Valu8 collects, uses and protects your data under UK GDPR.", legalSections[path]);
   if (path === "/terms") return page("Terms of Service", "The terms for using Valu8 car valuations.", legalSections[path]);
   if (path === "/disclaimers") return page("Disclaimers & Data Sources", "Honest small print so you know exactly what a Valu8 report is — and isn't.", legalSections[path]);

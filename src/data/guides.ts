@@ -681,6 +681,248 @@ A long MOT is a selling point and reassures buyers. If your MOT is due within a 
 
 **Does Valu8 buy cars?**
 No. We don't buy, sell or broker cars. All figures are estimates, not offers.`,
+  `---
+slug: /guides/how-to-price-a-car-for-private-sale
+seo_title: "How to price a car for private sale in the UK"
+meta_description: "A step-by-step way to set a private sale asking price: find like-for-like cars, adjust for mileage and condition, leave room to negotiate and pick a sensible round number."
+target_search_phrasing: "how to price a car for private sale", "what price should I sell my car for", "how much should I ask for my car", "private sale asking price"
+---
+
+# How to price a car for private sale
+
+Price it too high and nobody calls. Price it too low and you hand money to the first buyer. A good private sale price sits close to what similar cars are advertised for, with a little room to negotiate, and it's easy to explain when a buyer asks why.
+
+The figures in this guide are typical asking prices from more than 93,000 UK adverts in the Valu8 database (November 2026). Asking prices are what sellers hope for, not what cars finally sell for, so treat them as a starting point.
+
+## Step 1: Find cars that really match yours
+
+Compare like with like: same model, same year (or one either side), similar mileage, same fuel and gearbox, and a similar trim. Write down five to ten asking prices.
+
+Pay attention to who is selling. In our data, private adverts were typically about **30% cheaper** than dealer adverts for the same model, year and mileage band. If you compare your car with forecourt prices, you'll set your price too high.
+
+| Car (UK adverts, Nov 2026) | Private seller median | Dealer median |
+|---|---|---|
+| 2016 Ford Fiesta | £3,200 | £5,600 |
+| 2017 Volkswagen Golf | £7,250 | £9,000 |
+| 2016 Nissan Qashqai | £4,250 | £5,700 |
+
+Dealer prices usually include preparation, a warranty and the extra rights you get buying from a business, which is why they sit higher. Our [private sale vs dealer prices guide](/guides/private-sale-vs-dealer-prices) has more on the gap.
+
+## Step 2: Adjust for mileage
+
+Mileage moves the price more than most people expect. Across the models in our database, cars with 40,000 to 80,000 miles were typically advertised about **17% below** the same model and year with under 40,000 miles. Over 80,000 miles, prices were typically about **29% lower again**.
+
+For example, a 2016 Ford Fiesta was typically advertised for about £7,600 with under 40,000 miles, £5,250 with 40,000 to 80,000 miles and £3,450 with over 80,000 miles. See [2016 Ford Fiesta asking prices](/value/ford-fiesta/2016).
+
+## Step 3: Be honest about condition and history
+
+Buyers check the MOT history online before they visit, and they look closely at the car when they arrive. Move your price down the range if you have:
+
+- MOT advisories for tyres, brakes, corrosion or suspension
+- Gaps in the service history
+- Kerbed alloys, dents or a tired interior
+- A short MOT left
+
+Move it up the range for a full service history, a long MOT, a recent cambelt or other big job (with the invoice), and a clean, tidy car. Our guide to [MOT advisories and car value](/guides/mot-advisories-car-value) explains which items worry buyers most.
+
+## Step 4: Leave room to negotiate
+
+Most private buyers expect to haggle. Set your asking price a little above the lowest figure you'd accept, so you can come down and still be happy. Decide your lowest acceptable figure before the first viewing, not on the driveway.
+
+## Step 5: Pick a price that looks deliberate
+
+Private sellers tend to use round numbers. In our data about a quarter of private adverts (24%) were priced at an exact multiple of £500, while about 60% of dealer adverts ended in 95, 99, 950, 990 or 995. A price like £4,250 or £4,450 looks considered and gives you a clean figure to negotiate from.
+
+## Step 6: Review after a week
+
+If you get lots of views and no calls, the price is probably high for what buyers can see. If you get several calls in the first day, you may have priced it a little low. Small changes after a week are normal.
+
+## Quick checklist
+
+- Five to ten like-for-like adverts, noting private or dealer
+- Adjust for your mileage band
+- Adjust for MOT advisories, history and condition
+- Asking price a little above your lowest acceptable figure
+- A considered round number
+- Review after a week
+
+Want a starting figure for your own car? A free [Valu8 valuation](/valuation/new) gives you a private sale estimate from your number plate, with your DVSA MOT history. The optional £2.99 full report adds a suggested asking price and the lowest offer to accept.
+
+## FAQs
+
+**Should I price my car like a dealer would?**
+No. Dealer prices include preparation and a warranty. In our data, private adverts were typically about 30% below dealer adverts for the same model, year and mileage band.
+
+**How much room should I leave to negotiate?**
+Enough to come down a little and still reach a figure you're happy with. Decide your lowest acceptable price before the first viewing.
+
+**Does mileage really make that much difference?**
+Yes. Across the models in our database, cars over 80,000 miles were typically advertised about 39% below the same model and year with under 40,000 miles.
+
+**Does Valu8 buy cars?**
+No. We don't buy, sell or broker cars. All figures are estimates, not offers.
+
+
+---
+
+**Get a starting figure for your car.** Free private sale estimate and MOT history from your number plate. [Get my free valuation](/valuation/new)`,
+  `---
+slug: /guides/what-lowers-a-cars-value
+seo_title: "What lowers a car's value most? UK advert data"
+meta_description: "Age, mileage, condition, MOT history and fuel type all move used car prices. Here's how much each one shifts typical UK asking prices, and what you can do about it."
+target_search_phrasing: "what lowers a car's value", "what affects car value most", "how much does mileage affect car value", "how much does a car depreciate per year"
+---
+
+# What lowers a car's value most?
+
+Some things that lower a car's value are out of your hands, like age. Others, like a missing service or a scruffy interior, you can often fix before you sell. Here's what moves used car prices most, using typical asking prices from more than 93,000 UK adverts in the Valu8 database (November 2026).
+
+Each comparison below is like for like: the same make and model, and the same year unless it says otherwise. They are typical patterns across many cars, not a rule for any one car.
+
+## 1. Age
+
+Every year counts. Comparing the same model one year apart, the older car was typically advertised for about **12% less**.
+
+| Car age | Typical drop for each extra year |
+|---|---|
+| 2018 and newer | about 9% |
+| 2010 to 2014 | about 16% |
+| All years from 2010 | about 12% |
+
+You can't change your car's age, but it's a reason not to wait too long once you've decided to sell.
+
+## 2. Mileage
+
+Mileage is the biggest factor you can see in the data after age.
+
+| Mileage (same model and year) | Typical asking price |
+|---|---|
+| 40,000 to 80,000 miles vs under 40,000 | about 17% lower |
+| Over 80,000 vs 40,000 to 80,000 | about 29% lower |
+| Over 80,000 vs under 40,000 | about 39% lower |
+
+A 2017 Volkswagen Golf, for example, was typically advertised for about £11,250 with under 40,000 miles and £8,000 with over 80,000 miles. See [2017 Volkswagen Golf asking prices](/value/volkswagen-golf/2017).
+
+What buyers care about is mileage for the age, and whether the MOT record shows it rising steadily. A drop in recorded mileage, or a long gap with no MOT, will cost you more than a few extra thousand miles.
+
+## 3. Condition and MOT history
+
+These don't show up as a single number, because every car is different, but they are the main reason two cars of the same age and mileage are priced differently. The items that cost sellers most are:
+
+- **Repeat MOT advisories** that were never fixed, especially corrosion, brakes, tyres and suspension
+- **Missing service history**, or a long gap between services
+- **Visible damage:** dents, scratches, kerbed alloys and worn seats
+- **Warning lights** on the dashboard
+
+Cheap fixes are often worth doing before you sell: tyres near the limit, a missing service, bulbs and wipers, and a proper clean. Expensive structural work often isn't, so price it honestly and say so in the advert. Our guide to [MOT advisories and car value](/guides/mot-advisories-car-value) goes into more detail.
+
+## 4. Fuel type
+
+For the same model and year, diesel versions were typically advertised for about **14% less** than petrol versions in our data. Demand has shifted towards petrol, hybrid and electric cars, and clean air zones matter to buyers in some cities.
+
+## 5. Gearbox and spec
+
+Automatics were typically advertised for about 30% more than manuals of the same model and year. Part of that is because automatics often come with bigger engines and higher trims, so it isn't a pure gearbox effect. The point for sellers is to list your exact trim, engine and gearbox clearly, because buyers search for them.
+
+## 6. Who you sell to
+
+Where you sell changes the price as much as anything about the car. Private adverts were typically about 30% below dealer adverts for the same model, year and mileage band, and a part-exchange offer is usually lower again. See [private sale vs dealer prices](/guides/private-sale-vs-dealer-prices).
+
+## What you can do
+
+- Sell sooner rather than later once you've decided
+- Keep the MOT record tidy: fix advisories that are cheap to fix
+- Gather the service book, invoices, V5C and both keys
+- Clean the car properly and take clear photos in daylight
+- Describe the exact trim, engine and gearbox in the advert
+
+Check what buyers will see first. A free [Valu8 valuation](/valuation/new) shows a private sale estimate and your official DVSA MOT history, advisories and mileage record.
+
+## FAQs
+
+**What lowers a car's value the most?**
+Age and mileage are the biggest factors in the advert data. For the same model and year, cars over 80,000 miles were typically advertised about 39% below those under 40,000 miles.
+
+**How much value does a car lose each year?**
+Comparing the same model one year apart, the older car was typically advertised for about 12% less in our data: about 9% for 2018 and newer cars and about 16% for 2010 to 2014 cars.
+
+**Do diesel cars lose more value?**
+In our data, diesel versions were typically advertised for about 14% less than petrol versions of the same model and year.
+
+**Does Valu8 buy cars?**
+No. We don't buy, sell or broker cars. All figures are estimates, not offers.`,
+  `---
+slug: /guides/private-sale-vs-dealer-prices
+seo_title: "Part exchange vs selling privately: what UK adverts show"
+meta_description: "How much more do you get selling privately than through a dealer? Real UK advert data on the private vs dealer price gap, and when part-exchange still makes sense."
+target_search_phrasing: "part exchange vs selling privately", "how much more do you get selling privately", "private sale vs dealer price", "is it worth selling my car privately"
+---
+
+# Part exchange vs selling privately: what the numbers show
+
+Selling privately usually gets you more money. Part-exchange is quicker and easier. The question is how big the gap is for your car, and whether it's worth the time. This guide uses typical asking prices from more than 93,000 UK adverts in the Valu8 database (November 2026) to show where the gap is biggest.
+
+For the step-by-step pros and cons, see our guide to [part-exchange vs private sale](/guides/part-exchange-vs-private-sale).
+
+## Private and dealer adverts are priced very differently
+
+For the same model, year and mileage band, private adverts were typically about **30% below** dealer adverts. The gap depends a lot on the price of the car.
+
+| Dealer asking price | Private adverts typically |
+|---|---|
+| Under £5,000 | about 39% lower |
+| £5,000 to £10,000 | about 28% lower |
+| Over £10,000 | about 12% lower |
+
+Some examples, all from UK adverts in November 2026:
+
+| Car | Private seller median | Dealer median |
+|---|---|---|
+| 2016 Ford Fiesta | £3,200 | £5,600 |
+| 2017 Volkswagen Golf | £7,250 | £9,000 |
+| 2016 Nissan Qashqai | £4,250 | £5,700 |
+
+Private cars on sale also tend to be older and higher mileage. In our data, private adverts had a typical mileage of about 103,000 miles against about 65,000 for dealer adverts, with an average age of about 13 years against about 8.
+
+## Why dealers charge more
+
+A dealer's price usually covers preparation, any repairs, a warranty, finance options and the extra consumer rights a buyer gets from a business. The dealer also has to make a margin. That's why a dealer can't give you their forecourt price for your car.
+
+## Where part-exchange fits
+
+A part-exchange offer is what a dealer will allow for your car against another one. It's usually below a realistic private sale price, because the dealer still has to prepare the car and resell it. If your offer feels low, our guide to [a part-exchange offer that's too low](/guides/part-exchange-offer-too-low) explains what to do next.
+
+## When selling privately is worth it
+
+- **The car is worth less than about £10,000.** In our data the private vs dealer gap was widest for cheaper cars, so selling privately can make a bigger difference to what you end up with.
+- **The car is tidy, with a clean MOT record and service history.** Private buyers pay more for a car they trust.
+- **You have time** for adverts, messages and a few viewings, and you're comfortable taking payment safely. See [how to sell a car privately and safely](/guides/how-to-sell-a-car-privately-safely).
+
+## When part-exchange makes sense
+
+- **You're buying from a dealer anyway** and the gap between their offer and a realistic private price is small.
+- **The car has problems** you don't want to explain to buyers.
+- **You need it done quickly**, or you can't keep two cars while you sell.
+
+Whichever you choose, ask the dealer for the cash price of the car you're buying and the part-exchange allowance separately, so you can compare the whole deal.
+
+## Work out your own gap
+
+A free [Valu8 valuation](/valuation/new) gives you a private sale estimate from your number plate, with your official DVSA MOT history, so you can see how a part-exchange offer compares.
+
+## FAQs
+
+**How much more do you get selling privately?**
+It depends on the car. In our data, private adverts were typically about 30% below dealer adverts for the same model, year and mileage band, and part-exchange offers are usually lower than a private sale.
+
+**Is the gap bigger for cheaper cars?**
+Yes. For cars a dealer would advertise under £5,000, private adverts were typically about 39% lower. Over £10,000 the gap was about 12%.
+
+**Is part-exchange ever the better option?**
+Yes, when the difference is small, the car has problems, or you need a quick and simple sale.
+
+**Does Valu8 buy cars?**
+No. We don't buy, sell or broker cars, so we have no reason to push your number up or down. All figures are estimates, not offers.`
 ];
 
 export type Guide = {
