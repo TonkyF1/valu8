@@ -16,6 +16,8 @@ const ARTICLE_CLASSES = [
   "[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-4 [&_li]:my-1.5",
   "[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2",
   "[&_hr]:my-10 [&_hr]:border-border",
+  "[&_.guide-table]:my-6 [&_.guide-table]:overflow-x-auto [&_.guide-table]:rounded-xl [&_.guide-table]:border [&_.guide-table]:border-border",
+  "[&_table]:w-full [&_table]:text-sm [&_th]:text-left [&_th]:font-medium [&_th]:text-muted-foreground [&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3 [&_tr]:border-b [&_tr]:border-border [&_tbody_tr:last-child]:border-0",
 ].join(" ");
 
 function GuideArticle({ guide }: { guide: GuideData }) {

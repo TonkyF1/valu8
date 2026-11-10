@@ -1,6 +1,7 @@
 // Node-safe content for the /value pages (React + build-time HTML in vite.config.ts).
 // Figures are typical asking prices from UK adverts (generated into modelPriceBands.ts), not valuations.
 import { MODEL_PRICES, PRICE_DATA_UPDATED, type ModelPrices, type YearPrices } from "./modelPriceBands";
+import { enrichedYearHtml, findEnrichedYear } from "./enrichedYears";
 
 export const VALUE_INDEX_PATH = "/value";
 export const VALUE_INDEX_TITLE = "What's my car worth? Typical UK asking prices by model | Valu8";
@@ -37,12 +38,16 @@ export const VALUE_YEARS_INTRO = (m: ModelPrices) =>
 
 // ---------- Per-year pages (/value/:slug/:year) ----------
 
+/** Templated year pages stay live (shared in social replies) but are noindex,follow and out of the
+ *  sitemap; only hand-enriched years (enrichedYears.ts) are indexable. */
 export function yearMeta(m: ModelPrices, y: YearPrices) {
   const name = valueName(m);
+  const e = findEnrichedYear(m.slug, y.year);
   return {
     path: yearPath(m, y),
-    title: `What's my ${y.year} ${name} worth? Typical asking prices | Valu8`,
-    description: `A ${y.year} ${name} is typically advertised for ${gbp(y.median)} in the UK (most between ${gbp(y.low)} and ${gbp(y.high)}), from ${y.count} adverts. Get a free valuation for your own ${y.year} ${m.model}.`,
+    title: e?.title ?? `What's my ${y.year} ${name} worth? Typical asking prices | Valu8`,
+    description: e?.description ?? `A ${y.year} ${name} is typically advertised for ${gbp(y.median)} in the UK (most between ${gbp(y.low)} and ${gbp(y.high)}), from ${y.count} adverts. Get a free valuation for your own ${y.year} ${m.model}.`,
+    noindex: !e,
   };
 }
 
@@ -88,6 +93,7 @@ export function yearBodyHtml(m: ModelPrices, y: YearPrices): string {
     + (y.mileage ? `<li>Typical mileage: ${miles(y.mileage)}</li>` : "") + `</ul>${rows}<p>${esc(YEAR_NOTE(m, y))}</p>`
     + `<p><a href="/valuation/new">Value my ${y.year} ${esc(m.model)} free</a></p>`
     + neighbourYears(m, y).map((n) => `<p><a href="${yearPath(m, n)}">${n.year} ${name} prices</a></p>`).join("")
+    + (findEnrichedYear(m.slug, y.year) ? `<section>${enrichedYearHtml(findEnrichedYear(m.slug, y.year)!, m, y)}</section>` : "")
     + `<p><a href="${valuePath(m)}">All ${name} years</a></p><p><a href="/value">All models</a></p></main>`;
 }
 

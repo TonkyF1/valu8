@@ -167,6 +167,9 @@ However you sell, you'll need to tell DVLA you've sold the car. You can [tell DV
 3. Take a realistic amount off the private-sale estimate for prep, ads and your time.
 4. If what's left is still well ahead, consider selling privately. If not, part-exchange may be the easier win.
 
+Already have a dealer offer that feels low? See [part-exchange offer too low? Here's what to do](/guides/part-exchange-offer-too-low).
+
+
 ## FAQs
 
 **Do you always get more money selling privately?**
@@ -391,6 +394,9 @@ Once payment has cleared:
 
 If you'd rather skip viewings and payment worries, compare it with trading in. Our guide to [part-exchange vs private sale](/guides/part-exchange-vs-private-sale) walks through the trade-off.
 
+Worried about what buyers will make of your MOT history? See [do MOT advisories affect my car's value?](/guides/mot-advisories-car-value).
+
+
 ## FAQs
 
 **What's the safest way to get paid for a car?**
@@ -491,6 +497,9 @@ A free [Valu8 report](/valuation/new) pulls the official DVSA MOT history for th
 
 Already looking at an advert? Run it through [Is this advert fair?](/check) to see how the asking price compares with our estimates for similar cars.
 
+Selling rather than buying? Read [do MOT advisories affect my car's value?](/guides/mot-advisories-car-value) to see which advisories buyers worry about and what is worth fixing first.
+
+
 ## FAQs
 
 **Is checking MOT history free?**
@@ -508,6 +517,170 @@ No. You'll need a paid vehicle history check for outstanding finance, theft and 
 ---
 
 **Checking a car before you buy?** [Get a free Valu8 report](/valuation/new) with MOT history, mileage chart and an estimated value, or [check an advert's price](/check).`,
+  `---
+slug: /guides/part-exchange-offer-too-low
+seo_title: "Part-exchange offer too low? What to do next"
+meta_description: "Got a part-exchange offer that feels low? Here's why dealers offer less, how to check what your car is worth privately, and how to push for a better deal."
+target_search_phrasing: "part exchange offer too low", "dealer part exchange offer low", "is my part exchange offer fair", "how to get more for part exchange"
+---
+
+# Part-exchange offer too low? Here's what to do
+
+You've found your next car, the salesperson has looked over your old one, and the number they come back with is lower than you hoped. It happens to most people. The good news is that a low first offer is often a starting point, not the final word.
+
+This guide explains why part-exchange offers sit below private sale prices, how to check whether yours is reasonable, and what you can do about it.
+
+## Why part-exchange offers are lower than private sale prices
+
+Every used car has three rough prices at any moment:
+
+- **Part-exchange (trade-in):** what a dealer will allow against another car. Usually the lowest.
+- **Private sale:** what another person is likely to pay you. Usually in the middle.
+- **Dealer retail:** what a dealer would advertise your car for after preparing it. Usually the highest.
+
+The dealer has to prepare the car, may fix faults, often adds a warranty, and carries the risk that it sits unsold. Those costs come out of what they can give you. So a gap between your part-exchange offer and typical asking prices is normal. The question is whether the gap is reasonable.
+
+## Step 1: Check what similar cars are advertised for
+
+Before you argue, get the facts. Look at what cars like yours (same model, year, engine and similar mileage) are being advertised for in UK adverts. Remember asking prices are not sale prices: buyers usually haggle.
+
+You can get a free private-sale, part-exchange and dealer estimate for your own car from your number plate at [valu8.uk](/valuation/new). It also pulls your official DVSA MOT history, which is the first thing a dealer will look at.
+
+## Step 2: Separate the two deals
+
+Dealers can make a part-exchange look generous by giving less discount on the car you're buying, or make it look mean while discounting elsewhere. Ask two clear questions:
+
+1. What is the cash price of the car I'm buying with no part-exchange?
+2. What are you allowing for my car?
+
+Comparing the total you pay is the only number that really matters.
+
+## Step 3: Know what's dragging your offer down
+
+Common reasons for a lower offer:
+
+- **MOT advisories** such as tyres, brakes, corrosion or suspension. A dealer prices in the cost of fixing them.
+- **Missing service history** or a long gap between services.
+- **Mileage** well above average for the age.
+- **Cosmetic damage:** kerbed alloys, scratches, dents, interior wear.
+- **Timing:** a dealer with plenty of similar cars on the forecourt has less reason to want yours.
+
+If you can fix something cheaply (a missing service stamp, a minor advisory), it can be worth doing before you go back.
+
+## Step 4: Negotiate with evidence
+
+Keep it calm and factual:
+
+- "Similar cars are advertised for around this. I understand you need margin, but this offer leaves a big gap."
+- Show the MOT history if it's clean.
+- Bring the V5C, both keys and the service book. A complete car is an easier car to retail.
+- Ask whether the offer changes if you take the car without extras you don't need.
+
+## Step 5: Decide whether a private sale is worth it
+
+If the gap between the part-exchange offer and a realistic private sale price is small, part-exchange may be worth it for the convenience. If the gap is large, selling privately could put more money in your pocket, at the cost of time, adverts and viewings. Read our guide to [selling a car privately and safely](/guides/how-to-sell-a-car-privately-safely) before you decide.
+
+### Example (illustrative figures only)
+
+**Example:** a dealer offers £3,000 part-exchange. Similar cars are advertised for around £4,500, and your estimate suggests a private sale around £4,000. That's roughly a £1,000 gap. Whether that's worth a few weekends of viewings is your call.
+
+These figures are an example, not a valuation for any real car.
+
+## Quick checklist
+
+- Get your free three-price estimate and MOT history
+- Ask for the cash price and the part-exchange allowance separately
+- Note any advisories or history gaps that could be fixed cheaply
+- Bring the V5C, both keys and service records
+- Decide whether the gap justifies a private sale
+
+## FAQs
+
+**Is it normal for a part-exchange offer to be lower than asking prices?**
+Yes. Asking prices are what sellers hope to get, and dealers need room to prepare and resell. A gap is normal; a very large gap is worth questioning.
+
+**Can I negotiate a part-exchange offer?**
+Usually, yes. Bring evidence of what similar cars are advertised for and ask for the cash price and allowance separately.
+
+**Do MOT advisories lower my part-exchange value?**
+They can, because the dealer prices in the cost of fixing them. Checking your MOT history before you go means no surprises.
+
+**Does Valu8 buy cars?**
+No. Valu8 doesn't buy, sell or broker cars, so we have no reason to push your number up or down. All figures are estimates, not offers.
+
+
+---
+
+**Check what your car is worth before you accept.** Free private-sale, part-exchange and dealer estimates plus MOT history from your number plate. [Get my free valuation](/valuation/new)`,
+  `---
+slug: /guides/mot-advisories-car-value
+seo_title: "Do MOT advisories affect my car's value? A UK seller's guide"
+meta_description: "How MOT advisories, failures and mileage records affect what your car is worth, what buyers and dealers look for, and which fixes are worth doing before you sell."
+target_search_phrasing: "do mot advisories affect car value", "mot history affect resale value", "selling a car with mot advisories", "check mot history before selling"
+---
+
+# Do MOT advisories affect my car's value?
+
+Yes, they can. Since MOT history became free to check online, buyers and dealers look it up before they make an offer. A long list of advisories can give them a reason to offer less, while a clean history helps you hold your price.
+
+Here's what they look at, and what's worth fixing before you sell.
+
+## What buyers can see in your MOT history
+
+Anyone with your registration can see, for each test:
+
+- Pass or fail, and the date
+- The **mileage** recorded
+- **Advisories** (items to watch) and any **failures** or dangerous defects
+
+They can't see who owned the car, but they can spot patterns.
+
+## The advisories that worry buyers most
+
+| Advisory | Why it matters to a buyer |
+|---|---|
+| Corrosion on brake pipes, subframes or sills | Can be costly, and may become a fail |
+| Tyres close to the legal limit | An immediate cost after buying |
+| Brake discs or pads worn | Another near-term cost |
+| Suspension wear, bushes or arms | Knocks, handling and possible future fail |
+| Oil leaks | Raises questions about engine health |
+| Repeat advisories that were never fixed | Suggests the car hasn't been looked after |
+
+A one-off minor advisory is normal. The same advisory repeated year after year is what makes buyers cautious.
+
+## Mileage: the thing everyone checks
+
+Each MOT records the mileage. Buyers look for a steady rise. A reading that goes down, or a long gap with no test, will raise questions. If there's an honest explanation (a replaced instrument cluster, a car laid up), keep the paperwork to hand.
+
+## Is it worth fixing advisories before you sell?
+
+As a rule of thumb:
+
+- **Cheap and visible fixes are usually worth it:** tyres near the limit, wiper blades, bulbs, a missing service.
+- **Expensive structural work often isn't:** you may not get the full cost back in the sale price. Price the car honestly instead and mention it in the advert.
+- **Always be upfront:** buyers will see the history anyway. Mentioning an advisory yourself builds trust.
+
+## Part-exchange and MOT history
+
+Dealers check MOT history too, and they price in the cost of fixing any advisories. If your part-exchange offer feels low, the MOT history is often part of the reason. See [part-exchange offer too low? Here's what to do](/guides/part-exchange-offer-too-low).
+
+## Check yours before a buyer does
+
+Valu8 pulls your official DVSA MOT history, including advisories and mileage records, alongside free private-sale, part-exchange and dealer estimates. [Check my car free](/valuation/new)
+
+## FAQs
+
+**Do MOT advisories lower resale value?**
+They can, especially repeated or costly items like corrosion, brakes or suspension. Minor one-off advisories rarely matter much.
+
+**Can a buyer see my MOT history?**
+Yes. Anyone with the registration can check it free on GOV.UK.
+
+**Should I sell a car with a fresh MOT?**
+A long MOT is a selling point and reassures buyers. If your MOT is due within a month or two, getting it done first can help.
+
+**Does Valu8 buy cars?**
+No. We don't buy, sell or broker cars. All figures are estimates, not offers.`,
 ];
 
 export type Guide = {
@@ -595,6 +768,12 @@ export function guideBodyHtml(markdown: string): string {
     const h = block.match(/^(#{1,3}) (.+)$/);
     if (h && !block.includes("\n")) return `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`;
     const lines = block.split("\n");
+    if (lines.length >= 3 && lines.every((l) => l.trim().startsWith("|")) && /^\|[\s|:-]+\|$/.test(lines[1].trim())) {
+      const cells = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => inline(c.trim()));
+      const [head, , ...rows] = lines;
+      return `<div class="guide-table"><table><thead><tr>${cells(head).map((c) => `<th>${c}</th>`).join("")}</tr></thead>`
+        + `<tbody>${rows.map((r) => `<tr>${cells(r).map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    }
     if (lines.every((l) => l.startsWith("- "))) return `<ul>${lines.map((l) => `<li>${inline(l.slice(2))}</li>`).join("")}</ul>`;
     if (lines.every((l) => /^\d+\. /.test(l))) return `<ol>${lines.map((l) => `<li>${inline(l.replace(/^\d+\. /, ""))}</li>`).join("")}</ol>`;
     return `<p>${lines.map(inline).join("<br />")}</p>`;
