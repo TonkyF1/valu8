@@ -259,6 +259,9 @@ export type Database = {
           id: number
           session_id: string
           step: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           created_at?: string
@@ -267,6 +270,9 @@ export type Database = {
           id?: number
           session_id: string
           step: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           created_at?: string
@@ -275,6 +281,9 @@ export type Database = {
           id?: number
           session_id?: string
           step?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: []
       }
@@ -690,6 +699,9 @@ export type Database = {
           service_notes: string | null
           user_id: string | null
           year: number
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           condition_score?: number | null
@@ -707,6 +719,9 @@ export type Database = {
           service_notes?: string | null
           user_id?: string | null
           year: number
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           condition_score?: number | null
@@ -724,6 +739,9 @@ export type Database = {
           service_notes?: string | null
           user_id?: string | null
           year?: number
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: []
       }
