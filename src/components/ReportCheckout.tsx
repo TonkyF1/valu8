@@ -49,6 +49,7 @@ const APPEARANCE: Appearance = {
 
 /** Already on the free result. */
 export const FREE_INCLUDES = ["Private sale estimate for your car", "Confidence level and the data behind it"];
+export const FREE_SUMMARY = "Already free: your private sale estimate, its confidence level and the data behind it. The report adds:";
 /** Exactly what the £2.99 report adds on top (everything below is in the paid report today). */
 export const REPORT_ADDS = [
   "A suggested asking price for your advert",
@@ -60,18 +61,13 @@ export const REPORT_ADDS = [
   "Ready-to-post advert text",
   "A PDF of the full report to keep or send to buyers",
 ];
-/** Guests write their advert from the report once they save it to a free account (AdvertCreator needs one). */
-export const reportAdds = (isGuest = false) =>
-  isGuest ? REPORT_ADDS.map((b) => (b === "Ready-to-post advert text" ? "Ready-to-post advert text, once you save the report to a free account" : b)) : REPORT_ADDS;
-
 /** Offer button: says what you get, not "full report". */
 export const REPORT_CTA = "See my asking price · £2.99";
 
 /** One honest line under the free price: what the £2.99 report actually adds to this figure. */
-export function reportOfferLine({ isRange, isGuest = false }: { isRange: boolean; isGuest?: boolean }): string {
+export function reportOfferLine({ isRange }: { isRange: boolean }): string {
   const lead = isRange ? "The £2.99 report narrows this range to one suggested asking price" : "The £2.99 report turns this into one suggested asking price";
-  const advert = isGuest ? "plus advert text ready to post once you save it to a free account" : "plus advert text ready to post";
-  return `${lead} and the lowest offer worth accepting, ${advert}.`;
+  return `${lead} and the lowest offer worth accepting, plus advert text ready to post.`;
 }
 
 /** Report preview. Every figure is an example, never the visitor's car, and is labelled as such. */
@@ -252,7 +248,7 @@ function ElementsCheckout({ valuationId, email, onPaid, onClose }: { valuationId
   );
 }
 
-export function ReportCheckout({ valuationId, verifying, onPaid, isGuest = false }: { valuationId: string; verifying?: boolean; onPaid?: () => void; isGuest?: boolean }) {
+export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId: string; verifying?: boolean; onPaid?: () => void }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const email = user?.email || undefined;
@@ -309,21 +305,19 @@ export function ReportCheckout({ valuationId, verifying, onPaid, isGuest = false
             <p className="text-center text-xs opacity-80">One-off payment. No subscription. We don't buy cars.</p>
             <p className="flex items-center justify-center gap-1 text-xs opacity-70"><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Secure payment by Stripe · Apple Pay · Google Pay · Card</p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-white/10 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Free, already yours</p>
-              <ul className="mt-2 grid gap-1 text-sm opacity-90">
-                {FREE_INCLUDES.map((b) => (<li key={b} className="flex gap-2"><span className="opacity-60">•</span>{b}</li>))}
+          <details className="group rounded-xl border border-white/10" data-testid="whats-in-report">
+            <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-semibold">
+              <span>What's in the report</span>
+              <span aria-hidden className="text-lg leading-none transition-transform group-open:rotate-45" style={{ color: "#00D6C8" }}>+</span>
+            </summary>
+            <div className="grid gap-3 px-4 pb-4">
+              <p className="text-xs opacity-70">{FREE_SUMMARY}</p>
+              <ul className="grid gap-1 text-sm opacity-90">
+                {REPORT_ADDS.map((b) => (<li key={b} className="flex gap-2"><span style={{ color: "#00D6C8" }}>✓</span>{b}</li>))}
               </ul>
+              <ReportPreview />
             </div>
-            <div className="rounded-xl border p-3" style={{ borderColor: "rgba(0,214,200,0.4)" }}>
-              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#00D6C8" }}>The £2.99 report adds</p>
-              <ul className="mt-2 grid gap-1 text-sm opacity-90">
-                {reportAdds(isGuest).map((b) => (<li key={b} className="flex gap-2"><span style={{ color: "#00D6C8" }}>✓</span>{b}</li>))}
-              </ul>
-            </div>
-          </div>
-          <ReportPreview />
+          </details>
           <a href="#share-valuation" className="text-center text-xs font-medium underline underline-offset-2" style={{ color: "#00D6C8" }}>Or share with a friend. When they value their car, your full report is free.</a>
         </div>
       ) : (

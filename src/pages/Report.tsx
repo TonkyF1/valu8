@@ -391,10 +391,14 @@ export default function Report() {
 
   // Free locked result with the £2.99 offer: price first, then the offer card, then the supporting detail.
   const offerFirst = enforcedPremium && !premium && !valuationUnavailable;
-  const priceExtras = (
+  const priceAlert = (
 <>
                 {!isShared && !authLoading && !(r as any)?.valuationUnavailable && <PriceAlertOptIn valuationId={v.id} isGuest={isGuest} />}
 
+</>
+  );
+  const liveTicker = (
+<>
                 {/* Live data ticker */}
                 {liveCount != null && liveCount > 0 && (
                   <div className="mt-2.5 inline-flex items-center gap-2 text-[11.5px] text-muted-foreground/90">
@@ -408,6 +412,10 @@ export default function Report() {
                   </div>
                 )}
 
+</>
+  );
+  const specialistCallout = (
+<>
                 {/* Specialist Valuation callout — proper trust block, not a footnote */}
                 {showSpecialistBadge && specialistExplanation && (
                   <div className="mt-4 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.08] to-primary/[0.02] px-4 py-3 flex gap-3">
@@ -435,6 +443,10 @@ export default function Report() {
                   </div>
                 )}
 
+</>
+  );
+  const dataUsed = (
+<>
                 {/* Always-on "Data used" strip for the common, well-supported case
                     where no Expert Insight badge is shown. Keeps transparency. */}
                 {!showSpecialistBadge && Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
@@ -454,18 +466,8 @@ export default function Report() {
                 )}
 </>
   );
-  const whyThisPrice = (
-<>
-            {valuationUnavailable ? (
-              <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8] mt-4 max-w-[44ch]">
-                We'd rather be honest than give you a number that could be way off.
-              </p>
-            ) : (
-              <details className="mt-4 group max-w-[44ch]">
-                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-xs  font-semibold text-primary/90 hover:text-primary">
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-                  Why this price
-                </summary>
+  const priceExtras = (<>{priceAlert}{liveTicker}{specialistCallout}{dataUsed}</>);
+  const whyBody = (
                 <div className="mt-3 space-y-3">
                   <p className="text-sm leading-[1.6] text-[#E8E8E8]">
                     {r.headline ? (
@@ -502,6 +504,20 @@ export default function Report() {
                     );
                   })()}
                 </div>
+  );
+  const whyThisPrice = (
+<>
+            {valuationUnavailable ? (
+              <p className="text-sm sm:text-base leading-[1.65] text-[#E8E8E8] mt-4 max-w-[44ch]">
+                We'd rather be honest than give you a number that could be way off.
+              </p>
+            ) : (
+              <details className="mt-4 group max-w-[44ch]">
+                <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-xs  font-semibold text-primary/90 hover:text-primary">
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                  Why this price
+                </summary>
+                {whyBody}
               </details>
             )}
 </>
@@ -833,7 +849,7 @@ export default function Report() {
 
                 {offerFirst ? (
                   <p className="mt-3 text-[13px] leading-relaxed text-foreground/90 max-w-[48ch]" data-testid="offer-line">
-                    {reportOfferLine({ isRange: !!reportPriceRange(r, normaliseReportPricing(r).privateSale), isGuest })}
+                    {reportOfferLine({ isRange: !!reportPriceRange(r, normaliseReportPricing(r).privateSale) })}
                   </p>
                 ) : priceExtras}
               </div>
@@ -995,15 +1011,23 @@ export default function Report() {
         </section>
 
         {enforcedPremium && !premium && !(r as any)?.valuationUnavailable && (
-          <ReportCheckout valuationId={v.id} isGuest={isGuest} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />
+          <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />
         )}
 
         {/* Free result: the valuation's supporting detail sits below the offer, so the offer is the first thing after the price. */}
         {offerFirst && (
           <section className="premium-card p-5 sm:p-6 mb-6 animate-fade-in-up" aria-label="About this valuation">
-            {priceExtras}
-            {whyThisPrice}
-            {valuedWith}
+            <details className="group" data-testid="why-this-price">
+              <summary className="cursor-pointer list-none inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-primary/90 hover:text-primary">
+                <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                Why this price
+              </summary>
+              {whyBody}
+              {dataUsed}
+              {valuedWith}
+            </details>
+            {specialistCallout}
+            {priceAlert}
           </section>
         )}
 
@@ -1306,7 +1330,7 @@ export default function Report() {
           </SectionBoundary>
         )}
 
-        {isGuest && (
+        {isGuest && !reportPaid && (
           <div id="advert" className="scroll-mt-44">
             <GuestSavePrompt
               valuationId={v.id}
@@ -1316,9 +1340,10 @@ export default function Report() {
           </div>
         )}
 
-        {!valuationUnavailable && !isShared && !isGuest && !locked && (
+        {!valuationUnavailable && !isShared && !locked && (!isGuest || (reportPaid && !!peekGuestToken())) && (
           <div id="advert" className="scroll-mt-44">
             <AdvertCreator
+              guestToken={isGuest ? peekGuestToken() : null}
               valuationId={v.id}
               vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, registration: v.registration, mot_expiry: v.mot_expiry }}
               report={{

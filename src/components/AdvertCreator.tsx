@@ -20,15 +20,18 @@ interface Props {
     conditionScore: number; conditionLabel: string; honestAnalysis: string; strengths: string[];
   };
   initialAdvert?: { adverts: Adverts; location?: string } | null;
+  /** Paid guest: generate from the stored valuation with this token; the server saves the advert. */
+  guestToken?: string | null;
 }
 
 const LENGTHS: { key: Length; label: string; sub: string }[] = [
   { key: "short", label: "Short", sub: "Marketplace / classifieds" },
   { key: "medium", label: "Medium", sub: "Balanced detail" },
-  { key: "full", label: "Full", sub: "AutoTrader-style" },
+  { key: "full", label: "Full", sub: "Detailed listing sites" },
 ];
 
-export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: Props) {
+export function AdvertCreator({ valuationId, vehicle, report, initialAdvert, guestToken }: Props) {
+  const isGuest = !!guestToken;
   const { user } = useAuth();
   const [open, setOpen] = useState(!!initialAdvert);
   const [loading, setLoading] = useState(false);
@@ -52,7 +55,7 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: P
     try {
 
       const { data, error } = await supabase.functions.invoke("generate-advert", {
-        body: {
+        body: isGuest ? { valuationId, guestToken, location: location.trim() || undefined } : {
           make: vehicle.make,
           model: vehicle.model,
           year: vehicle.year,
@@ -196,10 +199,14 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert }: P
           <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Regenerate
         </Button>
         <div className="flex-1" />
-        <Button variant="hero" size="sm" onClick={save} disabled={saving || !adverts}>
-          {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Bookmark className="h-4 w-4" />}
-          Save advert
-        </Button>
+        {isGuest ? (
+          <span className="self-center text-xs text-muted-foreground">Kept with this report. Copy it to keep your edits.</span>
+        ) : (
+          <Button variant="hero" size="sm" onClick={save} disabled={saving || !adverts}>
+            {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Bookmark className="h-4 w-4" />}
+            Save advert
+          </Button>
+        )}
       </div>
       <div className="mt-4 pt-3 border-t border-border/50">
         <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Copy formatted for</div>
