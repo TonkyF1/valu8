@@ -5,16 +5,16 @@ import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { SEGMENT_LABEL, SEGMENT_TIPS, findModel } from "@/data/carModels";
-import { carFaqs, carIntro, carModelJsonLd, carRelated, carSteps } from "@/data/carValueContent";
+import { carFaqs, carIntro, carModelJsonLd, carRelated, carSteps, carValueLinkText, carValueMatch } from "@/data/carValueContent";
 import { useSeo } from "@/lib/seo";
-import { carModelMeta, getRouteMeta } from "@/data/routeMeta";
+import { carModelMeta } from "@/data/routeMeta";
 import NotFound from "./NotFound";
 
 export default function CarValue() {
   const { make, model } = useParams();
   const car = findModel(make, model);
   const name = car ? `${car.make} ${car.model}` : "";
-  useSeo(car ? carModelMeta(car) : getRouteMeta("/car-values"));
+  useSeo(car ? carModelMeta(car) : null);
   // One head JSON-LD block (the build emits it for crawlers; keep it in sync on client navigation).
   useEffect(() => {
     if (!car) return;
@@ -49,6 +49,13 @@ export default function CarValue() {
           <Button asChild variant="hero" size="xl"><Link to="/valuation/new">Value my {car.model} <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
           <Button asChild variant="outline" size="xl"><Link to="/check">Check a {car.model} asking price</Link></Button>
         </div>
+        {carValueMatch(car) && (
+          <p className="mt-5 text-sm">
+            <Link to={`/value/${carValueMatch(car)!.slug}`} className="inline-flex items-center gap-1 font-medium text-primary hover:underline underline-offset-2">
+              {carValueLinkText(car)} <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </p>
+        )}
 
         <section className="mt-12" aria-labelledby="how">
           <h2 id="how" className="text-xl font-semibold mb-3">How we value a {name}</h2>

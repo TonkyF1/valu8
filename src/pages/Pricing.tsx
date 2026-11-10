@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useSeo } from "@/lib/seo";
+import { getRouteMeta } from "@/data/routeMeta";
 
 const FREE = [
   "Instant valuation from your reg and mileage",
@@ -31,7 +32,7 @@ const FAQ = [
 
 export default function Pricing() {
   const [params] = useSearchParams();
-  useSeo({ title: "Pricing — Valu8", description: "Essentials valuations are free. The Full seller report is a one-off £2.99 — no subscription. Pay by card, Apple Pay or Google Pay.", path: "/pricing" });
+  useSeo(getRouteMeta("/pricing"));
   useEffect(() => { if (params.get("billing") === "cancelled") toast("Checkout cancelled"); }, [params]);
 
   return (

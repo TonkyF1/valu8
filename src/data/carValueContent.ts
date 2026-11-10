@@ -3,6 +3,11 @@
 // without running JavaScript. Deliberately no prices: figures only come from a live valuation.
 import { CAR_MODELS, SEGMENT_LABEL, SEGMENT_TIPS, type CarModelPage } from "./carModels";
 import { SITE_URL } from "./routeMeta";
+import { MODEL_PRICES, type ModelPrices } from "./modelPriceBands";
+
+/** The matching /value/<make-model> asking-price page, when we have one. */
+export const carValueMatch = (m: CarModelPage): ModelPrices | undefined => MODEL_PRICES.find((p) => p.slug === `${m.makeSlug}-${m.slug}`);
+export const carValueLinkText = (m: CarModelPage) => `Typical ${carName(m)} asking prices by year`;
 
 export const carName = (m: CarModelPage) => `${m.make} ${m.model}`;
 export const carPath = (m: CarModelPage) => `/car-values/${m.makeSlug}/${m.slug}`;
@@ -52,6 +57,7 @@ export function carModelBodyHtml(m: CarModelPage): string {
     + `<h1>What's my ${name} worth?</h1>`
     + `<p>${esc(carIntro(m))}</p>`
     + `<p><a href="/valuation/new">Value my ${esc(m.model)} free</a> · <a href="/check">Check a ${esc(m.model)} asking price</a></p>`
+    + (carValueMatch(m) ? `<p><a href="/value/${carValueMatch(m)!.slug}">${esc(carValueLinkText(m))}</a></p>` : "")
     + `<h2>How we value a ${name}</h2><ol>${carSteps(m).map((s) => `<li>${esc(s)}</li>`).join("")}</ol>`
     + `<h2>What moves the value of a ${seg}</h2><ul>${SEGMENT_TIPS[m.segment].map((t) => `<li>${esc(t)}</li>`).join("")}</ul>`
     + `<h2>${name} valuation FAQ</h2>${carFaqs(m).map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join("")}`

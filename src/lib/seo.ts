@@ -11,8 +11,13 @@ function setMeta(selector: string, attr: "name" | "property", key: string, conte
 
 /** Client-side title/description/canonical. Google renders JS so this is indexed;
  *  social crawlers that don't run JS still see index.html defaults. */
-export function useSeo({ title, description, path, canonicalPath, noindex = false, notFound = false }: { title: string; description: string; path: string; canonicalPath?: string; noindex?: boolean; notFound?: boolean }) {
+type SeoOpts = { title: string; description: string; path: string; canonicalPath?: string; noindex?: boolean; notFound?: boolean };
+/** Pass null to skip (e.g. a page that renders <NotFound/>, which sets its own noindex). */
+export function useSeo(opts: SeoOpts | null) {
+  const { title = "", description = "", path = "", canonicalPath, noindex = false, notFound = false } = opts ?? {};
+  const skip = !opts;
   useEffect(() => {
+    if (skip) return;
     const prevTitle = document.title;
     document.title = title;
     const canonPath = canonicalPath ?? path;
@@ -59,5 +64,5 @@ export function useSeo({ title, description, path, canonicalPath, noindex = fals
         if (noindex) robots?.remove();
       }
     };
-  }, [title, description, path, canonicalPath, noindex, notFound]);
+  }, [skip, title, description, path, canonicalPath, noindex, notFound]);
 }
