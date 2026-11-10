@@ -7,7 +7,7 @@ import { valueBodyHtml, valueIndexBodyHtml, sameMakeModels } from "@/data/valueP
 import { carValuesIndexBodyHtml } from "@/data/carValueContent";
 import { buildSitemap } from "../../scripts/sitemap";
 import { indexNowBody, newUrls, sitemapUrls, INDEXNOW_KEY } from "../../scripts/indexnow";
-import { REPORT_ADDS, REPORT_CTA, reportAdds, reportOfferLine } from "@/components/ReportCheckout";
+import { FREE_SUMMARY, REPORT_ADDS, REPORT_CTA, reportOfferLine } from "@/components/ReportCheckout";
 
 function assertCopyRules(text: string) {
   expect(text).not.toContain("—");
@@ -75,12 +75,11 @@ describe("£2.99 offer copy", () => {
     expect(REPORT_CTA).toBe("See my asking price · £2.99");
     assertCopyRules(REPORT_CTA);
   });
-  it("one honest line under the free price, guest-aware about the advert", () => {
+  it("one honest line under the free price, with no account qualifier now guests get the advert", () => {
     const range = reportOfferLine({ isRange: true });
-    const single = reportOfferLine({ isRange: false, isGuest: true });
+    const single = reportOfferLine({ isRange: false });
     expect(range).toContain("narrows this range to one suggested asking price");
-    expect(single).toContain("free account");
-    for (const t of [range, single, reportOfferLine({ isRange: true, isGuest: true }), ...reportAdds(true)]) assertCopyRules(t);
-    expect(reportAdds(false)).toEqual(REPORT_ADDS);
+    expect(single).toContain("turns this into one suggested asking price");
+    for (const t of [range, single, FREE_SUMMARY, ...REPORT_ADDS]) { assertCopyRules(t); expect(t).not.toMatch(/free account/i); }
   });
 });
