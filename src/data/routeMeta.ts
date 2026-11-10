@@ -1,7 +1,6 @@
 import { CAR_MODELS, type CarModelPage } from "./carModels";
 import { GUIDES } from "./guides";
-import { MODEL_PRICES } from "./modelPriceBands";
-import { VALUE_INDEX_DESCRIPTION, VALUE_INDEX_PATH, VALUE_INDEX_TITLE, valueMeta, yearMeta } from "./valuePages";
+import { VALUE_SLUGS } from "./valueModels";
 
 export const SITE_URL = "https://valu8.uk";
 
@@ -41,14 +40,15 @@ export const STATIC_ROUTES: RouteMeta[] = [
 export function carModelMeta(m: CarModelPage): RouteMeta {
   const name = `${m.make} ${m.model}`;
   // /value/* pages carry unique asking-price tables — stronger than the overlapping /car-values/* copy.
-  const valueMatch = MODEL_PRICES.find((p) => p.slug === `${m.makeSlug}-${m.slug}`);
+  const valueSlug = `${m.makeSlug}-${m.slug}`;
+  const valueMatch = VALUE_SLUGS.has(valueSlug);
   return {
     path: `/car-values/${m.makeSlug}/${m.slug}`,
     title: `What's my ${name} worth? Free ${name} valuation | Valu8`,
     description: `Free ${name} valuation using real UK adverts in our database, your MOT history and photos. See private sale, part-exchange and dealer values for your ${name}.`,
     priority: "0.7",
     inSitemap: !valueMatch,
-    ...(valueMatch ? { canonicalPath: `/value/${valueMatch.slug}` } : {}),
+    ...(valueMatch ? { canonicalPath: `/value/${valueSlug}` } : {}),
   };
 }
 
@@ -57,18 +57,14 @@ export const GUIDE_ROUTES: RouteMeta[] = [
   { path: "/guides", title: "Car valuation, buying and selling guides | Valu8", description: "Free, plain-English UK guides to valuing, buying and selling a used car: part-exchange vs private sale, spotting an overpriced advert, selling safely and checking MOT history.", priority: "0.7", inSitemap: true },
   ...GUIDES.map((g): RouteMeta => ({ path: g.path, title: g.title, description: g.description, priority: "0.6", inSitemap: true })),
 ];
-export const VALUE_ROUTES: RouteMeta[] = [
-  { path: VALUE_INDEX_PATH, title: VALUE_INDEX_TITLE, description: VALUE_INDEX_DESCRIPTION, priority: "0.8", inSitemap: true },
-  ...MODEL_PRICES.map((m): RouteMeta => ({ ...valueMeta(m), priority: "0.7", inSitemap: true })),
-  // Templated year pages: noindex,follow and not in the sitemap (yearMeta). Enriched years are indexable.
-  ...MODEL_PRICES.flatMap((m) => m.years.map((y): RouteMeta => { const ym = yearMeta(m, y); return { ...ym, priority: "0.6", inSitemap: !ym.noindex }; })),
-];
-export const ALL_ROUTES = [...STATIC_ROUTES, ...GUIDE_ROUTES, ...CAR_MODEL_ROUTES, ...VALUE_ROUTES];
+/** Everything except the /value/* price pages. Those live in valueRoutes.ts (with the price tables) so the
+ *  main bundle stays small; build-time code (vite.config.ts, sitemap, IndexNow) uses ALL_ROUTES from allRoutes.ts. */
+export const BASE_ROUTES = [...STATIC_ROUTES, ...GUIDE_ROUTES, ...CAR_MODEL_ROUTES];
 
 /** Unknown paths must not silently inherit the homepage's metadata. */
 export function getRouteMeta(path: string): RouteMeta {
   const pathname = path.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
-  const meta = ALL_ROUTES.find((route) => route.path === pathname);
+  const meta = BASE_ROUTES.find((route) => route.path === pathname);
   if (!meta) throw new Error(`Missing route metadata: ${pathname}`);
   return meta;
 }

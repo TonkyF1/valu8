@@ -1,6 +1,7 @@
 // Regenerates public/sitemap.xml: `bun scripts/sitemap.ts`
 import { writeFileSync } from "node:fs";
-import { ALL_ROUTES, SITE_URL } from "../src/data/routeMeta";
+import { SITE_URL } from "../src/data/routeMeta";
+import { ALL_ROUTES } from "../src/data/allRoutes";
 import { escapeHtml } from "./routeHtml";
 
 export function buildSitemap(): string {
