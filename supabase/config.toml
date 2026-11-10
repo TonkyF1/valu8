@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.report-entitlement]
 verify_jwt = false
+
+[functions.referral]
+verify_jwt = false
