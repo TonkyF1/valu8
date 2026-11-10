@@ -29,7 +29,7 @@ export default function Privacy() {
       <main id="main" className="flex-1 container max-w-3xl py-12 md:py-16">
         <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Legal</div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gradient mb-6">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground mb-10">Last updated: 3 November 2026</p>
+        <p className="text-sm text-muted-foreground mb-10">Last updated: 10 November 2026</p>
 
         <div className="max-w-none space-y-8 text-sm leading-relaxed text-foreground/85">
           <Section n={1} title="Who we are">
@@ -47,9 +47,10 @@ export default function Privacy() {
               <li><strong className="text-foreground">Your registration number</strong>, used to look up the car's official details and MOT history.</li>
               <li><strong className="text-foreground">Valuation inputs</strong>: make, model, trim, year, mileage, condition answers, notes, and any photos you choose to upload.</li>
               <li><strong className="text-foreground">Your email address (optional)</strong>: only if you create an account or ask us to email you, for example "Email me if this price changes".</li>
-              <li><strong className="text-foreground">Anonymous funnel steps</strong>: which steps of the valuation form were reached (for example "registration entered" or "result seen"), a coarse traffic source (such as "facebook" or "direct"), a device type (mobile, tablet or desktop) and the time. This uses a random number that lives only in memory for that one page visit. It sets no cookies, stores nothing on your device and contains no personal data.</li>
+              <li><strong className="text-foreground">Anonymous funnel steps</strong>: which steps of the valuation form were reached (for example "registration entered" or "result seen"), a coarse traffic source (such as "facebook" or "direct"), any campaign tags in the link you arrived from (utm_source, utm_medium and utm_campaign, for example "facebook / paid / report299"), a device type (mobile, tablet or desktop) and the time. This uses a random number that lives only in memory for that one page visit. It sets no cookies and contains no personal data. The campaign tags are kept in your browser's session storage for that tab only (cleared when you close it) and are also saved with any valuation you run, so we can see which campaigns lead to valuations. If you buy a Full report, we record the purchase as an anonymous funnel step too.</li>
               <li><strong className="text-foreground">How you found us</strong>: a campaign tag and referring site domain, kept in your browser's local storage (not a cookie).</li>
-              <li><strong className="text-foreground">Analytics (only if you accept)</strong>: PostHog page and usage analytics, with text inputs masked. Nothing loads until you click "Accept analytics".</li>
+              <li><strong className="text-foreground">Analytics (only if you accept)</strong>: PostHog page and usage analytics, with text inputs masked, when switched on. Nothing loads until you click "Accept".</li>
+              <li><strong className="text-foreground">Advertising measurement (only if you accept)</strong>: when switched on, the Meta Pixel tells Meta (Facebook and Instagram) that a visitor from our ads viewed a page, finished a free valuation, opened checkout or bought a Full report, so we can measure and improve our ads. If you accept and then buy a report, we also send Meta the purchase directly from our server (the Conversions API), with your email address scrambled (hashed) first so Meta can match it without us sending it in plain text. If you reject, or never choose, nothing is sent to Meta and no Meta script loads.</li>
             </ul>
           </Section>
 
@@ -59,9 +60,9 @@ export default function Privacy() {
               <li>To send the emails you asked for, such as price-change alerts and follow-ups (your consent, which you can withdraw at any time).</li>
               <li>To see where people drop off in the form and make it easier to use, and to keep the service secure and prevent abuse (our legitimate interests).</li>
               <li>To improve our valuations, using an anonymised copy of vehicle and price details with your email, registration and photos removed (our legitimate interests).</li>
-              <li>Optional analytics (your consent).</li>
+              <li>Optional analytics and advertising measurement (your consent, which you can withdraw at any time).</li>
             </ul>
-            <p>We never sell your personal data and we do not use it for advertising.</p>
+            <p>We never sell your personal data. We only share data with Meta for advertising measurement if you accept advertising cookies.</p>
           </Section>
 
           <Section n={4} title="Who processes it for us">
@@ -72,6 +73,8 @@ export default function Privacy() {
               <li>Our email provider: sends the emails you asked for.</li>
               <li>Cloudflare Turnstile: bot protection.</li>
               <li>PostHog (EU): analytics, only with your consent.</li>
+              <li>Meta Platforms Ireland: advertising measurement (Meta Pixel and Conversions API), only with your consent. Meta acts as a joint controller for this measurement and its own use is covered by Meta's privacy policy.</li>
+              <li>Stripe: takes payment for the Full report. We never see your card details.</li>
             </ul>
             <p>Each processor acts only on our instructions. Where data leaves the UK, it is protected by appropriate safeguards such as the UK International Data Transfer Addendum.</p>
           </Section>
@@ -93,7 +96,8 @@ export default function Privacy() {
           </Section>
 
           <Section n={7} title="Cookies and browser storage">
-            <p>We use only essential browser storage: to keep you signed in, to remember your cookie choice, to remember how you first found us and, for guests, a random token so you can reopen your own valuations. The funnel steps above use no cookies or storage at all. Analytics cookies are set only if you accept them, and you can change your choice any time via "Cookie settings" in the footer.</p>
+            <p>We use only essential browser storage: to keep you signed in, to remember your cookie choice, to remember how you first found us and, for guests, a random token so you can reopen your own valuations. Campaign tags from the link you arrived from are kept in session storage for that tab only. The funnel steps above use no cookies.</p>
+            <p>Optional cookies are set only if you click "Accept" in the cookie banner: PostHog analytics cookies, and Meta's advertising cookies (such as _fbp and _fbc) when the Meta Pixel is switched on. "Reject" is as easy as "Accept", and you can change your choice any time via "Cookie settings" in the footer. If you withdraw consent, we stop sending anything to Meta from that point.</p>
           </Section>
 
           <Section n={8} title="Contact">

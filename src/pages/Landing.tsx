@@ -1,7 +1,7 @@
 import "@/styles/plate.css";
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ArrowRight, BadgePoundSterling, Camera, FileCheck2, Gauge, ShieldAlert, Wind } from "lucide-react";
+import { ArrowRight, BadgePoundSterling, Check, Camera, FileCheck2, Gauge, ShieldAlert, Wind } from "lucide-react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,14 @@ const FAQS = [
   { q: "Do I need photos?", a: "No, but adding a few lets us spot condition issues and selling points that move the price, and gives you better advert copy." },
   { q: "Who can see my valuation?", a: "Your valuations are private to your account unless you choose to share a report link. See our privacy policy for how data is handled." },
   { q: "Should I sell privately or part-exchange?", a: "Your report shows both. Private sale usually gets more money; part-exchange is quicker. We show the gap so you can decide if it's worth it." },
+];
+
+const TRUST = [
+  "Independent: we don't buy, sell or broker cars",
+  "Three prices, not one: private sale, part-ex and dealer",
+  "Official DVSA MOT history and mileage records",
+  "Optional photo condition score",
+  "Free, no account needed",
 ];
 
 const FEATURES = [
@@ -65,15 +73,14 @@ export default function Landing() {
       <main id="main" className="flex-1">
         <section className="relative overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 -top-32 h-[28rem] bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.14),transparent_60%)]" aria-hidden />
-          <div className="container relative max-w-xl pt-14 pb-10 sm:pt-20 lg:pt-24 lg:pb-16 text-center">
-            <p className="inline-flex items-center rounded-full bg-primary/10 px-3.5 py-1.5 text-[13px] font-medium text-primary">Free UK car valuation</p>
-            <h1 className="mt-5 text-[3.25rem] sm:text-[3.5rem] lg:text-[4rem] font-semibold tracking-tight text-gradient leading-[1.05] text-balance">
-              What’s your car worth?
+          <div className="container relative max-w-xl pt-6 pb-8 sm:pt-20 lg:pt-24 lg:pb-16 text-center">
+            <p className="hidden sm:inline-flex items-center rounded-full bg-primary/10 px-3.5 py-1.5 text-[13px] font-medium text-primary">Free UK car valuation</p>
+            {/* Mobile: nothing above the reg box but the H1, so it sits above the fold on a 390x844 screen. */}
+            <h1 className="sm:mt-5 font-semibold tracking-tight text-balance">
+              <span className="block text-[2.5rem] sm:text-[3.5rem] lg:text-[4rem] text-gradient leading-[1.05]">What’s your car worth?</span>
+              <span className="mt-2 block text-[1.2rem] sm:text-[1.5rem] leading-snug text-foreground/90">Find out free from your number plate.</span>
             </h1>
-            <p className="mt-4 text-[17px] sm:text-lg text-muted-foreground leading-relaxed text-balance">
-              Enter your reg for a private-sale, part-exchange and dealer estimate.
-            </p>
-            <div className="mt-8 w-full min-w-0">
+            <div className="mt-5 sm:mt-8 w-full min-w-0">
               <form ref={heroCta} onSubmit={onPlateSubmit}>
                 <label htmlFor="home-reg" className="sr-only">Your number plate</label>
                 <div className="reg-plate">
@@ -84,7 +91,8 @@ export default function Landing() {
                   <input
                     id="home-reg"
                     value={plate}
-                    onChange={(e) => { setPlate(e.target.value.toUpperCase()); setPlateErr(null); if (e.target.value.trim()) track("reg_typed"); }}
+                    onFocus={() => track("valuation_started")}
+                    onChange={(e) => { setPlate(e.target.value.toUpperCase()); setPlateErr(null); if (e.target.value.trim()) { track("valuation_started"); track("reg_typed"); } }}
                     placeholder="AB12 CDE"
                     autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={10}
                     enterKeyHint="go"
@@ -95,14 +103,20 @@ export default function Landing() {
                 </div>
                 {plateErr && <p className="mt-2 text-center text-xs text-destructive" role="alert">{plateErr}</p>}
                 <Button type="submit" variant="hero" size="xl" className="mt-4 w-full min-h-[60px] rounded-2xl text-[18px]">
-                  Get my free valuation
+                  Value my car free
                 </Button>
               </form>
-              <p className="mt-5 text-[14px] text-muted-foreground flex flex-wrap justify-center items-center gap-x-3 gap-y-1">
-                <span>Valuation <b className="font-semibold text-foreground">Free</b></span>
-                <span className="text-border" aria-hidden>•</span>
-                <span>Full seller report <b className="font-semibold text-foreground">£2.99</b> optional</span>
+              <p className="mt-4 text-[14px] font-medium text-foreground/90 text-balance">
+                We don't buy cars, so we've no reason to nudge your number up or down.
               </p>
+              <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed text-balance">
+                Private sale, part-exchange and dealer estimates, plus your full MOT history, in about two minutes. No sign-up.
+              </p>
+              <ul className="mt-5 grid gap-2 text-left text-[14px] text-foreground/85 sm:mx-auto sm:max-w-md" aria-label="Why Valu8">
+                {TRUST.map((t) => (
+                  <li key={t} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />{t}</li>
+                ))}
+              </ul>
             </div>
           </div>
         </section>

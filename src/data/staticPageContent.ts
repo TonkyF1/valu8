@@ -21,13 +21,13 @@ const homepageFaqJsonLd = JSON.stringify({
 const legalSections: Record<string, [string, string][]> = {
   "/privacy": [
     ["1. Who we are", "Valu8 (valu8.uk) gives free car valuations to people in the United Kingdom. Valu8 is the data controller for the personal data described here. You can reach us at <a href=\"mailto:hello@valu8.uk\">hello@valu8.uk</a>. ICO registration pending."],
-    ["2. What we collect", "Your registration number; valuation inputs; optional email address; anonymous funnel steps; campaign and referring site details; and, only if you accept, analytics. Submissions can include make, model, trim, year, mileage, condition answers, notes and photos."],
-    ["3. Why we use it", "To provide and save your valuation, send requested emails, keep the service secure, understand and improve the service, and optionally measure usage with your consent. We never sell your personal data and do not use it for advertising."],
-    ["4. Who processes it for us", "Processors include Supabase via Lovable Cloud, the Lovable AI gateway, DVSA and vehicle-data providers, our email provider, Cloudflare Turnstile and, with your consent, PostHog EU. Appropriate safeguards protect data transferred outside the UK."],
+    ["2. What we collect", "Your registration number; valuation inputs; optional email address; anonymous funnel steps; campaign tags (utm_source, utm_medium, utm_campaign) and referring site details, saved with each valuation; and, only if you accept, analytics and Meta advertising measurement. Submissions can include make, model, trim, year, mileage, condition answers, notes and photos."],
+    ["3. Why we use it", "To provide and save your valuation, send requested emails, keep the service secure, understand and improve the service, and, only with your consent, measure usage and our Facebook and Instagram ads. We never sell your personal data."],
+    ["4. Who processes it for us", "Processors include Supabase via Lovable Cloud, the Lovable AI gateway, DVSA and vehicle-data providers, our email provider, Stripe for payments, Cloudflare Turnstile and, with your consent, PostHog EU and Meta (Meta Pixel and Conversions API, with emails hashed). Appropriate safeguards protect data transferred outside the UK."],
     ["5. How long we keep it", "Account data and saved valuations are kept until deletion. Guest valuation links continue to work unless you ask us to delete them. Alert emails are kept until you unsubscribe. Anonymous funnel steps are kept for up to 13 months."],
     ["6. Your rights", "Under UK GDPR you can request access, correction, export, deletion or restriction of your personal data. Withdraw email consent through an unsubscribe link, or email hello@valu8.uk. You can also complain to the Information Commissioner's Office."],
-    ["7. Cookies and browser storage", "Essential storage supports sign-in, cookie choices, attribution and guest valuation access. Analytics cookies are set only with consent and can be changed through Cookie settings in the footer."],
-    ["8. Contact", "For privacy questions or requests, email <a href=\"mailto:hello@valu8.uk\">hello@valu8.uk</a>. Last updated: 3 November 2026."],
+    ["7. Cookies and browser storage", "Essential storage supports sign-in, cookie choices, attribution and guest valuation access; campaign tags stay in session storage for one tab. Analytics and Meta advertising cookies are set only if you click Accept. Reject is as easy as Accept, and you can change your choice through Cookie settings in the footer."],
+    ["8. Contact", "For privacy questions or requests, email <a href=\"mailto:hello@valu8.uk\">hello@valu8.uk</a>. Last updated: 10 November 2026."],
   ],
   "/terms": [
     ["1. Acceptance", "By using Valu8 you agree to these terms. If you do not agree, do not use the service."],
@@ -50,7 +50,8 @@ const legalSections: Record<string, [string, string][]> = {
 
 export function staticPageBodyHtml(path: string): string | undefined {
   if (path === "/") {
-    return page("What's your car worth today?", "Enter your number plate for a free private-sale, part-exchange and dealer estimate.", [
+    return page("What's your car worth? Find out free from your number plate.", "Private sale, part-exchange and dealer estimates, plus your full MOT history, in about two minutes. No sign-up.", [
+      ["We don't buy cars", "We don't buy cars, so we've no reason to nudge your number up or down. Independent: we don't buy, sell or broker cars. Three prices, not one: private sale, part-ex and dealer. Official DVSA MOT history and mileage records. Optional photo condition score. Free, no account needed."],
       ["Free UK car valuation", "Get a valuation with no sign-up. Your report includes official DVSA MOT data where available. <a href=\"/valuation/new\">Start your free valuation</a> or <a href=\"/check\">check if a used car advert is fairly priced</a>."],
       ["How it works", "Enter your registration and mileage, confirm the car and add service notes, optionally add photos for a condition score, then get your valuation and report."],
       ["What's in every report", "Market-based private-sale, trade-in and dealer estimates; optional photo condition checks; official DVSA MOT history; mileage consistency information; a GOV.UK recall-check link; and estimated tax and clean-air-zone information with links to official checkers."],
