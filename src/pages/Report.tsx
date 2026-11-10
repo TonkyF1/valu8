@@ -1,6 +1,7 @@
 import { PremiumReport } from "@/components/PremiumReport";
 import { premiumEnforced, showPremiumReport } from "@/lib/entitlements";
 import { ReportCheckout, fetchReportPaid } from "@/components/ReportCheckout";
+import { metaPurchaseOnce } from "@/lib/metaPixel";
 import { sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
 import { hasPhotos, normaliseReportPricing } from "@/lib/askingPrice";
 import { reportPriceRange, headlinePrivateText } from "../../supabase/functions/_shared/cheapRange";
@@ -81,7 +82,7 @@ export default function Report() {
     if (isGuest && id && !isGuestValuation(id)) navigate(`/shared/${id}`, { replace: true });
   }, [isGuest, id, navigate]);
   const [v, setV] = useState<Valuation | null>(null);
-  useEffect(() => { if (v && !isShared) track("result_seen"); }, [v, isShared]);
+  useEffect(() => { if (v && !isShared) { track("result_seen"); track("valuation_completed"); } }, [v, isShared]);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -148,7 +149,12 @@ export default function Report() {
   const checkPaid = useCallback(async () => {
     if (!id) return false;
     const paid = await fetchReportPaid(id).catch(() => false);
-    if (paid) setReportPaid(true);
+    if (paid) {
+      setReportPaid(true);
+      // Consented visitors only (no-op unless the Meta Pixel loaded). Same event id as the server-side Purchase.
+      const sid = new URLSearchParams(window.location.search).get("session_id");
+      if (sid) metaPurchaseOnce(sid);
+    }
     return paid;
   }, [id]);
   useEffect(() => {
@@ -1289,7 +1295,7 @@ export default function Report() {
       <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {locked && !valuationUnavailable ? (
           <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
-            <a href="#report-checkout" onClick={() => track("offer_click")}>Unlock full report · £2.99</a>
+            <a href="#report-checkout" onClick={() => track("offer_click")}>Get my full report · £2.99</a>
           </Button>
         ) : isShared ? (
           <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">

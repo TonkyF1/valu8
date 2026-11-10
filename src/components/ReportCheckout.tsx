@@ -16,7 +16,8 @@ import { Lock, ShieldCheck, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { STRIPE_PUBLISHABLE_KEY } from "@/config/stripePublic";
 import { useAuth } from "@/contexts/AuthContext";
-import { track } from "@/lib/funnel";
+import { funnelDevice, funnelSessionId, track } from "@/lib/funnel";
+import { metaPixelLoaded } from "@/lib/metaPixel";
 
 const PK = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined) || STRIPE_PUBLISHABLE_KEY;
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
@@ -47,12 +48,46 @@ const APPEARANCE: Appearance = {
 };
 
 const BULLETS = [
-  "Full comparable sales & price range",
-  "Photo-by-photo condition notes",
-  "Repair upside & seller tips",
-  "Ownership costs & ready-to-post advert",
-  "Shareable report & PDF download",
+  "Suggested asking price and the lowest offer to accept",
+  "Comparable UK adverts for your car",
+  "What your photos and MOT history say about condition",
+  "Repair cost bands for MOT advisories",
+  "Ready-to-post advert text",
+  "Shareable report and PDF",
 ];
+
+/** Report preview. Every figure is an example, never the visitor's car, and is labelled as such. */
+const PREVIEW: { label: string; value: string; blur?: boolean }[] = [
+  { label: "Suggested asking price", value: "£4,950", blur: true },
+  { label: "Accept offers from", value: "£4,600", blur: true },
+  { label: "Comparable adverts", value: "12 similar cars, 3 shown, rest locked" },
+  { label: "MOT advisories to fix", value: "Front tyres, cost band shown when unlocked" },
+  { label: "Advert text", value: "First line visible, rest locked" },
+];
+
+function ReportPreview() {
+  return (
+    <div className="mt-4 rounded-xl border border-white/10 p-3 sm:p-4" style={{ background: "#1a1a1a" }} aria-label="Report preview with example figures">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Report preview</p>
+        <span className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider" style={{ background: "#FDE047", color: "#111111" }}>Example</span>
+      </div>
+      <dl className="divide-y divide-white/10 text-sm">
+        {PREVIEW.map((row) => (
+          <div key={row.label} className="flex items-baseline justify-between gap-3 py-2">
+            <dt className="opacity-80">{row.label}</dt>
+            <dd className="text-right font-semibold tabular-nums">
+              <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider" style={{ color: "#FDE047" }}>Example:</span>
+              <span className={row.blur ? "select-none blur-[5px]" : "opacity-90"} aria-hidden={row.blur ? true : undefined}>{row.value}</span>
+              {row.blur && <span className="sr-only">hidden until unlocked</span>}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-2 text-[11px] opacity-60">Example figures only, not your car. Your own figures appear when you unlock.</p>
+    </div>
+  );
+}
 
 function returnUrlFor(valuationId: string): string {
   const origin = typeof window !== "undefined" ? window.location.origin : "https://valu8.uk";
@@ -151,8 +186,11 @@ function ElementsCheckout({ valuationId, email, onPaid, onClose }: { valuationId
     // signed in). Do NOT send it here — create-checkout-session must not set
     // customer_email, or Elements throws "You cannot update the email…".
     track("checkout_start");
+    track("report_checkout");
     const { data, error: fnErr } = await supabase.functions.invoke("create-checkout-session", {
-      body: { valuationId },
+      // Anonymous funnel id + device class so the webhook can log report_purchased; metaConsent only
+      // true when the visitor accepted advertising cookies and the Meta Pixel is switched on.
+      body: { valuationId, funnelSession: funnelSessionId(), funnelDevice: funnelDevice(), metaConsent: metaPixelLoaded() },
     });
     const d = data as any;
     if (d?.alreadyPaid) { onPaid?.(); throw new Error("already paid"); }
@@ -233,27 +271,30 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
         </div>
       ) : !open ? (
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
+          <div className="min-w-0 md:max-w-md">
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#FDE047" }}>
-              <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden /> Full Valuation Report
+              <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden /> Full report · £2.99
             </p>
-            <h2 className="mt-1 text-xl font-bold md:text-2xl">Full report · £2.99 one-off</h2>
-            <ul className="mt-3 grid gap-1 text-sm opacity-90 sm:grid-cols-2">
+            <h2 className="mt-1 text-xl font-bold md:text-2xl">Know your asking price before you list</h2>
+            <p className="mt-2 text-sm opacity-90">Your free valuation shows what the car is worth. The full report shows what to ask, how far to drop and what to fix first.</p>
+            <ReportPreview />
+            <ul className="mt-4 grid gap-1 text-sm opacity-90">
               {BULLETS.map((b) => (
                 <li key={b} className="flex gap-2"><span style={{ color: "#00D6C8" }}>✓</span>{b}</li>
               ))}
             </ul>
           </div>
-          <div className="flex flex-col items-stretch gap-2 md:items-end">
+          <div className="flex flex-col items-stretch gap-2 md:items-end md:self-end">
             <button
               type="button"
               onClick={() => { track("offer_click"); setOpen(true); }}
               className="min-h-[48px] rounded-xl px-6 text-base font-semibold transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FDE047]"
               style={{ background: "#00D6C8", color: "#111111" }}
             >
-              Unlock full report · £2.99
+              Get my full report · £2.99
             </button>
-            <p className="flex items-center gap-1 text-xs opacity-70"><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Secure payment by Stripe · Apple Pay · Google Pay · Card</p>
+            <p className="text-center text-xs opacity-80 md:text-right">One-off payment. No subscription. We don't buy cars.</p>
+            <p className="flex items-center justify-center gap-1 text-xs opacity-70 md:justify-end"><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Secure payment by Stripe · Apple Pay · Google Pay · Card</p>
           </div>
         </div>
       ) : (

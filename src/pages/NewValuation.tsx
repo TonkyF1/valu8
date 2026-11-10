@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getAttribution } from "@/lib/attribution";
 import { useSeo } from "@/lib/seo";
-import { track } from "@/lib/funnel";
+import { getUtm, track } from "@/lib/funnel";
 import { inferPerformanceTrim, type TrimHint } from "@/lib/perfTrim";
 import { GUEST_DAILY_CAP, functionErrorBody, getGuestToken, photoToDataUrl, rememberGuestValuation } from "@/lib/guest";
 
@@ -346,6 +346,7 @@ export default function NewValuation() {
               serviceNotes: combinedNotes || null,
               vehicle: vehicleFacts,
               attribution: getAttribution() ?? null,
+              utm: getUtm(),
             },
           }),
         },
@@ -401,6 +402,7 @@ export default function NewValuation() {
         condition_score: report.conditionScore,
         private_value: report.valuationUnavailable ? null : report.values.privateSale,
         report: { ...report, ...(getAttribution() ? { attribution: getAttribution() } : {}) } as any,
+        ...getUtm(),
       }).select("id").single();
       if (error) throw error;
 
@@ -471,7 +473,8 @@ export default function NewValuation() {
                 aria-label="Vehicle registration number"
                 autoComplete="off"
                 value={reg}
-                onChange={(e) => { setReg(e.target.value.toUpperCase()); setLookupError(null); if (e.target.value.trim()) track("reg_typed"); }}
+                onFocus={() => track("valuation_started")}
+                onChange={(e) => { setReg(e.target.value.toUpperCase()); setLookupError(null); if (e.target.value.trim()) { track("valuation_started"); track("reg_typed"); } }}
                 placeholder="AB12 CDE"
                 maxLength={10}
                 disabled={looking}
