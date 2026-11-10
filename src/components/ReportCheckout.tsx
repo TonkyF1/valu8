@@ -192,7 +192,7 @@ function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: 
   );
 }
 
-function ElementsCheckout({ valuationId, email, onPaid, onClose }: { valuationId: string; email?: string; onPaid?: () => void; onClose: () => void }) {
+export function ElementsCheckout({ valuationId, email, onPaid, onClose }: { valuationId: string; email?: string; onPaid?: () => void; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchClientSecret = useCallback(async () => {
