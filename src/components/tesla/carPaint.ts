@@ -1,4 +1,4 @@
-// Colour matching for the generic body renders (public/cars/*.svg, white paint on the brand backdrop).
+// Colour matching for the model and body renders (public/cars/**/*.svg, white paint on the brand backdrop).
 // The DVSA colour picks a paint tone; only the paint is recoloured. Glass, tyres, lights, trim and the
 // backdrop are dark or saturated, so a luminance + low-chroma mask leaves them untouched, and the white
 // paint's own shading drives the new colour (luminosity-preserving, plus a clear-coat highlight).
@@ -180,6 +180,7 @@ export function tintPixels(px: Uint8ClampedArray, w: number, h: number, hex: str
   }
 }
 
+const MAX_PAINT_W = 1280;
 const sources = new Map<string, Promise<HTMLImageElement>>();
 /** The renders are SVGs wrapping one WebP; decode the WebP itself so the canvas is never tainted. */
 function loadRender(src: string): Promise<HTMLImageElement> {
@@ -203,10 +204,15 @@ function loadRender(src: string): Promise<HTMLImageElement> {
 export async function paintRender(canvas: HTMLCanvasElement, src: string, hex: string): Promise<boolean> {
   try {
     const img = await loadRender(src);
-    const w = img.naturalWidth || 960, h = img.naturalHeight || 540;
+    // The hero shows the car at most ~1260 device pixels wide, so cap the work there (keeps phones quick).
+    const nw = img.naturalWidth || 960, nh = img.naturalHeight || 540;
+    const k = Math.min(1, MAX_PAINT_W / nw);
+    const w = Math.round(nw * k), h = Math.round(nh * k);
     canvas.width = w; canvas.height = h;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(img, 0, 0, w, h);
     const data = ctx.getImageData(0, 0, w, h);
     tintPixels(data.data, w, h, hex);
