@@ -174,9 +174,9 @@ export function tintPixels(px: Uint8ClampedArray, w: number, h: number, hex: str
     nr += (1 - nr) * spec; ng += (1 - ng) * spec; nb += (1 - nb) * spec;
     seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
     const d = ((seed >>> 0) / 4294967296 - 0.5) * m;
-    px[j] = out[Math.round(clamp01(lr + (nr - lr) * m) * LUT_N)] + d + 0.5;
-    px[j + 1] = out[Math.round(clamp01(lg + (ng - lg) * m) * LUT_N)] + d + 0.5;
-    px[j + 2] = out[Math.round(clamp01(lb + (nb - lb) * m) * LUT_N)] + d + 0.5;
+    px[j] = out[Math.round(clamp01(lr + (nr - lr) * m) * LUT_N)] + d;
+    px[j + 1] = out[Math.round(clamp01(lg + (ng - lg) * m) * LUT_N)] + d;
+    px[j + 2] = out[Math.round(clamp01(lb + (nb - lb) * m) * LUT_N)] + d;
   }
 }
 
