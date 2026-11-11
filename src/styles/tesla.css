@@ -25,8 +25,9 @@
 /* Arc + car */
 .t8-viz{position:relative;width:min(390px,100vw);height:268px;margin-top:4px}
 .t8-arc{position:absolute;left:50%;top:0;width:390px;height:110px;transform:translateX(-50%);overflow:visible;z-index:2}
-.t8-band{transition:stroke-dasharray 1.3s var(--t8-spring),stroke-dashoffset 1.3s var(--t8-spring),opacity .4s ease}
-.t8-dot{transform-box:view-box;transform-origin:195px 180px;transition:transform 1.3s var(--t8-spring),opacity .4s ease}
+.t8-band{transition:stroke-dasharray 1.3s var(--t8-spring),stroke-dashoffset 1.3s var(--t8-spring),stroke .9s var(--t8-ease),opacity .4s ease}
+.t8-dot{transform-box:view-box;transform-origin:195px 180px;transition:transform 1.3s var(--t8-spring),fill .9s var(--t8-ease),opacity .4s ease}
+.t8-grade{margin-top:10px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;border:1px solid;border-radius:999px;padding:4px 12px;transition:color .9s var(--t8-ease),border-color .9s var(--t8-ease),background-color .9s var(--t8-ease)}
 .t8-car{position:absolute;left:50%;bottom:0;width:min(420px,108vw);height:auto;transform:translate3d(-50%,0,0);z-index:1;
   transition:opacity .7s var(--t8-ease),transform .9s var(--t8-ease);-webkit-mask-image:radial-gradient(ellipse 52% 50% at 50% 55%,#000 62%,transparent 100%);mask-image:radial-gradient(ellipse 52% 50% at 50% 55%,#000 62%,transparent 100%)}
 .t8-car.in{opacity:1;transform:translate3d(-50%,0,0)}

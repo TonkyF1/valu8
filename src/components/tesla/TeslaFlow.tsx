@@ -17,6 +17,7 @@ import { reportPriceRange } from "../../../supabase/functions/_shared/cheapRange
 import { ElementsCheckout, REPORT_CTA } from "@/components/ReportCheckout";
 import { bodyKeyFor, carImageSrc, type BodyKey } from "./carImage";
 import { renderFor } from "./modelRenders";
+import { gradeArc, gradeFromReport, type CarGrade } from "@/lib/carGrade";
 import { PriceArc, RingLoader, RollingPrice, useEasedProgress } from "./parts";
 
 interface Lookup {
@@ -46,20 +47,6 @@ function bandFor(report: any): Band | null {
 }
 const bandText = (b: Band) => (b.single ? gbp(b.low) : `${gbp(b.low)}–${gbp(b.high)}`);
 
-/** Map a band onto the arc using a scale fixed at the first estimate, so the refined band visibly moves. */
-function arcFractions(b: Band, scale: { lo: number; hi: number }) {
-  const span = Math.max(1, scale.hi - scale.lo);
-  let lo = b.single ? b.low * 0.965 : b.low;
-  let hi = b.single ? b.low * 1.035 : b.high;
-  lo = (lo - scale.lo) / span; hi = (hi - scale.lo) / span;
-  return { from: lo, to: hi };
-}
-function scaleFor(b: Band) {
-  const lo = b.single ? b.low * 0.965 : b.low, hi = b.single ? b.low * 1.035 : b.high;
-  const w = Math.max(hi - lo, b.low * 0.12);
-  return { lo: lo - w * 0.75, hi: hi + w * 0.45 };
-}
-
 const waitFor = (get: () => string | null, ms: number) => new Promise<string | null>((resolve) => {
   const t0 = Date.now();
   const tick = () => { const v = get(); if (v || Date.now() - t0 > ms) resolve(v); else setTimeout(tick, 150); };
@@ -86,7 +73,7 @@ export function TeslaFlow() {
   const [valuationId, setValuationId] = useState<string | null>(null);
   const [band, setBand] = useState<Band | null>(null);
   const [unavailable, setUnavailable] = useState(false);
-  const [scale, setScale] = useState<{ lo: number; hi: number } | null>(null);
+  const [grade, setGrade] = useState<CarGrade | null>(null);
   const [refineDone, setRefineDone] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [needMileage, setNeedMileage] = useState(false);
@@ -193,7 +180,7 @@ export function TeslaFlow() {
   async function start(raw?: string) {
     const cleaned = normaliseReg(raw ?? reg);
     if (!isPlausibleUkReg(cleaned)) { setErr("Enter a valid UK number plate, e.g. AB12 CDE."); return; }
-    setErr(null); setGuestLimit(null); setStage("looking"); setBand(null); setValuationId(null); setScale(null); setNeedMileage(false);
+    setErr(null); setGuestLimit(null); setStage("looking"); setBand(null); setValuationId(null); setGrade(null); setNeedMileage(false);
     if (turnstileEnabled()) setTsOn(true);
     let l: Lookup;
     try {
@@ -238,7 +225,7 @@ export function TeslaFlow() {
     try {
       const res = await value(l, { mileage: l.lastMileage, variant: v, transmission: gb }, null);
       if (!res) { setStage("estimate"); return; }
-      applyResult(res.id, res.report, true);
+      applyResult(res.id, res.report, true, l.lastMileage);
       setStage("estimate");
     } catch (e: any) {
       setErr(e?.message || "We couldn't value this car just now. Please try again.");
@@ -246,14 +233,14 @@ export function TeslaFlow() {
     }
   }
 
-  function applyResult(id: string, report: any, first: boolean) {
+  function applyResult(id: string, report: any, first: boolean, miles?: number) {
     setValuationId(id);
     const b = bandFor(report);
     setUnavailable(!b);
     if (b) {
       setBand(b);
-      if (first || !scale) setScale(scaleFor(b));
-    }
+      setGrade(gradeFromReport(report, { mileage: miles, firstRegistered: lookup?.firstRegistered, year: lookup?.year }));
+    } else setGrade(null);
     track("result_seen");
     track("valuation_completed");
     posthog.capture?.("Valuation Report Generated", { valuation_id: id, guest: !user, home_flow: true, refined: !first, private_value: report?.values?.privateSale, valuation_unavailable: !!report?.valuationUnavailable });
@@ -284,7 +271,7 @@ export function TeslaFlow() {
       const wait = Math.max(0, 1600 - (Date.now() - t0));
       setTimeout(() => setRefineDone(true), wait);
       setTimeout(() => {
-        applyResult(res.id, res.report, !band);
+        applyResult(res.id, res.report, !band, miles);
         setStage("refined");
         window.scrollTo({ top: 0, behavior: "auto" });
       }, wait + 1300);
@@ -317,14 +304,14 @@ export function TeslaFlow() {
   }
 
   function reset() {
-    setStage("idle"); setLookup(null); setBand(null); setValuationId(null); setScale(null); setErr(null); setGuestLimit(null);
+    setStage("idle"); setLookup(null); setBand(null); setValuationId(null); setGrade(null); setErr(null); setGuestLimit(null);
     setPhotos([]); setMods(""); setNotes(""); setReg(""); setCheckoutOpen(false); setGearbox(""); setGearboxGuessed(false);
     topRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
   const busyLookup = stage === "looking" || stage === "estimating";
   const hasCar = !!lookup && stage !== "idle" && stage !== "looking";
-  const fr = band && scale ? arcFractions(band, scale) : null;
+  const fr = band && grade ? gradeArc(grade.index) : null;
   const name = lookup ? [lookup.year, titleCase(lookup.make), titleCase(lookup.model), variant && !(lookup.model ?? "").toLowerCase().includes(variant.toLowerCase()) ? (variant.toLowerCase().startsWith(`${(lookup.model ?? "").toLowerCase().split(" ")[0]} `) ? variant.slice((lookup.model ?? "").split(" ")[0].length).trim() : variant) : ""].filter(Boolean).join(" ") : "";
   const facts = lookup ? [lookup.engineCapacity ? `${lookup.engineCapacity.toLocaleString("en-GB")} cc` : "", titleCase(lookup.fuelType), titleCase(lookup.colour)].filter(Boolean).join(" · ") : "";
   const refined = stage === "refined";
@@ -347,6 +334,9 @@ export function TeslaFlow() {
                 <h1 id="t8-h" className="sr-only">Your free estimate</h1>
                 <RollingPrice key={refined ? "r" : "e"} text={bandText(band)} className="t8-price" />
                 <div className="t8-meta">{refined ? "Updated with your details" : "Private sale"}</div>
+                {grade && (
+                  <div className="t8-grade" style={{ color: grade.color, borderColor: `${grade.color}59`, background: `${grade.color}14` }} aria-label={`Car grade: ${grade.label}`}>{grade.label}</div>
+                )}
               </>
             ) : (
               <>
@@ -357,7 +347,7 @@ export function TeslaFlow() {
             )}
           </div>
           <div className="t8-viz">
-            <PriceArc from={fr?.from ?? null} to={fr?.to ?? null} />
+            <PriceArc from={fr?.from ?? null} to={fr?.to ?? null} color={grade?.color} />
             <img key={carSrc} className={`t8-car ${hasCar ? "in" : "idle"}`} src={carSrc} alt="" width={960} height={540} decoding="async" fetchPriority="high" />
           </div>
           {hasCar && lookup && (
