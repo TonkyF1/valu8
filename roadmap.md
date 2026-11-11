@@ -18,3 +18,4 @@
 
 ## Price arc grade
 - [x] Grade each car Poor → Excellent (mileage, latest MOT, photos, mileage drop) and colour its fifth of the semi-circle, end grades filling to the ends.
+- [x] Mileage box: use newest real DVSA odometer reading (km→miles) and explain when there's none (e.g. under 3 years, no MOT yet).
