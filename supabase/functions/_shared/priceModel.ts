@@ -9,6 +9,8 @@ export interface PmInput {
   make: string; model: string; variant?: string | null; year: number; mileage: number;
   fuel?: string | null; gearbox?: string | null; body?: string | null; engine_cc?: number | null;
   seller?: "private" | "dealer" | string | null; desc?: string | null; // desc = advert text if the user gave one
+  /** gb-1: automatic share for this model, used only when `gearbox` is blank (unknown) to blend the auto/manual prices. */
+  autoShare?: number | null;
 }
 export interface PmResult { version: string; price: number; low: number; high: number; n_model: number; n_trim: number; known: "trim" | "model" | "make" | "none" }
 
@@ -121,7 +123,16 @@ const bandOf = (p: number) => (BANDS.find(([b]) => p < b)?.[1] ?? "40k+");
 const r50 = (x: number) => Math.round(x / 50) * 50;
 /** Price one car for one seller type, with a calibrated ~80% range (conformal, from out-of-fold residuals). */
 export function pricePm(x: PmInput): PmResult {
-  const ft = featurize({ ...x, body: resolveBody(x.make, x.model, x.body).body }); const p = Math.exp(score(ft.vec));
+  const ft = featurize({ ...x, body: resolveBody(x.make, x.model, x.body).body });
+  let p = Math.exp(score(ft.vec));
+  // gb-1: unknown gearbox (blank) with a known automatic share -> geometric blend of the manual and automatic prices
+  // instead of silently pricing a manual. No share (no adverts) keeps the old behaviour.
+  const share = Number(x.autoShare);
+  if (!/auto|dsg|cvt|semi|manual/i.test(s(x.gearbox)) && x.autoShare != null && Number.isFinite(share) && share > 0) {
+    const pa = Math.exp(score(featurize({ ...x, gearbox: "automatic", body: resolveBody(x.make, x.model, x.body).body }).vec));
+    const w = Math.min(1, share);
+    p = Math.exp(w * Math.log(pa) + (1 - w) * Math.log(p));
+  }
   const R = PM_MODEL.range as unknown as Record<string, readonly [number, number, number]>;
   const q = R[bandOf(p) + "|" + (x.seller === "dealer" ? "dealer" : "private")] ?? R["*"];
   return { version: PM_MODEL.version, price: r50(p), low: r50(p * Math.exp(q[0])), high: r50(p * Math.exp(q[1])), n_model: ft.n_model, n_trim: ft.n_trim, known: ft.known };

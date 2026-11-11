@@ -17,6 +17,8 @@ export interface CompQuery {
   make: string; model: string; variant?: string; year: number; mileage: number;
   fuel?: string; gearbox?: string; adText?: string; cat_sn?: boolean; non_runner?: boolean; no_mot?: boolean;
   currentYear?: number;
+  /** gb-1: share of this model's adverts that are automatic, used only when `gearbox` is blank (unknown). */
+  autoShare?: number | null;
 }
 export type OwnSegment = "perf" | "premium" | "mainstream" | "van";
 export interface OwnCompsParams {
@@ -74,7 +76,10 @@ export function normModel(make: string, model: string): string {
   if (mk === "mercedes-benz" && /^[a-z]\d{3}[a-z]?$/.test(m)) m = `${m[0]} class`;
   return m.replace("mx5", "mx-5");
 }
-const family = (model: string) => model.split(" ")[0].replace(/^(rs|s)(\d)$/, "a$2").replace(/^m(\d)$/, "$1 series");
+// gb-1: the BMW X4 is the coupe X3 (same platform, engines and M40i/M40d/X M versions), so they share a family:
+// a rare X3 M40i borrows X4 M40i evidence instead of dropping to the make-wide performance pool.
+const FAMILY_ALIAS: Record<string, string> = { x4: "x3" };
+const family = (model: string) => { const f = model.split(" ")[0].replace(/^(rs|s)(\d)$/, "a$2").replace(/^m(\d)$/, "$1 series"); return FAMILY_ALIAS[f] ?? f; };
 
 function perfInfo(make: string, model: string, variant?: string, text?: string): string | null {
   const p = detectPerformanceVariant(make, model, variant ?? "", text ?? "");
@@ -90,7 +95,7 @@ export function segmentOf(make: string, model: string, perf: string | null, body
   return PREMIUM.test(mk) ? "premium" : "mainstream";
 }
 
-interface Row { fu: number; mk: string; md: string; fam: string; perf: string | null; seg: OwnSegment; age: number; lnMi: number; dealer: number; cond: number; auto: number; diesel: number; lp: number; w: number; toks: string[]; year: number; mileage: number; price: number; seller: string; res?: number }
+interface Row { fu: number; mk: string; md: string; fam: string; perf: string | null; seg: OwnSegment; age: number; lnMi: number; dealer: number; cond: number; auto: number; diesel: number; lp: number; w: number; gbUnknown?: boolean; toks: string[]; year: number; mileage: number; price: number; seller: string; res?: number }
 
 export const trimTokens = (v?: string) => Array.from(new Set(String(v ?? "").toLowerCase().replace(/[^a-z+ ]/g, " ").split(/\s+/).filter((t) => t.length >= 2)));
 const lnMiles = (mi: number) => Math.log1p(Math.max(0, mi) / 10000);
@@ -107,7 +112,12 @@ function toRow(l: CompListing | CompQuery, refYear: number, price = 0, seller = 
     mk, md, fam: family(md), perf, seg: segmentOf(mk, md, perf, body),
     age: Math.max(0, refYear - l.year), lnMi: lnMiles(l.mileage), dealer: seller === "dealer" ? 1 : 0,
     cond: l.cat_sn || l.non_runner || l.no_mot ? 1 : 0,
-    auto: /auto|dsg|cvt|semi/i.test(l.gearbox ?? "") ? 1 : 0, diesel: /diesel/i.test(l.fuel ?? "") ? 1 : 0,
+    // gb-1: a query with no gearbox is UNKNOWN, not manual: the auto term takes the model's automatic share
+    // (0 when we have none, as before) and comps are not down-weighted for a gearbox mismatch.
+    ...(price === 0 && !/auto|dsg|cvt|semi|manual/i.test(l.gearbox ?? "")
+      ? { auto: Math.max(0, Math.min(1, Number((l as CompQuery).autoShare) || 0)), gbUnknown: true }
+      : { auto: /auto|dsg|cvt|semi/i.test(l.gearbox ?? "") ? 1 : 0 }),
+    diesel: /diesel/i.test(l.fuel ?? "") ? 1 : 0,
     lp: price > 0 ? Math.log(price) : 0, w: (l as CompListing).weight ?? 1, toks: trimTokens(l.variant), year: l.year, mileage: l.mileage, price, seller,
   };
 }
@@ -206,7 +216,7 @@ function pooled(pool: Row[], q: Row, p: OwnCompsParams, prior: number, k: number
   const hub = 2 * p.sigma, ws: [number, number][] = [];
   for (const c of pool) {
     const w0 = Math.exp(-Math.abs(c.year - q.year) / p.bw.year - Math.abs(c.lnMi - q.lnMi) / p.bw.lnMi)
-      * (c.auto !== q.auto ? MISMATCH_W.gearbox : 1) * (c.fu !== q.fu ? MISMATCH_W.fuel : 1);
+      * (!q.gbUnknown && c.auto !== q.auto ? MISMATCH_W.gearbox : 1) * (c.fu !== q.fu ? MISMATCH_W.fuel : 1);
     const d = Math.abs((c.res ?? 0) - prior), w = w0 * c.w * (d > hub ? hub / d : 1);
     sw += w; swr += w * (c.res ?? 0); sw2 += w * (c.res ?? 0) ** 2; gap = Math.min(gap, Math.abs(c.year - q.year));
     ws.push([c.res ?? 0, w0 * c.w]);
