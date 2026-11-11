@@ -21,7 +21,7 @@ export function canonicalVariantName(model: string | null | undefined, token: st
   if (!t) return null;
   const word = (w: string) => (BADGE_UPPER.test(w) ? w.toUpperCase() : titleCase(w));
   // Badges that are model names in their own right (RS6, M3, C63 AMG, A45, TT RS) don't take the base model.
-  if (/^(rs ?q?\d|s\d|sq\d|m\d|tt rs|[a-z]{1,3} ?(35|43|45|53|55|63|65)\b)/i.test(t)) {
+  if (/^(rs ?q?\d|s\d|sq\d|m\d\b|tt rs|[a-z]{1,3} ?(35|43|45|53|55|63|65)\b)/i.test(t)) {
     return t.replace(/^([a-z]+) (\d)/, "$1$2").split(" ").map(word).join(" ");
   }
   const md = normText(model);

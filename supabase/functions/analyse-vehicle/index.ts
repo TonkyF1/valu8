@@ -4,6 +4,7 @@
 // based on photos, mileage, history, MOT advisories and modifications.
 
 import { corsHeaders, guard, isAdminUser, json, clientIp, checkLimit, envInt, adminClient } from "../_shared/guard.ts";
+import { guessGearbox, hasGearbox } from "../_shared/gearbox.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { capturePosthogAiGeneration } from "../_shared/posthog.ts";
 import {
@@ -874,6 +875,15 @@ Deno.serve(async (req) => {
 
     // Fetch MOT history + MarketCheck pricing in parallel BEFORE calling the AI,
     // so we can feed real signals (corrosion advisories, fails, etc.) into the prompt.
+    // gb-1 (G6WLN): the free DVSA lookup has no gearbox, and blank used to price as a manual. Take the dominant gearbox
+    // for this make/model/year from our adverts (>= 80%); otherwise keep it unknown and pass the automatic share on.
+    let gearboxInfo: { source: "provided" | "inferred" | "unknown"; autoShare: number | null; n: number } = { source: "provided", autoShare: null, n: 0 };
+    if (!hasGearbox(body.transmission)) {
+      const gg = await guessGearbox(adminClient(), body.make, body.model, body.year).catch(() => ({ autoShare: null, n: 0 } as { gearbox?: undefined; autoShare: number | null; n: number }));
+      body.transmission = gg.gearbox ?? undefined;
+      gearboxInfo = { source: gg.gearbox ? "inferred" : "unknown", autoShare: gg.autoShare, n: gg.n };
+    }
+    const gbShare = gearboxInfo.source === "unknown" ? gearboxInfo.autoShare : null;
     const seed = hash(`${body.make}|${body.model}|${body.year}|${body.mileage}|${body.registration ?? ""}`);
     // eng-4: DVLA gives "A6" for an RS6. Infer the real trim from engine size + seller text
     // before anything is priced, so perf detection / comps / pm all see the true variant.
@@ -941,13 +951,13 @@ Deno.serve(async (req) => {
         make: body.make, model: body.model, variant: body.variant ?? null, year: body.year, mileage: pricedMiles,
         fuel: body.fuelType ?? null, gearbox: body.transmission ?? null, body: body.bodyStyle ?? null,
         engine_cc: Number(body.engineCapacity ?? (body.guestSave?.vehicle as any)?.engineCapacity) || null,
-        desc: [body.serviceNotes, body.modifications].filter(Boolean).join(" ") || null,
+        desc: [body.serviceNotes, body.modifications].filter(Boolean).join(" ") || null, autoShare: gbShare,
       };
       const pm = pricePmBoth(pmIn);
       const motAdj = motSignalAdjustment(motSignals(motEntries as any, { year: body.year }), pm.private.price);
       const ocBase = valueWithOwnComps({ // NO conditionScore/photoInsights: neutral base, computable before the AI
         make: body.make, model: body.model, variant: body.variant, year: body.year, mileage: pricedMiles,
-        fuel: body.fuelType, gearbox: body.transmission, adText: body.variant, currentYear: CURRENT_YEAR,
+        fuel: body.fuelType, gearbox: body.transmission, adText: body.variant, currentYear: CURRENT_YEAR, autoShare: gbShare,
       } as any);
       const similar = similarAdverts({ make: body.make, model: body.model, variant: body.variant, year: body.year, mileage: pricedMiles,
         fuel: body.fuelType, gearbox: body.transmission }, 5);
@@ -1517,7 +1527,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     try {
       const oc = valueWithOwnComps({
         make: body.make, model: body.model, variant: body.variant, year: body.year, mileage: pricedMiles,
-        fuel: body.fuelType, gearbox: body.transmission, adText: body.variant, currentYear: CURRENT_YEAR,
+        fuel: body.fuelType, gearbox: body.transmission, adText: body.variant, currentYear: CURRENT_YEAR, autoShare: gbShare,
         conditionScore: photoScore ?? undefined, photoInsights: photoUrls.length > 0 && Array.isArray(ai.photoInsights) ? ai.photoInsights : [],
         declaredStatus: serviceText,
       });
@@ -1540,7 +1550,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         make: body.make, model: body.model, variant: body.variant ?? null, year: body.year, mileage: pricedMiles,
         fuel: body.fuelType ?? null, gearbox: body.transmission ?? null, body: body.bodyStyle ?? null,
         engine_cc: Number(body.engineCapacity ?? (body.guestSave?.vehicle as any)?.engineCapacity) || null,
-        desc: [body.serviceNotes, body.modifications].filter(Boolean).join(" ") || null,
+        desc: [body.serviceNotes, body.modifications].filter(Boolean).join(" ") || null, autoShare: gbShare,
       });
       pmShadow = {
         version: pm.private.version, private: pm.private.price, dealer: pm.dealer.price,
@@ -1896,6 +1906,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       marketConfidenceReason: confidenceReason,
       // eng-6: the own-comps engine is the shown price whenever it was confident; label it honestly.
       pricingSource: engineShown && !engineRepriced && !valuationUnavailable ? "valu8_comps" : dataSource,
+      // gb-1: which gearbox priced the car and where it came from (provided by the user/lookup, inferred from our adverts, unknown).
+      gearbox: { value: body.transmission ?? null, source: gearboxInfo.source, autoShare: gearboxInfo.autoShare, n: gearboxInfo.n },
       marketSampleSize: mc?.count,
       priceAdjustments: adjustments,
       marketBaseline,

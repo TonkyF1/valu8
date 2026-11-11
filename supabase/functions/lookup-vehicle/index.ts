@@ -2,7 +2,8 @@
 import { normaliseFuel, normaliseColour, displayModel } from "../_shared/vehicle-text.ts";
 import { motDaysRemaining } from "../_shared/mot.ts";
 import { assessImport } from "../_shared/importCheck.ts";
-import { corsHeaders, guard, checkLimit, clientIp, envInt, json } from "../_shared/guard.ts";
+import { corsHeaders, guard, checkLimit, clientIp, envInt, json, adminClient } from "../_shared/guard.ts";
+import { guessGearbox } from "../_shared/gearbox.ts";
 
 interface LookupResponse {
   registration: string;
@@ -17,6 +18,8 @@ interface LookupResponse {
   year?: number;
   fuelType?: string;
   transmission?: string;
+  /** gb-1: likely gearbox from our adverts when the record has none (>= 80% of this make/model/year). Pre-sets the chip. */
+  transmissionGuess?: "Automatic" | "Manual";
   engineCapacity?: number;
   bodyStyle?: string;
   doors?: number;
@@ -287,6 +290,11 @@ Deno.serve(async (req) => {
     // fields; treat it as not found so the client shows an error instead.
     if (!out.make || !out.model) {
       return notFoundResponse();
+    }
+
+    if (!out.transmission) {
+      const g = await guessGearbox(adminClient(), out.make, out.model, out.year).catch(() => null);
+      if (g?.gearbox) out.transmissionGuess = g.gearbox;
     }
 
     return new Response(JSON.stringify(out), {
