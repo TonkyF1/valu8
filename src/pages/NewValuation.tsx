@@ -1,4 +1,5 @@
 import "@/styles/plate.css";
+import { mileageHint } from "@/lib/mileageHint";
 import { useEffect, useRef, useState } from "react";
 import { isFoundVehicle, isPlausibleUkReg, normaliseReg } from "@/lib/registration";
 import { Turnstile, turnstileEnabled, turnstileHeaders } from "@/components/Turnstile";
@@ -49,6 +50,8 @@ interface LookupResult {
   motStatus?: "Valid" | "Expired" | "Unknown";
   motSummary?: string;
   lastMileage?: number;
+  lastMileageDate?: string;
+  motTestCount?: number;
   recentAdvisories?: string[];
 }
 
@@ -679,10 +682,8 @@ export default function NewValuation() {
                       aria-invalid={!!errors.mileage}
                     />
                     {errors.mileage && <p className="text-xs text-destructive">{errors.mileage}</p>}
-                    {lookup?.lastMileage ? (
-                      <p className="text-[11px] text-muted-foreground">
-                        Last MOT recorded {lookup.lastMileage.toLocaleString()} mi
-                      </p>
+                    {lookup ? (
+                      <p className="text-[11px] text-muted-foreground">{mileageHint(lookup)}</p>
                     ) : null}
                   </div>
                   <div className="space-y-2">
