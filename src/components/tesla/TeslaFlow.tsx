@@ -17,13 +17,14 @@ import { reportPriceRange } from "../../../supabase/functions/_shared/cheapRange
 import { ElementsCheckout, REPORT_CTA } from "@/components/ReportCheckout";
 import { bodyKeyFor, carImageSrc, type BodyKey } from "./carImage";
 import { renderFor } from "./modelRenders";
+import { mileageHint } from "@/lib/mileageHint";
 import { gradeArc, gradeFromReport, type CarGrade } from "@/lib/carGrade";
 import { PriceArc, RingLoader, RollingPrice, useEasedProgress } from "./parts";
 
 interface Lookup {
   registration: string; make?: string; model?: string; variant?: string; year?: number; fuelType?: string; transmission?: string; transmissionGuess?: Gearbox;
   colour?: string; firstRegistered?: string; manufactureYear?: number; engineCapacity?: number; bodyStyle?: string; doors?: number;
-  co2Emissions?: number; motExpiry?: string; lastMileage?: number; recentAdvisories?: string[];
+  co2Emissions?: number; motExpiry?: string; lastMileage?: number; lastMileageDate?: string; motTestCount?: number; recentAdvisories?: string[];
 }
 type Gearbox = "Automatic" | "Manual";
 /** Provider gearbox text -> chip value ("Semi-Auto", "DSG", "CVT" count as automatic). */
@@ -452,7 +453,7 @@ export function TeslaFlow() {
                 <div className="t8-field">
                   <label htmlFor="t8-miles">Current mileage</label>
                   <input id="t8-miles" inputMode="numeric" placeholder="e.g. 64,500" value={mileage} onChange={(e) => setMileage(e.target.value.replace(/[^\d,]/g, ""))} />
-                  {lookup.lastMileage ? <span className="t8-hint">Last MOT recorded {lookup.lastMileage.toLocaleString("en-GB")} mi</span> : null}
+                  <span className="t8-hint">{mileageHint(lookup)}</span>
                 </div>
                 <div className="t8-field">
                   <label htmlFor="t8-mods">Modifications <span className="opt">(optional)</span></label>

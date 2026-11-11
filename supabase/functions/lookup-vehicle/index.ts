@@ -30,6 +30,9 @@ interface LookupResponse {
   motStatus?: "Valid" | "Expired" | "Unknown";
   motSummary?: string;
   lastMileage?: number;
+  /** Date (YYYY-MM-DD) of the MOT test that recorded lastMileage. */
+  lastMileageDate?: string;
+  motTestCount?: number;
   recentAdvisories?: string[];
   estimatedValue?: number;
   source?: string;
@@ -214,6 +217,8 @@ Deno.serve(async (req) => {
     let motStatus: LookupResponse["motStatus"] = "Unknown";
     let motSummary: string | undefined;
     let lastMileage: number | undefined;
+    let lastMileageDate: string | undefined;
+    let motTestCount = 0;
     const recentAdvisories: string[] = [];
     let dvsaYear: number | undefined;
     let dvsaMake: string | undefined;
@@ -248,7 +253,15 @@ Deno.serve(async (req) => {
       const passes = tests.filter(t => String(t?.testResult ?? "").toUpperCase() === "PASSED").length;
       const fails = tests.filter(t => String(t?.testResult ?? "").toUpperCase() !== "PASSED").length;
       motSummary = `${tests.length} tests on record · ${passes} pass${passes === 1 ? "" : "es"}, ${fails} fail${fails === 1 ? "" : "s"}`;
-      lastMileage = latest?.odometerValue ? Number(latest.odometerValue) : undefined;
+      motTestCount = tests.length;
+      // Newest test with a real odometer reading (some tests record "unreadable" / no odometer); km converted to miles.
+      for (const t of sorted) {
+        const v = Number(t?.odometerValue);
+        if (!(v > 0) || /unread|no.?odo/i.test(String(t?.odometerResultType ?? ""))) continue;
+        lastMileage = /^k/i.test(String(t?.odometerUnit ?? "")) ? Math.round(v * 0.621371) : v;
+        lastMileageDate = t?.completedDate ? String(t.completedDate).slice(0, 10) : undefined;
+        break;
+      }
       if (latest?.defects && Array.isArray(latest.defects)) {
         for (const d of latest.defects) {
           if (/advisory|minor/i.test(String(d?.type ?? ""))) {
@@ -282,6 +295,8 @@ Deno.serve(async (req) => {
       motStatus,
       motSummary,
       lastMileage,
+      lastMileageDate,
+      motTestCount: data ? motTestCount : undefined,
       recentAdvisories: recentAdvisories.slice(0, 3),
       source: vdg && data ? "vdg+dvsa" : vdg ? "vdg" : "dvsa",
     };
