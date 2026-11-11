@@ -1,5 +1,10 @@
 # Frontend SEO task
 
+## Car pictures
+- [ ] Finish adding the 12 generated model pictures and verify model/year selection.
+- [ ] Keep every model picture in its original white finish; disable registration-colour repainting.
+- [ ] Check the homepage pictures and targeted tests.
+
 - [x] Share metadata between route pages and build-time HTML.
 - [x] Generate dual HTML shells, 404 shell and sitemap without backend changes.
 - [x] Reuse/clear noindex metadata and remove blind-test sample cards.
