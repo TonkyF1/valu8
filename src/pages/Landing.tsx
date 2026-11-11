@@ -54,9 +54,9 @@ export default function Landing() {
 
         <section className="container max-w-xl pt-12 pb-10" aria-label="Why Valu8">
           <p className="text-center text-[15px] font-medium text-foreground/90 text-balance">We don't buy cars, so we've no reason to nudge your number up or down.</p>
-          <ul className="mt-5 grid gap-2 text-left text-[14px] text-foreground/85 sm:mx-auto sm:max-w-md">
+          <ul className="mt-5 grid gap-2 text-center text-[14px] text-foreground/85 sm:mx-auto sm:max-w-md">
             {TRUST.map((t) => (
-              <li key={t} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />{t}</li>
+              <li key={t} className="flex items-start justify-center gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />{t}</li>
             ))}
           </ul>
         </section>
