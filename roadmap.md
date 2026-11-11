@@ -15,3 +15,6 @@
 
 ## Photos
 - [x] "Upload all" button next to the Photos heading fills empty photo cards in order (max 6).
+
+## Price arc grade
+- [x] Grade each car Poor → Excellent (mileage, latest MOT, photos, mileage drop) and colour its fifth of the semi-circle, end grades filling to the ends.
