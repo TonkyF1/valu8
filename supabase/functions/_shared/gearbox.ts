@@ -4,7 +4,10 @@
 // Fix: when the gearbox is blank, take the dominant gearbox for that make/model/year from our own adverts if it holds
 // at least DOMINANT_SHARE of them; otherwise keep it unknown and pass the automatic share on, so the engine neither
 // assumes manual nor penalises comps for a gearbox we don't know.
-export const GEARBOX = { DOMINANT_SHARE: 0.8, MIN_ROWS: 5, YEAR_WINDOW: 1, WIDE_YEAR_WINDOW: 3 } as const;
+// MIN_ROWS 20: with fewer adverts the mix is noise (a 2017 MINI "Cooper" matched 9 adverts, 78% automatic, when MINI
+// hatches of that age are ~25% automatic), so the gearbox stays unknown with no share (priced as before, minus the
+// mismatch penalty).
+export const GEARBOX = { DOMINANT_SHARE: 0.8, MIN_ROWS: 20, YEAR_WINDOW: 1, WIDE_YEAR_WINDOW: 3 } as const;
 
 export type Gearbox = "Automatic" | "Manual";
 export interface GearboxGuess {
@@ -32,13 +35,17 @@ export function gearboxFromListings(rows: { gearbox?: string | null }[], o: { sh
   return { gearbox, autoShare: Math.round(autoShare * 1000) / 1000, n };
 }
 
+import { normModel } from "./ownComps.ts";
+
 // deno-lint-ignore no-explicit-any
 type Admin = { from: (t: string) => any };
 const likeEsc = (s: string) => s.replace(/[%_,()\\]/g, " ").replace(/\s+/g, " ").trim();
 
 /** Gearbox guess from market_listings for make/model/year (year +-1, widening to +-3; full model name first, then its first word). */
 export async function guessGearbox(admin: Admin | null, make?: string | null, model?: string | null, year?: number | null): Promise<GearboxGuess> {
-  const mk = likeEsc(String(make ?? "")), md = likeEsc(String(model ?? "")), y = Number(year);
+  // Same model normalisation as the comps engine (MINI "Cooper" -> "hatch", "320d" -> "3 series"), so we sample the
+  // adverts the car is priced against.
+  const mk = likeEsc(String(make ?? "")), md = likeEsc(normModel(String(make ?? ""), String(model ?? ""))), y = Number(year);
   if (!admin || !mk || !md || !Number.isFinite(y)) return { autoShare: null, n: 0 };
   const first = md.split(" ")[0];
   const models = first && first.length >= 2 && first.toLowerCase() !== md.toLowerCase() ? [md, first] : [md];
