@@ -35,8 +35,8 @@ export function RollingPrice({ text, className }: { text: string; className?: st
 const A0 = -145, A1 = -35;
 const ARC = "M 57.38,83.64 A 168 168 0 0 1 332.62,83.64";
 
-/** Teal band sweeping along the arc between two fractions (0..1). null = empty track. */
-export function PriceArc({ from, to }: { from: number | null; to: number | null }) {
+/** Coloured band sweeping along the arc between two fractions (0..1). null = empty track. */
+export function PriceArc({ from, to, color = "#00D6C8" }: { from: number | null; to: number | null; color?: string }) {
   const on = from != null && to != null;
   const a = on ? Math.max(0, Math.min(1, from!)) : 0.5;
   const b = on ? Math.max(a + 0.02, Math.min(1, to!)) : 0.5;
@@ -45,19 +45,16 @@ export function PriceArc({ from, to }: { from: number | null; to: number | null 
   return (
     <svg className="t8-arc" viewBox="0 0 390 110" aria-hidden="true">
       <defs>
-        <linearGradient id="t8teal" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#00D6C8" /><stop offset="1" stopColor="#1AFFF0" />
-        </linearGradient>
         <filter id="t8glow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="3.5" result="b" />
           <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
       </defs>
       <path d={ARC} fill="none" stroke="#2A2A2A" strokeWidth="7" strokeLinecap="round" />
-      <path className="t8-band" d={ARC} pathLength={1000} fill="none" stroke="url(#t8teal)" strokeWidth="7" strokeLinecap="round" filter="url(#t8glow)"
-        style={{ strokeDasharray: `${on ? len : 0} 2000`, strokeDashoffset: -(on ? a : 0.5) * 1000, opacity: on ? 1 : 0 }} />
-      <circle className="t8-dot" cx="363" cy="180" r="3.3" fill="#00D6C8" filter="url(#t8glow)" style={{ transform: `rotate(${on ? angA : -90}deg)`, opacity: on ? 1 : 0 }} />
-      <circle className="t8-dot" cx="363" cy="180" r="3.3" fill="#1AFFF0" filter="url(#t8glow)" style={{ transform: `rotate(${on ? angB : -90}deg)`, opacity: on ? 1 : 0 }} />
+      <path className="t8-band" d={ARC} pathLength={1000} fill="none" strokeWidth="7" strokeLinecap="round" filter="url(#t8glow)"
+        style={{ stroke: color, strokeDasharray: `${on ? len : 0} 2000`, strokeDashoffset: -(on ? a : 0.5) * 1000, opacity: on ? 1 : 0 }} />
+      <circle className="t8-dot" cx="363" cy="180" r="3.3" filter="url(#t8glow)" style={{ fill: color, transform: `rotate(${on ? angA : -90}deg)`, opacity: on ? 1 : 0 }} />
+      <circle className="t8-dot" cx="363" cy="180" r="3.3" filter="url(#t8glow)" style={{ fill: color, transform: `rotate(${on ? angB : -90}deg)`, opacity: on ? 1 : 0 }} />
     </svg>
   );
 }
