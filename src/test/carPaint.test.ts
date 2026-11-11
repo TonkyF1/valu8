@@ -14,20 +14,49 @@ describe("paintFor", () => {
   });
 });
 
+// A 60x20 test render: columns 0-19 lit white paint, 20-39 shadowed paint, 40-49 dark backdrop, 50-59 red rear light.
+const W = 60, H = 20;
+function render(noise = 0) {
+  const p = new Uint8ClampedArray(W * H * 4);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4;
+    const n = noise && x < 40 ? (((x >> 2) + (y >> 2)) % 2 ? noise : -noise) : 0; // blocky compression-style noise
+    const c = x < 20 ? [235, 235, 235] : x < 40 ? [175, 175, 175] : x < 50 ? [17, 17, 17] : [190, 25, 30];
+    p.set([c[0] + n, c[1] + n, c[2] + n, 255], i);
+  }
+  return p;
+}
+const at = (p: Uint8ClampedArray, x: number, y = 10) => [...p.slice((y * W + x) * 4, (y * W + x) * 4 + 3)];
+
 describe("tintPixels", () => {
-  const px = (...rgb: number[][]) => new Uint8ClampedArray(rgb.flatMap((c) => [...c, 255]));
   it("only paints bright neutral pixels", () => {
     expect(paintMask(235, 235, 235)).toBeGreaterThan(0.99); // white paint
     expect(paintMask(17, 17, 17)).toBe(0); // backdrop / tyre
     expect(paintMask(40, 45, 50)).toBe(0); // glass
     expect(paintMask(200, 30, 30)).toBe(0); // rear light
   });
-  it("recolours paint, leaves the rest alone and keeps shading", () => {
-    const p = px([235, 235, 235], [150, 150, 150], [17, 17, 17], [190, 25, 30]);
-    tintPixels(p, "#1F3F7A");
-    expect(p[2]).toBeGreaterThan(p[0]); // lit paint turns blue
-    expect(p[2]).toBeGreaterThan(p[6] - 1); // shading kept: lit panel brighter than shadowed one
-    expect([...p.slice(8, 11)]).toEqual([17, 17, 17]);
-    expect([...p.slice(12, 15)]).toEqual([190, 25, 30]);
+  it("recolours paint, keeps shading and leaves the backdrop and lights alone", () => {
+    const p = render();
+    tintPixels(p, W, H, "#1F3F7A");
+    const lit = at(p, 10), shadow = at(p, 30);
+    expect(lit[2]).toBeGreaterThan(lit[0] + 20); // lit paint turns blue
+    expect(lit[2]).toBeGreaterThan(shadow[2]); // lit panel stays brighter than the shadowed one
+    expect(at(p, 46)).toEqual([17, 17, 17]);
+    expect(at(p, 56)).toEqual([190, 25, 30]);
+  });
+  it("doesn't turn compression colour blocks into blotchy paint", () => {
+    // One evenly lit panel where alternate 4px blocks pick up a faint teal cast, as in a compressed WebP.
+    // The old per-pixel tint left those blocks half-painted (a 14-level swing in red).
+    const p = new Uint8ClampedArray(W * H * 4);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const odd = ((x >> 2) + (y >> 2)) % 2;
+      p.set([...(x < 40 ? (odd ? [186, 204, 214] : [200, 200, 200]) : [17, 17, 17]), 255], (y * W + x) * 4);
+    }
+    tintPixels(p, W, H, "#8E1A1F");
+    for (const ch of [0, 1, 2]) {
+      const v = [];
+      for (let y = 4; y < 16; y++) for (let x = 4; x < 32; x++) v.push(at(p, x, y)[ch]);
+      expect(Math.max(...v) - Math.min(...v)).toBeLessThanOrEqual(3);
+    }
   });
 });
