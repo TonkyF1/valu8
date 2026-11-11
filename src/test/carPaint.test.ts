@@ -45,10 +45,15 @@ describe("tintPixels", () => {
     expect(at(p, 56)).toEqual([190, 25, 30]);
   });
   it("smooths compression blocks instead of amplifying them", () => {
-    const p = render(3);
+    // One evenly lit panel (200) with ±3 blocky noise, like a compressed WebP.
+    const p = new Uint8ClampedArray(W * H * 4);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const v = x < 40 ? 200 + (((x >> 2) + (y >> 2)) % 2 ? 3 : -3) : 17;
+      p.set([v, v, v, 255], (y * W + x) * 4);
+    }
     tintPixels(p, W, H, "#1F3F7A");
     const blues = [];
-    for (let y = 4; y < 16; y++) for (let x = 4; x < 16; x++) blues.push(at(p, x, y)[2]);
-    expect(Math.max(...blues) - Math.min(...blues)).toBeLessThan(4); // source swings by 6, and the old per-pixel tint swung blue by ~9
+    for (let y = 4; y < 16; y++) for (let x = 4; x < 32; x++) blues.push(at(p, x, y)[2]);
+    expect(Math.max(...blues) - Math.min(...blues)).toBeLessThanOrEqual(2); // source swings by 6
   });
 });
