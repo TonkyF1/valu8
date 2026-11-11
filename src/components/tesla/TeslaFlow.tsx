@@ -11,7 +11,7 @@ import { getAttribution } from "@/lib/attribution";
 import { getUtm, track } from "@/lib/funnel";
 import { inferPerformanceTrim, type TrimHint } from "@/lib/perfTrim";
 import { functionErrorBody, getGuestToken, photoToDataUrl, rememberGuestValuation } from "@/lib/guest";
-import { PHOTO_SLOTS, type PhotoSlotKey } from "@/lib/cars";
+import { PHOTO_SLOTS, fillEmptySlots, type PhotoSlotKey } from "@/lib/cars";
 import { normaliseReportPricing } from "@/lib/askingPrice";
 import { reportPriceRange } from "../../../supabase/functions/_shared/cheapRange";
 import { ElementsCheckout, REPORT_CTA } from "@/components/ReportCheckout";
@@ -97,6 +97,7 @@ export function TeslaFlow() {
   const topRef = useRef<HTMLDivElement>(null);
   const unlockRef = useRef<HTMLDivElement>(null);
   const slotInput = useRef<HTMLInputElement>(null);
+  const bulkInput = useRef<HTMLInputElement>(null);
   const slotTarget = useRef<PhotoSlotKey | null>(null);
 
   const bodyKey: BodyKey = useMemo(() => (lookup ? bodyKeyFor(lookup) : "hatchback"), [lookup]);
@@ -308,6 +309,13 @@ export function TeslaFlow() {
     setPhotos((ps) => [...ps.filter((p) => p.key !== k), { key: k, file: f, preview: URL.createObjectURL(f) }]);
   }
 
+  function pickBulk(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith("image/"));
+    e.target.value = "";
+    if (!files.length) return;
+    setPhotos((ps) => [...ps, ...fillEmptySlots(ps.map((p) => p.key), files).map(({ key, file }) => ({ key, file, preview: URL.createObjectURL(file) }))]);
+  }
+
   function reset() {
     setStage("idle"); setLookup(null); setBand(null); setValuationId(null); setScale(null); setErr(null); setGuestLimit(null);
     setPhotos([]); setMods(""); setNotes(""); setReg(""); setCheckoutOpen(false); setGearbox(""); setGearboxGuessed(false);
@@ -467,8 +475,17 @@ export function TeslaFlow() {
               </div>
             </div>
             <div style={{ margin: "22px 0 18px" }}>
-              <h3 className="t8-h3" style={{ margin: 0 }}>Photos <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400, color: "#8A8A8A" }}>(optional)</span></h3>
+              <div className="t8-photohead">
+                <h3 className="t8-h3" style={{ margin: 0 }}>Photos <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400, color: "#8A8A8A" }}>(optional)</span></h3>
+                {photos.length < PHOTO_SLOTS.length && (
+                  <button type="button" className="t8-bulk" data-testid="bulk-upload" onClick={() => bulkInput.current?.click()}>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 11V2.5M4.5 6 8 2.5 11.5 6M2.5 10.5v2a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    Upload all
+                  </button>
+                )}
+              </div>
               <input ref={slotInput} type="file" accept="image/*" hidden onChange={pickPhoto} />
+              <input ref={bulkInput} type="file" accept="image/*" multiple hidden onChange={pickBulk} aria-label="Upload several photos" />
               <div className="t8-photos t8-stagger">
                 {PHOTO_SLOTS.map((s) => {
                   const ph = photos.find((p) => p.key === s.key);
