@@ -64,4 +64,26 @@ describe("renderFor", () => {
     const ids = [...new Set(MODEL_RENDERS.map((e) => e.id))];
     for (const id of ids) expect(existsSync(`public/cars/m/${id}.svg`), id).toBe(true);
   });
+  it.each([
+    ["VAUXHALL", "ASTRA", 2012, "astra-j"],
+    ["FORD", "KUGA", 2021, "kuga-mk3"],
+    ["VOLKSWAGEN", "PASSAT", 2017, "passat-b8"],
+    ["TOYOTA", "C-HR", 2019, "chr-1"],
+    ["VAUXHALL", "CROSSLAND X", 2019, "crossland-x"],
+    ["VAUXHALL", "GRANDLAND X", 2019, "grandland-x"],
+    ["VOLKSWAGEN", "T-CROSS", 2020, "tcross-1"],
+    ["SKODA", "OCTAVIA", 2021, "octavia-mk4"],
+    ["TOYOTA", "COROLLA", 2020, "corolla-e210"],
+    ["TOYOTA", "YARIS", 2021, "yaris-xp210"],
+    ["KIA", "SPORTAGE", 2023, "sportage-nq5"],
+    ["HYUNDAI", "TUCSON", 2022, "tucson-4"],
+  ])("selects additional model %s %s (%s)", (make, model, year, id) => {
+    expect(r(make as string, model as string, year as number)).toBe(`/cars/m/${id}.svg`);
+  });
+  it("does not substitute a hatchback or saloon for other new body variants", () => {
+    expect(r("TOYOTA", "COROLLA TOURING SPORTS", 2021)).toBeNull();
+    expect(r("VOLKSWAGEN", "PASSAT", 2020, "ESTATE")).toBeNull();
+    expect(r("TOYOTA", "YARIS CROSS", 2022)).toBeNull();
+    expect(r("VAUXHALL", "ASTRA GTC", 2013)).toBeNull();
+  });
 });
