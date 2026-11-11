@@ -19,10 +19,13 @@ import { bodyKeyFor, carImageSrc, type BodyKey } from "./carImage";
 import { PriceArc, RingLoader, RollingPrice, useEasedProgress } from "./parts";
 
 interface Lookup {
-  registration: string; make?: string; model?: string; variant?: string; year?: number; fuelType?: string; transmission?: string;
+  registration: string; make?: string; model?: string; variant?: string; year?: number; fuelType?: string; transmission?: string; transmissionGuess?: Gearbox;
   colour?: string; firstRegistered?: string; manufactureYear?: number; engineCapacity?: number; bodyStyle?: string; doors?: number;
   co2Emissions?: number; motExpiry?: string; lastMileage?: number; recentAdvisories?: string[];
 }
+type Gearbox = "Automatic" | "Manual";
+/** Provider gearbox text -> chip value ("Semi-Auto", "DSG", "CVT" count as automatic). */
+const gearboxOf = (t?: string): Gearbox | "" => (/auto|semi|dsg|cvt|tiptronic|steptronic|tronic|pdk|dct/i.test(t ?? "") ? "Automatic" : /manual/i.test(t ?? "") ? "Manual" : "");
 interface Photo { key: PhotoSlotKey; file: File; preview: string }
 type Stage = "idle" | "looking" | "estimating" | "estimate" | "refining" | "refined";
 interface Band { low: number; high: number; single: boolean }
@@ -74,6 +77,8 @@ export function TeslaFlow() {
   const [trimHint, setTrimHint] = useState<TrimHint | null>(null);
   const [trimAuto, setTrimAuto] = useState(false);
   const [mileage, setMileage] = useState("");
+  const [gearbox, setGearbox] = useState<Gearbox | "">("");
+  const [gearboxGuessed, setGearboxGuessed] = useState(false);
   const [mods, setMods] = useState("");
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -117,16 +122,17 @@ export function TeslaFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function analyseBody(l: Lookup, extra: { mileage: number; variant: string; mods?: string; notes?: string; photoUrls?: string[]; photosLabeled?: { slot: string; url: string }[]; guestPhotos?: { slot: string; dataUrl: string }[]; refineOf?: string | null }) {
+  function analyseBody(l: Lookup, extra: { mileage: number; variant: string; transmission?: Gearbox | ""; mods?: string; notes?: string; photoUrls?: string[]; photosLabeled?: { slot: string; url: string }[]; guestPhotos?: { slot: string; dataUrl: string }[]; refineOf?: string | null }) {
     const combined = [extra.notes?.trim() ?? "", extra.mods?.trim() ? `Modifications / extras: ${extra.mods.trim()}` : ""].filter(Boolean).join("\n");
-    const vehicle = { fuelType: l.fuelType, transmission: l.transmission, firstRegistered: l.firstRegistered, engineCapacity: l.engineCapacity, co2Emissions: l.co2Emissions };
+    const transmission = extra.transmission || l.transmission || undefined;
+    const vehicle = { fuelType: l.fuelType, transmission, firstRegistered: l.firstRegistered, engineCapacity: l.engineCapacity, co2Emissions: l.co2Emissions };
     return {
       combined, vehicle,
       body: {
         make: l.make, model: l.model, variant: extra.variant.trim() || undefined, year: l.year, mileage: extra.mileage,
         registration: l.registration || undefined, motExpiry: l.motExpiry || undefined,
         serviceNotes: extra.notes?.trim() || undefined, modifications: extra.mods?.trim() || undefined,
-        colour: l.colour || undefined, fuelType: l.fuelType || undefined, transmission: l.transmission || undefined,
+        colour: l.colour || undefined, fuelType: l.fuelType || undefined, transmission,
         engineCapacity: l.engineCapacity || undefined, bodyStyle: l.bodyStyle || undefined, firstRegistered: l.firstRegistered || undefined,
         manufactureYear: l.manufactureYear || undefined, motAdvisories: l.recentAdvisories?.length ? l.recentAdvisories : undefined,
         photoUrls: extra.photoUrls ?? [], photos: extra.photosLabeled ?? [],
@@ -213,6 +219,10 @@ export function TeslaFlow() {
     const v = providerTrim || (hint?.confident ? hint.variant : "");
     setTrimHint(hint); setVariant(v); setTrimAuto(!providerTrim && !!hint?.confident);
     setMileage(l.lastMileage ? String(l.lastMileage) : "");
+    // gb-1: DVSA has no gearbox; pre-set the chip from the record, else the likely gearbox for this model.
+    const gbRecord = gearboxOf(l.transmission);
+    const gb: Gearbox | "" = gbRecord || l.transmissionGuess || "";
+    setGearbox(gb); setGearboxGuessed(!gbRecord && !!gb);
     if (!l.lastMileage || !l.make || !l.model || !l.year) {
       // No MOT mileage yet (newer cars): ask for it rather than guess.
       setNeedMileage(true); setStage("estimate");
@@ -222,7 +232,7 @@ export function TeslaFlow() {
     setStage("estimating");
     track("submitted");
     try {
-      const res = await value(l, { mileage: l.lastMileage, variant: v }, null);
+      const res = await value(l, { mileage: l.lastMileage, variant: v, transmission: gb }, null);
       if (!res) { setStage("estimate"); return; }
       applyResult(res.id, res.report, true);
       setStage("estimate");
@@ -264,7 +274,7 @@ export function TeslaFlow() {
         if (error) throw error;
         photoUrls.push(path); labeled.push({ slot: p.key, url: path });
       }
-      const res = await value(lookup, { mileage: miles, variant, mods, notes, photoUrls, photosLabeled: labeled, guestPhotos, refineOf: valuationId }, valuationId);
+      const res = await value(lookup, { mileage: miles, variant, transmission: gearbox, mods, notes, photoUrls, photosLabeled: labeled, guestPhotos, refineOf: valuationId }, valuationId);
       if (!res) { setStage("estimate"); return; }
       // Let the ring finish cleanly before revealing the result.
       const wait = Math.max(0, 1600 - (Date.now() - t0));
@@ -297,14 +307,14 @@ export function TeslaFlow() {
 
   function reset() {
     setStage("idle"); setLookup(null); setBand(null); setValuationId(null); setScale(null); setErr(null); setGuestLimit(null);
-    setPhotos([]); setMods(""); setNotes(""); setReg(""); setCheckoutOpen(false);
+    setPhotos([]); setMods(""); setNotes(""); setReg(""); setCheckoutOpen(false); setGearbox(""); setGearboxGuessed(false);
     topRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
   const busyLookup = stage === "looking" || stage === "estimating";
   const hasCar = !!lookup && stage !== "idle" && stage !== "looking";
   const fr = band && scale ? arcFractions(band, scale) : null;
-  const name = lookup ? [lookup.year, titleCase(lookup.make), titleCase(lookup.model), variant && !(lookup.model ?? "").toLowerCase().includes(variant.toLowerCase()) ? variant : ""].filter(Boolean).join(" ") : "";
+  const name = lookup ? [lookup.year, titleCase(lookup.make), titleCase(lookup.model), variant && !(lookup.model ?? "").toLowerCase().includes(variant.toLowerCase()) ? (variant.toLowerCase().startsWith(`${(lookup.model ?? "").toLowerCase().split(" ")[0]} `) ? variant.slice((lookup.model ?? "").split(" ")[0].length).trim() : variant) : ""].filter(Boolean).join(" ") : "";
   const facts = lookup ? [lookup.engineCapacity ? `${lookup.engineCapacity.toLocaleString("en-GB")} cc` : "", titleCase(lookup.fuelType), titleCase(lookup.colour)].filter(Boolean).join(" · ") : "";
   const refined = stage === "refined";
   const milesNum = Number(mileage.replace(/[,\s]/g, ""));
@@ -426,6 +436,16 @@ export function TeslaFlow() {
                   </div>
                 ) : <span className="t8-hint">DVLA records don't include the trim. Performance versions (RS, ST, GTI, R, AMG, M, vRS, Type R) are worth much more, so add yours.</span>}
                 {trimAuto && <span className="t8-hint">Filled in from the engine size. Change it if it's wrong.</span>}
+              </div>
+              <div className="t8-field">
+                <label id="t8-gb-l">Gearbox</label>
+                <div className="t8-seg" role="radiogroup" aria-labelledby="t8-gb-l" data-v={gearbox || undefined} data-testid="gearbox">
+                  <span className="t8-seg-thumb" aria-hidden />
+                  {(["Automatic", "Manual"] as const).map((g) => (
+                    <button key={g} type="button" role="radio" aria-checked={gearbox === g} onClick={() => { setGearbox(g); setGearboxGuessed(false); }}>{g}</button>
+                  ))}
+                </div>
+                {gearboxGuessed && <span className="t8-hint">Most of these are {gearbox.toLowerCase()}. Change it if yours isn't.</span>}
               </div>
               <div className="t8-row2">
                 <div className="t8-field">
