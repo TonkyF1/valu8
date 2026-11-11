@@ -44,16 +44,19 @@ describe("tintPixels", () => {
     expect(at(p, 46)).toEqual([17, 17, 17]);
     expect(at(p, 56)).toEqual([190, 25, 30]);
   });
-  it("smooths compression blocks instead of amplifying them", () => {
-    // One evenly lit panel (200) with ±3 blocky noise, like a compressed WebP.
+  it("doesn't turn compression colour blocks into blotchy paint", () => {
+    // One evenly lit panel where alternate 4px blocks pick up a faint teal cast, as in a compressed WebP.
+    // The old per-pixel tint left those blocks half-painted (a 14-level swing in red).
     const p = new Uint8ClampedArray(W * H * 4);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const v = x < 40 ? 200 + (((x >> 2) + (y >> 2)) % 2 ? 3 : -3) : 17;
-      p.set([v, v, v, 255], (y * W + x) * 4);
+      const odd = ((x >> 2) + (y >> 2)) % 2;
+      p.set([...(x < 40 ? (odd ? [186, 204, 214] : [200, 200, 200]) : [17, 17, 17]), 255], (y * W + x) * 4);
     }
-    tintPixels(p, W, H, "#1F3F7A");
-    const blues = [];
-    for (let y = 4; y < 16; y++) for (let x = 4; x < 32; x++) blues.push(at(p, x, y)[2]);
-    expect(Math.max(...blues) - Math.min(...blues)).toBeLessThanOrEqual(2); // source swings by 6
+    tintPixels(p, W, H, "#8E1A1F");
+    for (const ch of [0, 1, 2]) {
+      const v = [];
+      for (let y = 4; y < 16; y++) for (let x = 4; x < 32; x++) v.push(at(p, x, y)[ch]);
+      expect(Math.max(...v) - Math.min(...v)).toBeLessThanOrEqual(3);
+    }
   });
 });
