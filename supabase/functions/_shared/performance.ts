@@ -52,7 +52,7 @@ export const PERF_RULES: PerfRule[] = [
   { key: "honda-type-r", label: "Type R", makes: /honda/, detect: /type[- ]?r\b/i },
   { key: "cupra", label: "Cupra", makes: /seat|cupra/, detect: RX(String.raw`\bcupra\b(?! ?born)(?=.*\b(?:r|vz\d?|\d{3})\b)|\bcupra r\b|\bvz\d?\b|\bcupra (?:2[0-9]{2}|300)\b|^cupra$`), comp: /cupra|\bvz\d?\b/i },
   { key: "amg", label: "Mercedes-AMG", makes: /mercedes|amg/, detect: RX(String.raw`\bamg${NOT_LINE}\b|\b[a-z]{1,3} ?(?:35|43|45|53|55|63|65)\b`), comp: RX(String.raw`\bamg${NOT_LINE}\b|\b[a-z]{1,3} ?(?:35|43|45|53|55|63|65)\b`) },
-  { key: "bmw-m", label: "BMW M", makes: /bmw/, detect: RX(String.raw`\bm[2-8]${NOT_LINE}\b|\bx[3-6] ?m\b(?! ?sport)|\bm1\d0i\b|\bm[2-4]\d0[id]\b`),
+  { key: "bmw-m", label: "BMW M", makes: /bmw/, detect: RX(String.raw`\bm[2-8]${NOT_LINE}\b|\bx[3-6] ?m\b(?! ?sport)|\bm1\d0i\b|\bm[2-4]\d0[id]\b|\bm[4-6]0[id]\b`),
     specific: [{ label: "M car", detect: RX(String.raw`\bm[2-8]${NOT_LINE}\b|\bx[3-6] ?m\b(?! ?sport)`), comp: RX(String.raw`\bm[2-8]${NOT_LINE}\b|\bx[3-6] ?m\b(?! ?sport)`) }] },
   { key: "audi-rs", label: "Audi RS", makes: /audi/, detect: RX(String.raw`\brs ?(?:q?\d|e-?tron)\b`), comp: RX(String.raw`\brs ?(?:q?\d|e-?tron)\b`) },
   { key: "vauxhall-vxr", label: "Vauxhall VXR/GSi", makes: /vauxhall|opel/, detect: RX(String.raw`\bvxr${NOT_LINE}\d?\b|\bgsi\b|\bopc\b`) },

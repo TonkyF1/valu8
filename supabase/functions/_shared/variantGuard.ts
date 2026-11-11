@@ -26,7 +26,10 @@ export function optionRegex(opt: string): RegExp {
   return new RegExp(`(?:^|[^a-z0-9])${parts.map(esc).join("[\\s-]?")}(?![a-z0-9])`, "i");
 }
 
-const MODEL_NAME_OPT = /^(?:rs ?q?\d|s\d|sq\d|m\d|tt rs|[a-z]{1,3} ?(?:35|43|45|63)\b)/i;
+// "m\d\b": M3 / M4 are model names; M40i / M340i / M135i are badges on a model (X3 M40i), not models.
+/** "X3 M" already names the model "X3". */
+const startsWithModel = (opt: string, model?: string | null) => { const b = String(model ?? "").trim().split(/\s+/)[0]?.toLowerCase(); return !!b && opt.toLowerCase().startsWith(b + " "); };
+const MODEL_NAME_OPT = /^(?:rs ?q?\d|s\d|sq\d|m\d\b|tt rs|[a-z]{1,3} ?(?:35|43|45|63)\b)/i;
 
 export function resolveVariant(v: {
   make?: string | null; model?: string | null; variant?: string | null; fuel?: string | null;
@@ -37,7 +40,7 @@ export function resolveVariant(v: {
   const text = String(v.text ?? "");
   const pick = (opt: string): VariantResolution => ({
     variant: opt.split(/\s*\/\s*/)[0], source: "engine", hint, ambiguousPerf: false,
-    displayModel: MODEL_NAME_OPT.test(opt) ? opt.split(/\s*\/\s*/)[0] : `${v.model ?? ""} ${opt.split(/\s*\/\s*/)[0]}`.trim(),
+    displayModel: MODEL_NAME_OPT.test(opt) || startsWithModel(opt, v.model) ? opt.split(/\s*\/\s*/)[0] : `${v.model ?? ""} ${opt.split(/\s*\/\s*/)[0]}`.trim(),
   });
   if (hint) {
     const named = hint.options.find((o) => optionRegex(o).test(text));

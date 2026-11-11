@@ -95,6 +95,13 @@ const RULES: Rule[] = [
   R(/bmw/, /^(5|m5)/, [4999, 4999], [2005, 2010], ["M5"], true, "5.0 V10 petrol 5 Series"),
   R(/bmw/, /^(5|m5)/, [4395, 4395], [2011, 2030], ["M5", "550i / M550i"], false, "4.4 V8 petrol 5 Series", { allPerf: true }),
   R(/bmw/, /^(6|m6)/, [4395, 4999], [2005, 2019], ["M6", "650i"], false, "V8/V10 petrol 6 Series", { allPerf: true }),
+  // gb-1 (G6WLN): DVLA/DVSA give a bare "X3"/"X4". In the G01/G02 generation the 2,998cc petrol (B58, 48V mild hybrid
+  // from 2021, so any fuel label) was only the M40i; the S58 2,993cc petrol only the X3 M / X4 M (incl. Competition).
+  // The 2024+ G45 X3 shares the 2,998cc with the M50, so it gets no rule.
+  R(/bmw/, /^x3\b/, [2998, 2998], [2018, 2023], ["M40i"], true, "3.0 petrol X3", { fuel: undefined }),
+  R(/bmw/, /^x4\b/, [2998, 2998], [2018, 2026], ["M40i"], true, "3.0 petrol X4", { fuel: undefined }),
+  R(/bmw/, /^x3\b/, [2993, 2993], [2019, 2030], ["X3 M"], true, "3.0 S58 petrol X3"),
+  R(/bmw/, /^x4\b/, [2993, 2993], [2019, 2030], ["X4 M"], true, "3.0 S58 petrol X4"),
   R(/mercedes/, /^c(?: ?class)?$/, [6208, 6208], [2007, 2014], ["C63 AMG"], true, "6.2 V8 petrol C-Class"),
   R(/mercedes/, /^c(?: ?class)?$/, [3982, 3982], [2015, 2030], ["C63 AMG"], true, "4.0 V8 petrol C-Class"),
   R(/mercedes/, /^c(?: ?class)?$/, [2996, 2996], [2016, 2030], ["C43 AMG", "C400"], false, "3.0 V6 petrol C-Class", { allPerf: true }),
