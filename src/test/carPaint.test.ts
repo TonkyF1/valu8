@@ -45,10 +45,10 @@ describe("tintPixels", () => {
     expect(at(p, 56)).toEqual([190, 25, 30]);
   });
   it("smooths compression blocks instead of amplifying them", () => {
-    const p = render(6);
+    const p = render(3);
     tintPixels(p, W, H, "#1F3F7A");
     const blues = [];
     for (let y = 4; y < 16; y++) for (let x = 4; x < 16; x++) blues.push(at(p, x, y)[2]);
-    expect(Math.max(...blues) - Math.min(...blues)).toBeLessThan(6); // source swings by 12
+    expect(Math.max(...blues) - Math.min(...blues)).toBeLessThan(4); // source swings by 6, and the old per-pixel tint swung blue by ~9
   });
 });
