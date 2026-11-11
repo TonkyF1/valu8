@@ -32,6 +32,10 @@
 .t8-car.in{opacity:1;transform:translate3d(-50%,0,0)}
 .t8-car.out{opacity:0;transform:translate3d(-42%,0,0)}
 .t8-car.idle{opacity:.55}
+/* Colour match: the painted render eases in over the white one (opacity only) */
+.t8-car.t8-paint{opacity:0;pointer-events:none;z-index:1;transition:opacity 1.2s var(--t8-ease) .15s}
+.t8-car.t8-paint.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.t8-car.t8-paint{transition:none}}
 
 .t8-vehicle{margin-top:6px;text-align:center;z-index:2;padding:0 20px}
 .t8-name{font-size:17px;font-weight:500;letter-spacing:-.02em}

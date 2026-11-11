@@ -16,6 +16,7 @@ import { normaliseReportPricing } from "@/lib/askingPrice";
 import { reportPriceRange } from "../../../supabase/functions/_shared/cheapRange";
 import { ElementsCheckout, REPORT_CTA } from "@/components/ReportCheckout";
 import { bodyKeyFor, carImageSrc, type BodyKey } from "./carImage";
+import { paintFor, paintRender } from "./carPaint";
 import { PriceArc, RingLoader, RollingPrice, useEasedProgress } from "./parts";
 
 interface Lookup {
@@ -348,6 +349,7 @@ export function TeslaFlow() {
           <div className="t8-viz">
             <PriceArc from={fr?.from ?? null} to={fr?.to ?? null} />
             <img key={bodyKey} className={`t8-car ${hasCar ? "in" : "idle"}`} src={carImageSrc(bodyKey)} alt="" width={960} height={540} decoding="async" fetchPriority="high" />
+            <CarPaint bodyKey={bodyKey} colour={lookup?.colour} show={hasCar} />
           </div>
           {hasCar && lookup && (
             <div className="t8-stagger" style={{ textAlign: "center" }}>
@@ -520,4 +522,23 @@ function GuestLimit({ message }: { message: string }) {
       <Link to="/auth?mode=signup" className="t8-link" style={{ fontSize: 14 }}>Create a free account</Link>
     </div>
   );
+}
+
+/** The body render recoloured to the car's DVSA colour, faded in over the white render once it is painted. */
+function CarPaint({ bodyKey, colour, show }: { bodyKey: BodyKey; colour?: string; show: boolean }) {
+  const hex = paintFor(colour);
+  const key = hex ? `${bodyKey}|${hex}` : "";
+  const ref = useRef<HTMLCanvasElement>(null);
+  const [painted, setPainted] = useState("");
+  useEffect(() => {
+    if (!key || !hex || !ref.current) return;
+    let live = true;
+    paintRender(ref.current, carImageSrc(bodyKey), hex).then((ok) => {
+      // A frame after painting so the fade always starts from transparent.
+      if (ok && live) requestAnimationFrame(() => { if (live) setPainted(key); });
+    });
+    return () => { live = false; };
+  }, [key, hex, bodyKey]);
+  if (!key) return null;
+  return <canvas key={key} ref={ref} className={`t8-car t8-paint${show && painted === key ? " on" : ""}`} width={960} height={540} aria-hidden />;
 }
