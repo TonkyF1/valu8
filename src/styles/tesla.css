@@ -94,6 +94,11 @@
 .t8-chip{border-radius:999px;border:1px solid rgba(255,255,255,.14);background:none;color:var(--t8-mute);padding:6px 12px;min-height:34px;font:500 12px Inter,sans-serif;cursor:pointer;transition:transform .15s var(--t8-ease),border-color .2s,background .2s}
 .t8-chip:active{transform:scale(.96)}
 .t8-chip[aria-pressed=true]{border-color:var(--t8-teal);background:rgba(0,214,200,.12);color:var(--t8-fg)}
+.t8-photohead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.t8-bulk{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(0,214,200,.45);background:rgba(0,214,200,.08);color:var(--t8-teal);font:600 12px Inter,sans-serif;cursor:pointer;transition:transform .15s var(--t8-ease),background .2s}
+.t8-bulk:active{transform:scale(.96)}
+.t8-bulk:hover{background:rgba(0,214,200,.14)}
+.t8-bulk:focus-visible{outline:2px solid #FDE047;outline-offset:3px}
 .t8-photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 8px;margin-top:12px}
 .t8-slot{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
 .t8-box{position:relative;width:100%;aspect-ratio:4/3;border-radius:12px;border:1px dashed rgba(255,255,255,.14);background:rgba(255,255,255,.03);display:grid;place-items:center;overflow:hidden;cursor:pointer;

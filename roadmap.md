@@ -12,3 +12,6 @@
 - [ ] Inspect production dist HTML after the platform build exposes its artifacts; manual builds are disallowed in this environment.
 - [ ] Verify published route HTML after next publish; hosting must serve generated files rather than always rewriting to the homepage.
 - [x] Lookup resilience fixes (DVSA retry/timeout, 503 vs 404, reg normalising, error copy)
+
+## Photos
+- [x] "Upload all" button next to the Photos heading fills empty photo cards in order (max 6).

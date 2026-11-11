@@ -30,6 +30,12 @@ export const PHOTO_SLOTS = [
 
 export type PhotoSlotKey = typeof PHOTO_SLOTS[number]["key"];
 
+/** Bulk upload: put files into the empty photo slots in slot order. Extra files are dropped; filled slots are kept. */
+export function fillEmptySlots<T>(filled: readonly PhotoSlotKey[], files: readonly T[]): { key: PhotoSlotKey; file: T }[] {
+  const empty = PHOTO_SLOTS.map((s) => s.key).filter((k) => !filled.includes(k));
+  return empty.slice(0, files.length).map((key, i) => ({ key, file: files[i] }));
+}
+
 // 1950 → 2026 to support classics and heritage vehicles
 export const YEARS = Array.from({ length: 2026 - 1950 + 1 }, (_, i) => 2026 - i);
 
