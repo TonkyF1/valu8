@@ -225,7 +225,7 @@ export function TeslaFlow() {
     try {
       const res = await value(l, { mileage: l.lastMileage, variant: v, transmission: gb }, null);
       if (!res) { setStage("estimate"); return; }
-      applyResult(res.id, res.report, true, l.lastMileage);
+      applyResult(res.id, res.report, true, l.lastMileage, l);
       setStage("estimate");
     } catch (e: any) {
       setErr(e?.message || "We couldn't value this car just now. Please try again.");
@@ -233,13 +233,13 @@ export function TeslaFlow() {
     }
   }
 
-  function applyResult(id: string, report: any, first: boolean, miles?: number) {
+  function applyResult(id: string, report: any, first: boolean, miles: number | undefined, car: Lookup) {
     setValuationId(id);
     const b = bandFor(report);
     setUnavailable(!b);
     if (b) {
       setBand(b);
-      setGrade(gradeFromReport(report, { mileage: miles, firstRegistered: lookup?.firstRegistered, year: lookup?.year }));
+      setGrade(gradeFromReport(report, { mileage: miles, firstRegistered: car.firstRegistered, year: car.year }));
     } else setGrade(null);
     track("result_seen");
     track("valuation_completed");
@@ -271,7 +271,7 @@ export function TeslaFlow() {
       const wait = Math.max(0, 1600 - (Date.now() - t0));
       setTimeout(() => setRefineDone(true), wait);
       setTimeout(() => {
-        applyResult(res.id, res.report, !band, miles);
+        applyResult(res.id, res.report, !band, miles, lookup);
         setStage("refined");
         window.scrollTo({ top: 0, behavior: "auto" });
       }, wait + 1300);
