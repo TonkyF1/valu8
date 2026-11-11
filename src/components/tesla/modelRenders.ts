@@ -1,5 +1,5 @@
 // Exact-model renders for the homepage hero (public/cars/m/<id>.svg): one plain white, fully debadged studio render per
-// model generation, same angle and framing as the body-type renders, recoloured to the DVSA colour by carPaint.ts.
+// model generation, same angle and framing as the body-type renders, shown in its original white finish.
 // Matched on make + model + year; anything not listed (or outside a generation's years) keeps the body-type render.
 // Iconic supercars and classics are deliberately not covered.
 
@@ -114,6 +114,19 @@ export const MODEL_RENDERS: Entry[] = [
   { id: "kona-1", make: HYUNDAI, model: /^kona\b/i, years: [2017, 2023] },
   { id: "insignia-b", make: VAUX, model: /^insignia\b/i, years: [2017, 2022] },
   { id: "5series-g30", make: BMW, model: /^(5 series|5\d{2}[a-z]*)\b(?!.*(touring|gran|gt))/i, years: [2017, 2023] },
+  // Additional model generations; keep estate and alternative body variants on their body-type fallback.
+  { id: "astra-j", make: VAUX, model: /^astra\b(?!.*(gtc|vxr))/i, years: [2010, 2015] },
+  { id: "kuga-mk3", make: FORD, model: /^kuga\b/i, years: [2020, NOW] },
+  { id: "passat-b8", make: VW, model: /^passat\b(?!.*(estate|variant|alltrack|cc\b))/i, years: [2015, 2023] },
+  { id: "chr-1", make: TOYOTA, model: /^c[- ]?hr\b/i, years: [2017, 2023] },
+  { id: "crossland-x", make: VAUX, model: /^crossland\b/i, years: [2017, 2023] },
+  { id: "grandland-x", make: VAUX, model: /^grandland\s*x\b/i, years: [2018, 2021] },
+  { id: "tcross-1", make: VW, model: /^t[- ]?cross\b/i, years: [2019, NOW] },
+  { id: "octavia-mk4", make: SKODA, model: /^octavia\b(?!.*estate)/i, years: [2021, NOW] },
+  { id: "corolla-e210", make: TOYOTA, model: /^corolla\b(?!.*(saloon|touring|cross))/i, years: [2019, NOW] },
+  { id: "yaris-xp210", make: TOYOTA, model: /^yaris\b(?!.*(cross|\bgr\b))/i, years: [2021, NOW] },
+  { id: "sportage-nq5", make: KIA, model: /^sportage\b/i, years: [2022, NOW] },
+  { id: "tucson-4", make: HYUNDAI, model: /^tucson\b/i, years: [2021, NOW] },
 ];
 
 const NOT_THIS_SHAPE = /estate|wagon|touring|tourer|convertible|cabrio|roadster|coup|pick ?-?up|chassis|tipper|dropside|minibus|limousine/i;
