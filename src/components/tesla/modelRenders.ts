@@ -10,6 +10,7 @@ const FORD = /^ford\b/i, VW = /^(volkswagen|vw)\b/i, VAUX = /^(vauxhall|opel)\b/
 const AUDI = /^audi\b/i, NISSAN = /^nissan\b/i, RENAULT = /^renault\b/i, TOYOTA = /^toyota\b/i, PEUGEOT = /^peugeot\b/i;
 const CITROEN = /^citroen\b/i, KIA = /^kia\b/i, HYUNDAI = /^hyundai\b/i, SKODA = /^skoda\b/i, SEAT = /^seat\b/i;
 const LR = /^land ?rover\b/i, MINI = /^(mini|bmw mini)\b/i, HONDA = /^honda\b/i;
+const JAG = /^jaguar\b/i, VOLVO = /^volvo\b/i;
 
 // Order matters: the first entry whose make, model and year all match wins.
 export const MODEL_RENDERS: Entry[] = [
@@ -82,10 +83,37 @@ export const MODEL_RENDERS: Entry[] = [
   { id: "mini-f56", make: MINI, model: /^(cooper|one|mini|hatch)\b(?!.*(countryman|clubman|convertible|cabrio|paceman|coupe|roadster))/i, years: [2014, NOW] },
   { id: "civic-9", make: HONDA, model: /^civic\b(?!.*(type ?r|tourer))/i, years: [2012, 2017] },
   { id: "jazz-2", make: HONDA, model: /^jazz\b/i, years: [2008, 2015] },
-  { id: "xc60-mk2", make: /^volvo\b/i, model: /^xc60\b/i, years: [2017, NOW] },
+  { id: "xc60-mk2", make: VOLVO, model: /^xc60\b/i, years: [2017, NOW] },
   { id: "swift-4", make: /^suzuki\b/i, model: /^swift\b/i, years: [2017, NOW] },
   { id: "cx5-mk2", make: /^mazda\b/i, model: /^cx-?5\b/i, years: [2017, NOW] },
   { id: "sandero-2", make: /^dacia\b/i, model: /^sandero\b/i, years: [2013, 2020] },
+  // Batch 2
+  { id: "kadjar-1", make: RENAULT, model: /^kadjar\b/i, years: [2015, 2022] },
+  { id: "eclass-w212", make: MB, model: /^e[- ]?(class\b|\d{3}\b)(?!.*(estate|coupe|cabrio|convertible|all-?terrain))/i, years: [2009, 2015] },
+  { id: "eclass-w213", make: MB, model: /^e[- ]?(class\b|\d{3}\b)(?!.*(estate|coupe|cabrio|convertible|all-?terrain))/i, years: [2016, 2023] },
+  { id: "sprinter-3", make: MB, model: /^sprinter\b/i, years: [2018, NOW], van: true },
+  { id: "xe-1", make: JAG, model: /^xe\b/i, years: [2015, NOW] },
+  { id: "xf-x260", make: JAG, model: /^xf\b(?!.*sportbrake)/i, years: [2016, NOW] },
+  { id: "fpace-1", make: JAG, model: /^f-?\s?pace\b/i, years: [2016, NOW] },
+  { id: "v40-2", make: VOLVO, model: /^v40\b/i, years: [2012, 2019] },
+  { id: "xc60-mk1", make: VOLVO, model: /^xc60\b/i, years: [2008, 2016] },
+  { id: "xtrail-t32", make: NISSAN, model: /^x-?trail\b/i, years: [2014, 2022] },
+  { id: "qashqai-j10", make: NISSAN, model: /^qashqai\b(?!\s*\+\s*2)/i, years: [2007, 2013] },
+  { id: "berlingo-3", make: CITROEN, model: /^berlingo\b/i, years: [2018, NOW], van: true },
+  { id: "berlingo-3", make: PEUGEOT, model: /^partner\b/i, years: [2019, NOW], van: true },
+  { id: "berlingo-3", make: VAUX, model: /^combo\b/i, years: [2019, NOW], van: true },
+  { id: "tconnect-2", make: FORD, model: /^transit connect\b/i, years: [2014, 2022], van: true },
+  { id: "ecosport-2", make: FORD, model: /^eco ?sport\b/i, years: [2014, 2022] },
+  { id: "tiguan-mk1", make: VW, model: /^tiguan\b/i, years: [2008, 2015] },
+  { id: "troc-1", make: VW, model: /^t-?roc\b/i, years: [2017, NOW] },
+  { id: "2008-mk1", make: PEUGEOT, model: /^2008\b/i, years: [2013, 2019] },
+  { id: "308-t9", make: PEUGEOT, model: /^308\b(?!.*\b(sw|gti)\b)/i, years: [2014, 2021] },
+  { id: "a3-8p", make: AUDI, model: /^a3\b(?!.*(saloon|cabrio|convertible))/i, years: [2004, 2012] },
+  { id: "crv-4", make: HONDA, model: /^cr-?v\b/i, years: [2012, 2018] },
+  { id: "countryman-r60", make: MINI, model: /^countryman\b|\bcountryman\b/i, years: [2010, 2016] },
+  { id: "kona-1", make: HYUNDAI, model: /^kona\b/i, years: [2017, 2023] },
+  { id: "insignia-b", make: VAUX, model: /^insignia\b/i, years: [2017, 2022] },
+  { id: "5series-g30", make: BMW, model: /^(5 series|5\d{2}[a-z]*)\b(?!.*(touring|gran|gt))/i, years: [2017, 2023] },
 ];
 
 const NOT_THIS_SHAPE = /estate|wagon|touring|tourer|convertible|cabrio|roadster|coup|pick ?-?up|chassis|tipper|dropside|minibus|limousine/i;
