@@ -3,7 +3,7 @@
 // Matched on make + model + year; anything not listed (or outside a generation's years) keeps the body-type render.
 // Iconic supercars and classics are deliberately not covered.
 
-type Entry = { id: string; make: RegExp; model: RegExp; years: [number, number]; van?: boolean };
+type Entry = { id: string; make: RegExp; model: RegExp; years: [number, number]; van?: boolean; coupe?: boolean };
 
 const NOW = 2100;
 const FORD = /^ford\b/i, VW = /^(volkswagen|vw)\b/i, VAUX = /^(vauxhall|opel)\b/i, BMW = /^bmw\b/i, MB = /^mercedes/i;
@@ -50,9 +50,9 @@ export const MODEL_RENDERS: Entry[] = [
   { id: "1series-f40", make: BMW, model: /^(1 series|1\d{2}[a-z]*)\b/i, years: [2020, NOW] },
   { id: "x1-f48", make: BMW, model: /^x1\b/i, years: [2015, 2022] },
   { id: "x3-g01", make: BMW, model: /^x3\b(?!.*\bm\b(?! ?sport))/i, years: [2018, NOW] },
-  { id: "a1-8x", make: AUDI, model: /^a1\b/i, years: [2011, 2018] },
-  { id: "a3-8v", make: AUDI, model: /^a3\b(?!.*(saloon|cabrio|convertible))/i, years: [2013, 2020] },
-  { id: "a4-b9", make: AUDI, model: /^a4\b(?!.*(avant|allroad|cabrio|convertible))/i, years: [2016, NOW] },
+  { id: "a1-8x", make: AUDI, model: /^(a1|s1)\b/i, years: [2011, 2018] },
+  { id: "a3-8v", make: AUDI, model: /^(a3|s3|rs ?3)\b(?!.*(saloon|cabrio|convertible))/i, years: [2013, 2020] },
+  { id: "a4-b9", make: AUDI, model: /^(a4|s4|rs ?4)\b(?!.*(avant|allroad|cabrio|convertible))/i, years: [2016, NOW] },
   { id: "q3-mk1", make: AUDI, model: /^q3\b(?!.*sportback)/i, years: [2012, 2018] },
   { id: "aclass-w176", make: MB, model: /^a[- ]?(class\b|\d{3}\b)/i, years: [2013, 2017] },
   { id: "aclass-w177", make: MB, model: /^a[- ]?(class\b|\d{3}\b)(?!.*saloon)/i, years: [2018, NOW] },
@@ -108,7 +108,7 @@ export const MODEL_RENDERS: Entry[] = [
   { id: "troc-1", make: VW, model: /^t-?roc\b/i, years: [2017, NOW] },
   { id: "2008-mk1", make: PEUGEOT, model: /^2008\b/i, years: [2013, 2019] },
   { id: "308-t9", make: PEUGEOT, model: /^308\b(?!.*\b(sw|gti)\b)/i, years: [2014, 2021] },
-  { id: "a3-8p", make: AUDI, model: /^a3\b(?!.*(saloon|cabrio|convertible))/i, years: [2004, 2012] },
+  { id: "a3-8p", make: AUDI, model: /^(a3|s3|rs ?3)\b(?!.*(saloon|cabrio|convertible))/i, years: [2004, 2012] },
   { id: "crv-4", make: HONDA, model: /^cr-?v\b/i, years: [2012, 2018] },
   { id: "countryman-r60", make: MINI, model: /^countryman\b|\bcountryman\b/i, years: [2010, 2016] },
   { id: "kona-1", make: HYUNDAI, model: /^kona\b/i, years: [2017, 2023] },
@@ -127,9 +127,38 @@ export const MODEL_RENDERS: Entry[] = [
   { id: "yaris-xp210", make: TOYOTA, model: /^yaris\b(?!.*(cross|\bgr\b))/i, years: [2021, NOW] },
   { id: "sportage-nq5", make: KIA, model: /^sportage\b/i, years: [2022, NOW] },
   { id: "tucson-4", make: HYUNDAI, model: /^tucson\b/i, years: [2021, NOW] },
+  // Audi range (S/RS share their A/Q model's render; estates, cabriolets and 2-door A5 coupes keep the body-type fallback).
+  { id: "a1-gb", make: AUDI, model: /^a1\b(?!.*(citycarver|allstreet))/i, years: [2019, NOW] },
+  { id: "a3-saloon-8y", make: AUDI, model: /^(a3|s3|rs ?3)\b.*\bsaloon\b/i, years: [2020, NOW] },
+  { id: "a3-8y", make: AUDI, model: /^(a3|s3|rs ?3)\b(?!.*(saloon|cabrio|convertible))/i, years: [2021, NOW] },
+  { id: "a4-b8", make: AUDI, model: /^(a4|s4)\b(?!.*(avant|allroad|cabrio|convertible))/i, years: [2008, 2015] },
+  { id: "a5-sportback-f5", make: AUDI, model: /^(a5|s5|rs ?5)\b(?=.*sportback)(?!.*(cabrio|convertible))/i, years: [2017, 2024], coupe: true },
+  { id: "a5-b10", make: AUDI, model: /^(a5|s5)\b(?!.*(avant|cabrio|convertible|coup))/i, years: [2025, NOW], coupe: true },
+  { id: "a6-etron", make: AUDI, model: /^(a6|s6)\b.*e-?tron\b(?!.*avant)/i, years: [2024, NOW], coupe: true },
+  { id: "a6-c7", make: AUDI, model: /^(a6|s6)\b(?!.*(avant|allroad|e-?tron))/i, years: [2011, 2018] },
+  { id: "a6-c8", make: AUDI, model: /^(a6|s6)\b(?!.*(avant|allroad|e-?tron))/i, years: [2019, NOW] },
+  { id: "a7-c8", make: AUDI, model: /^(a7|s7|rs ?7)\b/i, years: [2018, NOW], coupe: true },
+  { id: "a8-d5", make: AUDI, model: /^(a8|s8)\b/i, years: [2018, NOW] },
+  { id: "tt-8s", make: AUDI, model: /^tts?\b(?!.*(roadster|cabrio|convertible))/i, years: [2015, 2023], coupe: true },
+  { id: "q2-1", make: AUDI, model: /^s?q2\b/i, years: [2016, NOW] },
+  { id: "q3-sportback", make: AUDI, model: /^(q3|rs ?q3)\b.*sportback/i, years: [2020, NOW], coupe: true },
+  { id: "q3-f3", make: AUDI, model: /^(q3|rs ?q3)\b(?!.*sportback)/i, years: [2019, 2024] },
+  { id: "q4-sportback-etron", make: AUDI, model: /^q4\b.*sportback/i, years: [2021, NOW], coupe: true },
+  { id: "q4-etron", make: AUDI, model: /^q4\b/i, years: [2021, NOW] },
+  { id: "q5-sportback", make: AUDI, model: /^s?q5\b.*sportback/i, years: [2021, NOW], coupe: true },
+  { id: "q5-8r", make: AUDI, model: /^s?q5\b(?!.*sportback)/i, years: [2009, 2016] },
+  { id: "q5-fy", make: AUDI, model: /^s?q5\b(?!.*sportback)/i, years: [2017, 2024] },
+  { id: "q6-etron", make: AUDI, model: /^s?q6\b(?!.*sportback)/i, years: [2024, NOW] },
+  { id: "q7-4m", make: AUDI, model: /^s?q7\b/i, years: [2015, NOW] },
+  { id: "etron-gt", make: AUDI, model: /^(rs |s )?e-?tron gt\b/i, years: [2021, NOW], coupe: true },
+  { id: "etron-suv", make: AUDI, model: /^((s|sq8|q8) )?e-?tron\b(?!.*(\bgt\b|sportback))/i, years: [2019, NOW] },
+  { id: "q8-1", make: AUDI, model: /^(q8|sq8|rs ?q8)\b(?!.*e-?tron)/i, years: [2018, NOW] },
 ];
 
-const NOT_THIS_SHAPE = /estate|wagon|touring|tourer|convertible|cabrio|roadster|coup|pick ?-?up|chassis|tipper|dropside|minibus|limousine/i;
+const OTHER_SHAPES = "estate|wagon|touring|tourer|avant|allroad|convertible|cabrio|roadster|pick ?-?up|chassis|tipper|dropside|minibus|limousine";
+const NOT_THIS_SHAPE = new RegExp(`${OTHER_SHAPES}|coup`, "i");
+// Fastbacks, coupe-SUVs and the TT are coupes themselves, so a "coupe" model name or body style still matches them.
+const NOT_THIS_COUPE = new RegExp(OTHER_SHAPES, "i");
 
 /** `/cars/m/<id>.svg` for a known make, model and generation, else null (caller falls back to the body-type render). */
 export function renderFor(v: { make?: string | null; model?: string | null; year?: number | null; bodyStyle?: string | null }): string | null {
@@ -140,8 +169,9 @@ export function renderFor(v: { make?: string | null; model?: string | null; year
   const body = (v.bodyStyle ?? "").toLowerCase();
   for (const e of MODEL_RENDERS) {
     if (!e.make.test(make) || !e.model.test(model) || year < e.years[0] || year > e.years[1]) continue;
-    if (!e.van && NOT_THIS_SHAPE.test(model)) return null;
-    if (body && (e.van ? !/van|panel|box|window|combi|kombi|lcv|light goods/.test(body) : NOT_THIS_SHAPE.test(body) || /van|panel/.test(body))) return null;
+    const notShape = e.coupe ? NOT_THIS_COUPE : NOT_THIS_SHAPE;
+    if (!e.van && notShape.test(model)) return null;
+    if (body && (e.van ? !/van|panel|box|window|combi|kombi|lcv|light goods/.test(body) : notShape.test(body) || /van|panel/.test(body))) return null;
     return `/cars/m/${e.id}.svg`;
   }
   return null;
