@@ -80,6 +80,48 @@ describe("renderFor", () => {
   ])("selects additional model %s %s (%s)", (make, model, year, id) => {
     expect(r(make as string, model as string, year as number)).toBe(`/cars/m/${id}.svg`);
   });
+  it.each([
+    ["AUDI", "A1 SPORTBACK S LINE", 2020, "a1-gb"],
+    ["AUDI", "A3 SPORTBACK", 2022, "a3-8y"],
+    ["AUDI", "S3 SALOON", 2022, "a3-saloon-8y"],
+    ["AUDI", "RS3", 2018, "a3-8v"],
+    ["AUDI", "A4", 2012, "a4-b8"],
+    ["AUDI", "A5 SPORTBACK", 2019, "a5-sportback-f5"],
+    ["AUDI", "A5", 2025, "a5-b10"],
+    ["AUDI", "A6", 2016, "a6-c7"],
+    ["AUDI", "A6", 2021, "a6-c8"],
+    ["AUDI", "A6 SPORTBACK E-TRON", 2025, "a6-etron"],
+    ["AUDI", "A7 SPORTBACK", 2020, "a7-c8"],
+    ["AUDI", "A8 L", 2019, "a8-d5"],
+    ["AUDI", "TT", 2017, "tt-8s"],
+    ["AUDI", "Q2", 2018, "q2-1"],
+    ["AUDI", "Q3", 2020, "q3-f3"],
+    ["AUDI", "Q3 SPORTBACK", 2021, "q3-sportback"],
+    ["AUDI", "Q4 E-TRON", 2022, "q4-etron"],
+    ["AUDI", "Q4 SPORTBACK E-TRON", 2022, "q4-sportback-etron"],
+    ["AUDI", "Q5", 2014, "q5-8r"],
+    ["AUDI", "SQ5", 2019, "q5-fy"],
+    ["AUDI", "Q5 SPORTBACK", 2022, "q5-sportback"],
+    ["AUDI", "Q6 E-TRON", 2025, "q6-etron"],
+    ["AUDI", "Q7", 2020, "q7-4m"],
+    ["AUDI", "RS Q8", 2021, "q8-1"],
+    ["AUDI", "E-TRON", 2020, "etron-suv"],
+    ["AUDI", "Q8 E-TRON", 2023, "etron-suv"],
+    ["AUDI", "E-TRON GT", 2022, "etron-gt"],
+    ["AUDI", "RS E-TRON GT", 2022, "etron-gt"],
+  ])("selects Audi %s %s (%s)", (make, model, year, id) => {
+    expect(r(make as string, model as string, year as number)).toBe(`/cars/m/${id}.svg`);
+  });
+  it("keeps Audi estates, cabriolets and coupe variants on the body-type fallback", () => {
+    expect(r("AUDI", "A6 AVANT", 2021)).toBeNull();
+    expect(r("AUDI", "RS6 AVANT", 2021)).toBeNull();
+    expect(r("AUDI", "A4 ALLROAD", 2019)).toBeNull();
+    expect(r("AUDI", "A5 CABRIOLET", 2019)).toBeNull();
+    expect(r("AUDI", "A5 COUPE", 2019)).toBeNull();
+    expect(r("AUDI", "TT ROADSTER", 2017)).toBeNull();
+    expect(r("AUDI", "E-TRON SPORTBACK", 2021)).toBeNull();
+    expect(r("AUDI", "TT", 2017, "COUPE")).toBe("/cars/m/tt-8s.svg");
+  });
   it("does not substitute a hatchback or saloon for other new body variants", () => {
     expect(r("TOYOTA", "COROLLA TOURING SPORTS", 2021)).toBeNull();
     expect(r("VOLKSWAGEN", "PASSAT", 2020, "ESTATE")).toBeNull();
