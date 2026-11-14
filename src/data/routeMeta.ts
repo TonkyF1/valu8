@@ -35,6 +35,9 @@ export const STATIC_ROUTES: RouteMeta[] = [
   { path: "/compare", title: "Compare cars — Valu8", description: "Compare two of your saved Valu8 car valuations side by side.", noindex: true, inSitemap: false },
   { path: "/bot", title: "Valu8Bot — Valu8", description: "What Valu8Bot is, how it re-checks advert links politely, and how to opt out.", noindex: true, inSitemap: false },
   { path: "/admin", title: "Admin — Valu8", description: "Valu8 administration and service statistics for authorised administrators.", noindex: true, inSitemap: false },
+  { path: "/buyer", title: "Used car price check for buyers | Valu8", description: "Buying a used car? Check whether the advert's asking price is fair with Valu8's free advert price checker.", noindex: true, inSitemap: false, canonicalPath: "/check" },
+  { path: "/unsubscribe", title: "Unsubscribe — Valu8", description: "Stop Valu8 emails with one click. No sign-in needed.", noindex: true, inSitemap: false },
+  { path: "/email-answer", title: "Thanks for your answer — Valu8", description: "Your reply to a Valu8 follow-up email has been recorded.", noindex: true, inSitemap: false },
 ];
 
 export function carModelMeta(m: CarModelPage): RouteMeta {
