@@ -14,7 +14,7 @@ export default function Terms() {
       <main id="main" className="flex-1 container max-w-3xl py-12 md:py-16">
         <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Legal</div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gradient mb-6">Terms of Service</h1>
-        <p className="text-sm text-muted-foreground mb-10">Last updated: 16 May 2026</p>
+        <p className="text-sm text-muted-foreground mb-10">Last updated: 17 November 2026</p>
 
         <div className="space-y-6 text-sm leading-relaxed text-foreground/85">
           <section>
@@ -28,7 +28,7 @@ export default function Terms() {
           <section>
             <h2 className="text-lg font-semibold text-foreground">3. Acceptable use</h2>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>Submit only vehicles you own or are authorised to value.</li>
+              <li>Value only vehicles you own, are selling or are considering buying, or are otherwise authorised to value.</li>
               <li>Do not upload photos containing third-party personal data (e.g. people, number plates of other vehicles).</li>
               <li>Do not attempt to reverse-engineer, scrape, or abuse the service.</li>
             </ul>

@@ -5,8 +5,9 @@ import { useSeo } from "@/lib/seo";
 import { getRouteMeta } from "@/data/routeMeta";
 
 /**
- * ICO registration number. PLACEHOLDER: fill in once Valu8 is registered with the ICO.
- * While empty, the page shows "Registration pending".
+ * ICO registration number. The data protection fee was paid on 4 November 2026; fill this in once the number
+ * appears on the ICO's public register (it was not listed when checked on 17 November 2026).
+ * While empty, the page says the fee has been paid, without a number.
  */
 export const ICO_REGISTRATION_NUMBER = "";
 
@@ -29,16 +30,15 @@ export default function Privacy() {
       <main id="main" className="flex-1 container max-w-3xl py-12 md:py-16">
         <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Legal</div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gradient mb-6">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground mb-10">Last updated: 10 November 2026</p>
+        <p className="text-sm text-muted-foreground mb-10">Last updated: 17 November 2026</p>
 
         <div className="max-w-none space-y-8 text-sm leading-relaxed text-foreground/85">
           <Section n={1} title="Who we are">
             <p>Valu8 (valu8.uk) gives free car valuations to people in the United Kingdom. Valu8 is the data controller for the personal data described here. You can reach us at <Mail />.</p>
             <p>
-              ICO registration number:{" "}
               {ICO_REGISTRATION_NUMBER
-                ? <strong className="text-foreground">{ICO_REGISTRATION_NUMBER}</strong>
-                : <span className="text-muted-foreground">registration pending (number will be added here)</span>}
+                ? <>Registered with the Information Commissioner's Office, registration number <strong className="text-foreground">{ICO_REGISTRATION_NUMBER}</strong>.</>
+                : <>ICO: we have paid the Information Commissioner's Office data protection fee. Our registration number will be added here once it appears on the ICO's public register.</>}
             </p>
           </Section>
 

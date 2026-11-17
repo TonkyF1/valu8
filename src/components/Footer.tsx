@@ -8,7 +8,6 @@ const COLS: { title: string; links: { to: string; label: string }[] }[] = [
     { to: START_PATH, label: "Value a car" },
     { to: "/check", label: "Check an advert" },
     { to: "/pricing", label: "Pricing" },
-    { to: "/accuracy", label: "Accuracy" },
   ] },
   { title: "Guides", links: [
     { to: "/guides", label: "Guides" },
@@ -26,8 +25,6 @@ const COLS: { title: string; links: { to: string; label: string }[] }[] = [
 /** Directory badges. Twelve Tools needs a followable link (no nofollow) for its free listing. */
 const BADGES: { href: string; src?: string; label: string; w: number; h: number }[] = [
   { href: "https://twelve.tools", src: "https://twelve.tools/badge0-dark.svg", label: "Featured on Twelve Tools", w: 200, h: 54 },
-  { href: "https://fazier.com", src: "https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=dark", label: "Featured on Fazier", w: 182, h: 43 },
-  { href: "https://startupbase.io", label: "StartupBase", w: 0, h: 0 },
 ];
 
 export function Footer() {
