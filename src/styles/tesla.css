@@ -264,3 +264,11 @@
 .t8-back:active{transform:scale(.97)}
 @keyframes t8-back-in{to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.t8-back{animation:none;opacity:1;transform:none}}
+
+/* Buyer signpost under the reg card buttons, and the honest guest-limit line. */
+.t8-buyer{margin:10px 0 0;text-align:center;font-size:13px}
+.t8-buyer a{display:inline-flex;align-items:center;gap:4px;min-height:32px;color:var(--t8-teal);text-decoration:none;font-weight:500;transition:color .2s ease}
+.t8-buyer a:hover,.t8-buyer a:focus-visible{color:var(--t8-glow)}
+.t8-buyer svg{transition:transform .25s cubic-bezier(.22,1,.36,1)}
+.t8-buyer a:hover svg{transform:translateX(2px)}
+.t8-cap{margin:6px auto 0;max-width:300px;text-align:center;font-size:11px;line-height:1.4;color:var(--t8-dim);opacity:.85}

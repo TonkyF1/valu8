@@ -652,7 +652,9 @@ export function TeslaFlow() {
             <p className="t8-inc" aria-live="polite">{busyLookup ? "Checking DVLA and MOT records" : premiumArmed ? "Premium Report selected. Enter the reg to continue." : "Buying or Selling, Know the right price"}</p>
             {err && <p className="t8-err" role="alert">{err} <Link className="t8-link" to="/valuation/new?manual=1">Enter details by hand</Link></p>}
             {guestLimit && <GuestLimit message={guestLimit} premium={false} />}
+            <p className="t8-buyer"><Link to="/check" data-testid="buyer-check-link">Buying? Check an advert<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg></Link></p>
             <p className="t8-note">We don't buy cars</p>
+            {!user && !guestLimit && <p className="t8-cap" data-testid="guest-cap-note">Free guest valuations are limited each day. A free account gives you more.</p>}
           </form>
         )}
 

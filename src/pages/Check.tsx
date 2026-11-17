@@ -133,7 +133,7 @@ export default function Check() {
             <Button type="submit" variant="hero" size="lg" disabled={busy} className="w-full sm:w-auto min-h-[48px]">
               {busy ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Checking…</> : <>Check this advert <ArrowRight className="h-4 w-4" aria-hidden /></>}
             </Button>
-            {!user && <p className="text-xs text-muted-foreground mt-2">Free, no account needed.</p>}
+            {!user && <p className="text-xs text-muted-foreground mt-2">Free. Guest checks are limited each day; a free account gives you more.</p>}
           </div>
         </form>
 
