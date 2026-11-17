@@ -28,9 +28,10 @@ describe("two-button premium flow", () => {
   it("landing Premium Report goes to the details step (no checkout) and shows one Pay button there", () => {
     expect(flow).toContain("Pay for Premium Report<small>£2.99 one-off</small>");
     expect(flow).toContain('data-testid="pay-premium"');
-    // The landing path scrolls to details instead of opening checkout.
+    // The landing path goes to the details step instead of opening checkout; the car lands at the top of the page.
     expect(flow).not.toMatch(/openPremium\("landing"/);
-    expect(flow).toMatch(/if \(premium\) setTimeout\(\(\) => detailsRef\.current\?\.scrollIntoView/);
+    expect(flow).not.toMatch(/if \(premium\) setTimeout\(\(\) => detailsRef\.current\?\.scrollIntoView/);
+    expect(flow).toMatch(/if \(view === "details" && from === "entry"\) scrollPageTop\(\)/);
     // Single button submits the form in the premium path; the free path keeps both buttons.
     expect(flow).toContain("onSubmit={(e) => void refine(e, premiumBusy)}");
     expect(flow).toMatch(/premiumBusy \? \(\s*<div className=\{`t8-solo/);

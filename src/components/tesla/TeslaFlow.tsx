@@ -15,6 +15,8 @@ import { PHOTO_SLOTS, fillEmptySlots, type PhotoSlotKey } from "@/lib/cars";
 import { normaliseReportPricing } from "@/lib/askingPrice";
 import { reportPriceRange } from "../../../supabase/functions/_shared/cheapRange";
 import { ElementsCheckout } from "@/components/ReportCheckout";
+import { CheckoutSheet } from "./CheckoutSheet";
+import { closeKeyboard, scrollPageTop } from "@/lib/scrollTop";
 import { LOCKED_ROWS, PREMIUM_CTA, PREMIUM_NAME, PREMIUM_TITLE, includesFor, includesLine } from "./premium";
 import { IntentSwitch } from "@/components/IntentSwitch";
 import { getIntent, saveAskingFor, saveIntentFor, useIntent } from "@/lib/intent";
@@ -260,6 +262,7 @@ export function TeslaFlow() {
   async function start(raw?: string, premium = false) {
     const cleaned = normaliseReg(raw ?? reg);
     if (!isPlausibleUkReg(cleaned)) { setErr("Enter a valid UK number plate, e.g. AB12 CDE."); return; }
+    closeKeyboard();
     setPremiumBusy(premium); setPremiumArmed(false); setLocked(false); setPayErr(null); setUnavailable(false);
     setErr(null); setGuestLimit(null); setStage("looking"); setBand(null); setValuationId(null); setGrade(null); setNeedMileage(false);
     if (turnstileEnabled()) setTsOn(true);
@@ -298,7 +301,6 @@ export function TeslaFlow() {
     if (!l.lastMileage || !l.make || !l.model || !l.year) {
       // No MOT mileage yet (newer cars): ask for it rather than guess.
       setNeedMileage(true); setStage("estimate");
-      setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 700);
       return;
     }
     setStage("estimating");
@@ -306,16 +308,14 @@ export function TeslaFlow() {
     try {
       const res = await value(l, { mileage: l.lastMileage, variant: v, transmission: gb, premiumIntent: premium }, null);
       if (!res) {
-        // Daily free limit: the details step now offers the paid report, so glide there.
+        // Daily free limit: the details step now offers the paid report (one Pay button). The page is already at the top.
         setStage("estimate");
-        setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 900);
         return;
       }
       if (res.locked) applyLocked(res.id, res.priceable);
       else applyResult(res.id, res.report, true, l.lastMileage, l);
       setStage("estimate");
-      // Premium path: no checkout yet. Let the price land, then glide to the details step to finish it.
-      if (premium) setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 1400);
+      // Premium path: no checkout yet. The car lands at the top of the page; the details step (one Pay button) is just below.
     } catch (e: any) {
       setErr(e?.message || "We couldn't value this car just now. Please try again.");
       setStage("estimate");
@@ -362,6 +362,7 @@ export function TeslaFlow() {
     }
     const miles = Number(mileage.replace(/[,\s]/g, ""));
     if (!Number.isFinite(miles) || miles < 0 || miles > 500000 || mileage.trim() === "") { setErr("Enter the current mileage."); return; }
+    closeKeyboard();
     setErr(null); setPayErr(null); setGuestLimit(null); setRefineDone(false); setLoaderOut(false); setStage("refining");
     track("submitted");
     if (photos.length) track("step_photos");
@@ -402,7 +403,8 @@ export function TeslaFlow() {
       setTimeout(() => {
         applyResult(res.id, res.report, !band, miles, lookup);
         setStage("refined");
-        window.scrollTo({ top: 0, behavior: "auto" });
+        // Under the loader's last frame: the result opens at the top with no visible jump.
+        scrollPageTop({ instant: true });
         if (premium) openPremium(premiumBusy ? "premium_path" : "details", res.report, 700);
       }, wait + 1300);
     } catch (e2: any) {
@@ -437,7 +439,7 @@ export function TeslaFlow() {
     setStage("idle"); setLookup(null); setBand(null); setValuationId(null); setGrade(null); setErr(null); setGuestLimit(null);
     setPhotos([]); setMods(""); setNotes(""); setReg(""); setCheckoutOpen(false); setPremiumBusy(false); setGearbox(""); setGearboxGuessed(false);
     setPremiumArmed(false); setLocked(false); setPayErr(null); setLimitKind("free"); setUnavailable(false);
-    topRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollPageTop();
   }
 
   const busyLookup = stage === "looking" || stage === "estimating";
@@ -448,6 +450,16 @@ export function TeslaFlow() {
   const refined = stage === "refined";
   const milesNum = Number(mileage.replace(/[,\s]/g, ""));
   flowRef.current = { stage, valuationId, hasCar, canPay: !!band };
+
+  // Whenever the flow moves to a new view (reg card -> car and details, details -> result, back to a new plate),
+  // bring the visitor back to the top so they see the change. The result view handles its own instant scroll.
+  const view = !hasCar ? "entry" : refined ? "result" : "details";
+  const lastView = useRef(view);
+  useEffect(() => {
+    if (lastView.current === view) return;
+    const from = lastView.current; lastView.current = view;
+    if (view === "details" && from === "entry") scrollPageTop();
+  }, [view]);
 
   return (
     <div className="t8" ref={topRef}>
@@ -689,10 +701,10 @@ export function TeslaFlow() {
       )}
 
       {checkoutOpen && valuationId && (
-        <div className="t8-checkout" role="dialog" aria-modal="true" aria-label={`${PREMIUM_NAME} checkout`} onClick={(e) => { if (e.target === e.currentTarget) setCheckoutOpen(false); }}>
-          <div className="t8-checkout-in">
-            <ElementsCheckout valuationId={valuationId} email={user?.email || undefined} onPaid={() => navigate(`/valuation/${valuationId}?intent=${getIntent()}`)} onClose={() => setCheckoutOpen(false)}
-              title={PREMIUM_TITLE}
+        <CheckoutSheet title={PREMIUM_TITLE} label={`${PREMIUM_NAME} checkout`} onClose={() => setCheckoutOpen(false)}>
+          {(close) => (
+            <ElementsCheckout valuationId={valuationId} email={user?.email || undefined} onPaid={() => navigate(`/valuation/${valuationId}?intent=${getIntent()}`)} onClose={close}
+              title={PREMIUM_TITLE} hideHeader
               intro={
                 <>
                   {lookup && (
@@ -716,8 +728,8 @@ export function TeslaFlow() {
                   </div>
                 </>
               } />
-          </div>
-        </div>
+          )}
+        </CheckoutSheet>
       )}
     </div>
   );
