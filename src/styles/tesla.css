@@ -210,8 +210,8 @@
 .t8-wi li:nth-child(1){animation-delay:.12s}.t8-wi li:nth-child(2){animation-delay:.16s}.t8-wi li:nth-child(3){animation-delay:.2s}.t8-wi li:nth-child(4){animation-delay:.24s}
 .t8-wi li:nth-child(5){animation-delay:.28s}.t8-wi li:nth-child(6){animation-delay:.32s}.t8-wi li:nth-child(7){animation-delay:.36s}.t8-wi li:nth-child(8){animation-delay:.4s}
 @media (min-width:900px){
-  .t8-idle .t8-viz{width:640px;height:400px}
-  .t8-idle .t8-car{width:640px}
+  .t8-idle .t8-viz{width:600px;height:350px;margin-top:10px}
+  .t8-idle .t8-car{width:580px}
   .t8-sheet.t8-float{max-width:460px;margin-bottom:0}
 }
 @media (max-width:360px){.t8-duo>button{font-size:14px}.t8-btn.t8-two small{font-size:11px}}
