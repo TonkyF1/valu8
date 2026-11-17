@@ -84,7 +84,7 @@ describe("intent carried through the flow", () => {
     expect(fn).toContain('"metadata[intent]": intent');
     expect(fn).toMatch(/body\?\.intent === "buying" \|\| body\?\.intent === "selling"/);
     const flow = read("src/components/tesla/TeslaFlow.tsx");
-    expect(flow).toContain("navigate(`/valuation/${valuationId}?intent=${getIntent()}`)");
+    expect(flow).toContain("navigate(`/valuation/${valuationId}?intent=${getIntent()}`, {");
     expect(flow).toContain('data-testid="asking-price"');
     const rep = read("src/pages/Report.tsx");
     expect(rep).toContain("intent={reportIntent}");

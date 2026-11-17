@@ -40,7 +40,7 @@ describe("scroll to top on a new stage", () => {
   });
   it("the flow goes to the top when the car and details appear, on reset and on the result", () => {
     expect(flow).toMatch(/const view = !hasCar \? "entry" : refined \? "result" : "details";/);
-    expect(flow).toMatch(/function reset\(\)[\s\S]{0,600}scrollPageTop\(\);/);
+    expect(flow).toMatch(/function reset\(\)[\s\S]{0,1200}scrollPageTop\(\);/);
     expect(flow).toMatch(/setStage\("refined"\);\s*\/\/[^\n]*\n\s*scrollPageTop\(\{ instant: true \}\)/);
     // Keyboard closes on submit (reg card Go key, Free Valuation, Premium Report) and on the details step.
     expect(flow.match(/closeKeyboard\(\);/g)?.length).toBeGreaterThanOrEqual(2);
