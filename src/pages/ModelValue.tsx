@@ -58,7 +58,7 @@ export function ValueIndex() {
           </ul>
         </section>
       ))}
-      <div className="mt-10"><Button asChild variant="hero" size="xl"><Link to="/valuation/new">Value my car free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button></div>
+      <div className="mt-10"><Button asChild variant="hero" size="xl"><Link to="/valuation/new">Value a car free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button></div>
     </Shell>
   );
 }

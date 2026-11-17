@@ -81,7 +81,7 @@ export default function Accuracy() {
         </section>
 
         <div className="mt-8 flex flex-col sm:flex-row gap-2">
-          <Button asChild variant="hero" className="min-h-[48px]"><Link to="/valuation/new">Value my car free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+          <Button asChild variant="hero" className="min-h-[48px]"><Link to="/valuation/new">Value a car free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
           <Button asChild variant="outline" className="min-h-[48px]"><Link to="/check">Is this advert fair?</Link></Button>
         </div>
       </main>

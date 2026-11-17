@@ -114,5 +114,5 @@ export function yearBodyHtml(m: ModelPrices, y: YearPrices): string {
 export function valueIndexBodyHtml(): string {
   return `<main id="main"><h1>${esc(VALUE_INDEX_H1)}</h1><p>${esc(VALUE_INDEX_INTRO)}</p>`
     + valueModelsByMake().map((g) => `<section><h2>${esc(g.make)}</h2><ul>` + g.models.map((v) => `<li><a href="${valueModelPath(v)}">What's my ${esc(valueModelName(v))} worth?</a></li>`).join("") + `</ul></section>`).join("")
-    + `<p><a href="/valuation/new">Value my car free</a></p></main>`;
+    + `<p><a href="/valuation/new">Value a car free</a></p></main>`;
 }
