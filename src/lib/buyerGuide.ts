@@ -90,3 +90,16 @@ export function parseAsking(v: string): number | null {
   const n = Number(String(v).replace(/[£,\s]/g, ""));
   return Number.isFinite(n) && n >= 100 && n <= 2_000_000 ? Math.round(n) : null;
 }
+
+/** Engine watch points are written for sellers; keep only the neutral ones for the buyer view and top up with generic checks. */
+const SELLER_FRAMED = /\bbuyers?\b|\bsell(ing|er|ers)?\b|\bask(ing)? price\b|\badvert|\blist(ing)? (it|the car)\b|\breassure\b/i;
+const BUYER_DEFAULTS = [
+  "Ask for the full service history and receipts.",
+  "Check any MOT advisories have been put right.",
+  "Start the car from cold on the test drive and listen for unusual noises.",
+];
+export function buyerChecks(points: string[] | undefined | null, max = 5): string[] {
+  const kept = (points ?? []).filter((s) => s && !SELLER_FRAMED.test(s));
+  for (const d of BUYER_DEFAULTS) if (kept.length < 3) kept.push(d);
+  return kept.slice(0, max);
+}

@@ -3,7 +3,7 @@ import type { ValuationReport } from "@/lib/valuation";
 import type { Intent } from "@/lib/intent";
 import { askingFor, saveAskingFor } from "@/lib/intent";
 import { normaliseReportPricing } from "@/lib/askingPrice";
-import { buyerGuide, compareAsking, diffLine, parseAsking, VERDICT_COPY } from "@/lib/buyerGuide";
+import { buyerGuide, compareAsking, diffLine, parseAsking, VERDICT_COPY, buyerChecks } from "@/lib/buyerGuide";
 
 const gbp = (n?: number) => (typeof n === "number" && isFinite(n) ? `£${Math.round(n).toLocaleString("en-GB")}` : "–");
 
@@ -89,7 +89,7 @@ function BuyerPremiumReport({ r, registration, valuationId }: { r: ValuationRepo
   const lo = Math.min(g.rangeLow, g.privateLow) * 0.92;
   const hi = Math.max(asking ?? 0, g.dealerRetail ?? 0, g.rangeHigh) * 1.04;
   const at = (n: number) => `${Math.min(100, Math.max(0, ((n - lo) / (hi - lo)) * 100))}%`;
-  const checks = (r.watchPoints ?? []).slice(0, 5);
+  const checks = buyerChecks(r.watchPoints);
   return (
     <section data-testid="premium-report-buying" className="mb-6 rounded-2xl overflow-hidden border border-[#111111]/10 bg-[#F7F5F3] font-[Inter,sans-serif] text-[#111111]">
       <div className="flex items-center justify-between px-5 py-3">

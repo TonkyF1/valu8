@@ -124,3 +124,13 @@ describe("buyer and seller copy", () => {
     copyOk(m.description);
   });
 });
+
+import { buyerChecks } from "@/lib/buyerGuide";
+describe("buyerChecks", () => {
+  it("drops seller-framed watch points and tops up", () => {
+    const out = buyerChecks(["Gather any service history to reassure buyers on timing chain", "Timing chain noise is a known issue on this engine"]);
+    expect(out[0]).toMatch(/Timing chain noise/);
+    expect(out.some((s) => /reassure buyers/.test(s))).toBe(false);
+    expect(out.length).toBe(3);
+  });
+});

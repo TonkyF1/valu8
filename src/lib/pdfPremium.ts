@@ -3,7 +3,7 @@ import { buildPdfFilename } from "@/lib/pdf";
 import type { Intent } from "@/lib/intent";
 import { askingFor } from "@/lib/intent";
 import { normaliseReportPricing } from "@/lib/askingPrice";
-import { buyerGuide, compareAsking, diffLine, VERDICT_COPY } from "@/lib/buyerGuide";
+import { buyerGuide, compareAsking, diffLine, VERDICT_COPY, buyerChecks } from "@/lib/buyerGuide";
 
 interface VehicleInfo { make: string; model: string; year: number; mileage: number; registration: string | null; created_at: string }
 const INK: [number, number, number] = [17, 17, 17];
@@ -85,7 +85,7 @@ export async function downloadPremiumPdf(v: VehicleInfo, r: ValuationReport, opt
   if (r.marketContext) { y = head("Market context", y); y = para(r.marketContext, y) + 8; }
   if (r.marketConfidenceReason) { y = head("Confidence", y); y = para(r.marketConfidenceReason, y) + 8; }
   y = head("Strengths", y); y = bullets(r.strengths, y);
-  y = head(buying ? "What to check" : "Watch points", y); y = bullets(r.watchPoints, y);
+  y = head(buying ? "What to check" : "Watch points", y); y = bullets(buying ? buyerChecks(r.watchPoints) : r.watchPoints, y);
   if (r.motNotice) { y = head("MOT", y); y = para(r.motNotice, y) + 8; }
   if (buying) {
     y = head("Before you buy", y);
