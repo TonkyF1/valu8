@@ -18,6 +18,8 @@ import { STRIPE_PUBLISHABLE_KEY } from "@/config/stripePublic";
 import { useAuth } from "@/contexts/AuthContext";
 import { funnelDevice, funnelSessionId, track } from "@/lib/funnel";
 import { metaPixelLoaded } from "@/lib/metaPixel";
+import { getIntent, useIntent, type Intent } from "@/lib/intent";
+import { PREMIUM_CTA, PREMIUM_TITLE } from "@/components/tesla/premium";
 
 const PK = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined) || STRIPE_PUBLISHABLE_KEY;
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
@@ -61,11 +63,23 @@ export const REPORT_ADDS = [
   "Ready-to-post advert text",
   "A PDF of the full report to keep or send to buyers",
 ];
-/** Offer button: says what you get, not "full report". */
-export const REPORT_CTA = "See my asking price · £2.99";
+/** Buying view of the same report (src/lib/buyerGuide.ts). */
+export const REPORT_ADDS_BUYING = [
+  "An estimated fair price for the car",
+  "A suggested opening offer and an indicative negotiation range",
+  "How the advertised asking price compares, if you add it",
+  "The UK adverts we compared the car with",
+  "Full MOT history, with repair cost bands for advisories",
+  "What to check, from the MOT record and mileage",
+  "A PDF of the report to keep",
+];
+export const reportAddsFor = (i: Intent) => (i === "buying" ? REPORT_ADDS_BUYING : REPORT_ADDS);
+/** Offer button. */
+export const REPORT_CTA = PREMIUM_CTA;
 
 /** One honest line under the free price: what the £2.99 report actually adds to this figure. */
-export function reportOfferLine({ isRange }: { isRange: boolean }): string {
+export function reportOfferLine({ isRange, intent = "selling" }: { isRange: boolean; intent?: Intent }): string {
+  if (intent === "buying") return "The £2.99 report turns this into a suggested opening offer and a negotiation range, and compares the asking price if you add it.";
   const lead = isRange ? "The £2.99 report narrows this range to one suggested asking price" : "The £2.99 report turns this into one suggested asking price";
   return `${lead} and the lowest offer worth accepting, plus advert text ready to post.`;
 }
@@ -105,7 +119,7 @@ function ReportPreview() {
 
 function returnUrlFor(valuationId: string): string {
   const origin = typeof window !== "undefined" ? window.location.origin : "https://valu8.uk";
-  return `${origin}/valuation/${valuationId}?session_id={CHECKOUT_SESSION_ID}`;
+  return `${origin}/valuation/${valuationId}?session_id={CHECKOUT_SESSION_ID}&intent=${getIntent()}`;
 }
 
 function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: (msg: string) => void }) {
@@ -126,13 +140,12 @@ function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: 
   }
 
   const checkout = checkoutState.checkout;
-  const returnUrl = returnUrlFor(valuationId);
 
   const confirm = async (opts?: { expressCheckoutConfirmEvent?: unknown }) => {
     setSubmitting(true);
     onError("");
     try {
-      const result = await checkout.confirm({ returnUrl, ...(opts as object) });
+      const result = await checkout.confirm({ returnUrl: returnUrlFor(valuationId), ...(opts as object) });
       if (result.type === "error") {
         onError(result.error.message || "Payment failed. Please try again.");
         setSubmitting(false);
@@ -192,7 +205,7 @@ function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: 
   );
 }
 
-export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = "Full Valuation Report · £2.99", intro }: { valuationId: string; email?: string; onPaid?: () => void; onClose: () => void; title?: string; intro?: ReactNode }) {
+export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = PREMIUM_TITLE, intro }: { valuationId: string; email?: string; onPaid?: () => void; onClose: () => void; title?: string; intro?: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchClientSecret = useCallback(async () => {
@@ -204,7 +217,7 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = 
     const { data, error: fnErr } = await supabase.functions.invoke("create-checkout-session", {
       // Anonymous funnel id + device class so the webhook can log report_purchased; metaConsent only
       // true when the visitor accepted advertising cookies and the Meta Pixel is switched on.
-      body: { valuationId, funnelSession: funnelSessionId(), funnelDevice: funnelDevice(), metaConsent: metaPixelLoaded() },
+      body: { valuationId, funnelSession: funnelSessionId(), funnelDevice: funnelDevice(), metaConsent: metaPixelLoaded(), intent: getIntent() },
     });
     const d = data as any;
     if (d?.alreadyPaid) { onPaid?.(); throw new Error("already paid"); }
@@ -251,6 +264,7 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = 
 
 export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId: string; verifying?: boolean; onPaid?: () => void }) {
   const { user } = useAuth();
+  const [intent] = useIntent();
   const [open, setOpen] = useState(false);
   const email = user?.email || undefined;
   const sectionRef = useRef<HTMLElement>(null);
@@ -275,7 +289,7 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
     <section
       ref={sectionRef}
       id="report-checkout"
-      aria-label="Full Valuation Report"
+      aria-label="Premium Valuation Report"
       className="mb-6 rounded-2xl border border-white/10 p-5 md:p-6"
       style={{ background: "#111111", color: "#F7F5F3", fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
     >
@@ -288,10 +302,12 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
         <div className="flex flex-col gap-4">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#FDE047" }}>
-              <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden /> Full report · £2.99
+              <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden /> Premium Valuation Report · £2.99
             </p>
-            <h2 className="mt-1 text-xl font-bold md:text-2xl">Know your asking price before you list</h2>
-            <p className="mt-2 text-sm opacity-90">Your free valuation shows what the car is worth. The full report shows what to ask, how far to drop and what to fix first.</p>
+            <h2 className="mt-1 text-xl font-bold md:text-2xl">Know what to do with that valuation.</h2>
+            <p className="mt-2 text-sm opacity-90">{intent === "buying"
+              ? "Your free valuation shows what the car could be worth. The report turns it into buying guidance: a fair price, an opening offer, a negotiation range and how the asking price compares."
+              : "Your free valuation shows what the car could be worth. The report shows what to ask, the lowest offer to accept and what to fix first."}</p>
           </div>
           <div className="flex flex-col items-stretch gap-2 sm:max-w-sm">
             <button
@@ -314,7 +330,7 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
             <div className="grid gap-3 px-4 pb-4">
               <p className="text-xs opacity-70">{FREE_SUMMARY}</p>
               <ul className="grid gap-1 text-sm opacity-90">
-                {REPORT_ADDS.map((b) => (<li key={b} className="flex gap-2"><span style={{ color: "#00D6C8" }}>✓</span>{b}</li>))}
+                {reportAddsFor(intent).map((b) => (<li key={b} className="flex gap-2"><span style={{ color: "#00D6C8" }}>✓</span>{b}</li>))}
               </ul>
               <ReportPreview />
             </div>

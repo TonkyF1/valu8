@@ -35,6 +35,8 @@ Deno.serve(async (req) => {
   // Only "1" when the visitor accepted advertising cookies; stripe-webhook sends a Meta Purchase only then.
   const metaConsent = body?.metaConsent === true ? "1" : undefined;
   const funnelDevice = ["mobile", "tablet", "desktop"].includes(body?.funnelDevice) ? String(body.funnelDevice) : undefined;
+  // Buying / Selling view of the same report (presentation only; price and figures are identical).
+  const intent = body?.intent === "buying" || body?.intent === "selling" ? String(body.intent) : undefined;
 
   try {
     const db = adminClient()!;
@@ -68,11 +70,12 @@ Deno.serve(async (req) => {
       "metadata[funnel_session]": funnelSession,
       "metadata[meta_consent]": metaConsent,
       "metadata[funnel_device]": funnelDevice,
+      "metadata[intent]": intent,
       "payment_intent_data[metadata][kind]": "full_report",
       "payment_intent_data[metadata][valuation_id]": valuationId,
       "payment_intent_data[metadata][reg]": reg || undefined,
       "payment_intent_data[metadata][user_id]": g.userId ?? undefined,
-      return_url: `${base}/valuation/${valuationId}?session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${base}/valuation/${valuationId}?session_id={CHECKOUT_SESSION_ID}${intent ? `&intent=${intent}` : ""}`,
     });
     return json({ clientSecret: session.client_secret });
   } catch (e) {
