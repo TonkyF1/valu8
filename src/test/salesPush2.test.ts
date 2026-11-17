@@ -72,7 +72,7 @@ describe("IndexNow", () => {
 
 describe("£2.99 offer copy", () => {
   it("button says what you get", () => {
-    expect(REPORT_CTA).toBe("See my asking price · £2.99");
+    expect(REPORT_CTA).toBe("Unlock Premium Report · £2.99");
     assertCopyRules(REPORT_CTA);
   });
   it("one honest line under the free price, with no account qualifier now guests get the advert", () => {
