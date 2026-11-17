@@ -15,6 +15,7 @@ import { PHOTO_SLOTS, fillEmptySlots, type PhotoSlotKey } from "@/lib/cars";
 import { normaliseReportPricing } from "@/lib/askingPrice";
 import { reportPriceRange } from "../../../supabase/functions/_shared/cheapRange";
 import { ElementsCheckout, REPORT_CTA } from "@/components/ReportCheckout";
+import { PREMIUM_INCLUDES, PREMIUM_TITLE } from "./premium";
 import { bodyKeyFor, carImageSrc, type BodyKey } from "./carImage";
 import { renderFor } from "./modelRenders";
 import { mileageHint } from "@/lib/mileageHint";
@@ -77,6 +78,7 @@ export function TeslaFlow() {
   const [grade, setGrade] = useState<CarGrade | null>(null);
   const [refineDone, setRefineDone] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [premiumBusy, setPremiumBusy] = useState(false);
   const [needMileage, setNeedMileage] = useState(false);
   const tsRef = useRef<string | null>(null);
   const [tsKey, setTsKey] = useState(0);
@@ -178,9 +180,18 @@ export function TeslaFlow() {
     return { id: ins.id as string, report };
   }
 
-  async function start(raw?: string) {
+  /** Premium Report buttons: open the existing £2.99 checkout once the valuation is saved (only when we could price the car). */
+  function openPremium(where: "landing" | "details", report: any, delay: number) {
+    if (!bandFor(report)) return;
+    track("offer_click", `premium_${where}`);
+    posthog.capture?.("Premium Report Click", { where });
+    setTimeout(() => setCheckoutOpen(true), delay);
+  }
+
+  async function start(raw?: string, premium = false) {
     const cleaned = normaliseReg(raw ?? reg);
     if (!isPlausibleUkReg(cleaned)) { setErr("Enter a valid UK number plate, e.g. AB12 CDE."); return; }
+    setPremiumBusy(premium);
     setErr(null); setGuestLimit(null); setStage("looking"); setBand(null); setValuationId(null); setGrade(null); setNeedMileage(false);
     if (turnstileEnabled()) setTsOn(true);
     let l: Lookup;
@@ -228,6 +239,7 @@ export function TeslaFlow() {
       if (!res) { setStage("estimate"); return; }
       applyResult(res.id, res.report, true, l.lastMileage, l);
       setStage("estimate");
+      if (premium) openPremium("landing", res.report, 900);
     } catch (e: any) {
       setErr(e?.message || "We couldn't value this car just now. Please try again.");
       setStage("estimate");
@@ -247,8 +259,8 @@ export function TeslaFlow() {
     posthog.capture?.("Valuation Report Generated", { valuation_id: id, guest: !user, home_flow: true, refined: !first, private_value: report?.values?.privateSale, valuation_unavailable: !!report?.valuationUnavailable });
   }
 
-  async function refine(e: React.FormEvent) {
-    e.preventDefault();
+  async function refine(e?: React.FormEvent, premium = false) {
+    e?.preventDefault();
     if (!lookup) return;
     const miles = Number(mileage.replace(/[,\s]/g, ""));
     if (!Number.isFinite(miles) || miles < 0 || miles > 500000 || mileage.trim() === "") { setErr("Enter the current mileage."); return; }
@@ -275,6 +287,7 @@ export function TeslaFlow() {
         applyResult(res.id, res.report, !band, miles, lookup);
         setStage("refined");
         window.scrollTo({ top: 0, behavior: "auto" });
+        if (premium) openPremium("details", res.report, 700);
       }, wait + 1300);
     } catch (e2: any) {
       setErr(e2?.message || "We couldn't update the valuation. Please try again.");
@@ -322,7 +335,7 @@ export function TeslaFlow() {
     <div className="t8" ref={topRef}>
       <div className="t8-bgglow" aria-hidden />
       {turnstileEnabled() && tsOn && <div style={{ position: "absolute", left: 0, bottom: 0, zIndex: 5 }}><Turnstile key={tsKey} onToken={onToken} action="analyse" /></div>}
-      <section className="t8-hero" aria-labelledby="t8-h">
+      <section className={`t8-hero${hasCar ? "" : " t8-idle"}`} aria-labelledby="t8-h">
         <div className="t8-main">
           <div className="t8-readout">
             {!hasCar ? (
@@ -368,8 +381,7 @@ export function TeslaFlow() {
         </div>
 
         {!hasCar && (
-          <form className="t8-sheet" onSubmit={(e) => { e.preventDefault(); void start(); }}>
-            <div className="t8-grab" aria-hidden />
+          <form className="t8-sheet t8-float" onSubmit={(e) => { e.preventDefault(); void start(); }}>
             <label htmlFor="home-reg" className="t8-label">Enter your registration</label>
             <div className="reg-plate"><div className="reg-plate-inner">
               <div className="reg-plate-badge" aria-hidden><img src="/uk-flag.svg" alt="" /><b>UK</b></div>
@@ -379,12 +391,18 @@ export function TeslaFlow() {
                 placeholder="AB12 CDE" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={10} enterKeyHint="go"
                 aria-invalid={!!err} size={1} className="reg-plate-input" />
             </div></div>
-            <button type="submit" className="t8-btn" style={{ marginTop: 14 }} disabled={busyLookup}>
-              {busyLookup ? <><span className="t8-spin" aria-hidden /> Checking DVLA and MOT records</> : "Value my car free"}
-            </button>
+            <div className="t8-duo" style={{ marginTop: 14 }}>
+              <button type="submit" className="t8-ghost" data-testid="free-valuation" disabled={busyLookup}>
+                {busyLookup && !premiumBusy ? <><span className="t8-spin t8-spin-l" aria-hidden /> Checking</> : "Free Valuation"}
+              </button>
+              <button type="button" className="t8-btn t8-two" data-testid="premium-landing" disabled={busyLookup} onClick={() => void start(undefined, true)}>
+                {busyLookup && premiumBusy ? <span className="t8-one"><span className="t8-spin" aria-hidden /> Checking</span> : <>Premium Report<small>£2.99 one-off</small></>}
+              </button>
+            </div>
+            <p className="t8-inc" aria-live="polite">{busyLookup ? "Checking DVLA and MOT records" : "Buying or Selling, Know the right price"}</p>
             {err && <p className="t8-err" role="alert">{err} <Link className="t8-link" to="/valuation/new">Enter details by hand</Link></p>}
             {guestLimit && <GuestLimit message={guestLimit} />}
-            <p className="t8-note">Free · no account needed · we don't buy cars</p>
+            <p className="t8-note">We don't buy cars</p>
           </form>
         )}
 
@@ -492,7 +510,11 @@ export function TeslaFlow() {
                 })}
               </div>
             </div>
-            <button type="submit" className="t8-btn" disabled={stage === "estimating" || stage === "refining"}>Update with my details</button>
+            <div className="t8-duo">
+              <button type="submit" className="t8-ghost" data-testid="finish-valuation" disabled={stage === "estimating" || stage === "refining"}>Finish Valuation</button>
+              <button type="button" className="t8-btn t8-two" data-testid="premium-details" disabled={stage === "estimating" || stage === "refining"} onClick={() => void refine(undefined, true)}>Premium Report<small>£2.99 one-off</small></button>
+            </div>
+            <p className="t8-inc">Report includes a suggested asking price, the lowest offer to accept, advert text and a PDF</p>
             <p className="t8-small">{lookup.registration ? <>Not your car? <button type="button" className="t8-link" onClick={reset}>Check another plate</button></> : null}</p>
           </form>
         </section>
@@ -513,9 +535,32 @@ export function TeslaFlow() {
       )}
 
       {checkoutOpen && valuationId && (
-        <div className="t8-checkout" role="dialog" aria-modal="true" aria-label="Full Valuation Report checkout" onClick={(e) => { if (e.target === e.currentTarget) setCheckoutOpen(false); }}>
+        <div className="t8-checkout" role="dialog" aria-modal="true" aria-label="Premium Report checkout" onClick={(e) => { if (e.target === e.currentTarget) setCheckoutOpen(false); }}>
           <div className="t8-checkout-in">
-            <ElementsCheckout valuationId={valuationId} email={user?.email || undefined} onPaid={() => navigate(`/valuation/${valuationId}`)} onClose={() => setCheckoutOpen(false)} />
+            <ElementsCheckout valuationId={valuationId} email={user?.email || undefined} onPaid={() => navigate(`/valuation/${valuationId}`)} onClose={() => setCheckoutOpen(false)}
+              title={PREMIUM_TITLE}
+              intro={
+                <>
+                  {lookup && (
+                    <div className="t8-co-car">
+                      <img src={carSrc} alt="" width={96} height={54} />
+                      <div className="t8-co-tx">
+                        <div className="t8-co-n">{name}</div>
+                        {lookup.registration && <span className="t8-mp"><img src="/uk-flag.svg" alt="" /><span>{fmtReg(lookup.registration)}</span></span>}
+                      </div>
+                      <div className="t8-co-pr">£2.99</div>
+                    </div>
+                  )}
+                  <div className="t8-wi" data-testid="premium-includes">
+                    <h3>What's in your Premium Report</h3>
+                    <ul>
+                      {PREMIUM_INCLUDES.map((i) => (
+                        <li key={i}><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="8.25" fill="rgba(0,214,200,.14)" stroke="#00D6C8" strokeWidth="1.2" /><path d="M5.6 9.2l2.2 2.2 4.6-4.7" stroke="#1AFFF0" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg><span>{i}</span></li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              } />
           </div>
         </div>
       )}

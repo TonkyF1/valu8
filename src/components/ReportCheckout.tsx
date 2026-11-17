@@ -3,7 +3,7 @@
  * Dark Appearance API (theme night) + own teal Pay button. Unlock comes from the
  * webhook-written report_purchases row (report-entitlement), never from the return URL.
  */
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadStripe, type Appearance } from "@stripe/stripe-js";
 import {
   CheckoutElementsProvider,
@@ -192,7 +192,7 @@ function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: 
   );
 }
 
-export function ElementsCheckout({ valuationId, email, onPaid, onClose }: { valuationId: string; email?: string; onPaid?: () => void; onClose: () => void }) {
+export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = "Full Valuation Report · £2.99", intro }: { valuationId: string; email?: string; onPaid?: () => void; onClose: () => void; title?: string; intro?: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchClientSecret = useCallback(async () => {
@@ -231,11 +231,12 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose }: { valu
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-bold">Full Valuation Report · £2.99</h2>
+        <h2 className="text-lg font-bold">{title}</h2>
         <button type="button" aria-label="Close checkout" onClick={onClose} className="rounded-lg p-2 hover:bg-white/10">
           <X className="h-5 w-5" />
         </button>
       </div>
+      {intro ? <div className="mb-3">{intro}</div> : null}
       {error ? (
         <p className="mb-3 text-sm" style={{ color: "#FDE047" }}>{error}</p>
       ) : null}
