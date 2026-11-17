@@ -46,7 +46,7 @@ export default function CarValue() {
         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">What's my {name} worth?</h1>
         <p className="text-muted-foreground mt-4 leading-relaxed">{carIntro(car)}</p>
         <div className="mt-6 flex flex-col sm:flex-row gap-3">
-          <Button asChild variant="hero" size="xl"><Link to="/valuation/new">Value my {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+          <Button asChild variant="hero" size="xl"><Link to="/">Value my {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
           <Button asChild variant="outline" size="xl"><Link to="/check">Check a {name} asking price</Link></Button>
         </div>
         {carValueMatch(car) && (

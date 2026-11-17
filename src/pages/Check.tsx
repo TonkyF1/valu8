@@ -204,7 +204,7 @@ export default function Check() {
             </div>
             {!user && <div className="mt-5"><GuestMarketingConsent /></div>}
             <div className="mt-5 flex flex-col sm:flex-row gap-2">
-              <Button asChild variant="outline" className="min-h-[44px]"><Link to="/valuation/new">Get a full report with MOT history</Link></Button>
+              <Button asChild variant="outline" className="min-h-[44px]"><Link to="/">Get a full report with MOT history</Link></Button>
               <Button variant="ghost" className="min-h-[44px]" onClick={() => { setRes(null); setF(EMPTY); }}>Check another advert</Button>
             </div>
           </section>
