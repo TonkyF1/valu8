@@ -1,5 +1,9 @@
 import type { ValuationReport } from "@/lib/valuation";
 import { buildPdfFilename } from "@/lib/pdf";
+import type { Intent } from "@/lib/intent";
+import { askingFor } from "@/lib/intent";
+import { normaliseReportPricing } from "@/lib/askingPrice";
+import { buyerGuide, compareAsking, diffLine, VERDICT_COPY } from "@/lib/buyerGuide";
 
 interface VehicleInfo { make: string; model: string; year: number; mileage: number; registration: string | null; created_at: string }
 const INK: [number, number, number] = [17, 17, 17];
@@ -8,12 +12,17 @@ const TEAL: [number, number, number] = [0, 214, 200];
 const gbp = (n?: number) => (typeof n === "number" && isFinite(n) ? `£${Math.round(n).toLocaleString("en-GB")}` : "-");
 
 /** Premium 2-page A4 PDF (design: promo/report-premium-v1). Used only when showPremiumReport() is true. */
-export async function downloadPremiumPdf(v: VehicleInfo, r: ValuationReport): Promise<void> {
+export async function downloadPremiumPdf(v: VehicleInfo, r: ValuationReport, opts: { intent?: Intent; valuationId?: string } = {}): Promise<void> {
+  const buying = opts.intent === "buying";
+  const p = normaliseReportPricing(r);
+  const guide = buying ? buyerGuide({ privateSale: p.privateSale, privateLow: p.privateLow, privateHigh: p.privateHigh, tradeIn: p.tradeIn, retail: p.retail }, askingFor(opts.valuationId)) : null;
+  const asking = buying ? askingFor(opts.valuationId) : null;
+  const cmp = guide && asking ? compareAsking(asking, guide) : null;
   const { default: JsPDF } = await import("jspdf");
   const doc = new JsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), m = 40;
   const bg = () => { doc.setFillColor(...PAPER); doc.rect(0, 0, W, H, "F"); };
-  const foot = () => { doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120, 120, 120); doc.text("Guidance only, not financial advice. valu8.uk", m, H - 24); };
+  const foot = () => { doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(120, 120, 120); doc.text(buying ? "Estimates and guidance only, not guaranteed prices or financial advice. Not a vehicle history check or inspection. valu8.uk" : "Guidance only, not financial advice. valu8.uk", m, H - 24); };
   const para = (t: string, y: number, w = W - 2 * m, size = 10) => { doc.setFontSize(size); const l = doc.splitTextToSize(t, w); doc.text(l, m, y); return y + l.length * size * 1.35; };
   const head = (t: string, y: number) => { doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...INK); doc.text(t, m, y); doc.setFont("helvetica", "normal"); return y + 16; };
   const bullets = (l: string[] | undefined, y: number) => { doc.setTextColor(...INK); for (const b of (l ?? []).slice(0, 6)) y = para(`• ${b}`, y, W - 2 * m, 10); return y + 6; };
@@ -26,7 +35,7 @@ export async function downloadPremiumPdf(v: VehicleInfo, r: ValuationReport): Pr
 
   const val = r.values; let y = 90;
   doc.setFillColor(...INK); doc.roundedRect(m, y, W - 2 * m, 130, 10, 10, "F");
-  doc.setTextColor(200, 200, 200); doc.setFontSize(9); doc.text("PRIVATE SALE VALUE", m + 20, y + 28);
+  doc.setTextColor(200, 200, 200); doc.setFontSize(9); doc.text(buying ? "ESTIMATED FAIR PRICE · PRIVATE SALE" : "PRIVATE SALE VALUE", m + 20, y + 28);
   doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(32); doc.text(gbp(val.privateSale), m + 20, y + 64);
   doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(200, 200, 200);
   if (r.valueRange) doc.text(`Range ${gbp(r.valueRange.privateSaleLow)} - ${gbp(r.valueRange.privateSaleHigh)}${r.marketConfidence ? ` · ${r.marketConfidence} confidence` : ""}`, m + 20, y + 84);
@@ -59,9 +68,15 @@ export async function downloadPremiumPdf(v: VehicleInfo, r: ValuationReport): Pr
     doc.setTextColor(...TEAL); doc.setFontSize(8); doc.text(title, m + 16, y + 18);
     doc.setTextColor(255, 255, 255); doc.setFontSize(10); doc.text(l, m + 16, y + 34); y += h + 10;
   };
-  if (r.sellerTip) box("SELLER TIP", r.sellerTip);
-  const buf = r.recommendations?.negotiationBuffer ?? r.negotiationBuffer;
-  box("LISTING PLAN", `List at ${gbp(r.recommendations?.recommendedAskingPrice ?? r.recommendations?.listingPrice)}${buf ? `, leaving about ${gbp(buf)} to negotiate` : ""}.`);
+  if (guide) {
+    box("BUYING STRATEGY", `Estimated fair price ${gbp(guide.fairPrice)} (private sale). Suggested opening offer ${gbp(guide.openingOffer)}. Indicative negotiation range ${gbp(guide.rangeLow)} - ${gbp(guide.rangeHigh)}.${guide.dealerRetail ? ` From a dealer, expect prices nearer ${gbp(guide.dealerRetail)}.` : ""}`);
+    if (cmp) box("ASKING PRICE CHECK", `Advertised at ${gbp(cmp.asking)}: ${VERDICT_COPY[cmp.verdict].label.toLowerCase()} (${diffLine(cmp).toLowerCase()}). ${VERDICT_COPY[cmp.verdict].tip}`);
+    else box("ASKING PRICE CHECK", "Add the advertised asking price in your online report to see how it compares with this valuation.");
+  } else {
+    if (r.sellerTip) box("SELLER TIP", r.sellerTip);
+    const buf = r.recommendations?.negotiationBuffer ?? r.negotiationBuffer;
+    box("LISTING PLAN", `List at ${gbp(r.recommendations?.recommendedAskingPrice ?? r.recommendations?.listingPrice)}${buf ? `, leaving about ${gbp(buf)} to negotiate` : ""}.`);
+  }
   foot();
 
   doc.addPage(); bg(); y = 56; doc.setTextColor(...INK);
@@ -70,10 +85,15 @@ export async function downloadPremiumPdf(v: VehicleInfo, r: ValuationReport): Pr
   if (r.marketContext) { y = head("Market context", y); y = para(r.marketContext, y) + 8; }
   if (r.marketConfidenceReason) { y = head("Confidence", y); y = para(r.marketConfidenceReason, y) + 8; }
   y = head("Strengths", y); y = bullets(r.strengths, y);
-  y = head("Watch points", y); y = bullets(r.watchPoints, y);
+  y = head(buying ? "What to check" : "Watch points", y); y = bullets(r.watchPoints, y);
   if (r.motNotice) { y = head("MOT", y); y = para(r.motNotice, y) + 8; }
-  y = head("Documents to have ready", y); y = bullets(r.recommendations?.documents, y);
-  y = head("Where to sell", y); bullets(r.recommendations?.whereToSell, y);
+  if (buying) {
+    y = head("Before you buy", y);
+    bullets(["Check the V5C logbook matches the seller and the car.", "Check the service history supports the mileage on the MOT record.", "Check for outstanding safety recalls on GOV.UK.", "Use the MOT advisories and anything you spot on the viewing to support your offer."], y);
+  } else {
+    y = head("Documents to have ready", y); y = bullets(r.recommendations?.documents, y);
+    y = head("Where to sell", y); bullets(r.recommendations?.whereToSell, y);
+  }
   foot();
-  doc.save(buildPdfFilename(v).replace(/\.pdf$/i, "") + "-premium.pdf");
+  doc.save(buildPdfFilename(v).replace(/\.pdf$/i, "") + (buying ? "-premium-buying.pdf" : "-premium.pdf"));
 }

@@ -1,4 +1,6 @@
 import { PremiumReport } from "@/components/PremiumReport";
+import { IntentSwitch } from "@/components/IntentSwitch";
+import { initialReportIntent, saveIntentFor, type Intent } from "@/lib/intent";
 import { premiumEnforced, showPremiumReport } from "@/lib/entitlements";
 import { REPORT_CTA, ReportCheckout, fetchReportPaid, reportOfferLine } from "@/components/ReportCheckout";
 import { metaPurchaseOnce } from "@/lib/metaPixel";
@@ -134,6 +136,9 @@ export default function Report() {
   // webhook-written report_purchases row; ?session_id= only triggers a short re-check.
   const enforcedPremium = premiumEnforced();
   const [reportPaid, setReportPaid] = useState(false);
+  // Buying / Selling view of the paid report (?intent= from checkout, else the choice saved for this valuation).
+  const [reportIntent, setReportIntent] = useState<Intent>(() => initialReportIntent(id, location.search));
+  useEffect(() => { saveIntentFor(id, reportIntent); }, [id, reportIntent]);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
@@ -388,6 +393,8 @@ export default function Report() {
   // Admin / purchase unlock Full Report. Unpaid share links stay locked; paid entitlement unlocks.
   const premium = showPremiumReport({ itemId: v.id, reportItemIds: reportPaid ? [v.id] : [], isAdmin });
   const locked = (enforcedPremium || reportPaywallEnabled()) && !premium;
+  // Buying view of a paid report: seller-only extras (where to sell, advert writer) step aside. Switch back any time.
+  const sellerHidden = premium && reportIntent === "buying";
 
   // Free locked result with the £2.99 offer: price first, then the offer card, then the supporting detail.
   const offerFirst = enforcedPremium && !premium && !valuationUnavailable;
@@ -535,7 +542,7 @@ export default function Report() {
   const downloadPdf = async () => {
     const tid = toast.loading("Generating PDF…");
     try {
-      if (premium) await (await import("@/lib/pdfPremium")).downloadPremiumPdf(v, r);
+      if (premium) await (await import("@/lib/pdfPremium")).downloadPremiumPdf(v, r, { intent: reportIntent, valuationId: v.id });
       else await (await import("@/lib/pdf")).downloadValuationPdf(v, r, { shareUrl: `${window.location.origin}/shared/${v.id}` });
       toast.success("Report downloaded successfully", { id: tid });
     } catch (err) {
@@ -549,7 +556,13 @@ export default function Report() {
       <TestModeBanner />
       <Header />
       <main id="main" className="flex-1 container py-6 md:py-8 pb-28 sm:pb-8 max-w-5xl lg:max-w-6xl">
-        {premium && <PremiumReport r={r} registration={v.registration} />}
+        {premium && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3" data-testid="report-intent">
+            <p className="text-sm text-muted-foreground">Show the report for</p>
+            <IntentSwitch size="xs" where="report" value={reportIntent} onChange={setReportIntent} />
+          </div>
+        )}
+        {premium && <PremiumReport r={r} registration={v.registration} intent={reportIntent} valuationId={v.id} />}
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           {isShared || isGuest ? (
             <Button asChild variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0">
@@ -849,7 +862,7 @@ export default function Report() {
 
                 {offerFirst ? (
                   <p className="mt-3 text-[13px] leading-relaxed text-foreground/90 max-w-[48ch]" data-testid="offer-line">
-                    {reportOfferLine({ isRange: !!reportPriceRange(r, normaliseReportPricing(r).privateSale) })}
+                    {reportOfferLine({ isRange: !!reportPriceRange(r, normaliseReportPricing(r).privateSale), intent: reportIntent })}
                   </p>
                 ) : priceExtras}
               </div>
@@ -1241,8 +1254,8 @@ export default function Report() {
           );
         })()}
 
-        {/* Recommendations */}
-        {!valuationUnavailable && !locked && (
+        {/* Recommendations (seller view only) */}
+        {!valuationUnavailable && !locked && !sellerHidden && (
           <CollapsibleSection
             title="Seller Recommendations"
             icon={Megaphone}
@@ -1340,7 +1353,7 @@ export default function Report() {
           </div>
         )}
 
-        {!valuationUnavailable && !isShared && !locked && (!isGuest || (reportPaid && !!peekGuestToken())) && (
+        {!valuationUnavailable && !isShared && !locked && !sellerHidden && (!isGuest || (reportPaid && !!peekGuestToken())) && (
           <div id="advert" className="scroll-mt-44">
             <AdvertCreator
               guestToken={isGuest ? peekGuestToken() : null}
@@ -1390,6 +1403,8 @@ export default function Report() {
             <Button variant="outline" size="lg" className="flex-1 min-h-[48px] px-3" onClick={share}><Share2 className="h-4 w-4" aria-hidden /> Share</Button>
             {isGuest ? (
               <Button asChild variant="hero" size="lg" className="flex-1 min-h-[48px] px-3"><Link to="/auth?mode=signup" onClick={() => setReturnTo(`/valuation/${v.id}`)}>Save report</Link></Button>
+            ) : sellerHidden ? (
+              <Button variant="hero" size="lg" className="flex-1 min-h-[48px] px-3" onClick={downloadPdf}><Download className="h-4 w-4" aria-hidden /> Buyer PDF</Button>
             ) : !valuationUnavailable && (
               <Button asChild variant="hero" size="lg" className="flex-1 min-h-[48px] px-3"><a href="#advert"><Megaphone className="h-4 w-4" aria-hidden /> Write advert</a></Button>
             )}

@@ -14,8 +14,11 @@ import { functionErrorBody, getGuestToken, photoToDataUrl, rememberGuestValuatio
 import { PHOTO_SLOTS, fillEmptySlots, type PhotoSlotKey } from "@/lib/cars";
 import { normaliseReportPricing } from "@/lib/askingPrice";
 import { reportPriceRange } from "../../../supabase/functions/_shared/cheapRange";
-import { ElementsCheckout, REPORT_CTA } from "@/components/ReportCheckout";
-import { PREMIUM_INCLUDES, PREMIUM_TITLE } from "./premium";
+import { ElementsCheckout } from "@/components/ReportCheckout";
+import { LOCKED_ROWS, PREMIUM_CTA, PREMIUM_NAME, PREMIUM_TITLE, includesFor, includesLine } from "./premium";
+import { IntentSwitch } from "@/components/IntentSwitch";
+import { getIntent, saveAskingFor, saveIntentFor, useIntent } from "@/lib/intent";
+import { parseAsking } from "@/lib/buyerGuide";
 import { bodyKeyFor, carImageSrc, type BodyKey } from "./carImage";
 import { renderFor } from "./modelRenders";
 import { mileageHint } from "@/lib/mileageHint";
@@ -81,6 +84,11 @@ export function TeslaFlow() {
   /** Premium path: the visitor tapped Premium Report on the landing page, so the details step shows one Pay button. */
   const [premiumBusy, setPremiumBusy] = useState(false);
   const [needMileage, setNeedMileage] = useState(false);
+  /** Buying or Selling (shared with the homepage selector, the result card and the checkout). */
+  const [intent] = useIntent();
+  /** Optional advertised asking price, buyers only. Compared with the valuation in the paid report. */
+  const [asking, setAsking] = useState("");
+  const regInput = useRef<HTMLInputElement>(null);
   const tsRef = useRef<string | null>(null);
   const [tsKey, setTsKey] = useState(0);
   const [tsOn, setTsOn] = useState(false);
@@ -103,6 +111,20 @@ export function TeslaFlow() {
     return waitFor(() => tsRef.current, 12000);
   }
   const spendToken = () => { tsRef.current = null; setTsKey((k) => k + 1); };
+
+  useEffect(() => { if (valuationId) saveIntentFor(valuationId, intent); }, [valuationId, intent]);
+  useEffect(() => { if (valuationId && intent === "buying") saveAskingFor(valuationId, parseAsking(asking)); }, [valuationId, intent, asking]);
+
+  // Homepage section buttons send the visitor back to the registration card (or the next step if a car is loaded).
+  useEffect(() => {
+    const go = () => {
+      const target: HTMLElement | null = unlockRef.current ?? detailsRef.current ?? topRef.current;
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => regInput.current?.focus({ preventScroll: true }), 650);
+    };
+    window.addEventListener("valu8:reg", go);
+    return () => window.removeEventListener("valu8:reg", go);
+  }, []);
 
   // ?reg=AB12CDE on the homepage starts the check once (embeds and share links).
   const [params, setParams] = useSearchParams();
@@ -342,8 +364,8 @@ export function TeslaFlow() {
           <div className="t8-readout">
             {!hasCar ? (
               <>
-                <h1 id="t8-h" className="t8-h1">What’s your car worth?</h1>
-                <p className="t8-sub">Find out free from your number plate.</p>
+                <h1 id="t8-h" className="t8-h1 t8-h1-bs">Know its value.<br /><em>Make the right move.</em></h1>
+                <p className="t8-sub t8-sub-bs">Get a free valuation from the number plate in seconds, then unlock personalised insights to help you negotiate with confidence.</p>
               </>
             ) : band ? (
               <>
@@ -384,10 +406,10 @@ export function TeslaFlow() {
 
         {!hasCar && (
           <form className="t8-sheet t8-float" onSubmit={(e) => { e.preventDefault(); void start(); }}>
-            <label htmlFor="home-reg" className="t8-label">Enter your registration</label>
+            <label htmlFor="home-reg" className="t8-label">Enter the registration</label>
             <div className="reg-plate"><div className="reg-plate-inner">
               <div className="reg-plate-badge" aria-hidden><img src="/uk-flag.svg" alt="" /><b>UK</b></div>
-              <input id="home-reg" value={reg} disabled={busyLookup}
+              <input id="home-reg" ref={regInput} value={reg} disabled={busyLookup}
                 onFocus={() => track("valuation_started")}
                 onChange={(e) => { setReg(e.target.value.toUpperCase()); setErr(null); if (e.target.value.trim()) { track("valuation_started"); track("reg_typed"); } }}
                 placeholder="AB12 CDE" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={10} enterKeyHint="go"
@@ -416,13 +438,21 @@ export function TeslaFlow() {
         )}
 
         {refined && valuationId && (
-          <div className="t8-unlock" ref={unlockRef} id="report-checkout">
+          <div className="t8-unlock" ref={unlockRef} id="report-checkout" data-testid="premium-card">
             <div className="t8-grab" aria-hidden />
-            <p className="lead">{band && !band.single
-              ? "The report narrows this range to one suggested asking price, with typical asking prices from UK adverts."
-              : "The report turns this into one suggested asking price, with typical asking prices from UK adverts."}</p>
-            <button type="button" className="t8-btn" data-testid="offer-button" onClick={() => { track("offer_click"); setCheckoutOpen(true); }}>{REPORT_CTA}</button>
-            <p className="t8-note">One-off · no subscription</p>
+            <div className="v8-pill-wrap"><span className="bs-pill"><i />{PREMIUM_NAME}</span></div>
+            <p className="uh">A valuation tells you the price.<br /><em>Valu8 helps you make the deal.</em></p>
+            <IntentSwitch size="sm" where="result" />
+            <div className="v8-lockrows" key={intent} aria-label="Included in the Premium Report">
+              {LOCKED_ROWS[intent].map((row) => (
+                <div key={row.label}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2" stroke="#8A8A8A" strokeWidth="1.3" /><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7" stroke="#8A8A8A" strokeWidth="1.3" /></svg>
+                  <span className="t">{row.label}</span><span className="dots" aria-label="Locked">{row.money ? "£•,•••" : "•••"}</span>
+                </div>
+              ))}
+            </div>
+            <button type="button" className="t8-btn" style={{ marginTop: 16 }} data-testid="offer-button" onClick={() => { track("offer_click"); saveIntentFor(valuationId, getIntent()); setCheckoutOpen(true); }}>{PREMIUM_CTA}</button>
+            <p className="bs-reass"><b>One-off payment.</b> No subscription.</p>
             <p className="t8-note"><Link to={`/valuation/${valuationId}`}>See my free report</Link> · <button type="button" className="t8-link" onClick={reset}>Value another car</button></p>
           </div>
         )}
@@ -431,8 +461,12 @@ export function TeslaFlow() {
       {hasCar && lookup && !refined && (
         <section className="t8-details" ref={detailsRef} aria-labelledby="t8-det">
           <form className="t8-details-in" onSubmit={(e) => void refine(e, premiumBusy)}>
-            <h2 id="t8-det" className="t8-title">Add your details</h2>
-            <p className="t8-lead">We’ll update the estimate with your mileage, trim, history and photos.</p>
+            <h2 id="t8-det" className="t8-title">Add the car’s details</h2>
+            <p className="t8-lead">We’ll update the estimate with the mileage, trim, history and photos.</p>
+            <div className="t8-intent">
+              <div className="t8-k">Are you buying or selling?</div>
+              <IntentSwitch size="sm" where="details" />
+            </div>
             {err && stage === "estimate" && <p className="t8-err" role="alert" style={{ textAlign: "left", marginBottom: 14 }}>{err}</p>}
             {guestLimit && <GuestLimit message={guestLimit} />}
             <div className="t8-factgrid t8-stagger">
@@ -449,14 +483,14 @@ export function TeslaFlow() {
                 {trimHint ? (
                   <div className="t8-chips" data-testid="trim-hint">
                     <span>{trimHint.confident || trimHint.allPerf
-                      ? trimHint.options.length === 1 ? `The ${trimHint.reason} was only sold as the ${trimHint.options[0]}.` : `The ${trimHint.reason} was only sold as a performance version. Which is yours?`
-                      : `The ${trimHint.reason} is often a performance version. Is yours one of these?`}</span>
+                      ? trimHint.options.length === 1 ? `The ${trimHint.reason} was only sold as the ${trimHint.options[0]}.` : `The ${trimHint.reason} was only sold as a performance version. Which is it?`
+                      : `The ${trimHint.reason} is often a performance version. Is it one of these?`}</span>
                     {[...trimHint.options, ...(trimHint.confident || trimHint.allPerf ? [] : ["Neither"])].map((o) => {
                       const val = o === "Neither" ? "" : o; const on = o === "Neither" ? !variant : variant === o;
                       return <button key={o} type="button" className="t8-chip" aria-pressed={on} onClick={() => { setVariant(val); setTrimAuto(false); }}>{o}</button>;
                     })}
                   </div>
-                ) : <span className="t8-hint">DVLA records don't include the trim. Performance versions (RS, ST, GTI, R, AMG, M, vRS, Type R) are worth much more, so add yours.</span>}
+                ) : <span className="t8-hint">DVLA records don't include the trim. Performance versions (RS, ST, GTI, R, AMG, M, vRS, Type R) are worth much more, so add it if you know it.</span>}
                 {trimAuto && <span className="t8-hint">Filled in from the engine size. Change it if it's wrong.</span>}
               </div>
               <div className="t8-field">
@@ -467,7 +501,7 @@ export function TeslaFlow() {
                     <button key={g} type="button" role="radio" aria-checked={gearbox === g} onClick={() => { setGearbox(g); setGearboxGuessed(false); }}>{g}</button>
                   ))}
                 </div>
-                {gearboxGuessed && <span className="t8-hint">Most of these are {gearbox.toLowerCase()}. Change it if yours isn't.</span>}
+                {gearboxGuessed && <span className="t8-hint">Most of these are {gearbox.toLowerCase()}. Change it if this one isn't.</span>}
               </div>
               <div className="t8-row2">
                 <div className="t8-field">
@@ -480,6 +514,14 @@ export function TeslaFlow() {
                   <input id="t8-mods" maxLength={200} placeholder="e.g. New tyres" value={mods} onChange={(e) => setMods(e.target.value)} />
                 </div>
               </div>
+              {intent === "buying" && (
+                <div className="t8-field t8-asking">
+                  <label htmlFor="t8-asking">Advertised asking price <span className="opt">(optional)</span></label>
+                  <input id="t8-asking" inputMode="numeric" placeholder="e.g. 8,495" value={asking} data-testid="asking-price"
+                    onChange={(e) => setAsking(e.target.value.replace(/[^\d,£]/g, ""))} />
+                  <span className="t8-hint">From the advert. The Premium Report compares it with the valuation and suggests an opening offer.</span>
+                </div>
+              )}
               <div className="t8-field">
                 <label htmlFor="t8-notes">Service history notes</label>
                 <textarea id="t8-notes" rows={3} maxLength={500} placeholder="e.g. Full service history, cambelt at 60k, four new tyres last summer." value={notes} onChange={(e) => setNotes(e.target.value)} />
@@ -495,6 +537,7 @@ export function TeslaFlow() {
                   </button>
                 )}
               </div>
+              <p className="t8-hint" style={{ margin: "6px 0 10px" }}>{intent === "buying" ? "Photos from the advert or a viewing help us spot condition issues that affect the price." : "A few photos help us spot condition issues and selling points that move the price."}</p>
               <input ref={slotInput} type="file" accept="image/*" hidden onChange={pickPhoto} />
               <input ref={bulkInput} type="file" accept="image/*" multiple hidden onChange={pickBulk} aria-label="Upload several photos" />
               <div className="t8-photos t8-stagger">
@@ -522,30 +565,30 @@ export function TeslaFlow() {
                 <button type="button" className="t8-btn t8-two" data-testid="premium-details" disabled={stage === "estimating" || stage === "refining"} onClick={() => void refine(undefined, true)}>Premium Report<small>£2.99 one-off</small></button>
               </div>
             )}
-            <p className="t8-inc">Report includes a suggested asking price, the lowest offer to accept, advert text and a PDF</p>
-            <p className="t8-small">{lookup.registration ? <>Not your car? <button type="button" className="t8-link" onClick={reset}>Check another plate</button></> : null}</p>
+            <p className="t8-inc">{includesLine(intent)}</p>
+            <p className="t8-small">{lookup.registration ? <>Wrong car? <button type="button" className="t8-link" onClick={reset}>Check another plate</button></> : null}</p>
           </form>
         </section>
       )}
 
       {stage === "refining" && (
         <RingLoader
-          title="Updating your valuation"
-          status={progress < 25 ? "Checking records" : progress < 50 ? "Reading MOT history" : progress < 75 ? (photos.length ? "Looking at your photos" : "Matching your details") : "Pricing"}
+          title="Updating the valuation"
+          status={progress < 25 ? "Checking records" : progress < 50 ? "Reading MOT history" : progress < 75 ? (photos.length ? "Looking at the photos" : "Matching the details") : "Pricing"}
           progress={progress}
           steps={[
             { title: "Checking records", sub: "Official vehicle record" },
             { title: "Reading MOT history", sub: "DVSA tests and advisories" },
-            photos.length ? { title: "Looking at your photos", sub: "Panels, wheels and interior" } : { title: "Matching your details", sub: "Trim, mileage and history" },
-            { title: "Pricing", sub: "Updating with your details" },
+            photos.length ? { title: "Looking at the photos", sub: "Panels, wheels and interior" } : { title: "Matching the details", sub: "Trim, mileage and history" },
+            { title: "Pricing", sub: "Updating with the details" },
           ]}
         />
       )}
 
       {checkoutOpen && valuationId && (
-        <div className="t8-checkout" role="dialog" aria-modal="true" aria-label="Premium Report checkout" onClick={(e) => { if (e.target === e.currentTarget) setCheckoutOpen(false); }}>
+        <div className="t8-checkout" role="dialog" aria-modal="true" aria-label={`${PREMIUM_NAME} checkout`} onClick={(e) => { if (e.target === e.currentTarget) setCheckoutOpen(false); }}>
           <div className="t8-checkout-in">
-            <ElementsCheckout valuationId={valuationId} email={user?.email || undefined} onPaid={() => navigate(`/valuation/${valuationId}`)} onClose={() => setCheckoutOpen(false)}
+            <ElementsCheckout valuationId={valuationId} email={user?.email || undefined} onPaid={() => navigate(`/valuation/${valuationId}?intent=${getIntent()}`)} onClose={() => setCheckoutOpen(false)}
               title={PREMIUM_TITLE}
               intro={
                 <>
@@ -559,10 +602,11 @@ export function TeslaFlow() {
                       <div className="t8-co-pr">£2.99</div>
                     </div>
                   )}
-                  <div className="t8-wi" data-testid="premium-includes">
-                    <h3>What's in your Premium Report</h3>
+                  <div className="v8-forl"><span>This report is for</span><IntentSwitch size="xs" where="checkout" /></div>
+                  <div className="t8-wi" data-testid="premium-includes" key={intent}>
+                    <h3>What's in your {PREMIUM_NAME}</h3>
                     <ul>
-                      {PREMIUM_INCLUDES.map((i) => (
+                      {includesFor(intent).map((i) => (
                         <li key={i}><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="8.25" fill="rgba(0,214,200,.14)" stroke="#00D6C8" strokeWidth="1.2" /><path d="M5.6 9.2l2.2 2.2 4.6-4.7" stroke="#1AFFF0" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg><span>{i}</span></li>
                       ))}
                     </ul>
