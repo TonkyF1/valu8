@@ -717,7 +717,7 @@ export default function NewValuation() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
                 <p className="text-xs text-muted-foreground max-w-md">
                   We'll combine your reg lookup, details and photos to generate a realistic private sale price.
-                  {!user && <span className="block mt-1 text-muted-foreground/70">No account needed. Free for up to {GUEST_DAILY_CAP} valuations a day.</span>}
+                  {!user && <span className="block mt-1 text-muted-foreground/70">Free guest valuations are limited to {GUEST_DAILY_CAP} a day. A free account gives you more.</span>}
                 </p>
                 <Button type="submit" variant="hero" size="xl" disabled={busy || (turnstileEnabled() && !tsToken)}>
                   {busy ? "Working…" : <>Get my valuation <ArrowRight className="h-4 w-4" /></>}

@@ -26,9 +26,10 @@ describe("route metadata HTML", () => {
     expect(new Set(ALL_ROUTES.map((r) => r.title)).size).toBe(ALL_ROUTES.length);
     expect(new Set(ALL_ROUTES.map((r) => r.description)).size).toBe(ALL_ROUTES.length);
   });
-  it("uses contact's own canonical and includes accuracy in the sitemap", () => {
+  it("uses contact's own canonical; accuracy stays out of the sitemap and is noindex until there are real figures", () => {
     expect(routeHtml(shell, getRouteMeta("/contact"))).toContain('<link rel="canonical" href="https://valu8.uk/contact" />');
-    expect(buildSitemap()).toContain("<loc>https://valu8.uk/accuracy</loc><priority>0.6</priority>");
+    expect(buildSitemap()).not.toContain("<loc>https://valu8.uk/accuracy</loc>");
+    expect(routeHtml(shell, getRouteMeta("/accuracy"))).toContain('<meta name="robots" content="noindex, follow" />');
   });
   it("marks private shells noindex and omits 404 canonical", () => {
     expect(routeHtml(shell, getRouteMeta("/dashboard"))).toContain('<meta name="robots" content="noindex, follow" />');

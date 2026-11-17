@@ -270,7 +270,7 @@ GOV.UK has a step-by-step list of [checks to make when buying a used vehicle](ht
 
 ## Use the Valu8 advert check
 
-Doing all of that by hand takes time. Valu8's free [Is this advert fair?](/check) check does the first pass for you. Copy in the details from the advert – make, model, year, mileage, asking price and whether it's a private or dealer sale – and you'll get a quick verdict on how the asking price compares with our estimated private-sale and dealer ranges for similar cars. No account is needed.
+Doing all of that by hand takes time. Valu8's free [Is this advert fair?](/check) check does the first pass for you. Copy in the details from the advert – make, model, year, mileage, asking price and whether it's a private or dealer sale – and you'll get a quick verdict on how the asking price compares with our estimated private-sale and dealer ranges for similar cars. Guests get a few free checks each day.
 
 Want to go further? A full [Valu8 report from the reg](/valuation/new) adds the car's official DVSA MOT history and mileage record.
 
