@@ -217,7 +217,7 @@ function CheckoutForm({ valuationId, onError, onRetry, startFailed = false }: { 
 
 export const CHECKOUT_START_ERROR = "We couldn't open the secure checkout. Check your connection and try again. You haven't been charged.";
 
-export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = PREMIUM_TITLE, intro }: { valuationId: string; email?: string; onPaid?: () => void; onClose: () => void; title?: string; intro?: ReactNode }) {
+export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = PREMIUM_TITLE, intro, hideHeader = false }: { valuationId: string; email?: string; onPaid?: () => void; onClose: () => void; title?: string; intro?: ReactNode; /** The sheet draws its own sticky header with the close X. */ hideHeader?: boolean }) {
   const [error, setError] = useState<string | null>(null);
   /** Set when the checkout itself could not start; shows Try again, which remounts Stripe with a fresh session. */
   const [startFailed, setStartFailed] = useState(false);
@@ -266,12 +266,14 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = 
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-bold">{title}</h2>
-        <button type="button" aria-label="Close checkout" onClick={onClose} className="rounded-lg p-2 hover:bg-white/10">
-          <X className="h-5 w-5" />
-        </button>
-      </div>
+      {!hideHeader && (
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-bold">{title}</h2>
+          <button type="button" aria-label="Close checkout" onClick={onClose} className="rounded-lg p-2 hover:bg-white/10">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
       {intro ? <div className="mb-3">{intro}</div> : null}
       {error ? (
         <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border px-3 py-2.5 text-sm" role="alert" data-testid="checkout-error" style={{ borderColor: "rgba(253,224,71,.35)", background: "rgba(253,224,71,.06)" }}>
