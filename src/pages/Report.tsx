@@ -294,7 +294,7 @@ export default function Report() {
         <div className="flex-1 grid place-items-center text-center px-4">
           <div>
             <h1 className="text-2xl font-bold">Report not found</h1>
-            <Button asChild variant="hero" className="mt-6"><Link to={user ? "/dashboard" : "/valuation/new"}>{user ? "Back to dashboard" : "Value a car free"}</Link></Button>
+            <Button asChild variant="hero" className="mt-6"><Link to={user ? "/dashboard" : "/"}>{user ? "Back to dashboard" : "Value a car free"}</Link></Button>
           </div>
         </div>
       </div>
@@ -590,7 +590,7 @@ export default function Report() {
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           {isShared || isGuest ? (
             <Button asChild variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0">
-              <Link to={isGuest ? "/valuation/new" : "/"}><ArrowLeft className="h-4 w-4" /> {isGuest ? "New valuation" : "Valu8"}</Link>
+              <Link to="/"><ArrowLeft className="h-4 w-4" /> {isGuest ? "New valuation" : "Valu8"}</Link>
             </Button>
           ) : (
             <Button asChild variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0">
@@ -1419,7 +1419,7 @@ export default function Report() {
           </Button>
         ) : isShared ? (
           <Button asChild variant="hero" size="lg" className="w-full min-h-[48px]">
-            <Link to="/valuation/new">Value your own car free</Link>
+            <Link to="/">Value your own car free</Link>
           </Button>
         ) : (
           <div className="flex gap-2">

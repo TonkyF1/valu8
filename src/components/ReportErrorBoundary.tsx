@@ -40,7 +40,7 @@ export class ReportErrorBoundary extends Component<Props, State> {
                 <Link to="/dashboard">Back to dashboard</Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
-                <Link to="/valuation/new">Start a new valuation</Link>
+                <Link to="/">Start a new valuation</Link>
               </Button>
             </div>
             {import.meta.env.DEV && this.state.error && (

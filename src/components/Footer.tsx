@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
+import { HomeLink, START_PATH } from "@/components/HomeLink";
 import { resetConsent } from "@/lib/consent";
 
 const COLS: { title: string; links: { to: string; label: string }[] }[] = [
   { title: "Product", links: [
-    { to: "/valuation/new", label: "Value a car" },
+    { to: START_PATH, label: "Value a car" },
     { to: "/check", label: "Check an advert" },
     { to: "/pricing", label: "Pricing" },
     { to: "/accuracy", label: "Accuracy" },
@@ -34,7 +35,7 @@ export function Footer() {
     <footer className="border-t border-border/60 mt-16 bg-card/40">
       <div className="container py-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-3">
-          <Logo size="sm" />
+          <HomeLink aria-label="Valu8 home" className="inline-flex" data-testid="footer-logo-home"><Logo size="sm" /></HomeLink>
           <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
             Independent car valuations for UK private sellers and buyers. Essentials free; Full seller report £2.99 one-off.
           </p>
@@ -45,7 +46,9 @@ export function Footer() {
             <ul className="mt-3 space-y-1">
               {c.links.map((l) => (
                 <li key={l.to}>
-                  <Link to={l.to} className="inline-flex min-h-[36px] items-center text-sm text-muted-foreground hover:text-primary transition-colors">{l.label}</Link>
+                  {l.to === START_PATH
+                    ? <HomeLink focusReg className="inline-flex min-h-[36px] items-center text-sm text-muted-foreground hover:text-primary transition-colors">{l.label}</HomeLink>
+                    : <Link to={l.to} className="inline-flex min-h-[36px] items-center text-sm text-muted-foreground hover:text-primary transition-colors">{l.label}</Link>}
                 </li>
               ))}
               {c.title === "Legal" && (

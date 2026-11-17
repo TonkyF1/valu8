@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
+import { HomeLink } from "@/components/HomeLink";
 import { Compass, Home } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSeo } from "@/lib/seo";
@@ -17,7 +18,7 @@ export default function NotFound() {
   return (
     <div className="min-h-screen flex flex-col bg-background hero-glow">
       <header className="container py-6">
-        <Link to="/" aria-label="Valu8 home"><Logo /></Link>
+        <HomeLink aria-label="Valu8 home"><Logo /></HomeLink>
       </header>
       <main id="main" className="flex-1 grid place-items-center px-4 pb-16">
         <div className="text-center max-w-md animate-fade-in-up">
@@ -36,7 +37,7 @@ export default function NotFound() {
               <Link to={user ? "/dashboard" : "/"}><Home className="h-4 w-4" aria-hidden /> {user ? "Back to dashboard" : "Back to home"}</Link>
             </Button>
             <Button asChild variant="ghost" size="lg">
-              <Link to="/valuation/new">Value a car</Link>
+              <HomeLink focusReg>Value a car</HomeLink>
             </Button>
           </div>
         </div>
