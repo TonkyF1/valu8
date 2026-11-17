@@ -397,6 +397,8 @@ interface AnalyseRequest {
   /** Guest homepage flow: re-value this guest's own unpaid valuation (same car) in place with the details they added.
    *  Does not count again against the daily guest cap. Pricing is unchanged: the car is valued from scratch. */
   refineOf?: unknown;
+  /** Guest chose the £2.99 Premium Report. Past the free guest cap this still creates the valuation, price locked until paid. */
+  premiumIntent?: unknown;
 }
 
 type PhotoSlot = "front" | "rear" | "side" | "interior" | "odometer" | "engine" | "other";
@@ -772,6 +774,9 @@ Deno.serve(async (req) => {
     let tokenHash: string | null = null;
     let guestValuationId: string | null = null;
     let refineExisting = false;
+    // Price locked until paid: a guest past today's free cap who chose the Premium Report. The valuation is
+    // still made (so they can pay), but its figures are only returned once report_purchases says paid.
+    let priceLocked = false;
     if (!g.userId) {
       if (typeof body?.guestToken !== "string" || !/^[a-f0-9]{64}$/.test(body.guestToken)) {
         return json({ error: "Please refresh the page and try again." }, 400);
@@ -786,18 +791,33 @@ Deno.serve(async (req) => {
         if (admin0) {
           const since = new Date(Date.now() - 3 * 3600 * 1000).toISOString();
           const [{ data: row }, { data: paid }] = await Promise.all([
-            admin0.from("valuations").select("id, registration").eq("id", body.refineOf).eq("guest_token_hash", tokenHash).is("user_id", null).gte("created_at", since).maybeSingle(),
+            admin0.from("valuations").select("id, registration, report").eq("id", body.refineOf).eq("guest_token_hash", tokenHash).is("user_id", null).gte("created_at", since).maybeSingle(),
             admin0.from("report_purchases").select("id").eq("valuation_id", body.refineOf).limit(1),
           ]);
           const sameCar = !row?.registration || !body.registration || String(row.registration).replace(/\s+/g, "").toUpperCase() === String(body.registration).replace(/\s+/g, "").toUpperCase();
-          if (row?.id && sameCar && !(paid && paid.length)) { guestValuationId = row.id; refineExisting = true; }
+          if (row?.id && sameCar && !(paid && paid.length)) {
+            guestValuationId = row.id; refineExisting = true;
+            // A locked row stays locked when it is refined.
+            priceLocked = (row as any)?.report?.priceLocked === true;
+          }
         }
       }
       if (!refineExisting) {
         const okIp = await checkLimit(`analyse:guest:ip:${ip}:d`, 86400, cap);
         const okTok = await checkLimit(`analyse:guest:t:${tokenHash}:d`, 86400, cap);
         if (!okIp || !okTok) {
-          return json({ error: "You've used today's free guest valuations. Create a free account to keep going — it takes 30 seconds and your reports are saved.", code: "guest_limit" }, 429);
+          // Paid path: never blocked by the free cap, but held to its own daily cap and the price stays hidden until paid.
+          if (body.premiumIntent === true) {
+            const pcap = envInt("GUEST_PREMIUM_CAP", 8);
+            const okPIp = await checkLimit(`analyse:guest:p:ip:${ip}:d`, 86400, pcap * 2);
+            const okPTok = await checkLimit(`analyse:guest:p:t:${tokenHash}:d`, 86400, pcap);
+            if (!okPIp || !okPTok) {
+              return json({ error: "You've reached today's limit for guest reports. Create a free account to keep going. It takes 30 seconds and your reports are saved.", code: "guest_limit" }, 429);
+            }
+            priceLocked = true;
+          } else {
+            return json({ error: "You've used today's free guest valuations. Create a free account to keep going. It takes 30 seconds and your reports are saved.", code: "guest_limit" }, 429);
+          }
         }
         guestValuationId = crypto.randomUUID();
       }
@@ -2050,7 +2070,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
 
     if (guestValuationId && tokenHash) {
       const admin = adminClient();
-      if (!admin) return json({ error: "We couldn't save your report — please try again." }, 500);
+      if (!admin) return json({ error: "We couldn't save your report. Please try again." }, 500);
       const displayModel = typeof body.guestSave?.displayModel === "string" ? body.guestSave.displayModel.slice(0, 120) : "";
       const notes = body.guestSave?.serviceNotes ?? body.serviceNotes ?? null;
       const cleanReport = dedupeReportText(report);
@@ -2060,7 +2080,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         service_notes: typeof notes === "string" ? notes.slice(0, 4000) : null,
         photo_urls: guestLabeled.map((p) => p.ref), condition_score: report.conditionScore,
         private_value: report.valuationUnavailable ? null : report.values?.privateSale ?? null,
-        report: { ...cleanReport, vehicle: body.guestSave?.vehicle ?? null, ...(body.guestSave?.attribution ? { attribution: body.guestSave.attribution } : {}) },
+        report: { ...cleanReport, vehicle: body.guestSave?.vehicle ?? null, ...(body.guestSave?.attribution ? { attribution: body.guestSave.attribution } : {}), ...(priceLocked ? { priceLocked: true } : {}) },
         // Campaign tags from the landing URL (sanitised to the DB check: [a-z0-9_.+-]{1,64}). Never affects pricing.
         utm_source: cleanUtmTag(body.guestSave?.utm?.utm_source),
         utm_medium: cleanUtmTag(body.guestSave?.utm?.utm_medium),
@@ -2075,8 +2095,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         : await admin.from("valuations").insert({ id: guestValuationId, user_id: null, guest_token_hash: tokenHash, ...saveRow });
       if (error) {
         console.error("Guest valuation save failed", error.message);
-        return json({ error: "We couldn't save your report — please try again." }, 500);
+        return json({ error: "We couldn't save your report. Please try again." }, 500);
       }
+      // Locked: no figures in the response. The client only learns whether the car could be priced.
+      if (priceLocked) return json({ valuationId: guestValuationId, locked: true, priceable: !report.valuationUnavailable });
       return json({ report: cleanReport, valuationId: guestValuationId });
     }
 

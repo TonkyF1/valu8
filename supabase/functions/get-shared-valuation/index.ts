@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { reportEntitlement } from "../_shared/entitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +22,12 @@ function extractPath(value: string | null | undefined): string | null {
     if (idx === -1) return null;
     return decodeURIComponent(u.pathname.slice(idx + marker.length));
   } catch { return null; }
+}
+
+/** What a price-locked report shows before payment: no prices, advice or comparables. */
+export function lockedReport(raw: unknown) {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  return { priceLocked: true, valuationUnavailable: r.valuationUnavailable === true, vehicle: r.vehicle ?? null };
 }
 
 Deno.serve(async (req) => {
@@ -107,6 +114,15 @@ Deno.serve(async (req) => {
       isOwner = hash === data.guest_token_hash;
     }
     const { user_id: _uid, guest_token_hash: _gth, ...row } = data as Record<string, unknown>;
+
+    // Price-locked guest valuation (made past the free cap for the Premium Report): no figures for
+    // anyone until it is paid for.
+    if ((data.report as any)?.priceLocked === true && !(await reportEntitlement(admin as any, String(data.id))).paid) {
+      return new Response(
+        JSON.stringify({ ...row, report: lockedReport(data.report), photo_urls: signed }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     return new Response(
       JSON.stringify({

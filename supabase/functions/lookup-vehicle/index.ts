@@ -183,7 +183,11 @@ Deno.serve(async (req) => {
     const g = await guard(req, { feature: "lookup", requireUser: false, perMinute: 8, perDay: 60, ipPerHour: 60 });
     if (g.response) return g.response;
     if (!g.userId && !(await checkLimit(`lookup:guest:ip:${clientIp(req)}:d`, 86400, envInt("GUEST_LOOKUP_DAILY_CAP", 10)))) {
-      return json({ error: "You've used today's free guest lookups. Create a free account to keep going.", code: "guest_limit" }, 429);
+      // A guest heading for the paid Premium Report gets its own small daily allowance, so paying is never blocked.
+      const peek = await req.clone().json().catch(() => null);
+      const premiumOk = peek?.premiumIntent === true
+        && await checkLimit(`lookup:guest:p:ip:${clientIp(req)}:d`, 86400, envInt("GUEST_PREMIUM_LOOKUP_CAP", 10));
+      if (!premiumOk) return json({ error: "You've used today's free guest lookups. Create a free account to keep going.", code: "guest_limit" }, 429);
     }
   }
 
