@@ -69,7 +69,7 @@ export default function Compare() {
         <p className="text-sm text-muted-foreground mt-2">Pick two of your saved valuations to see them side by side.</p>
 
         {rows.length < 2 ? (
-          <p className="mt-6 text-sm">You need at least two valuations to compare. <Link className="text-primary underline" to="/valuation/new">Start one</Link>.</p>
+          <p className="mt-6 text-sm">You need at least two valuations to compare. <Link className="text-primary underline" to="/">Start one</Link>.</p>
         ) : (
           <>
             <div className="grid sm:grid-cols-2 gap-3 mt-6">

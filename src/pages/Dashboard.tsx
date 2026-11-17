@@ -140,7 +140,7 @@ export default function Dashboard() {
         {/* Primary CTA + premium status */}
         <section className={`grid gap-3 mb-10 ${BILLING_ENABLED ? "md:grid-cols-3" : ""}`}>
           <Link
-            to="/valuation/new"
+            to="/"
             className={`${BILLING_ENABLED ? "md:col-span-2 " : ""}group relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-7 transition-all hover:border-primary/60`}
           >
             <div className="relative flex items-center justify-between gap-6">
@@ -204,7 +204,7 @@ export default function Dashboard() {
                       </Button>
                     )}
                     <Button asChild variant="hero" size="sm" className="min-h-[40px]">
-                      <Link to="/valuation/new">Revalue</Link>
+                      <Link to="/">Revalue</Link>
                     </Button>
                   </div>
                 </div>
@@ -271,7 +271,7 @@ export default function Dashboard() {
                     Get your first photo aware valuation in under a minute.
                   </p>
                   <Button asChild variant="hero" size="lg" className="mt-7">
-                    <Link to="/valuation/new"><Plus className="h-4 w-4" /> Start your first valuation</Link>
+                    <Link to="/"><Plus className="h-4 w-4" /> Start your first valuation</Link>
                   </Button>
                 </div>
               </div>

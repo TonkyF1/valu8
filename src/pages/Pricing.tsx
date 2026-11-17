@@ -56,7 +56,7 @@ export default function Pricing() {
                 <li key={i} className="flex gap-2.5 text-sm"><Check className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" aria-hidden />{i}</li>
               ))}
             </ul>
-            <Button asChild variant="outline" size="lg" className="mt-6 w-full"><Link to="/valuation/new">Value a car</Link></Button>
+            <Button asChild variant="outline" size="lg" className="mt-6 w-full"><Link to="/">Value a car</Link></Button>
           </section>
 
           <section className="relative rounded-2xl border border-primary/40 bg-card/70 p-6 flex flex-col shadow-[0_0_60px_-30px_hsl(var(--primary)/0.6)]">
@@ -69,7 +69,7 @@ export default function Pricing() {
                 <li key={i} className="flex gap-2.5 text-sm"><Check className="h-4 w-4 text-primary shrink-0 mt-0.5" aria-hidden />{i}</li>
               ))}
             </ul>
-            <Button asChild variant="hero" size="lg" className="mt-6 w-full"><Link to="/valuation/new">Get my full report · £2.99</Link></Button>
+            <Button asChild variant="hero" size="lg" className="mt-6 w-full"><Link to="/">Get my full report · £2.99</Link></Button>
           </section>
         </div>
 
