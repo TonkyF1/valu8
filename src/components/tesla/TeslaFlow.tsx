@@ -27,6 +27,7 @@ import { renderFor } from "./modelRenders";
 import { mileageHint } from "@/lib/mileageHint";
 import { gradeArc, gradeFromReport, type CarGrade } from "@/lib/carGrade";
 import { PriceArc, RingLoader, RollingPrice, useEasedProgress } from "./parts";
+import { FitPrice } from "@/components/FitPrice";
 
 interface Lookup {
   registration: string; make?: string; model?: string; variant?: string; year?: number; fuelType?: string; transmission?: string; transmissionGuess?: Gearbox;
@@ -596,7 +597,9 @@ export function TeslaFlow() {
             ) : band ? (
               <>
                 <h1 id="t8-h" className="sr-only">Your free estimate</h1>
-                <RollingPrice key={refined ? "r" : "e"} text={bandText(band)} className="t8-price" />
+                <FitPrice key={refined ? "r" : "e"} text={bandText(band)} className="t8-price" boxClassName="t8-pricebox" minPx={36} floorPx={16} testId="t8-price">
+                  {(lines) => lines.map((l, i) => <RollingPrice key={i} text={l} />)}
+                </FitPrice>
                 <div className="t8-meta">{refined ? "Updated with your details" : "Private sale"}</div>
                 {grade && (
                   <div className="t8-grade" style={{ color: grade.color, borderColor: `${grade.color}59`, background: `${grade.color}14` }} aria-label={`Car grade: ${grade.label}`}>{grade.label}</div>

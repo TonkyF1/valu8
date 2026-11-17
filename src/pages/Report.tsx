@@ -35,6 +35,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CountUp } from "@/components/CountUp";
+import { FitPrice } from "@/components/FitPrice";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -865,8 +866,13 @@ export default function Report() {
                   const pr = reportPriceRange(r, normaliseReportPricing(r).privateSale);
                   return pr ? (
                     <>
-                      <div className="text-4xl sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight" data-testid="headline-range">
-                        <CountUp value={pr.low} prefix="£" /><span className="mx-1.5">–</span><CountUp value={pr.high} prefix="£" />
+                      <div data-testid="headline-range">
+                        <FitPrice text={`£${pr.low.toLocaleString()} – £${pr.high.toLocaleString()}`} align="left" minPx={30} floorPx={18}
+                          className="text-4xl sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight" style={{ display: "inline-block" }}>
+                          {(lines) => lines.length === 2
+                            ? [<span key="l"><CountUp value={pr.low} prefix="£" /><span className="ml-1.5">–</span></span>, <span key="h"><CountUp value={pr.high} prefix="£" /></span>]
+                            : <><CountUp value={pr.low} prefix="£" /><span className="mx-1.5">–</span><CountUp value={pr.high} prefix="£" /></>}
+                        </FitPrice>
                       </div>
                       <p className="text-[12px] text-muted-foreground mt-2 max-w-[44ch]">
                         Our estimated range for a realistic private sale in today's UK market. Prices vary more for cars under £5,000, so we show a range rather than one figure.
@@ -874,9 +880,10 @@ export default function Report() {
                     </>
                   ) : (
                     <>
-                      <div className="text-5xl sm:text-6xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight">
-                        <CountUp value={normaliseReportPricing(r).privateSale} prefix="£" />
-                      </div>
+                      <FitPrice text={`£${normaliseReportPricing(r).privateSale.toLocaleString()}`} align="left" allowSplit={false} floorPx={18} testId="headline-price"
+                        className="text-5xl sm:text-6xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight" style={{ display: "inline-block" }}>
+                        {() => <CountUp value={normaliseReportPricing(r).privateSale} prefix="£" />}
+                      </FitPrice>
                       <p className="text-[12px] text-muted-foreground mt-2 max-w-[44ch]">
                         Our estimate of a realistic private sale in today's UK market.
                       </p>

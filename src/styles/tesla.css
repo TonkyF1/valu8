@@ -10,8 +10,10 @@
 .t8-main{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .t8-h1{margin:0;text-align:center;font-weight:500;font-size:30px;line-height:1.1;letter-spacing:-.035em;padding:0 20px}
 .t8-sub{margin:10px 0 0;text-align:center;font-size:15px;color:var(--t8-mute);letter-spacing:-.01em;padding:0 24px}
-.t8-readout{position:relative;z-index:2;text-align:center;min-height:86px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.t8-readout{position:relative;z-index:2;text-align:center;width:100%;min-height:86px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
 .t8-price{font-family:'Sora',Inter,sans-serif;font-weight:200;font-size:clamp(38px,11vw,46px);line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;white-space:nowrap;display:inline-flex}
+/* Auto-fit price box: the price scales down (or a range wraps to two lines) so it never leaves the screen. */
+.t8-pricebox{padding:0 16px;display:flex;justify-content:center}
 .t8-meta{margin-top:12px;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--t8-dim)}
 .t8-fade{transition:opacity .6s var(--t8-ease),transform .7s var(--t8-ease)}
 .t8-hide{opacity:0;transform:translate3d(0,10px,0)}
