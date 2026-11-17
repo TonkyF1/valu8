@@ -16,7 +16,7 @@ export type RouteMeta = {
 };
 
 export const STATIC_ROUTES: RouteMeta[] = [
-  { path: "/", title: "Valu8: what's my car worth? Free UK car valuation", description: "Free UK car valuation for private sellers. Thousands of real UK adverts, DVSA MOT history and photo checks give you a realistic private sale price and asking price.", priority: "1.0", inSitemap: true },
+  { path: "/", title: "Free Car Valuation UK | Check Used Car Values | Valu8", description: "Buying or selling a used car? Check its estimated value for free using the registration number. Unlock personalised buying and selling insights for £2.99.", priority: "1.0", inSitemap: true },
   { path: "/valuation/new", title: "New valuation — Valu8", description: "Enter a UK registration to get a free private sale valuation in minutes.", priority: "0.9", inSitemap: true },
   { path: "/check", title: "Is this used car a fair price? Free advert price checker | Valu8", description: "Enter a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against UK market data.", priority: "0.8", inSitemap: true },
   { path: "/accuracy", title: "How accurate is Valu8? Predicted vs real sale prices", description: "We compare our car valuations with the prices people actually sell for, and will publish the results once enough owners report a sale.", priority: "0.6", inSitemap: true },

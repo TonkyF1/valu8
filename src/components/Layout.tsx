@@ -16,7 +16,7 @@ export function TestModeBanner() {
 type Item = { to: string; label: string; icon: typeof Car };
 
 const PUBLIC_NAV: Item[] = [
-  { to: "/valuation/new", label: "Value my car", icon: Car },
+  { to: "/valuation/new", label: "Value a car", icon: Car },
   { to: "/check", label: "Check an advert", icon: SearchCheck },
   { to: "/pricing", label: "Pricing", icon: Tag },
   { to: "/accuracy", label: "Accuracy", icon: ShieldCheck },
@@ -72,7 +72,7 @@ export function Header() {
             ) : (
               <>
                 <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link to="/auth">Sign in</Link></Button>
-                <Button asChild variant="hero" size="sm"><Link to="/valuation/new">Value my car</Link></Button>
+                <Button asChild variant="hero" size="sm"><Link to="/valuation/new">Value a car</Link></Button>
               </>
             )}
 

@@ -4,7 +4,7 @@ import { resetConsent } from "@/lib/consent";
 
 const COLS: { title: string; links: { to: string; label: string }[] }[] = [
   { title: "Product", links: [
-    { to: "/valuation/new", label: "Value my car" },
+    { to: "/valuation/new", label: "Value a car" },
     { to: "/check", label: "Check an advert" },
     { to: "/pricing", label: "Pricing" },
     { to: "/accuracy", label: "Accuracy" },
