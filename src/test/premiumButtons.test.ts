@@ -33,8 +33,8 @@ describe("two-button premium flow", () => {
     expect(flow).toMatch(/if \(premium\) setTimeout\(\(\) => detailsRef\.current\?\.scrollIntoView/);
     // Single button submits the form in the premium path; the free path keeps both buttons.
     expect(flow).toContain("onSubmit={(e) => void refine(e, premiumBusy)}");
-    expect(flow).toMatch(/premiumBusy \? \(\s*<div className="t8-solo"/);
-    // Unpriced-car safeguard: checkout only opens when the report has a price.
-    expect(flow).toMatch(/function openPremium[\s\S]{0,120}if \(!bandFor\(report\)\) return;/);
+    expect(flow).toMatch(/premiumBusy \? \(\s*<div className=\{`t8-solo/);
+    // Unpriced-car safeguard: checkout only opens when the report has a price, and says so otherwise (never silent).
+    expect(flow).toMatch(/function openPremium[\s\S]{0,160}if \(report !== null && !bandFor\(report\)\) \{ setPayErr\(UNPRICEABLE\); return; \}/);
   });
 });

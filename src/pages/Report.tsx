@@ -85,6 +85,8 @@ export default function Report() {
     if (isGuest && id && !isGuestValuation(id)) navigate(`/shared/${id}`, { replace: true });
   }, [isGuest, id, navigate]);
   const [v, setV] = useState<Valuation | null>(null);
+  // Bumped to re-read the valuation, e.g. once a price-locked report has been paid for.
+  const [reloadKey, setReloadKey] = useState(0);
   useEffect(() => { if (v && !isShared) { track("result_seen"); track("valuation_completed"); } }, [v, isShared]);
   const [loading, setLoading] = useState(true);
   const [activePhoto, setActivePhoto] = useState(0);
@@ -130,7 +132,7 @@ export default function Report() {
         }
         setLoading(false);
       });
-  }, [id, isShared, authLoading, user?.id]);
+  }, [id, isShared, authLoading, user?.id, reloadKey]);
 
   // £2.99 Full Report: only active when VITE_PREMIUM_ENFORCED=true. Unlocks from the
   // webhook-written report_purchases row; ?session_id= only triggers a short re-check.
@@ -182,6 +184,11 @@ export default function Report() {
     })();
     return () => { cancelled = true; };
   }, [enforcedPremium, id, location.search, checkPaid]);
+
+  // A price-locked guest report (Premium chosen after the free cap) carries no figures until paid: re-read it once paid.
+  const priceLocked = (v?.report as any)?.priceLocked === true;
+  const lockedEmpty = priceLocked && !(v?.report as any)?.values;
+  useEffect(() => { if (reportPaid && lockedEmpty) setReloadKey((k) => k + 1); }, [reportPaid, lockedEmpty]);
 
   // Friend side of "share with a friend": this visitor arrived on someone's share link and has now
   // finished their own valuation, so credit the sharer once (server checks it's a different person and car).
@@ -290,6 +297,23 @@ export default function Report() {
             <Button asChild variant="hero" className="mt-6"><Link to={user ? "/dashboard" : "/valuation/new"}>{user ? "Back to dashboard" : "Value a car free"}</Link></Button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (priceLocked && (!reportPaid || lockedEmpty)) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <TestModeBanner /><Header />
+        <main id="main" className="flex-1 container py-8 max-w-xl" data-testid="locked-report">
+          <p className="text-xs font-semibold uppercase tracking-wider opacity-60">{v.registration ? v.registration.toUpperCase() : "Your car"}</p>
+          <h1 className="text-2xl font-bold mt-1">{[v.year, v.make, v.model].filter(Boolean).join(" ")}</h1>
+          <p className="mt-2 mb-6 text-sm opacity-80">{(v.report as any)?.valuationUnavailable
+            ? "We couldn't price this car, so there's nothing to pay for. Try another plate."
+            : verifyingPayment ? "Confirming your payment. Your report opens here in a moment." : "Your Premium Valuation Report is ready. It opens here as soon as it's paid for."}</p>
+          {!(v.report as any)?.valuationUnavailable && <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />}
+        </main>
+        <Footer />
       </div>
     );
   }
