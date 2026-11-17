@@ -311,7 +311,7 @@ export default function Report() {
           <p className="mt-2 mb-6 text-sm opacity-80">{(v.report as any)?.valuationUnavailable
             ? "We couldn't price this car, so there's nothing to pay for. Try another plate."
             : verifyingPayment ? "Confirming your payment. Your report opens here in a moment." : "Your Premium Valuation Report is ready. It opens here as soon as it's paid for."}</p>
-          {!(v.report as any)?.valuationUnavailable && <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />}
+          {!(v.report as any)?.valuationUnavailable && <ReportCheckout locked valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />}
         </main>
         <Footer />
       </div>

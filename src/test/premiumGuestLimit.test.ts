@@ -136,6 +136,9 @@ describe("home flow premium path (TeslaFlow)", () => {
     expect(co).toContain('data-testid="checkout-error"');
     expect(co).toContain("<CheckoutElementsProvider key={attempt}");
     expect(co).not.toContain("checkoutState.error.message");
+    // One Stripe session per open: an inline onPaid from the parent must not re-create it on re-render.
+    expect(co).toContain("}, [valuationId, attempt]);");
+    expect(co).toContain("onPaidRef.current?.()");
   });
   it("loader fades out before unmounting", () => {
     expect(flow).toContain("out={loaderOut}");

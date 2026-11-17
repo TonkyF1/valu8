@@ -222,6 +222,9 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = 
   /** Set when the checkout itself could not start; shows Try again, which remounts Stripe with a fresh session. */
   const [startFailed, setStartFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Parents pass onPaid inline; keep it in a ref so a re-render doesn't start a new Stripe session.
+  const onPaidRef = useRef(onPaid);
+  onPaidRef.current = onPaid;
 
   const fetchClientSecret = useCallback(async () => {
     // Email is collected by ContactDetailsElement (pre-filled via defaultValues when
@@ -238,7 +241,7 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = 
       }));
     } catch (e) { fnErr = e; }
     const d = data as any;
-    if (d?.alreadyPaid) { onPaid?.(); throw new Error("already paid"); }
+    if (d?.alreadyPaid) { onPaidRef.current?.(); throw new Error("already paid"); }
     if (fnErr || !d?.clientSecret) {
       setError(CHECKOUT_START_ERROR);
       setStartFailed(true);
@@ -246,7 +249,7 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = 
     }
     return d.clientSecret as string;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [valuationId, onPaid, attempt]);
+  }, [valuationId, attempt]);
 
   const options = useMemo(
     () => ({
@@ -289,7 +292,7 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = 
   );
 }
 
-export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId: string; verifying?: boolean; onPaid?: () => void }) {
+export function ReportCheckout({ valuationId, verifying, onPaid, locked = false }: { valuationId: string; verifying?: boolean; onPaid?: () => void; locked?: boolean }) {
   const { user } = useAuth();
   const [intent] = useIntent();
   const [open, setOpen] = useState(false);
@@ -331,10 +334,10 @@ export function ReportCheckout({ valuationId, verifying, onPaid }: { valuationId
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#FDE047" }}>
               <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden /> Premium Valuation Report · £2.99
             </p>
-            <h2 className="mt-1 text-xl font-bold md:text-2xl">Know what to do with that valuation.</h2>
+            <h2 className="mt-1 text-xl font-bold md:text-2xl">{locked ? "Your valuation and the plan to go with it." : "Know what to do with that valuation."}</h2>
             <p className="mt-2 text-sm opacity-90">{intent === "buying"
-              ? "Your free valuation shows what the car could be worth. The report turns it into buying guidance: a fair price, an opening offer, a negotiation range and how the asking price compares."
-              : "Your free valuation shows what the car could be worth. The report shows what to ask, the lowest offer to accept and what to fix first."}</p>
+              ? locked ? "The report gives you the valuation and turns it into buying guidance: a fair price, an opening offer, a negotiation range and how the asking price compares." : "Your free valuation shows what the car could be worth. The report turns it into buying guidance: a fair price, an opening offer, a negotiation range and how the asking price compares."
+              : locked ? "The report gives you the valuation, what to ask, the lowest offer to accept and what to fix first." : "Your free valuation shows what the car could be worth. The report shows what to ask, the lowest offer to accept and what to fix first."}</p>
           </div>
           <div className="flex flex-col items-stretch gap-2 sm:max-w-sm">
             <button
