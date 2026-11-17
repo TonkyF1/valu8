@@ -122,7 +122,7 @@ function returnUrlFor(valuationId: string): string {
   return `${origin}/valuation/${valuationId}?session_id={CHECKOUT_SESSION_ID}&intent=${getIntent()}`;
 }
 
-function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: (msg: string) => void }) {
+function CheckoutForm({ valuationId, onError, onRetry, startFailed = false }: { valuationId: string; onError: (msg: string) => void; onRetry?: () => void; startFailed?: boolean }) {
   const checkoutState = useCheckoutElements();
   const [submitting, setSubmitting] = useState(false);
   const [expressReady, setExpressReady] = useState(false);
@@ -136,7 +136,14 @@ function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: 
     );
   }
   if (checkoutState.type === "error") {
-    return <p className="text-sm" style={{ color: "#FDE047" }}>{checkoutState.error.message || "Checkout failed to load."}</p>;
+    // Our own start failure is explained (with Try again) above the box; never show raw error text here.
+    if (startFailed) return null;
+    return (
+      <div className="flex items-center justify-between gap-3 py-4 text-sm" role="alert">
+        <p>The secure checkout didn't load. You haven't been charged.</p>
+        {onRetry && <button type="button" className="shrink-0 font-semibold underline underline-offset-2" style={{ color: "#00D6C8" }} onClick={onRetry}>Try again</button>}
+      </div>
+    );
   }
 
   const checkout = checkoutState.checkout;
@@ -208,8 +215,13 @@ function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: 
   );
 }
 
+export const CHECKOUT_START_ERROR = "We couldn't open the secure checkout. Check your connection and try again. You haven't been charged.";
+
 export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = PREMIUM_TITLE, intro }: { valuationId: string; email?: string; onPaid?: () => void; onClose: () => void; title?: string; intro?: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
+  /** Set when the checkout itself could not start; shows Try again, which remounts Stripe with a fresh session. */
+  const [startFailed, setStartFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   const fetchClientSecret = useCallback(async () => {
     // Email is collected by ContactDetailsElement (pre-filled via defaultValues when
@@ -217,19 +229,24 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = 
     // customer_email, or Elements throws "You cannot update the email…".
     track("checkout_start");
     track("report_checkout");
-    const { data, error: fnErr } = await supabase.functions.invoke("create-checkout-session", {
-      // Anonymous funnel id + device class so the webhook can log report_purchased; metaConsent only
-      // true when the visitor accepted advertising cookies and the Meta Pixel is switched on.
-      body: { valuationId, funnelSession: funnelSessionId(), funnelDevice: funnelDevice(), metaConsent: metaPixelLoaded(), intent: getIntent() },
-    });
+    let data: unknown = null; let fnErr: unknown = null;
+    try {
+      ({ data, error: fnErr } = await supabase.functions.invoke("create-checkout-session", {
+        // Anonymous funnel id + device class so the webhook can log report_purchased; metaConsent only
+        // true when the visitor accepted advertising cookies and the Meta Pixel is switched on.
+        body: { valuationId, funnelSession: funnelSessionId(), funnelDevice: funnelDevice(), metaConsent: metaPixelLoaded(), intent: getIntent() },
+      }));
+    } catch (e) { fnErr = e; }
     const d = data as any;
     if (d?.alreadyPaid) { onPaid?.(); throw new Error("already paid"); }
     if (fnErr || !d?.clientSecret) {
-      setError("Checkout isn't available right now. Please try again shortly.");
+      setError(CHECKOUT_START_ERROR);
+      setStartFailed(true);
       throw new Error("no client secret");
     }
     return d.clientSecret as string;
-  }, [valuationId, onPaid]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valuationId, onPaid, attempt]);
 
   const options = useMemo(
     () => ({
@@ -254,11 +271,18 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = 
       </div>
       {intro ? <div className="mb-3">{intro}</div> : null}
       {error ? (
-        <p className="mb-3 text-sm" style={{ color: "#FDE047" }}>{error}</p>
+        <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border px-3 py-2.5 text-sm" role="alert" data-testid="checkout-error" style={{ borderColor: "rgba(253,224,71,.35)", background: "rgba(253,224,71,.06)" }}>
+          <p style={{ color: "#F7F5F3" }}>{error}</p>
+          {startFailed && (
+            <button type="button" className="shrink-0 font-semibold underline underline-offset-2" style={{ color: "#00D6C8" }}
+              onClick={() => { setError(null); setStartFailed(false); setAttempt((a) => a + 1); }}>Try again</button>
+          )}
+        </div>
       ) : null}
       <div className="overflow-hidden rounded-xl border border-white/10 p-3 sm:p-4" style={{ background: "#111111" }}>
-        <CheckoutElementsProvider stripe={getStripe()} options={options}>
-          <CheckoutForm valuationId={valuationId} onError={(msg) => setError(msg || null)} />
+        <CheckoutElementsProvider key={attempt} stripe={getStripe()} options={options}>
+          <CheckoutForm valuationId={valuationId} onError={(msg) => setError(msg || null)} startFailed={startFailed}
+            onRetry={() => { setError(null); setStartFailed(false); setAttempt((a) => a + 1); }} />
         </CheckoutElementsProvider>
       </div>
     </div>

@@ -83,6 +83,20 @@ export function TeslaFlow() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   /** Premium path: the visitor tapped Premium Report on the landing page, so the details step shows one Pay button. */
   const [premiumBusy, setPremiumBusy] = useState(false);
+  /** Homepage "Unlock Premium Report" with no car yet: the reg card is armed for the premium path. */
+  const [premiumArmed, setPremiumArmed] = useState(false);
+  /** Guest past today's free cap who chose Premium: the valuation exists but its price stays hidden until paid. */
+  const [locked, setLocked] = useState(false);
+  /** Which daily limit stopped the last valuation: the free one (Premium still open) or the guest premium one. */
+  const [limitKind, setLimitKind] = useState<"free" | "premium">("free");
+  /** A failure starting the premium checkout, shown by the Pay button with a retry. */
+  const [payErr, setPayErr] = useState<string | null>(null);
+  /** The loader fades out before it unmounts, so it never cuts away mid-fade over the buttons. */
+  const [loaderOut, setLoaderOut] = useState(false);
+  const [nudgePay, setNudgePay] = useState(false);
+  const payRef = useRef<HTMLDivElement>(null);
+  /** Details the locked valuation was made with; paying again with the same details skips re-valuing. */
+  const lockedSig = useRef<string | null>(null);
   const [needMileage, setNeedMileage] = useState(false);
   /** Buying or Selling (shared with the homepage selector, the result card and the checkout). */
   const [intent] = useIntent();
@@ -115,12 +129,30 @@ export function TeslaFlow() {
   useEffect(() => { if (valuationId) saveIntentFor(valuationId, intent); }, [valuationId, intent]);
   useEffect(() => { if (valuationId && intent === "buying") saveAskingFor(valuationId, parseAsking(asking)); }, [valuationId, intent, asking]);
 
-  // Homepage section buttons send the visitor back to the registration card (or the next step if a car is loaded).
+  // Homepage section buttons. Premium: open the checkout when a valuation is ready, glide to the Pay button
+  // when the details step is open, else glide to the reg card with Premium selected. Otherwise back to the reg card.
+  const flowRef = useRef({ stage, valuationId, hasCar: false, canPay: false });
   useEffect(() => {
-    const go = () => {
-      const target: HTMLElement | null = unlockRef.current ?? detailsRef.current ?? topRef.current;
+    const go = (e: Event) => {
+      const premium = !!(e as CustomEvent<{ premium?: boolean }>).detail?.premium;
+      const f = flowRef.current;
+      if (premium && f.stage === "refined" && f.valuationId && f.canPay) {
+        track("offer_click", "premium_section"); posthog.capture?.("Premium Report Click", { where: "section" });
+        setCheckoutOpen(true);
+        return;
+      }
+      if (premium && f.hasCar && f.stage !== "refined") {
+        setPremiumBusy(true); setPayErr(null);
+        setTimeout(() => {
+          payRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+          setNudgePay(true); setTimeout(() => setNudgePay(false), 1800);
+        }, 30);
+        return;
+      }
+      if (premium && !f.hasCar) setPremiumArmed(true);
+      const target: HTMLElement | null = (!premium && unlockRef.current) || (f.hasCar ? detailsRef.current : null) || topRef.current;
       target?.scrollIntoView({ behavior: "smooth", block: "start" });
-      setTimeout(() => regInput.current?.focus({ preventScroll: true }), 650);
+      if (!f.hasCar) setTimeout(() => regInput.current?.focus({ preventScroll: true }), 650);
     };
     window.addEventListener("valu8:reg", go);
     return () => window.removeEventListener("valu8:reg", go);
@@ -139,7 +171,7 @@ export function TeslaFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function analyseBody(l: Lookup, extra: { mileage: number; variant: string; transmission?: Gearbox | ""; mods?: string; notes?: string; photoUrls?: string[]; photosLabeled?: { slot: string; url: string }[]; guestPhotos?: { slot: string; dataUrl: string }[]; refineOf?: string | null }) {
+  function analyseBody(l: Lookup, extra: { mileage: number; variant: string; transmission?: Gearbox | ""; mods?: string; notes?: string; photoUrls?: string[]; photosLabeled?: { slot: string; url: string }[]; guestPhotos?: { slot: string; dataUrl: string }[]; refineOf?: string | null; premiumIntent?: boolean }) {
     const combined = [extra.notes?.trim() ?? "", extra.mods?.trim() ? `Modifications / extras: ${extra.mods.trim()}` : ""].filter(Boolean).join("\n");
     const transmission = extra.transmission || l.transmission || undefined;
     const vehicle = { fuelType: l.fuelType, transmission, firstRegistered: l.firstRegistered, engineCapacity: l.engineCapacity, co2Emissions: l.co2Emissions };
@@ -156,6 +188,7 @@ export function TeslaFlow() {
         ...(user ? { userId: user.id } : {
           guestToken: getGuestToken(), guestPhotos: extra.guestPhotos ?? [],
           ...(extra.refineOf ? { refineOf: extra.refineOf } : {}),
+          ...(extra.premiumIntent ? { premiumIntent: true } : {}),
           guestSave: {
             displayModel: extra.variant.trim() ? `${l.model} · ${extra.variant.trim()}` : l.model,
             serviceNotes: combined || null, vehicle, attribution: getAttribution() ?? null, utm: getUtm(),
@@ -173,18 +206,31 @@ export function TeslaFlow() {
     spendToken();
     if (error) {
       const { status, body: eb } = await functionErrorBody(error);
-      if (!user && status === 429 && eb?.code === "guest_limit") { posthog.capture?.("Guest Limit Reached", {}); setGuestLimit(eb.error); return null; }
+      if (!user && status === 429 && eb?.code === "guest_limit") {
+        posthog.capture?.("Guest Limit Reached", { premium: !!extra.premiumIntent });
+        setGuestLimit(eb.error);
+        setLimitKind(extra.premiumIntent ? "premium" : "free");
+        // Free valuations are used up for today, but the paid report is still open: switch to the one Pay button.
+        if (!extra.premiumIntent) setPremiumBusy(true);
+        return null;
+      }
       if (!user && status === 401) { navigate(`/valuation/new?reg=${encodeURIComponent(l.registration)}`); return null; }
       throw new Error(eb?.error || "We couldn't value this car just now. Please try again.");
     }
     if ((data as any)?.error) throw new Error((data as any).error);
+    if (!user && (data as any)?.locked === true) {
+      const id = (data as any)?.valuationId as string | undefined;
+      if (!id) throw new Error("We couldn't save your valuation. Please try again.");
+      rememberGuestValuation(id);
+      return { id, report: null, locked: true as const, priceable: (data as any)?.priceable !== false };
+    }
     const report = (data as any)?.report;
     if (!report) throw new Error("We couldn't value this car just now. Please try again.");
     if (!user) {
       const id = (data as any)?.valuationId as string | undefined;
       if (!id) throw new Error("We couldn't save your valuation. Please try again.");
       rememberGuestValuation(id);
-      return { id, report };
+      return { id, report, locked: false as const, priceable: !!bandFor(report) };
     }
     report.vehicle = vehicle;
     const row = {
@@ -196,16 +242,16 @@ export function TeslaFlow() {
     };
     if (existingId) {
       const { error: uErr } = await supabase.from("valuations").update(row).eq("id", existingId);
-      if (!uErr) return { id: existingId, report };
+      if (!uErr) return { id: existingId, report, locked: false as const, priceable: !!bandFor(report) };
     }
     const { data: ins, error: iErr } = await supabase.from("valuations").insert({ user_id: user.id, ...row, ...getUtm() }).select("id").single();
     if (iErr) throw iErr;
-    return { id: ins.id as string, report };
+    return { id: ins.id as string, report, locked: false as const, priceable: !!bandFor(report) };
   }
 
   /** Premium Report buttons: open the existing £2.99 checkout once the valuation is saved (only when we could price the car). */
   function openPremium(where: "details" | "premium_path", report: any, delay: number) {
-    if (!bandFor(report)) return;
+    if (report !== null && !bandFor(report)) { setPayErr(UNPRICEABLE); return; }
     track("offer_click", `premium_${where}`);
     posthog.capture?.("Premium Report Click", { where });
     setTimeout(() => setCheckoutOpen(true), delay);
@@ -214,12 +260,12 @@ export function TeslaFlow() {
   async function start(raw?: string, premium = false) {
     const cleaned = normaliseReg(raw ?? reg);
     if (!isPlausibleUkReg(cleaned)) { setErr("Enter a valid UK number plate, e.g. AB12 CDE."); return; }
-    setPremiumBusy(premium);
+    setPremiumBusy(premium); setPremiumArmed(false); setLocked(false); setPayErr(null); setUnavailable(false);
     setErr(null); setGuestLimit(null); setStage("looking"); setBand(null); setValuationId(null); setGrade(null); setNeedMileage(false);
     if (turnstileEnabled()) setTsOn(true);
     let l: Lookup;
     try {
-      const { data, error } = await supabase.functions.invoke("lookup-vehicle", { body: { registration: cleaned } });
+      const { data, error } = await supabase.functions.invoke("lookup-vehicle", { body: { registration: cleaned, ...(premium ? { premiumIntent: true } : {}) } });
       if (error) {
         const { status, body } = await functionErrorBody(error);
         if (status === 401 && !user) { navigate(`/valuation/new?reg=${encodeURIComponent(cleaned)}`); return; }
@@ -258,9 +304,15 @@ export function TeslaFlow() {
     setStage("estimating");
     track("submitted");
     try {
-      const res = await value(l, { mileage: l.lastMileage, variant: v, transmission: gb }, null);
-      if (!res) { setStage("estimate"); return; }
-      applyResult(res.id, res.report, true, l.lastMileage, l);
+      const res = await value(l, { mileage: l.lastMileage, variant: v, transmission: gb, premiumIntent: premium }, null);
+      if (!res) {
+        // Daily free limit: the details step now offers the paid report, so glide there.
+        setStage("estimate");
+        setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 900);
+        return;
+      }
+      if (res.locked) applyLocked(res.id, res.priceable);
+      else applyResult(res.id, res.report, true, l.lastMileage, l);
       setStage("estimate");
       // Premium path: no checkout yet. Let the price land, then glide to the details step to finish it.
       if (premium) setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 1400);
@@ -283,12 +335,34 @@ export function TeslaFlow() {
     posthog.capture?.("Valuation Report Generated", { valuation_id: id, guest: !user, home_flow: true, refined: !first, private_value: report?.values?.privateSale, valuation_unavailable: !!report?.valuationUnavailable });
   }
 
+  /** Price-locked valuation (guest past the free cap, Premium chosen): no price on screen until paid. */
+  function applyLocked(id: string, priceable: boolean) {
+    setValuationId(id); setLocked(true); setBand(null); setGrade(null); setUnavailable(!priceable);
+    track("valuation_completed");
+    posthog.capture?.("Valuation Report Generated", { valuation_id: id, guest: true, home_flow: true, price_locked: true, valuation_unavailable: !priceable });
+  }
+
+  /** Fades the loader out (after a short minimum so it never flashes), then runs `next`. */
+  function closeLoader(t0: number, next: () => void, minMs = 900) {
+    const wait = Math.max(0, minMs - (Date.now() - t0));
+    setTimeout(() => {
+      setLoaderOut(true);
+      setTimeout(() => { setLoaderOut(false); next(); }, 380);
+    }, wait);
+  }
+
+  const detailSig = () => JSON.stringify([mileage, variant, gearbox, mods, notes, photos.map((p) => p.preview)]);
+
   async function refine(e?: React.FormEvent, premium = false) {
     e?.preventDefault();
     if (!lookup) return;
+    // Locked valuation already made with these details: go straight to the checkout.
+    if (premium && locked && valuationId && !unavailable && lockedSig.current === detailSig()) {
+      setPayErr(null); track("offer_click", "premium_premium_path"); setCheckoutOpen(true); return;
+    }
     const miles = Number(mileage.replace(/[,\s]/g, ""));
     if (!Number.isFinite(miles) || miles < 0 || miles > 500000 || mileage.trim() === "") { setErr("Enter the current mileage."); return; }
-    setErr(null); setGuestLimit(null); setRefineDone(false); setStage("refining");
+    setErr(null); setPayErr(null); setGuestLimit(null); setRefineDone(false); setLoaderOut(false); setStage("refining");
     track("submitted");
     if (photos.length) track("step_photos");
     const t0 = Date.now();
@@ -302,8 +376,26 @@ export function TeslaFlow() {
         if (error) throw error;
         photoUrls.push(path); labeled.push({ slot: p.key, url: path });
       }
-      const res = await value(lookup, { mileage: miles, variant, transmission: gearbox, mods, notes, photoUrls, photosLabeled: labeled, guestPhotos, refineOf: valuationId }, valuationId);
-      if (!res) { setStage("estimate"); return; }
+      const res = await value(lookup, { mileage: miles, variant, transmission: gearbox, mods, notes, photoUrls, photosLabeled: labeled, guestPhotos, refineOf: valuationId, premiumIntent: premium }, valuationId);
+      if (!res) {
+        // Daily limit: fade the loader away, then show the notice by the buttons.
+        closeLoader(t0, () => { setStage("estimate"); setTimeout(() => payRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 60); });
+        return;
+      }
+      if (res.locked) {
+        // Price stays hidden until paid: finish the ring, then hand straight over to the checkout.
+        applyLocked(res.id, res.priceable);
+        lockedSig.current = detailSig();
+        const wait = Math.max(0, 1600 - (Date.now() - t0));
+        setTimeout(() => setRefineDone(true), wait);
+        setTimeout(() => {
+          if (!res.priceable) { closeLoader(0, () => { setStage("estimate"); setPayErr(UNPRICEABLE); }); return; }
+          track("offer_click", "premium_premium_path"); posthog.capture?.("Premium Report Click", { where: "locked" });
+          setCheckoutOpen(true);
+          closeLoader(0, () => setStage("estimate"));
+        }, wait + 1100);
+        return;
+      }
       // Let the ring finish cleanly before revealing the result.
       const wait = Math.max(0, 1600 - (Date.now() - t0));
       setTimeout(() => setRefineDone(true), wait);
@@ -314,8 +406,8 @@ export function TeslaFlow() {
         if (premium) openPremium(premiumBusy ? "premium_path" : "details", res.report, 700);
       }, wait + 1300);
     } catch (e2: any) {
-      setErr(e2?.message || "We couldn't update the valuation. Please try again.");
-      setStage("estimate");
+      const m = e2?.message || "We couldn't update the valuation. Please try again.";
+      closeLoader(t0, () => { setStage("estimate"); if (premium) setPayErr(m); else setErr(m); });
     }
   }
 
@@ -344,6 +436,7 @@ export function TeslaFlow() {
   function reset() {
     setStage("idle"); setLookup(null); setBand(null); setValuationId(null); setGrade(null); setErr(null); setGuestLimit(null);
     setPhotos([]); setMods(""); setNotes(""); setReg(""); setCheckoutOpen(false); setPremiumBusy(false); setGearbox(""); setGearboxGuessed(false);
+    setPremiumArmed(false); setLocked(false); setPayErr(null); setLimitKind("free"); setUnavailable(false);
     topRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
@@ -354,6 +447,7 @@ export function TeslaFlow() {
   const facts = lookup ? [lookup.engineCapacity ? `${lookup.engineCapacity.toLocaleString("en-GB")} cc` : "", titleCase(lookup.fuelType), titleCase(lookup.colour)].filter(Boolean).join(" · ") : "";
   const refined = stage === "refined";
   const milesNum = Number(mileage.replace(/[,\s]/g, ""));
+  flowRef.current = { stage, valuationId, hasCar, canPay: !!band };
 
   return (
     <div className="t8" ref={topRef}>
@@ -380,7 +474,7 @@ export function TeslaFlow() {
               <>
                 <h1 id="t8-h" className="sr-only">Your car</h1>
                 <div className="t8-price" style={{ opacity: 0.35 }} aria-hidden>{stage === "estimating" ? "£–" : unavailable ? "" : "£–"}</div>
-                <div className="t8-meta">{stage === "estimating" ? "Working out your estimate" : unavailable ? "We couldn't price this one" : needMileage ? "Add your mileage below" : "Private sale"}</div>
+                <div className="t8-meta">{stage === "estimating" ? "Working out your estimate" : unavailable ? "We couldn't price this one" : locked || (guestLimit && premiumBusy && limitKind === "free") ? "Unlocks with your Premium Report" : needMileage ? "Add your mileage below" : "Private sale"}</div>
               </>
             )}
           </div>
@@ -405,7 +499,7 @@ export function TeslaFlow() {
         </div>
 
         {!hasCar && (
-          <form className="t8-sheet t8-float" onSubmit={(e) => { e.preventDefault(); void start(); }}>
+          <form className="t8-sheet t8-float" onSubmit={(e) => { e.preventDefault(); void start(undefined, premiumArmed); }}>
             <label htmlFor="home-reg" className="t8-label">Enter the registration</label>
             <div className="reg-plate"><div className="reg-plate-inner">
               <div className="reg-plate-badge" aria-hidden><img src="/uk-flag.svg" alt="" /><b>UK</b></div>
@@ -419,13 +513,13 @@ export function TeslaFlow() {
               <button type="submit" className="t8-ghost" data-testid="free-valuation" disabled={busyLookup}>
                 {busyLookup && !premiumBusy ? <><span className="t8-spin t8-spin-l" aria-hidden /> Checking</> : "Free Valuation"}
               </button>
-              <button type="button" className="t8-btn t8-two" data-testid="premium-landing" disabled={busyLookup} onClick={() => { posthog.capture?.("Premium Report Click", { where: "landing" }); void start(undefined, true); }}>
+              <button type="button" className={`t8-btn t8-two${premiumArmed ? " t8-armed" : ""}`} aria-pressed={premiumArmed || undefined} data-testid="premium-landing" disabled={busyLookup} onClick={() => { posthog.capture?.("Premium Report Click", { where: "landing" }); void start(undefined, true); }}>
                 {busyLookup && premiumBusy ? <span className="t8-one"><span className="t8-spin" aria-hidden /> Checking</span> : <>Premium Report<small>£2.99 one-off</small></>}
               </button>
             </div>
-            <p className="t8-inc" aria-live="polite">{busyLookup ? "Checking DVLA and MOT records" : "Buying or Selling, Know the right price"}</p>
+            <p className="t8-inc" aria-live="polite">{busyLookup ? "Checking DVLA and MOT records" : premiumArmed ? "Premium Report selected. Enter the reg to continue." : "Buying or Selling, Know the right price"}</p>
             {err && <p className="t8-err" role="alert">{err} <Link className="t8-link" to="/valuation/new">Enter details by hand</Link></p>}
-            {guestLimit && <GuestLimit message={guestLimit} />}
+            {guestLimit && <GuestLimit message={guestLimit} premium={false} />}
             <p className="t8-note">We don't buy cars</p>
           </form>
         )}
@@ -467,8 +561,7 @@ export function TeslaFlow() {
               <div className="t8-k">Are you buying or selling?</div>
               <IntentSwitch size="sm" where="details" />
             </div>
-            {err && stage === "estimate" && <p className="t8-err" role="alert" style={{ textAlign: "left", marginBottom: 14 }}>{err}</p>}
-            {guestLimit && <GuestLimit message={guestLimit} />}
+            {guestLimit && <GuestLimit message={guestLimit} premium={premiumBusy && limitKind === "free"} />}
             <div className="t8-factgrid t8-stagger">
               {[["Make", titleCase(lookup.make)], ["Model", titleCase(lookup.model)], ["Year", String(lookup.year ?? "")],
                 ["Fuel", titleCase(lookup.fuelType)], ["Engine", lookup.engineCapacity ? `${lookup.engineCapacity.toLocaleString("en-GB")} cc` : "–"], ["Colour", titleCase(lookup.colour)]].map(([k, v]) => (
@@ -555,8 +648,16 @@ export function TeslaFlow() {
                 })}
               </div>
             </div>
+            <div ref={payRef} style={{ scrollMarginBottom: 120 }}>
+            {err && stage === "estimate" && <p className="t8-err" role="alert" style={{ textAlign: "left", marginBottom: 14 }}>{err}</p>}
+            {payErr && (
+              <div className="t8-payerr" role="alert" data-testid="pay-error">
+                <p>{payErr}</p>
+                {payErr !== UNPRICEABLE && <button type="button" className="t8-link" onClick={() => void refine(undefined, true)}>Try again</button>}
+              </div>
+            )}
             {premiumBusy ? (
-              <div className="t8-solo" key="solo">
+              <div className={`t8-solo${nudgePay ? " t8-nudge" : ""}`} key="solo">
                 <button type="submit" className="t8-btn t8-two" data-testid="pay-premium" disabled={stage === "estimating" || stage === "refining"}>Pay for Premium Report<small>£2.99 one-off</small></button>
               </div>
             ) : (
@@ -565,6 +666,7 @@ export function TeslaFlow() {
                 <button type="button" className="t8-btn t8-two" data-testid="premium-details" disabled={stage === "estimating" || stage === "refining"} onClick={() => void refine(undefined, true)}>Premium Report<small>£2.99 one-off</small></button>
               </div>
             )}
+            </div>
             <p className="t8-inc">{includesLine(intent)}</p>
             <p className="t8-small">{lookup.registration ? <>Wrong car? <button type="button" className="t8-link" onClick={reset}>Check another plate</button></> : null}</p>
           </form>
@@ -573,7 +675,8 @@ export function TeslaFlow() {
 
       {stage === "refining" && (
         <RingLoader
-          title="Updating the valuation"
+          out={loaderOut}
+          title={premiumBusy && !band ? "Preparing your report" : "Updating the valuation"}
           status={progress < 25 ? "Checking records" : progress < 50 ? "Reading MOT history" : progress < 75 ? (photos.length ? "Looking at the photos" : "Matching the details") : "Pricing"}
           progress={progress}
           steps={[
@@ -620,11 +723,23 @@ export function TeslaFlow() {
   );
 }
 
-function GuestLimit({ message }: { message: string }) {
+const UNPRICEABLE = "We couldn't price this car, so there's nothing to pay for. Check the details or try another plate.";
+
+/** Daily guest limit. On the premium path (free valuations used up, paid report still open) it is a soft note, not a blocker. */
+export function GuestLimit({ message, premium }: { message: string; premium: boolean }) {
+  const box = { marginTop: 14, marginBottom: 14, borderRadius: 14, border: "1px solid rgba(0,214,200,.3)", background: "rgba(0,214,200,.06)", padding: 14, textAlign: "left" as const };
+  if (premium) {
+    return (
+      <div role="status" data-testid="guest-limit-soft" style={box}>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>Today's free valuations are used up</p>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: "#ADADAD", lineHeight: 1.45 }}>You can still get the {PREMIUM_NAME} below. For more free valuations, <Link to="/auth?mode=signup" className="t8-link">create a free account</Link>.</p>
+      </div>
+    );
+  }
   return (
-    <div role="alert" style={{ marginTop: 14, borderRadius: 14, border: "1px solid rgba(0,214,200,.3)", background: "rgba(0,214,200,.06)", padding: 14, textAlign: "left" }}>
+    <div role="alert" data-testid="guest-limit" style={box}>
       <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>You've used today's free guest valuations</p>
-      <p style={{ margin: "4px 0 10px", fontSize: 13, color: "#ADADAD", lineHeight: 1.45 }}>{message}</p>
+      <p style={{ margin: "4px 0 10px", fontSize: 13, color: "#ADADAD", lineHeight: 1.45 }}>{message.replace(/\s*[\u2014\u2013]\s*(\w)/g, (_m, c: string) => `. ${c.toUpperCase()}`)}</p>
       <Link to="/auth?mode=signup" className="t8-link" style={{ fontSize: 14 }}>Create a free account</Link>
     </div>
   );

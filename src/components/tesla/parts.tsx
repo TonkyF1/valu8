@@ -62,14 +62,14 @@ export function PriceArc({ from, to, color = "#00D6C8" }: { from: number | null;
 export interface LoaderStep { title: string; sub: string }
 
 /** Tesla ring loader. progress 0-100; active step advances with progress. */
-export function RingLoader({ title, status, steps, progress }: { title: string; status: string; steps: LoaderStep[]; progress: number }) {
+export function RingLoader({ title, status, steps, progress, out = false }: { title: string; status: string; steps: LoaderStep[]; progress: number; out?: boolean }) {
   const C = 2 * Math.PI * 66;
   const p = Math.max(0, Math.min(100, progress));
   const active = p >= 100 ? steps.length : Math.min(steps.length - 1, Math.floor((p / 100) * steps.length));
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { ref.current?.focus(); }, []);
   return (
-    <div className="t8-loader" role="status" aria-live="polite" tabIndex={-1} ref={ref}>
+    <div className={`t8-loader${out ? " out" : ""}`} role="status" aria-live="polite" tabIndex={-1} ref={ref}>
       <div className="t8-ring">
         <svg viewBox="0 0 148 148" aria-hidden="true">
           <circle cx="74" cy="74" r="66" fill="none" stroke="#2A2A2A" strokeWidth="6" />
