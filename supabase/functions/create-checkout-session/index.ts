@@ -55,8 +55,10 @@ Deno.serve(async (req) => {
       mode: "payment",
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
-      // No payment_method_types => Stripe automatic payment methods (card, Apple Pay,
-      // Google Pay, Link…) as enabled in Dashboard → Settings → Payment methods.
+      // Card only (Tony, 17 Nov 2026: "keep to apple and google"). Apple Pay and Google Pay
+      // run on the card rail, so they stay; Link, Klarna, Amazon Pay, Revolut Pay etc. are
+      // excluded regardless of Dashboard → Settings → Payment methods. Amount/price unchanged.
+      "payment_method_types[0]": "card",
       client_reference_id: valuationId,
       // Do NOT set customer_email: Checkout Elements ContactDetailsElement +
       // defaultValues.email collect/pre-fill it. Setting both triggers

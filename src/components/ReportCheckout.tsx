@@ -178,7 +178,9 @@ function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: 
             buttonHeight: 48,
             layout: { overflow: "auto" },
             paymentMethodOrder: ["apple_pay", "google_pay"],
-            paymentMethods: { applePay: "auto", googlePay: "auto" },
+            // Apple Pay / Google Pay only. "always" shows the button on a supported device even before a
+            // card is saved in the wallet; Link, Klarna, Amazon Pay and PayPal never show here.
+            paymentMethods: { applePay: "always", googlePay: "always", link: "never", klarna: "never", amazonPay: "never", paypal: "never" },
           }}
         />
         <div className="relative my-3 text-center text-xs uppercase tracking-wider opacity-50">
@@ -188,7 +190,8 @@ function CheckoutForm({ valuationId, onError }: { valuationId: string; onError: 
       </div>
 
       <ContactDetailsElement />
-      <PaymentElement options={{ layout: "tabs" }} />
+      {/* Card form only: wallets are the buttons above, Link is off (session is card-only too). */}
+      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "never", googlePay: "never", link: "never" } }} />
 
       <button
         type="submit"
