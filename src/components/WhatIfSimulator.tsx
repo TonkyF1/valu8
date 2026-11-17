@@ -3,6 +3,7 @@ import { cheapPriceRange, formatPriceRange, headlinePrivateText } from "../../su
 import { Wrench, TrendingUp, RotateCcw, Sparkles, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CountUp } from "@/components/CountUp";
+import { FitPrice } from "@/components/FitPrice";
 import type { PhotoInsight } from "@/lib/valuation";
 
 const SLOT_LABELS: Record<string, string> = {
@@ -149,9 +150,11 @@ export function WhatIfSimulator({
             <Sparkles className="h-3 w-3" /> Projected private sale
           </div>
           <div className="flex items-baseline gap-3 flex-wrap relative">
-            <div className="text-[2.5rem] sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight">
-              {cheapPriceRange(adjustedPrivateSale) ? formatPriceRange(cheapPriceRange(adjustedPrivateSale)!) : <>£<CountUp value={adjustedPrivateSale} /></>}
-            </div>
+            <FitPrice text={cheapPriceRange(adjustedPrivateSale) ? formatPriceRange(cheapPriceRange(adjustedPrivateSale)!) : `£${adjustedPrivateSale.toLocaleString()}`}
+              align="left" allowSplit={false} floorPx={18} testId="whatif-price"
+              className="text-[2.5rem] sm:text-5xl font-semibold tabular-nums text-gradient-primary leading-[0.95] tracking-tight" style={{ display: "inline-block" }}>
+              {() => (cheapPriceRange(adjustedPrivateSale) ? formatPriceRange(cheapPriceRange(adjustedPrivateSale)!) : <>£<CountUp value={adjustedPrivateSale} /></>)}
+            </FitPrice>
             {upside > 0 && (
               <span className="inline-flex items-center gap-1 text-[11px] tabular-nums font-semibold rounded-full px-2.5 py-1 border text-primary bg-primary/15 border-primary/40">
                 <TrendingUp className="h-3 w-3" /> +£{upside.toLocaleString()}

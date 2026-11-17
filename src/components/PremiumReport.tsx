@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { FitPrice } from "@/components/FitPrice";
 import type { ValuationReport } from "@/lib/valuation";
 import type { Intent } from "@/lib/intent";
 import { askingFor, saveAskingFor } from "@/lib/intent";
@@ -28,18 +29,19 @@ export function PremiumReport({ r, registration, intent = "selling", valuationId
       </div>
       <div className="bg-[#111111] text-white px-5 py-6">
         <p className="text-xs uppercase tracking-widest opacity-60">Private sale value</p>
-        <p className="text-4xl font-bold mt-1">{gbp(v.privateSale)}</p>
+        <FitPrice text={gbp(v.privateSale)} align="left" allowSplit={false} floorPx={18} boxClassName="mt-1" className="text-4xl font-bold" style={{ display: "inline-block" }} testId="pr-headline" />
         {lo && hi ? <p className="text-sm opacity-70 mt-1">Range {gbp(lo)} – {gbp(hi)}{r.marketConfidence ? ` · ${r.marketConfidence} confidence` : ""}</p> : null}
         <div className="mt-4 h-1.5 rounded-full bg-white/15 relative">
           <div className="absolute -top-1 h-3.5 w-3.5 rounded-full bg-[#00D6C8]" style={{ left: `calc(${pos}% - 7px)` }} />
         </div>
         <div className="flex justify-between text-[11px] opacity-60 mt-2"><span>Trade-in {gbp(v.dealerTradeIn)}</span><span>Retail {gbp(v.dealerRetail)}</span></div>
       </div>
-      <div className="grid grid-cols-3 gap-3 p-5">
+      {/* Very large values (£1m+) stack on phones so each figure stays readable; normal cars keep three across. */}
+      <div className={`grid ${tiers.some((t) => (t.n ?? 0) >= 1_000_000) ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-3"} gap-3 p-5`} data-testid="pr-tiers">
         {tiers.map((t) => (
-          <div key={t.k} className={`rounded-xl p-3 ${t.hl ? "bg-[#00D6C8] text-[#111111]" : "bg-white"}`}>
+          <div key={t.k} className={`min-w-0 rounded-xl p-3 ${t.hl ? "bg-[#00D6C8] text-[#111111]" : "bg-white"}`}>
             <p className="text-[11px] uppercase tracking-wide opacity-70">{t.k}</p>
-            <p className="text-lg font-bold">{gbp(t.n)}</p>
+            <FitPrice text={gbp(t.n)} align="left" allowSplit={false} floorPx={10} className="text-lg font-bold" style={{ display: "inline-block" }} />
           </div>
         ))}
       </div>
@@ -98,16 +100,16 @@ function BuyerPremiumReport({ r, registration, valuationId }: { r: ValuationRepo
       </div>
       <div className="bg-[#111111] text-white px-5 py-6">
         <p className="text-xs uppercase tracking-widest opacity-60">Estimated fair price · private sale</p>
-        <p className="mt-1 text-[44px] leading-none tracking-tight" style={{ fontFamily: "Sora, Inter, sans-serif", fontWeight: 200 }}>{gbp(g.fairPrice)}</p>
+        <FitPrice text={gbp(g.fairPrice)} align="left" allowSplit={false} floorPx={18} boxClassName="mt-1" className="text-[44px] leading-none tracking-tight" style={{ display: "inline-block", fontFamily: "Sora, Inter, sans-serif", fontWeight: 200 }} testId="pr-fair" />
         <p className="text-sm opacity-70 mt-2">Estimated range {gbp(g.privateLow)} – {gbp(g.privateHigh)}{r.marketConfidence ? ` · ${r.marketConfidence} confidence` : ""}</p>
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <div className="rounded-xl p-3" style={{ background: "rgba(0,214,200,.12)", border: "1px solid rgba(0,214,200,.4)" }}>
+          <div className="min-w-0 rounded-xl p-3" style={{ background: "rgba(0,214,200,.12)", border: "1px solid rgba(0,214,200,.4)" }}>
             <p className="text-[11px] uppercase tracking-wide text-[#1AFFF0]">Suggested opening offer</p>
-            <p className="text-[17px] font-semibold mt-1 tabular-nums">{gbp(g.openingOffer)}</p>
+            <FitPrice text={gbp(g.openingOffer)} align="left" allowSplit={false} floorPx={11} boxClassName="mt-1" className="text-[17px] font-semibold tabular-nums" style={{ display: "inline-block" }} />
           </div>
-          <div className="rounded-xl p-3 border border-white/15">
+          <div className="min-w-0 rounded-xl p-3 border border-white/15">
             <p className="text-[11px] uppercase tracking-wide opacity-70">Negotiation range</p>
-            <p className="text-[17px] font-semibold mt-1 tabular-nums leading-snug"><span className="whitespace-nowrap">{gbp(g.rangeLow)} –</span> <span className="whitespace-nowrap">{gbp(g.rangeHigh)}</span></p>
+            <FitPrice text={`${gbp(g.rangeLow)} – ${gbp(g.rangeHigh)}`} align="left" minPx={16} floorPx={11} boxClassName="mt-1" className="text-[17px] font-semibold tabular-nums leading-snug" style={{ display: "inline-block" }} />
           </div>
         </div>
         {g.dealerRetail ? <p className="text-xs opacity-60 mt-3">Buying from a dealer? Typical dealer retail for this car is around {gbp(g.dealerRetail)}, so expect less room to negotiate.</p> : null}

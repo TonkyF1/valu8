@@ -11,6 +11,14 @@ const PAPER: [number, number, number] = [247, 245, 243];
 const TEAL: [number, number, number] = [0, 214, 200];
 const gbp = (n?: number) => (typeof n === "number" && isFinite(n) ? `£${Math.round(n).toLocaleString("en-GB")}` : "-");
 
+/** Set the largest font size (max..min) at which `text` fits `maxW` points with the current font. Exported for tests. */
+export function fitFontSize(doc: { setFontSize: (n: number) => unknown; getTextWidth: (t: string) => number }, text: string, maxW: number, max: number, min: number): number {
+  let size = max;
+  doc.setFontSize(size);
+  while (size > min && doc.getTextWidth(text) > maxW) { size = Math.max(min, size - 1); doc.setFontSize(size); }
+  return size;
+}
+
 /** Premium 2-page A4 PDF (design: promo/report-premium-v1). Used only when showPremiumReport() is true. */
 export async function downloadPremiumPdf(v: VehicleInfo, r: ValuationReport, opts: { intent?: Intent; valuationId?: string } = {}): Promise<void> {
   const buying = opts.intent === "buying";
@@ -36,7 +44,7 @@ export async function downloadPremiumPdf(v: VehicleInfo, r: ValuationReport, opt
   const val = r.values; let y = 90;
   doc.setFillColor(...INK); doc.roundedRect(m, y, W - 2 * m, 130, 10, 10, "F");
   doc.setTextColor(200, 200, 200); doc.setFontSize(9); doc.text(buying ? "ESTIMATED FAIR PRICE · PRIVATE SALE" : "PRIVATE SALE VALUE", m + 20, y + 28);
-  doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(32); doc.text(gbp(val.privateSale), m + 20, y + 64);
+  doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); fitFontSize(doc, gbp(val.privateSale), W - 2 * m - 40, 32, 14); doc.text(gbp(val.privateSale), m + 20, y + 64);
   doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(200, 200, 200);
   if (r.valueRange) doc.text(`Range ${gbp(r.valueRange.privateSaleLow)} - ${gbp(r.valueRange.privateSaleHigh)}${r.marketConfidence ? ` · ${r.marketConfidence} confidence` : ""}`, m + 20, y + 84);
   const bx = m + 20, bw = W - 2 * m - 40, span = Math.max(1, val.dealerRetail - val.dealerTradeIn);
@@ -51,7 +59,7 @@ export async function downloadPremiumPdf(v: VehicleInfo, r: ValuationReport, opt
     if (hl) doc.setFillColor(...TEAL); else doc.setFillColor(255, 255, 255);
     doc.roundedRect(x, y, cw, 56, 8, 8, "F");
     doc.setTextColor(...INK); doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.text(String(k), x + 12, y + 20);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text(gbp(n as number), x + 12, y + 42);
+    doc.setFont("helvetica", "bold"); fitFontSize(doc, gbp(n as number), cw - 24, 16, 8); doc.text(gbp(n as number), x + 12, y + 42);
   });
   y += 80;
 
