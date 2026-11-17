@@ -50,15 +50,11 @@ Deno.serve(async (req) => {
     const base = siteUrl(req).replace(/\/$/, "");
     // ui_mode=elements → Checkout Elements (Payment Element + Express Checkout) themed
     // client-side via Appearance API. branding_settings is NOT allowed with elements.
-    const session = await stripe("checkout/sessions", {
+    const params: Record<string, string | undefined> = {
       ui_mode: "elements",
       mode: "payment",
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
-      // Card only (Tony, 17 Nov 2026: "keep to apple and google"). Apple Pay and Google Pay
-      // run on the card rail, so they stay; Link, Klarna, Amazon Pay, Revolut Pay etc. are
-      // excluded regardless of Dashboard → Settings → Payment methods. Amount/price unchanged.
-      "payment_method_types[0]": "card",
       client_reference_id: valuationId,
       // Do NOT set customer_email: Checkout Elements ContactDetailsElement +
       // defaultValues.email collect/pre-fill it. Setting both triggers
@@ -78,8 +74,28 @@ Deno.serve(async (req) => {
       "payment_intent_data[metadata][reg]": reg || undefined,
       "payment_intent_data[metadata][user_id]": g.userId ?? undefined,
       return_url: `${base}/valuation/${valuationId}?session_id={CHECKOUT_SESSION_ID}${intent ? `&intent=${intent}` : ""}`,
-    });
-    return json({ clientSecret: session.client_secret });
+    };
+    // Card only (Tony, 17 Nov 2026: "keep to apple and google"). Apple Pay and Google Pay run on
+    // the card rail, so they stay; Link, Klarna, Amazon Pay, Revolut Pay, Clearpay are excluded
+    // whatever Dashboard → Settings → Payment methods says. Amount/price unchanged.
+    // Tries the dynamic filter first, then the static list, and only if Stripe rejects both falls
+    // back to the previous automatic methods so checkout never breaks.
+    const attempts: Array<[string, Record<string, string>]> = [
+      ["allowed_card", { "allowed_payment_method_types[0]": "card" }],
+      ["types_card", { "payment_method_types[0]": "card" }],
+      ["auto", {}],
+    ];
+    let lastErr: unknown = null;
+    for (const [pm, extra] of attempts) {
+      try {
+        const session = await stripe("checkout/sessions", { ...params, ...extra });
+        return json({ clientSecret: session.client_secret, pm });
+      } catch (e) {
+        lastErr = e;
+        console.error("create-checkout-session attempt", pm, e instanceof Error ? e.message : e);
+      }
+    }
+    throw lastErr;
   } catch (e) {
     console.error("create-checkout-session", e);
     return json({ error: "Could not start checkout." }, 500);

@@ -6,8 +6,11 @@ const ui = readFileSync("src/components/ReportCheckout.tsx", "utf8");
 
 describe("£2.99 checkout: card + Apple Pay / Google Pay only", () => {
   it("session is card-only (no Link, Klarna, Amazon Pay)", () => {
+    expect(fn).toMatch(/"allowed_payment_method_types\[0\]": "card"/);
     expect(fn).toMatch(/"payment_method_types\[0\]": "card"/);
     expect(fn).not.toMatch(/payment_method_types\[1\]/);
+    // the card-only attempts come before the automatic fallback
+    expect(fn.indexOf('"allowed_card"')).toBeLessThan(fn.indexOf('["auto"'));
   });
   it("price is unchanged", () => {
     expect(fn).toMatch(/price_1UYCy92Eh7OGTq97k6YAUz9I/);
