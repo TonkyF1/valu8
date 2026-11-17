@@ -78,6 +78,7 @@ export function TeslaFlow() {
   const [grade, setGrade] = useState<CarGrade | null>(null);
   const [refineDone, setRefineDone] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  /** Premium path: the visitor tapped Premium Report on the landing page, so the details step shows one Pay button. */
   const [premiumBusy, setPremiumBusy] = useState(false);
   const [needMileage, setNeedMileage] = useState(false);
   const tsRef = useRef<string | null>(null);
@@ -181,7 +182,7 @@ export function TeslaFlow() {
   }
 
   /** Premium Report buttons: open the existing £2.99 checkout once the valuation is saved (only when we could price the car). */
-  function openPremium(where: "landing" | "details", report: any, delay: number) {
+  function openPremium(where: "details" | "premium_path", report: any, delay: number) {
     if (!bandFor(report)) return;
     track("offer_click", `premium_${where}`);
     posthog.capture?.("Premium Report Click", { where });
@@ -239,7 +240,8 @@ export function TeslaFlow() {
       if (!res) { setStage("estimate"); return; }
       applyResult(res.id, res.report, true, l.lastMileage, l);
       setStage("estimate");
-      if (premium) openPremium("landing", res.report, 900);
+      // Premium path: no checkout yet. Let the price land, then glide to the details step to finish it.
+      if (premium) setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 1400);
     } catch (e: any) {
       setErr(e?.message || "We couldn't value this car just now. Please try again.");
       setStage("estimate");
@@ -287,7 +289,7 @@ export function TeslaFlow() {
         applyResult(res.id, res.report, !band, miles, lookup);
         setStage("refined");
         window.scrollTo({ top: 0, behavior: "auto" });
-        if (premium) openPremium("details", res.report, 700);
+        if (premium) openPremium(premiumBusy ? "premium_path" : "details", res.report, 700);
       }, wait + 1300);
     } catch (e2: any) {
       setErr(e2?.message || "We couldn't update the valuation. Please try again.");
@@ -319,7 +321,7 @@ export function TeslaFlow() {
 
   function reset() {
     setStage("idle"); setLookup(null); setBand(null); setValuationId(null); setGrade(null); setErr(null); setGuestLimit(null);
-    setPhotos([]); setMods(""); setNotes(""); setReg(""); setCheckoutOpen(false); setGearbox(""); setGearboxGuessed(false);
+    setPhotos([]); setMods(""); setNotes(""); setReg(""); setCheckoutOpen(false); setPremiumBusy(false); setGearbox(""); setGearboxGuessed(false);
     topRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
@@ -395,7 +397,7 @@ export function TeslaFlow() {
               <button type="submit" className="t8-ghost" data-testid="free-valuation" disabled={busyLookup}>
                 {busyLookup && !premiumBusy ? <><span className="t8-spin t8-spin-l" aria-hidden /> Checking</> : "Free Valuation"}
               </button>
-              <button type="button" className="t8-btn t8-two" data-testid="premium-landing" disabled={busyLookup} onClick={() => void start(undefined, true)}>
+              <button type="button" className="t8-btn t8-two" data-testid="premium-landing" disabled={busyLookup} onClick={() => { posthog.capture?.("Premium Report Click", { where: "landing" }); void start(undefined, true); }}>
                 {busyLookup && premiumBusy ? <span className="t8-one"><span className="t8-spin" aria-hidden /> Checking</span> : <>Premium Report<small>£2.99 one-off</small></>}
               </button>
             </div>
@@ -428,7 +430,7 @@ export function TeslaFlow() {
 
       {hasCar && lookup && !refined && (
         <section className="t8-details" ref={detailsRef} aria-labelledby="t8-det">
-          <form className="t8-details-in" onSubmit={refine}>
+          <form className="t8-details-in" onSubmit={(e) => void refine(e, premiumBusy)}>
             <h2 id="t8-det" className="t8-title">Add your details</h2>
             <p className="t8-lead">We’ll update the estimate with your mileage, trim, history and photos.</p>
             {err && stage === "estimate" && <p className="t8-err" role="alert" style={{ textAlign: "left", marginBottom: 14 }}>{err}</p>}
@@ -510,10 +512,16 @@ export function TeslaFlow() {
                 })}
               </div>
             </div>
-            <div className="t8-duo">
-              <button type="submit" className="t8-ghost" data-testid="finish-valuation" disabled={stage === "estimating" || stage === "refining"}>Finish Valuation</button>
-              <button type="button" className="t8-btn t8-two" data-testid="premium-details" disabled={stage === "estimating" || stage === "refining"} onClick={() => void refine(undefined, true)}>Premium Report<small>£2.99 one-off</small></button>
-            </div>
+            {premiumBusy ? (
+              <div className="t8-solo" key="solo">
+                <button type="submit" className="t8-btn t8-two" data-testid="pay-premium" disabled={stage === "estimating" || stage === "refining"}>Pay for Premium Report<small>£2.99 one-off</small></button>
+              </div>
+            ) : (
+              <div className="t8-duo" key="duo">
+                <button type="submit" className="t8-ghost" data-testid="finish-valuation" disabled={stage === "estimating" || stage === "refining"}>Finish Valuation</button>
+                <button type="button" className="t8-btn t8-two" data-testid="premium-details" disabled={stage === "estimating" || stage === "refining"} onClick={() => void refine(undefined, true)}>Premium Report<small>£2.99 one-off</small></button>
+              </div>
+            )}
             <p className="t8-inc">Report includes a suggested asking price, the lowest offer to accept, advert text and a PDF</p>
             <p className="t8-small">{lookup.registration ? <>Not your car? <button type="button" className="t8-link" onClick={reset}>Check another plate</button></> : null}</p>
           </form>

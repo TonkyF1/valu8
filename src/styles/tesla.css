@@ -216,3 +216,7 @@
 }
 @media (max-width:360px){.t8-duo>button{font-size:14px}.t8-btn.t8-two small{font-size:11px}}
 @media (prefers-reduced-motion:reduce){.t8-sheet.t8-float,.t8-wi li{animation:none}.t8-ghost{transition:none}}
+/* tb-2: premium path, single Pay button on the details step */
+.t8-solo{animation:t8rise .6s var(--t8-ease) both}
+.t8-solo>.t8-btn{min-height:62px;border-radius:16px;font:600 16px/1.15 Inter,sans-serif;letter-spacing:-.015em}
+@media (prefers-reduced-motion:reduce){.t8-solo{animation:none}}

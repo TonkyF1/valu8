@@ -25,4 +25,16 @@ describe("two-button premium flow", () => {
     expect(flow).not.toContain("No account needed");
     expect(flow.match(/data-testid="premium-(landing|details)"/g)).toHaveLength(2);
   });
+  it("landing Premium Report goes to the details step (no checkout) and shows one Pay button there", () => {
+    expect(flow).toContain("Pay for Premium Report<small>£2.99 one-off</small>");
+    expect(flow).toContain('data-testid="pay-premium"');
+    // The landing path scrolls to details instead of opening checkout.
+    expect(flow).not.toMatch(/openPremium\("landing"/);
+    expect(flow).toMatch(/if \(premium\) setTimeout\(\(\) => detailsRef\.current\?\.scrollIntoView/);
+    // Single button submits the form in the premium path; the free path keeps both buttons.
+    expect(flow).toContain("onSubmit={(e) => void refine(e, premiumBusy)}");
+    expect(flow).toMatch(/premiumBusy \? \(\s*<div className="t8-solo"/);
+    // Unpriced-car safeguard: checkout only opens when the report has a price.
+    expect(flow).toMatch(/function openPremium[\s\S]{0,120}if \(!bandFor\(report\)\) return;/);
+  });
 });
