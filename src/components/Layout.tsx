@@ -3,7 +3,7 @@ import { Link, NavLink as RouterNavLink, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeftRight, LayoutDashboard, Menu, Plus, SearchCheck, UserCircle2, Tag, ShieldCheck, Car } from "lucide-react";
+import { ArrowLeftRight, LayoutDashboard, Menu, Plus, SearchCheck, UserCircle2, Tag, Car } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { HomeLink, START_PATH } from "@/components/HomeLink";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,6 @@ const PUBLIC_NAV: Item[] = [
   { to: START_PATH, label: "Value a car", icon: Car },
   { to: "/check", label: "Check an advert", icon: SearchCheck },
   { to: "/pricing", label: "Pricing", icon: Tag },
-  { to: "/accuracy", label: "Accuracy", icon: ShieldCheck },
 ];
 
 const USER_NAV: Item[] = [

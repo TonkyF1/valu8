@@ -76,6 +76,7 @@ const App = () => (
             {/* Unprotected: guests can get a full valuation without an account (capped per day server-side). */}
             <Route path="/valuation/new" element={<StartGate><NewValuation /></StartGate>} />
             <Route path="/buyer" element={<Navigate to="/check" replace />} />
+            <Route path="/check-an-advert" element={<Navigate to="/check" replace />} />
             <Route path="/check" element={<Check />} />
             <Route path="/accuracy" element={<Accuracy />} />
             <Route path="/pricing" element={<Pricing />} />

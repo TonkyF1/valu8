@@ -17,9 +17,9 @@ export type RouteMeta = {
 
 export const STATIC_ROUTES: RouteMeta[] = [
   { path: "/", title: "Free Car Valuation UK | Check Used Car Values | Valu8", description: "Buying or selling a used car? Check its estimated value for free using the registration number. Unlock personalised buying and selling insights for £2.99.", priority: "1.0", inSitemap: true },
-  { path: "/valuation/new", title: "New valuation — Valu8", description: "Enter a UK registration to get a free private sale valuation in minutes.", priority: "0.9", inSitemap: true },
+  { path: "/valuation/new", title: "New valuation | Valu8", description: "Enter a UK registration to get a free private sale valuation in minutes.", inSitemap: false, canonicalPath: "/" },
   { path: "/check", title: "Is this used car a fair price? Free advert price checker | Valu8", description: "Enter a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against UK market data.", priority: "0.8", inSitemap: true },
-  { path: "/accuracy", title: "How accurate is Valu8? Predicted vs real sale prices", description: "We compare our car valuations with the prices people actually sell for, and will publish the results once enough owners report a sale.", priority: "0.6", inSitemap: true },
+  { path: "/accuracy", title: "How accurate is Valu8? Predicted vs real sale prices", description: "We compare our car valuations with the prices people actually sell for, and will publish the results once enough owners report a sale.", noindex: true, inSitemap: false },
   { path: "/car-values", title: "Car values by make and model | Valu8", description: "Free valuations for the UK's most popular cars, from the Ford Fiesta to the Tesla Model 3.", priority: "0.8", inSitemap: true },
   { path: "/pricing", title: "Pricing | Valu8", description: "Essentials valuations are free. The Full seller report is a one-off £2.99, no subscription. Pay by card, Apple Pay or Google Pay.", priority: "0.6", inSitemap: true },
   { path: "/about", title: "About Valu8: who we are and how valuations work", description: "Valu8 is an independent UK car valuation service for private sellers and buyers. How our valuations work, and how to get in touch.", priority: "0.4", inSitemap: true },
@@ -35,6 +35,7 @@ export const STATIC_ROUTES: RouteMeta[] = [
   { path: "/compare", title: "Compare cars — Valu8", description: "Compare two of your saved Valu8 car valuations side by side.", noindex: true, inSitemap: false },
   { path: "/bot", title: "Valu8Bot — Valu8", description: "What Valu8Bot is, how it re-checks advert links politely, and how to opt out.", noindex: true, inSitemap: false },
   { path: "/admin", title: "Admin — Valu8", description: "Valu8 administration and service statistics for authorised administrators.", noindex: true, inSitemap: false },
+  { path: "/check-an-advert", title: "Used car advert price check | Valu8", description: "Check whether a UK used car advert's asking price is fair with Valu8's free advert price checker.", noindex: true, inSitemap: false, canonicalPath: "/check" },
   { path: "/buyer", title: "Used car price check for buyers | Valu8", description: "Buying a used car? Check whether the advert's asking price is fair with Valu8's free advert price checker.", noindex: true, inSitemap: false, canonicalPath: "/check" },
   { path: "/unsubscribe", title: "Unsubscribe — Valu8", description: "Stop Valu8 emails with one click. No sign-in needed.", noindex: true, inSitemap: false },
   { path: "/email-answer", title: "Thanks for your answer — Valu8", description: "Your reply to a Valu8 follow-up email has been recorded.", noindex: true, inSitemap: false },
