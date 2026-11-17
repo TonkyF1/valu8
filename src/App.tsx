@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { RouteScrollTop } from "@/components/RouteScrollTop";
+import { StartGate } from "@/components/StartGate";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -73,7 +74,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             {/* Unprotected: guests can get a full valuation without an account (capped per day server-side). */}
-            <Route path="/valuation/new" element={<NewValuation />} />
+            <Route path="/valuation/new" element={<StartGate><NewValuation /></StartGate>} />
             <Route path="/buyer" element={<Navigate to="/check" replace />} />
             <Route path="/check" element={<Check />} />
             <Route path="/accuracy" element={<Accuracy />} />

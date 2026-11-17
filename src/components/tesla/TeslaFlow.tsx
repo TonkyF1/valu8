@@ -1,7 +1,7 @@
 import "@/styles/plate.css";
 import "@/styles/tesla.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { posthog } from "@/lib/posthog";
@@ -17,6 +17,7 @@ import { reportPriceRange } from "../../../supabase/functions/_shared/cheapRange
 import { ElementsCheckout } from "@/components/ReportCheckout";
 import { CheckoutSheet } from "./CheckoutSheet";
 import { closeKeyboard, scrollPageTop } from "@/lib/scrollTop";
+import { HOME_EVENT, depthOf, popAction, pushFor, readFlowSnapshot, saveFlowSnapshot, viewOf, type FlowView } from "@/lib/flowHistory";
 import { LOCKED_ROWS, PREMIUM_CTA, PREMIUM_NAME, PREMIUM_TITLE, includesFor, includesLine } from "./premium";
 import { IntentSwitch } from "@/components/IntentSwitch";
 import { getIntent, saveAskingFor, saveIntentFor, useIntent } from "@/lib/intent";
@@ -114,6 +115,12 @@ export function TeslaFlow() {
   const slotInput = useRef<HTMLInputElement>(null);
   const bulkInput = useRef<HTMLInputElement>(null);
   const slotTarget = useRef<PhotoSlotKey | null>(null);
+  /** Bumped by Back and by a reset, so a lookup or valuation still in flight never pulls the flow forward again. */
+  const epoch = useRef(0);
+  /** A result has been shown for this car (Back to details, then Forward, can show it again). */
+  const refinedOnce = useRef(false);
+  /** Closes the checkout sheet with its slide-out (set while the sheet is open). */
+  const sheetCloseRef = useRef<(() => void) | null>(null);
 
   const bodyKey: BodyKey = useMemo(() => (lookup ? bodyKeyFor(lookup) : "hatchback"), [lookup]);
   // The exact model and generation when we have a render for it, else the body-type render.
@@ -216,7 +223,7 @@ export function TeslaFlow() {
         if (!extra.premiumIntent) setPremiumBusy(true);
         return null;
       }
-      if (!user && status === 401) { navigate(`/valuation/new?reg=${encodeURIComponent(l.registration)}`); return null; }
+      if (!user && status === 401) { navigate(`/valuation/new?reg=${encodeURIComponent(l.registration)}&manual=1`); return null; }
       throw new Error(eb?.error || "We couldn't value this car just now. Please try again.");
     }
     if ((data as any)?.error) throw new Error((data as any).error);
@@ -266,20 +273,23 @@ export function TeslaFlow() {
     setPremiumBusy(premium); setPremiumArmed(false); setLocked(false); setPayErr(null); setUnavailable(false);
     setErr(null); setGuestLimit(null); setStage("looking"); setBand(null); setValuationId(null); setGrade(null); setNeedMileage(false);
     if (turnstileEnabled()) setTsOn(true);
+    const e0 = ++epoch.current;
     let l: Lookup;
     try {
       const { data, error } = await supabase.functions.invoke("lookup-vehicle", { body: { registration: cleaned, ...(premium ? { premiumIntent: true } : {}) } });
       if (error) {
         const { status, body } = await functionErrorBody(error);
-        if (status === 401 && !user) { navigate(`/valuation/new?reg=${encodeURIComponent(cleaned)}`); return; }
+        if (status === 401 && !user) { navigate(`/valuation/new?reg=${encodeURIComponent(cleaned)}&manual=1`); return; }
         if (status === 429 && body?.code === "guest_limit") { setGuestLimit(body.error); setStage("idle"); return; }
         if (body?.code === "lookup_unavailable") throw new Error("Our vehicle lookup is busy right now. Try again in a few minutes, or enter the details by hand.");
         throw new Error(body?.error || "We couldn't find a car with that registration.");
       }
       if ((data as any)?.error) throw new Error((data as any).error);
+      if (epoch.current !== e0) return;
       l = data as Lookup;
       if (!isFoundVehicle(l)) throw new Error("We couldn't find a car with that registration.");
     } catch (e: any) {
+      if (epoch.current !== e0) return;
       track("lookup_fail");
       const m = String(e?.message || "We couldn't find a car with that registration.").trim();
       setErr(/[.!?]$/.test(m) ? m : `${m}.`);
@@ -307,6 +317,7 @@ export function TeslaFlow() {
     track("submitted");
     try {
       const res = await value(l, { mileage: l.lastMileage, variant: v, transmission: gb, premiumIntent: premium }, null);
+      if (epoch.current !== e0) return;
       if (!res) {
         // Daily free limit: the details step now offers the paid report (one Pay button). The page is already at the top.
         setStage("estimate");
@@ -317,6 +328,7 @@ export function TeslaFlow() {
       setStage("estimate");
       // Premium path: no checkout yet. The car lands at the top of the page; the details step (one Pay button) is just below.
     } catch (e: any) {
+      if (epoch.current !== e0) return;
       setErr(e?.message || "We couldn't value this car just now. Please try again.");
       setStage("estimate");
     }
@@ -367,6 +379,8 @@ export function TeslaFlow() {
     track("submitted");
     if (photos.length) track("step_photos");
     const t0 = Date.now();
+    const e0 = ++epoch.current;
+    const live = () => epoch.current === e0;
     try {
       const photoUrls: string[] = []; const labeled: { slot: string; url: string }[] = []; const guestPhotos: { slot: string; dataUrl: string }[] = [];
       for (const p of photos) {
@@ -378,6 +392,7 @@ export function TeslaFlow() {
         photoUrls.push(path); labeled.push({ slot: p.key, url: path });
       }
       const res = await value(lookup, { mileage: miles, variant, transmission: gearbox, mods, notes, photoUrls, photosLabeled: labeled, guestPhotos, refineOf: valuationId, premiumIntent: premium }, valuationId);
+      if (!live()) return;
       if (!res) {
         // Daily limit: fade the loader away, then show the notice by the buttons.
         closeLoader(t0, () => { setStage("estimate"); setTimeout(() => payRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 60); });
@@ -390,6 +405,7 @@ export function TeslaFlow() {
         const wait = Math.max(0, 1600 - (Date.now() - t0));
         setTimeout(() => setRefineDone(true), wait);
         setTimeout(() => {
+          if (!live()) return;
           if (!res.priceable) { closeLoader(0, () => { setStage("estimate"); setPayErr(UNPRICEABLE); }); return; }
           track("offer_click", "premium_premium_path"); posthog.capture?.("Premium Report Click", { where: "locked" });
           setCheckoutOpen(true);
@@ -401,6 +417,7 @@ export function TeslaFlow() {
       const wait = Math.max(0, 1600 - (Date.now() - t0));
       setTimeout(() => setRefineDone(true), wait);
       setTimeout(() => {
+        if (!live()) return;
         applyResult(res.id, res.report, !band, miles, lookup);
         setStage("refined");
         // Under the loader's last frame: the result opens at the top with no visible jump.
@@ -408,6 +425,7 @@ export function TeslaFlow() {
         if (premium) openPremium(premiumBusy ? "premium_path" : "details", res.report, 700);
       }, wait + 1300);
     } catch (e2: any) {
+      if (!live()) return;
       const m = e2?.message || "We couldn't update the valuation. Please try again.";
       closeLoader(t0, () => { setStage("estimate"); if (premium) setPayErr(m); else setErr(m); });
     }
@@ -439,6 +457,10 @@ export function TeslaFlow() {
     setStage("idle"); setLookup(null); setBand(null); setValuationId(null); setGrade(null); setErr(null); setGuestLimit(null);
     setPhotos([]); setMods(""); setNotes(""); setReg(""); setCheckoutOpen(false); setPremiumBusy(false); setGearbox(""); setGearboxGuessed(false);
     setPremiumArmed(false); setLocked(false); setPayErr(null); setLimitKind("free"); setUnavailable(false);
+    epoch.current++; refinedOnce.current = false; sheetCloseRef.current = null; saveFlowSnapshot(null);
+    // Unwind the flow's history entries, so Back from the fresh start leaves the flow rather than replaying it.
+    const d = depthOf(locRef.current.state);
+    if (d > 0) navigate(-d);
     scrollPageTop();
   }
 
@@ -461,11 +483,109 @@ export function TeslaFlow() {
     if (view === "details" && from === "entry") scrollPageTop();
   }, [view]);
 
+  // Browser history. Each forward step (car and details, result, checkout) is one history entry on the same URL,
+  // so the phone's Back button walks back through the flow before it leaves the site. Loader stages never push.
+  const location = useLocation();
+  const navType = useNavigationType();
+  const locRef = useRef(location);
+  locRef.current = location;
+  if (refined) refinedOnce.current = true;
+  const flowView: FlowView = checkoutOpen && valuationId ? "checkout" : view;
+  const here = () => ({ pathname: locRef.current.pathname, search: locRef.current.search });
+
+  useEffect(() => {
+    const st = pushFor(locRef.current.state, flowView);
+    if (st) navigate(here(), { state: st });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flowView]);
+
+  /** Back (or Forward) landed on a flow entry: show that step, keeping what the visitor entered. */
+  function applyHistory(target: FlowView) {
+    const a = popAction(target, {
+      view: flowView, hasLookup: !!lookup, hasResult: refinedOnce.current && !!valuationId && !!band,
+      canCheckout: !!valuationId && !unavailable && (refinedOnce.current || locked),
+    });
+    if (a.kind === "none") return;
+    if (a.kind === "replace") { navigate(here(), { replace: true, state: { ...(locRef.current.state as object | null ?? {}), v8: a.view } }); return; }
+    if (a.kind === "openCheckout") { setCheckoutOpen(true); return; }
+    if (a.kind === "closeCheckout" || (a.kind === "show" && a.closeCheckout)) {
+      if (sheetCloseRef.current) sheetCloseRef.current(); else setCheckoutOpen(false);
+      if (a.kind === "closeCheckout") return;
+    }
+    if (a.kind !== "show") return;
+    epoch.current++;
+    closeKeyboard();
+    setErr(null); setPayErr(null); setLoaderOut(false);
+    if (a.view === "entry") {
+      // Back on the reg card with the plate still in the box.
+      setStage("idle"); setGuestLimit(null); setPremiumArmed(false);
+      if (lookup?.registration) setReg(fmtReg(lookup.registration));
+    } else if (a.view === "details") setStage("estimate");
+    else setStage("refined");
+    scrollPageTop();
+  }
+
+  const lastKey = useRef(location.key);
+  useEffect(() => {
+    if (lastKey.current === location.key) return;
+    lastKey.current = location.key;
+    if (navType === "POP") applyHistory(viewOf(location.state));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+
+  // Coming Back from the report page, or reloading mid-flow: restore the step from this tab's snapshot.
+  useEffect(() => {
+    const target = viewOf(locRef.current.state);
+    if (target === "entry") return;
+    const snap = readFlowSnapshot<any>();
+    if (!snap?.lookup) { navigate(here(), { replace: true, state: { ...(locRef.current.state as object | null ?? {}), v8: "entry" } }); return; }
+    setLookup(snap.lookup); setReg(snap.reg ?? ""); setVariant(snap.variant ?? ""); setMileage(snap.mileage ?? "");
+    setGearbox(snap.gearbox ?? ""); setMods(snap.mods ?? ""); setNotes(snap.notes ?? "");
+    setValuationId(snap.valuationId ?? null); setBand(snap.band ?? null); setGrade(snap.grade ?? null);
+    setUnavailable(!!snap.unavailable); setLocked(!!snap.locked); setPremiumBusy(!!snap.premiumBusy); setNeedMileage(!!snap.needMileage);
+    refinedOnce.current = !!(snap.refined && snap.valuationId && snap.band);
+    const show: FlowView = target !== "details" && refinedOnce.current ? "result" : "details";
+    setStage(show === "result" ? "refined" : "estimate");
+    if (show !== target) navigate(here(), { replace: true, state: { ...(locRef.current.state as object | null ?? {}), v8: show } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!lookup || view === "entry") return;
+    saveFlowSnapshot({ reg, lookup, variant, mileage, gearbox, mods, notes, valuationId, band, grade, unavailable, locked, premiumBusy, needMileage, refined: refinedOnce.current });
+  }, [view, reg, lookup, variant, mileage, gearbox, mods, notes, valuationId, band, grade, unavailable, locked, premiumBusy, needMileage]);
+
+  // The Valu8 logo and "Value a car" on the homepage: back to the start of the flow.
+  const resetRef = useRef(reset);
+  resetRef.current = reset;
+  useEffect(() => {
+    const home = (e: Event) => {
+      const focus = !!(e as CustomEvent<{ focusReg?: boolean }>).detail?.focusReg;
+      resetRef.current();
+      if (focus) setTimeout(() => regInput.current?.focus({ preventScroll: true }), 650);
+    };
+    window.addEventListener(HOME_EVENT, home);
+    return () => window.removeEventListener(HOME_EVENT, home);
+  }, []);
+
+  /** On-screen Back: one step back through the flow (the same as the phone's Back button). */
+  function goBack() {
+    if (depthOf(locRef.current.state) > 0) navigate(-1);
+    else if (flowView === "result") applyHistory("details");
+    else reset();
+  }
+
   return (
     <div className="t8" ref={topRef}>
       <div className="t8-bgglow" aria-hidden />
       {turnstileEnabled() && tsOn && <div style={{ position: "absolute", left: 0, bottom: 0, zIndex: 5 }}><Turnstile key={tsKey} onToken={onToken} action="analyse" /></div>}
       <section className={`t8-hero${hasCar ? "" : " t8-idle"}`} aria-labelledby="t8-h">
+        {hasCar && (
+          <button type="button" className="t8-back" data-testid="flow-back" onClick={goBack} aria-label={refined ? "Back to the details" : "Back to the start"}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3.5L5.5 8L10 12.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            Back
+          </button>
+        )}
         <div className="t8-main">
           <div className="t8-readout">
             {!hasCar ? (
@@ -530,7 +650,7 @@ export function TeslaFlow() {
               </button>
             </div>
             <p className="t8-inc" aria-live="polite">{busyLookup ? "Checking DVLA and MOT records" : premiumArmed ? "Premium Report selected. Enter the reg to continue." : "Buying or Selling, Know the right price"}</p>
-            {err && <p className="t8-err" role="alert">{err} <Link className="t8-link" to="/valuation/new">Enter details by hand</Link></p>}
+            {err && <p className="t8-err" role="alert">{err} <Link className="t8-link" to="/valuation/new?manual=1">Enter details by hand</Link></p>}
             {guestLimit && <GuestLimit message={guestLimit} premium={false} />}
             <p className="t8-note">We don't buy cars</p>
           </form>
@@ -701,9 +821,14 @@ export function TeslaFlow() {
       )}
 
       {checkoutOpen && valuationId && (
-        <CheckoutSheet title={PREMIUM_TITLE} label={`${PREMIUM_NAME} checkout`} onClose={() => setCheckoutOpen(false)}>
-          {(close) => (
-            <ElementsCheckout valuationId={valuationId} email={user?.email || undefined} onPaid={() => navigate(`/valuation/${valuationId}?intent=${getIntent()}`)} onClose={close}
+        <CheckoutSheet title={PREMIUM_TITLE} label={`${PREMIUM_NAME} checkout`} onClose={() => {
+          sheetCloseRef.current = null;
+          setCheckoutOpen(false);
+          // Closed with the X, a tap outside or a swipe: drop the checkout's history entry too.
+          if (viewOf(locRef.current.state) === "checkout") navigate(-1);
+        }}>
+          {(close) => { sheetCloseRef.current = close; return (
+            <ElementsCheckout valuationId={valuationId} email={user?.email || undefined} onPaid={() => navigate(`/valuation/${valuationId}?intent=${getIntent()}`, { replace: viewOf(locRef.current.state) === "checkout" })} onClose={close}
               title={PREMIUM_TITLE} hideHeader
               intro={
                 <>
@@ -728,7 +853,7 @@ export function TeslaFlow() {
                   </div>
                 </>
               } />
-          )}
+          ); }}
         </CheckoutSheet>
       )}
     </div>

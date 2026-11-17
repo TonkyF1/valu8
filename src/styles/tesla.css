@@ -252,3 +252,15 @@
 .t8-solo{animation:t8rise .6s var(--t8-ease) both}
 .t8-solo>.t8-btn{min-height:62px;border-radius:16px;font:600 16px/1.15 Inter,sans-serif;letter-spacing:-.015em}
 @media (prefers-reduced-motion:reduce){.t8-solo{animation:none}}
+
+/* Flow Back control (car and details, result): quiet, top-left under the nav, same as the phone's Back. */
+.t8-back{position:absolute;top:10px;left:max(14px,env(safe-area-inset-left));z-index:6;display:inline-flex;align-items:center;gap:4px;
+  min-height:40px;padding:0 12px 0 8px;border-radius:999px;border:1px solid rgba(247,245,243,.12);background:rgba(17,17,17,.55);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:#ADADAD;font:500 13px/1 Inter,system-ui,sans-serif;letter-spacing:.01em;
+  cursor:pointer;opacity:0;transform:translate3d(-6px,0,0);animation:t8-back-in .5s cubic-bezier(.22,1,.36,1) .15s forwards;
+  transition:color .2s ease,border-color .2s ease,background .2s ease}
+.t8-back:hover,.t8-back:focus-visible{color:#F7F5F3;border-color:rgba(0,214,200,.45)}
+.t8-back:focus-visible{outline:2px solid #00D6C8;outline-offset:2px}
+.t8-back:active{transform:scale(.97)}
+@keyframes t8-back-in{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.t8-back{animation:none;opacity:1;transform:none}}

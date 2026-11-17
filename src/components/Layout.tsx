@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeftRight, LayoutDashboard, Menu, Plus, SearchCheck, UserCircle2, Tag, ShieldCheck, Car } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { HomeLink, START_PATH } from "@/components/HomeLink";
 import { cn } from "@/lib/utils";
 
 /** Former top strip. Kept as a no-op export so existing page imports keep working;
@@ -16,7 +17,7 @@ export function TestModeBanner() {
 type Item = { to: string; label: string; icon: typeof Car };
 
 const PUBLIC_NAV: Item[] = [
-  { to: "/valuation/new", label: "Value a car", icon: Car },
+  { to: START_PATH, label: "Value a car", icon: Car },
   { to: "/check", label: "Check an advert", icon: SearchCheck },
   { to: "/pricing", label: "Pricing", icon: Tag },
   { to: "/accuracy", label: "Accuracy", icon: ShieldCheck },
@@ -34,7 +35,7 @@ export function Header() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const items = user ? USER_NAV : PUBLIC_NAV;
-  const onNew = pathname.startsWith("/valuation/new");
+  const onNew = pathname === START_PATH || pathname.startsWith("/valuation/new");
 
   const linkCls = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -47,12 +48,12 @@ export function Header() {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground">Skip to content</a>
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border/60">
         <div className="container flex h-16 items-center gap-4">
-          <Link to={user ? "/dashboard" : "/"} className="flex items-center shrink-0" aria-label="Valu8 home">
+          <HomeLink className="flex items-center shrink-0" aria-label="Valu8 home" data-testid="logo-home">
             <Logo />
-          </Link>
+          </HomeLink>
 
           <nav aria-label="Main" className="hidden md:flex items-center gap-1 ml-4">
-            {items.filter((i) => user || i.to !== "/valuation/new").map((i) => (
+            {items.filter((i) => user || i.to !== START_PATH).map((i) => (
               <RouterNavLink key={i.to} to={i.to} className={linkCls}>{i.label}</RouterNavLink>
             ))}
           </nav>
@@ -62,7 +63,7 @@ export function Header() {
               <>
                 {!onNew && (
                   <Button asChild variant="hero" size="sm" className="hidden sm:inline-flex">
-                    <Link to="/valuation/new"><Plus className="h-4 w-4" aria-hidden /> New valuation</Link>
+                    <HomeLink focusReg><Plus className="h-4 w-4" aria-hidden /> New valuation</HomeLink>
                   </Button>
                 )}
                 <Button asChild variant="ghost" size="icon" className="hidden md:inline-flex" aria-label="Profile">
@@ -72,7 +73,7 @@ export function Header() {
             ) : (
               <>
                 <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link to="/auth">Sign in</Link></Button>
-                <Button asChild variant="hero" size="sm"><Link to="/valuation/new">Value a car</Link></Button>
+                <Button asChild variant="hero" size="sm"><HomeLink focusReg data-testid="nav-value-a-car">Value a car</HomeLink></Button>
               </>
             )}
 
@@ -84,15 +85,19 @@ export function Header() {
               </SheetTrigger>
               <SheetContent side="right" className="w-[85vw] max-w-xs flex flex-col gap-0 p-0">
                 <SheetHeader className="px-5 pt-5 pb-4 border-b border-border/60 text-left">
-                  <SheetTitle><Logo size="sm" /></SheetTitle>
+                  <SheetTitle><HomeLink aria-label="Valu8 home" onClick={() => setOpen(false)}><Logo size="sm" /></HomeLink></SheetTitle>
                 </SheetHeader>
                 <nav aria-label="Mobile" className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
                   {user && (
-                    <Link to="/valuation/new" onClick={() => setOpen(false)} className="mb-3 flex items-center justify-center gap-2 rounded-lg bg-gradient-primary px-4 py-3 text-sm font-semibold text-primary-foreground">
+                    <HomeLink focusReg onClick={() => setOpen(false)} className="mb-3 flex items-center justify-center gap-2 rounded-lg bg-gradient-primary px-4 py-3 text-sm font-semibold text-primary-foreground">
                       <Plus className="h-4 w-4" aria-hidden /> New valuation
-                    </Link>
+                    </HomeLink>
                   )}
-                  {items.map(({ to, label, icon: Icon }) => (
+                  {items.map(({ to, label, icon: Icon }) => to === START_PATH ? (
+                    <HomeLink key={to} focusReg onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-[15px] font-medium transition-colors text-muted-foreground hover:bg-muted/50 hover:text-foreground">
+                      <Icon className="h-4 w-4 text-primary" aria-hidden /> {label}
+                    </HomeLink>
+                  ) : (
                     <RouterNavLink
                       key={to}
                       to={to}
