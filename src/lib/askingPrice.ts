@@ -1,4 +1,5 @@
 import { coherentPricing, type CoherentPricing } from "../../supabase/functions/_shared/coherentPricing";
+import { reportPriceRange, formatPriceRange, type PriceRange } from "../../supabase/functions/_shared/cheapRange";
 
 /**
  * Suggested asking range shown on the report. Always sits ABOVE the realistic
@@ -47,4 +48,17 @@ export function normaliseReportPricing(r: any): CoherentPricing {
   const privateHigh = Math.max(cp.privateHigh, cp.privateSale);
   const tradeIn = cp.tradeIn >= privateLow ? Math.max(0, privateLow - 50) : cp.tradeIn;
   return { ...cp, privateLow, privateHigh, tradeIn, scaleLow: Math.min(cp.scaleLow, tradeIn) };
+}
+
+/**
+ * The one private-sale range every report surface prints (Report page, Premium report, both PDFs): the headline range
+ * from cheapRange.reportPriceRange when it applies (under £5,000 or 16y+), else the normalised comps band.
+ * `text` uses the Report page's format, e.g. "£2,200 – £3,700".
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function displayPrivateRange(r: any): { low: number; high: number; mid: number; headline: PriceRange | null; text: string } {
+  const p = normaliseReportPricing(r);
+  const headline = reportPriceRange(r, p.privateSale);
+  const low = headline?.low ?? p.privateLow, high = headline?.high ?? p.privateHigh;
+  return { low, high, mid: p.privateSale, headline, text: formatPriceRange({ low, high, mid: p.privateSale, rule: "" }, " – ") };
 }

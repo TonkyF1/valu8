@@ -3,9 +3,9 @@ import { FitPrice } from "@/components/FitPrice";
 import type { ValuationReport } from "@/lib/valuation";
 import type { Intent } from "@/lib/intent";
 import { askingFor, saveAskingFor } from "@/lib/intent";
-import { normaliseReportPricing } from "@/lib/askingPrice";
+import { normaliseReportPricing, displayPrivateRange } from "@/lib/askingPrice";
 import { buyerGuide, compareAsking, diffLine, parseAsking, VERDICT_COPY, buyerChecks } from "@/lib/buyerGuide";
-import { reportPriceRange, rangeReasonCopy } from "../../supabase/functions/_shared/cheapRange";
+import { rangeReasonCopy } from "../../supabase/functions/_shared/cheapRange";
 
 const gbp = (n?: number) => (typeof n === "number" && isFinite(n) ? `£${Math.round(n).toLocaleString("en-GB")}` : "–");
 
@@ -13,8 +13,10 @@ const gbp = (n?: number) => (typeof n === "number" && isFinite(n) ? `£${Math.ro
 export function PremiumReport({ r, registration, intent = "selling", valuationId }: { r: ValuationReport; registration?: string | null; intent?: Intent; valuationId?: string }) {
   if (intent === "buying") return <BuyerPremiumReport r={r} registration={registration} valuationId={valuationId} />;
   const v = r.values;
-  const pr = reportPriceRange(r, v.privateSale);
-  const lo = r.valueRange?.privateSaleLow, hi = r.valueRange?.privateSaleHigh;
+  // One range everywhere: the Report page's headline range when it applies, else the comps band (see displayPrivateRange).
+  const range = displayPrivateRange(r);
+  const pr = range.headline;
+  const conf = r.marketConfidence ? ` · ${r.marketConfidence} confidence` : "";
   const span = Math.max(1, v.dealerRetail - v.dealerTradeIn);
   const pos = Math.min(100, Math.max(0, ((v.privateSale - v.dealerTradeIn) / span) * 100));
   const tiers = [
@@ -31,8 +33,10 @@ export function PremiumReport({ r, registration, intent = "selling", valuationId
       </div>
       <div className="bg-[#111111] text-white px-5 py-6">
         <p className="text-xs uppercase tracking-widest opacity-60">Private sale value</p>
-        <FitPrice text={gbp(v.privateSale)} align="left" allowSplit={false} floorPx={18} boxClassName="mt-1" className="text-4xl font-bold" style={{ display: "inline-block" }} testId="pr-headline" />
-        {lo && hi ? <p className="text-sm opacity-70 mt-1">Range {gbp(lo)} – {gbp(hi)}{r.marketConfidence ? ` · ${r.marketConfidence} confidence` : ""}</p> : null}
+        <FitPrice text={pr ? range.text : gbp(v.privateSale)} align="left" allowSplit={false} floorPx={18} boxClassName="mt-1" className="text-4xl font-bold" style={{ display: "inline-block" }} testId="pr-headline" />
+        {pr
+          ? <p className="text-sm opacity-70 mt-1" data-testid="pr-range">Realistic private sale {gbp(range.mid)}{conf}</p>
+          : range.low > 0 && range.high > 0 ? <p className="text-sm opacity-70 mt-1" data-testid="pr-range">Range {range.text}{conf}</p> : null}
         {pr ? <p className="text-sm opacity-70 mt-1" data-testid="pr-range-why">{rangeReasonCopy(pr)}</p> : null}
         <div className="mt-4 h-1.5 rounded-full bg-white/15 relative">
           <div className="absolute -top-1 h-3.5 w-3.5 rounded-full bg-[#00D6C8]" style={{ left: `calc(${pos}% - 7px)` }} />
@@ -104,7 +108,7 @@ function BuyerPremiumReport({ r, registration, valuationId }: { r: ValuationRepo
       <div className="bg-[#111111] text-white px-5 py-6">
         <p className="text-xs uppercase tracking-widest opacity-60">Estimated fair price · private sale</p>
         <FitPrice text={gbp(g.fairPrice)} align="left" allowSplit={false} floorPx={18} boxClassName="mt-1" className="text-[44px] leading-none tracking-tight" style={{ display: "inline-block", fontFamily: "Sora, Inter, sans-serif", fontWeight: 200 }} testId="pr-fair" />
-        <p className="text-sm opacity-70 mt-2">Estimated range {gbp(g.privateLow)} – {gbp(g.privateHigh)}{r.marketConfidence ? ` · ${r.marketConfidence} confidence` : ""}</p>
+        <p className="text-sm opacity-70 mt-2" data-testid="pr-buy-range">Estimated range {displayPrivateRange(r).text}{r.marketConfidence ? ` · ${r.marketConfidence} confidence` : ""}</p>
         <div className="mt-5 grid grid-cols-2 gap-3">
           <div className="min-w-0 rounded-xl p-3" style={{ background: "rgba(0,214,200,.12)", border: "1px solid rgba(0,214,200,.4)" }}>
             <p className="text-[11px] uppercase tracking-wide text-[#1AFFF0]">Suggested opening offer</p>

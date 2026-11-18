@@ -9,6 +9,7 @@
 import { corsHeaders, json, adminClient, checkLimit } from "../_shared/guard.ts";
 import { sendEmail, makeUnsubToken, unsubUrl } from "../_shared/email.ts";
 import { buildReportEmail, buildFollowupEmail } from "../_shared/emailTemplates.ts";
+import { reportEntitlement } from "../_shared/entitlement.ts";
 
 const DAY = 86400_000;
 const MAX_ASKS = 3;
@@ -33,7 +34,9 @@ async function sendReport(kind: "valuation" | "advert", item: any, to: string, u
   if (claim) return false; // already sent (or being sent)
   const token = await makeUnsubToken({ e: to, u: uid });
   const unsubscribe = unsubUrl(token);
-  const m = buildReportEmail(kind, item, unsubscribe);
+  // Part-ex and dealer figures are £2.99-only: same check as report-entitlement (paid purchase or redeemed referral).
+  const entitled = kind === "valuation" && (await reportEntitlement(admin, String(item.id))).paid;
+  const m = buildReportEmail(kind, item, unsubscribe, entitled);
   const r = await sendEmail({ to, subject: m.subject, html: m.html, text: m.text, unsubscribe, idempotencyKey: `${template}-${item.id}` });
   if (!r.ok) { await admin.from("email_log").delete().eq("template", template).eq("item_id", item.id); return false; }
   if (r.id) await admin.from("email_log").update({ provider_id: r.id }).eq("template", template).eq("item_id", item.id);
