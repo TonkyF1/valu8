@@ -3,7 +3,7 @@
 // figures the report page shows (normaliseReportPricing mirror); nothing here changes pricing.
 import { renderEmail, makeAnswerToken, answerUrl, gbp, miles, ukDate, SITE } from "./email.ts";
 import { coherentPricing } from "./coherentPricing.ts";
-import { cheapPriceRange, reportPriceRange, formatPriceRange } from "./cheapRange.ts";
+import { cheapPriceRange, reportPriceRange, formatPriceRange, rangeReasonCopy } from "./cheapRange.ts";
 
 /** £2.99 Full Report link for valuation emails, tagged so sales from email show up in the funnel. */
 export const reportOfferUrl = (id: string, campaign: "report_ready" | "followup") =>
@@ -69,7 +69,7 @@ export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubs
       ...(pr && pr.tradeIn > 0 ? [{ label: "Part-ex", value: gbp(pr.tradeIn) }] : []),
       ...(pr && pr.retail > 0 ? [{ label: "Dealer", value: gbp(pr.retail) }] : []),
     ];
-    // Under £5,000 (our estimate) the headline is a range, as on the report page (see cheapRange.ts).
+    // Headline is a range under £5,000 or for cars 16y+ (see cheapRange.ts). Sub-line matches the reason.
     const cheap = pr ? reportPriceRange(r, price) : cheapPriceRange(price);
     const { html, text } = renderEmail({
       preview: cheap
@@ -78,7 +78,7 @@ export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubs
       heading: `Your report for ${name} is ready`,
       carLine: carLine(item),
       price: cheap
-        ? { label: "Realistic private sale", value: formatPriceRange(cheap, " – "), sub: "Prices vary more under £5,000, so we show a range" }
+        ? { label: "Realistic private sale", value: formatPriceRange(cheap, " – "), sub: rangeReasonCopy(cheap) }
         : { label: "Realistic private sale", value: gbp(price), sub: low > 0 && high > 0 ? `Range ${gbp(low)} – ${gbp(high)}` : null },
       stats,
       facts: [motFact(r, item.mot_expiry), conditionFact(r, item.photo_urls)].filter(Boolean) as string[],

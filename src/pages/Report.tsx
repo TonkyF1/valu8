@@ -6,7 +6,7 @@ import { REPORT_CTA, ReportCheckout, fetchReportPaid, reportOfferLine } from "@/
 import { metaPurchaseOnce } from "@/lib/metaPixel";
 import { sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
 import { hasPhotos, normaliseReportPricing } from "@/lib/askingPrice";
-import { reportPriceRange, headlinePrivateText } from "../../supabase/functions/_shared/cheapRange";
+import { reportPriceRange, headlinePrivateText, rangeReasonCopy } from "../../supabase/functions/_shared/cheapRange";
 import { fixableUpside as computeFixableUpside } from "../../supabase/functions/_shared/photo-insights";
 import { marketConfidenceTier } from "../../supabase/functions/_shared/pricing";
 import { shareLink } from "@/lib/retention";
@@ -862,7 +862,7 @@ export default function Report() {
               <div className="relative">
                 {/* Headline price — bigger, tighter, more Apple */}
                 {(() => {
-                  // Under £5,000 (our estimate) the headline is a range: single figures are much less precise there.
+                  // Headline is a range under £5,000 or for cars 16y+ (see cheapRange.ts). Copy matches the reason.
                   const pr = reportPriceRange(r, normaliseReportPricing(r).privateSale);
                   return pr ? (
                     <>
@@ -875,7 +875,7 @@ export default function Report() {
                         </FitPrice>
                       </div>
                       <p className="text-[12px] text-muted-foreground mt-2 max-w-[44ch]">
-                        Our estimated range for a realistic private sale in today's UK market. Prices vary more for cars under £5,000, so we show a range rather than one figure.
+                        Our estimated range for a realistic private sale in today's UK market. {rangeReasonCopy(pr)}
                       </p>
                     </>
                   ) : (

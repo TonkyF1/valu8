@@ -73,8 +73,21 @@ const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
 export function formatPriceRange(r: PriceRange, sep = "–"): string {
   return `${gbp(r.low)}${sep}${gbp(r.high)}`;
 }
-/** Headline private figure as text: a range below £5,000, else the single £ figure. */
+/** Headline private figure as text: a range when cheapPriceRange applies (under £5,000 or 16y+), else the single £ figure. */
 export function headlinePrivateText(privateSale: number, report?: any, sep = "–"): string {
   const r = report ? reportPriceRange(report, privateSale) : cheapPriceRange(privateSale);
   return r ? formatPriceRange(r, sep) : gbp(privateSale);
+}
+
+/** Short reason shown under a headline range. Matches the rule that produced the range. Not an accuracy claim. */
+export const RANGE_COPY = {
+  cheap: "Prices vary more for cars under £5,000, so we show a range rather than one figure.",
+  old: "Prices for older and classic cars vary widely, so we show a range.",
+  fallback: "Prices for this car vary, so we show a range.",
+} as const;
+
+export function rangeReasonCopy(range: PriceRange): string {
+  if (range.rule === OLD_RANGE.RULE) return RANGE_COPY.old;
+  if (range.rule === CHEAP_RANGE.RULE || range.mid < CHEAP_RANGE.THRESHOLD) return RANGE_COPY.cheap;
+  return RANGE_COPY.fallback;
 }
