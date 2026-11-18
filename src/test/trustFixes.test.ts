@@ -61,8 +61,11 @@ describe("buyer signpost", () => {
 describe("headline and old advert-check URL", () => {
   it("the headline search engines see matches the visible hero", () => {
     const home = staticPageBodyHtml("/") ?? "";
-    expect(home).toContain("Know its value. Make the right move.");
-    expect(flow).toContain("Know its value.<br /><em>Make the right move.</em>");
+    expect(home).toContain("<h1>Free car valuation by registration</h1>");
+    expect(flow).toContain('<h1 id="t8-h" className="t8-h1 t8-h1-bs">Free car valuation<br /><em>by registration.</em></h1>');
+    // The brand line stays visible, now in the intro under the H1 (same text in the build HTML and the hero).
+    expect(home).toContain("Know its value. Make the right move. Get a free UK car valuation");
+    expect(flow).toContain("Know its value. Make the right move. Get a free UK car valuation");
     const meta = getRouteMeta("/");
     expect(indexHtml).toContain(`<title>${meta.title}</title>`);
     expect(indexHtml).not.toContain("Instant Car Valuation for UK Private Sellers");
@@ -70,7 +73,8 @@ describe("headline and old advert-check URL", () => {
   it("/check-an-advert goes to the advert checker", () => {
     expect(app).toContain('<Route path="/check-an-advert" element={<Navigate to="/check" replace />} />');
     expect(getRouteMeta("/check-an-advert")).toMatchObject({ canonicalPath: "/check", noindex: true, inSitemap: false });
-    expect(read("vite.config.ts")).toContain(`meta.path === "/check-an-advert" ? { ...extra, headHtml: '<meta http-equiv="refresh" content="0; url=/check" />' } : extra`);
+    // The refresh moved from vite.config.ts into scripts/routePages.ts (buildRouteHtml), which the build uses.
+    expect(read("scripts/routePages.ts")).toContain(`if (meta.path === "/check-an-advert") return routeHtml(shell, meta, false, { ...extra, headHtml: '<meta http-equiv="refresh" content="0; url=/check" />' });`);
   });
   it("new copy keeps the copy rules: no em dashes", () => {
     for (const s of [flow.match(/Free guest valuations[^<]*/)![0], "Buying? Check an advert", staticPageBodyHtml("/") ?? ""]) expect(s).not.toContain("\u2014");

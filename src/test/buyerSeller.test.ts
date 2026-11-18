@@ -109,7 +109,9 @@ describe("buyer and seller copy", () => {
   });
   it("homepage and SEO wording", () => {
     const flow = read("src/components/tesla/TeslaFlow.tsx");
-    expect(flow).toContain("Know its value.<br /><em>Make the right move.</em>");
+    // SEO (Nov 2026): the H1 carries the search terms; the brand line is kept in the intro under it.
+    expect(flow).toContain("Free car valuation<br /><em>by registration.</em>");
+    expect(flow).toContain("Know its value. Make the right move.");
     expect(flow).toContain("Buying or Selling, Know the right price");
     expect(flow).not.toMatch(/t8-sub[^"]*">Buying or selling/);
     expect(flow).not.toContain("Coming soon");

@@ -1,8 +1,10 @@
 import { useEffect, type MouseEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
-import { findGuide, guideBodyHtml, guideFaqJsonLd, type Guide as GuideData } from "@/data/guides";
+import { GUIDE_ARTICLE_JSONLD_ID, GUIDE_POPULAR_MODELS, findGuide, guideArticleJsonLd, guideBodyHtml, guideFaqJsonLd, type Guide as GuideData } from "@/data/guides";
+import { POPULAR_MODELS_H2, popularModelLabel, popularValueModels } from "@/data/popularModels";
+import { valueModelPath } from "@/data/valueModels";
 import { useSeo } from "@/lib/seo";
 import { getRouteMeta } from "@/data/routeMeta";
 import NotFound from "./NotFound";
@@ -33,7 +35,18 @@ function GuideArticle({ guide }: { guide: GuideData }) {
       document.head.appendChild(el);
     }
     el.textContent = guideFaqJsonLd(guide);
-    return () => { document.getElementById("guide-faq-jsonld")?.remove(); };
+    let art = document.getElementById(GUIDE_ARTICLE_JSONLD_ID) as HTMLScriptElement | null;
+    if (!art) {
+      art = document.createElement("script");
+      art.type = "application/ld+json";
+      art.id = GUIDE_ARTICLE_JSONLD_ID;
+      document.head.appendChild(art);
+    }
+    art.textContent = guideArticleJsonLd(guide);
+    return () => {
+      document.getElementById("guide-faq-jsonld")?.remove();
+      document.getElementById(GUIDE_ARTICLE_JSONLD_ID)?.remove();
+    };
   }, [guide]);
 
   const onClick = (e: MouseEvent<HTMLElement>) => {
@@ -51,6 +64,17 @@ function GuideArticle({ guide }: { guide: GuideData }) {
       <Header />
       <main id="main" className="flex-1 container max-w-3xl py-10 md:py-14">
         <article className={ARTICLE_CLASSES} onClick={onClick} dangerouslySetInnerHTML={{ __html: guideBodyHtml(guide.markdown) }} />
+        <section className="mt-12 border-t border-border pt-8" aria-labelledby="popular-models">
+          <h2 id="popular-models" className="text-xl font-semibold mb-3">{POPULAR_MODELS_H2}</h2>
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {popularValueModels(GUIDE_POPULAR_MODELS).map((v) => (
+              <li key={v.slug}>
+                <Link to={valueModelPath(v)} className="inline-flex min-h-[44px] items-center rounded-full border border-border px-4 hover:border-primary/50">{popularModelLabel(v)}</Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-sm"><Link to="/value" className="text-primary hover:underline">See typical prices for all models</Link></p>
+        </section>
       </main>
       <Footer />
     </div>

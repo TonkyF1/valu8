@@ -4,7 +4,8 @@ import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { AccuracyDisclaimer } from "@/components/AccuracyDisclaimer";
 import { useAuth } from "@/contexts/AuthContext";
-import { CAR_MODELS } from "@/data/carModels";
+import { POPULAR_MODELS_H2, popularModelLabel, popularValueModels } from "@/data/popularModels";
+import { valueModelPath } from "@/data/valueModels";
 import { useSeo } from "@/lib/seo";
 import { TeslaFlow } from "@/components/tesla/TeslaFlow";
 import { getRouteMeta } from "@/data/routeMeta";
@@ -73,14 +74,15 @@ export default function Landing() {
         </div>
 
         <section className="container max-w-3xl pb-12 pt-4" aria-labelledby="models-h">
-          <h2 id="models-h" className="text-base font-semibold text-center mb-4">Popular valuations</h2>
+          <h2 id="models-h" className="text-base font-semibold text-center mb-4">{POPULAR_MODELS_H2}</h2>
           <ul className="flex flex-wrap justify-center gap-2 text-sm">
-            {CAR_MODELS.slice(0, 16).map((m) => (
-              <li key={m.makeSlug + m.slug}>
-                <Link to={`/car-values/${m.makeSlug}/${m.slug}`} className="inline-flex min-h-[44px] items-center rounded-full border border-border px-4 hover:border-primary/50">{m.make} {m.model}</Link>
+            {popularValueModels().map((v) => (
+              <li key={v.slug}>
+                <Link to={valueModelPath(v)} className="inline-flex min-h-[44px] items-center rounded-full border border-border px-4 hover:border-primary/50">{popularModelLabel(v)}</Link>
               </li>
             ))}
           </ul>
+          <p className="mt-4 text-center text-sm"><Link to="/value" className="text-primary hover:underline">See typical prices for all models</Link></p>
         </section>
 
         <section className="container max-w-3xl pb-28 sm:pb-8">

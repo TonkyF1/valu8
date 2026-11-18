@@ -1,5 +1,6 @@
 // Guide pages: raw markdown sources + a tiny dependency-free parser/renderer.
 // Node-safe (no React/DOM/import.meta): imported by vite.config.ts for prerendering.
+import { popularModelsHtml } from "./popularModels";
 
 export const GUIDE_SOURCES: string[] = [
   `---
@@ -1034,6 +1035,27 @@ export function guideFaqJsonLd(guide: Guide): string {
   }).replace(/</g, "\\u003c");
 }
 
+/** Article JSON-LD for a guide (alongside its FAQPage). No dates: the guide sources don't record them yet. */
+export function guideArticleJsonLd(guide: Guide): string {
+  const url = `https://valu8.uk${guide.path}`;
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: guide.h1,
+    description: guide.description,
+    inLanguage: "en-GB",
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    url,
+    author: { "@type": "Organization", name: "Valu8", url: "https://valu8.uk/" },
+    publisher: { "@type": "Organization", name: "Valu8", url: "https://valu8.uk/", logo: { "@type": "ImageObject", url: "https://valu8.uk/logo-v2.png" } },
+  }).replace(/</g, "\\u003c");
+}
+
+export const GUIDE_ARTICLE_JSONLD_ID = "guide-article-jsonld";
+
+/** Number of popular model links shown under each guide. */
+export const GUIDE_POPULAR_MODELS = 8;
+
 export const GUIDES_INDEX_H1 = "Car valuation, buying and selling guides";
 
 export function guidesIndexBodyHtml(): string {
@@ -1042,5 +1064,5 @@ export function guidesIndexBodyHtml(): string {
 }
 
 export function guideArticleHtml(guide: Guide): string {
-  return `<main id="main"><article>${guideBodyHtml(guide.markdown)}</article></main>`;
+  return `<main id="main"><article>${guideBodyHtml(guide.markdown)}</article>${popularModelsHtml(GUIDE_POPULAR_MODELS)}</main>`;
 }

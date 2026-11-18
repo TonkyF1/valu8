@@ -1,5 +1,6 @@
 import { embedInfoBodyHtml } from "./embedContent";
 import { escapeHtml } from "../../scripts/routeHtml";
+import { popularModelsHtml } from "./popularModels";
 
 /** Render non-interactive page copy into the build-time HTML root. React replaces it on mount. */
 function page(title: string, intro: string, sections: [string, string][]): string {
@@ -49,9 +50,13 @@ const legalSections: Record<string, [string, string][]> = {
   ],
 };
 
+/** Homepage hero: the H1 carries the search terms; the brand line moves into the intro. Mirrored in TeslaFlow.tsx. */
+export const HOMEPAGE_H1 = "Free car valuation by registration";
+export const HOMEPAGE_INTRO = "Know its value. Make the right move. Get a free UK car valuation from the number plate in seconds, then unlock personalised insights to help you negotiate with confidence.";
+
 export function staticPageBodyHtml(path: string): string | undefined {
   if (path === "/") {
-    return page("Know its value. Make the right move.", "Get a free valuation from the number plate in seconds, then unlock personalised insights to help you negotiate with confidence.", [
+    return page(HOMEPAGE_H1, HOMEPAGE_INTRO, [
       ["We don't buy cars", "We don't buy cars, so we've no reason to nudge your number up or down. Independent: we don't buy, sell or broker cars. The free valuation gives a private-sale estimate, and the £2.99 Full report adds part-ex and dealer prices. Official DVSA MOT history and mileage records. Optional photo condition score. Free guest valuations are limited each day; a free account gives you more."],
       ["Free UK car valuation", "Buying or selling, get a free valuation from the number plate. Your report includes official DVSA MOT data where available. <a href=\"/valuation/new\">Start your free valuation</a> or <a href=\"/check\">check if a used car advert is fairly priced</a>."],
       ["Buying a used car?", "<a href=\"/check\">Check an advert</a>: copy in the details from any UK car advert to see how the asking price compares with our estimated ranges."],
@@ -59,8 +64,8 @@ export function staticPageBodyHtml(path: string): string | undefined {
       ["What's in every report", "A market-based private-sale estimate, with part-exchange and dealer estimates in the £2.99 Full report; optional photo condition checks; official DVSA MOT history; mileage consistency information; a GOV.UK recall-check link; and estimated tax and clean-air-zone information with links to official checkers."],
       ["Private sale, part-exchange or dealer price", "The £2.99 Full report shows the different price types so you can choose a selling route and set an asking price with room to negotiate. All figures are estimates, not guaranteed offers."],
       ["Questions", "Essentials is free. The optional Full seller report is a one-off £2.99 with no subscription. Photos are optional. Valuations remain private unless you share a report link."],
-      ["Popular car valuations", "Explore <a href=\"/car-values\">free car values by make and model</a> or read our <a href=\"/guides\">UK car valuation, buying and selling guides</a>."],
-    ]);
+      ["Popular car valuations", "Explore <a href=\"/value\">typical UK asking prices by make and model</a> or read our <a href=\"/guides\">UK car valuation, buying and selling guides</a>."],
+    ]).replace(/<\/main>$/, popularModelsHtml() + "</main>");
   }
   const simple: Record<string, [string, string, [string, string][]]> = {
     "/valuation/new": ["Find out what your car is worth", "Enter your UK registration to start a free private-sale valuation.", [["Start with your registration", "We look up the vehicle record and MOT history, then you can confirm details, mileage, service history and photos. <a href=\"/car-values\">Browse car values by model</a>."], ["Free valuation", "Essentials valuations are free, with a daily limit for guests. An optional Full seller report is available for a one-off £2.99. Valuation figures are estimates, not guaranteed offers."]]],

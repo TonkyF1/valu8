@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { CAR_MODELS, slugify } from "@/data/carModels";
+import { carHref } from "@/data/carValueContent";
 import { SITE_URL } from "@/data/routeMeta";
 import { posthog } from "@/lib/posthog";
 import { toast } from "sonner";
@@ -11,16 +12,17 @@ import { toast } from "sonner";
 export type SharePlatform = "whatsapp" | "x" | "facebook" | "copy" | "native";
 
 /**
- * Public link for a shared result. Points at the model's /car-values page (static
+ * Public link for a shared result. Points at the model's /value page (or its /car-values page when
+ * there's no /value page) (static
  * title, description and OG image, so WhatsApp/X/Facebook show a proper preview) or
  * the home page. Never contains the registration, the report id or any personal data.
  */
 export function buildShareUrl(opts: { make?: string | null; model?: string | null; platform: SharePlatform; campaign: string; ref?: string | null; path?: string }): string {
   const mk = slugify(opts.make ?? "");
   const md = slugify(opts.model ?? "");
-  // "FIESTA ZETEC" -> /car-values/ford/fiesta
+  // "FIESTA ZETEC" -> /value/ford-fiesta
   const car = mk && md ? CAR_MODELS.find((c) => c.makeSlug === mk && (md === c.slug || md.startsWith(`${c.slug}-`))) : undefined;
-  const path = opts.path ?? (car ? `/car-values/${car.makeSlug}/${car.slug}` : "/");
+  const path = opts.path ?? (car ? carHref(car) : "/");
   const q = new URLSearchParams({ utm_source: opts.platform, utm_medium: "share", utm_campaign: opts.campaign });
   if (opts.ref && /^[a-z0-9]{6,16}$/.test(opts.ref)) q.set("ref", opts.ref);
   return `${SITE_URL}${path}?${q.toString()}`;
