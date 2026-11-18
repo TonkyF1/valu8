@@ -7,9 +7,17 @@ import { getRouteMeta } from "@/data/routeMeta";
 import { CAR_VALUES_H1, VALUE_HUB_H2, VALUE_HUB_INTRO, carHref } from "@/data/carValueContent";
 import { VALUE_MODELS, valueModelPath, valueModelsByMake } from "@/data/valueModels";
 import { modelDisplayName } from "@/data/modelDisplayName";
+import { useEffect } from "react";
+import { HUB_BREADCRUMB_JSONLD_ID, hubBreadcrumbJsonLd } from "@/data/valuePages";
 
 export default function CarValuesIndex() {
   useSeo(getRouteMeta("/car-values"));
+  useEffect(() => {
+    let el = document.getElementById(HUB_BREADCRUMB_JSONLD_ID) as HTMLScriptElement | null;
+    if (!el) { el = document.createElement("script"); el.type = "application/ld+json"; el.id = HUB_BREADCRUMB_JSONLD_ID; document.head.appendChild(el); }
+    el.textContent = hubBreadcrumbJsonLd("Car values by make and model", "/car-values");
+    return () => { document.getElementById(HUB_BREADCRUMB_JSONLD_ID)?.remove(); };
+  }, []);
   const makes = [...new Set(CAR_MODELS.map((m) => m.make))].sort();
   return (
     <div className="min-h-screen flex flex-col">

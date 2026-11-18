@@ -9,6 +9,7 @@ import { valueModelPath, valueModelsByMake } from "@/data/valueModels";
 import { modelDisplayName } from "@/data/modelDisplayName";
 import { findModelPrices, findYearPrices } from "@/data/modelPriceBands";
 import { VALUE_BREADCRUMB_JSONLD_ID, VALUE_FAQ_JSONLD_ID, VALUE_NO_DATA_COPY, findRegistryOnly, valueAnswer, valueH1, valueBreadcrumbJsonLd, valueFaqJsonLd, valueGuidance, type ValueRef } from "@/data/valuePages";
+import { HUB_BREADCRUMB_JSONLD_ID, PRICE_TYPES_COPY, PRICE_TYPES_H2, PRICE_TYPES_LINKS, VALUE_DEPRECIATION_H2, VALUE_MILEAGE_H2, VALUE_MILEAGE_INTRO, VALUE_PAGES_MODIFIED_ISO, VALUE_UPDATED_TEXT, VALUE_WEBPAGE_JSONLD_ID, hubBreadcrumbJsonLd, valueDepreciationText, valueMileageYear, valueWebPageJsonLd } from "@/data/valuePages";
 import { VALUE_INDEX_H1, VALUE_INDEX_INTRO, sameMakeModels, VALUE_TABLE_NOTE, VALUE_YEARS_INTRO, YEAR_NOTE, gbp, miles, neighbourYears, valueIntro, valueName, valuePath, yearIntro, yearPath } from "@/data/valuePages";
 import NotFound from "./NotFound";
 import { useEffect, type MouseEvent } from "react";
@@ -127,6 +128,7 @@ function MoreFromMake({ slug, make }: { slug: string; make: string }) {
 
 export function ValueIndex() {
   useSeo(getValueRouteMeta("/value"));
+  useHeadJsonLd(HUB_BREADCRUMB_JSONLD_ID, hubBreadcrumbJsonLd("Car values", "/value"));
   return (
     <Shell>
       <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{VALUE_INDEX_H1}</h1>
@@ -158,9 +160,12 @@ export default function ModelValue() {
   useSeo(ref ? getValueRouteMeta(valuePath(ref)) : null);
   useHeadJsonLd(VALUE_BREADCRUMB_JSONLD_ID, ref ? valueBreadcrumbJsonLd(ref) : null);
   useHeadJsonLd(VALUE_FAQ_JSONLD_ID, ref ? valueFaqJsonLd(ref) : null);
+  useHeadJsonLd(VALUE_WEBPAGE_JSONLD_ID, ref ? valueWebPageJsonLd(ref) : null);
   if (!ref) return <NotFound />;
   if (!m) return <NoPriceModel m={ref} />;
   const name = valueName(m);
+  const depreciation = valueDepreciationText(m);
+  const mileageYear = valueMileageYear(m);
   return (
     <Shell>
       <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground mb-4">
@@ -172,11 +177,11 @@ export default function ModelValue() {
       <p className="mt-4 text-lg leading-relaxed text-foreground">{valueAnswer(m)}</p>
       <p className="text-muted-foreground mt-4 leading-relaxed">{valueIntro(m)}</p>
       <section className="mt-8" aria-labelledby="prices">
-        <h2 id="prices" className="text-xl font-semibold mb-3">Typical {name} asking prices by year</h2>
+        <h2 id="prices" className="text-xl font-semibold mb-3">Typical {name} asking prices by year group</h2>
         <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-sm">
             <thead className="text-left text-muted-foreground">
-              <tr className="border-b border-border"><th className="px-4 py-3 font-medium">Year</th><th className="px-4 py-3 font-medium">Median asking price</th><th className="px-4 py-3 font-medium">Typical range</th></tr>
+              <tr className="border-b border-border"><th className="px-4 py-3 font-medium">Years</th><th className="px-4 py-3 font-medium">Median asking price</th><th className="px-4 py-3 font-medium">Typical range</th></tr>
             </thead>
             <tbody>
               {m.bands.map((b) => (
@@ -190,18 +195,60 @@ export default function ModelValue() {
           </table>
         </div>
         <p className="text-xs text-muted-foreground mt-3 leading-relaxed">{VALUE_TABLE_NOTE(m)}</p>
+        <p className="text-xs text-muted-foreground mt-1"><time dateTime={VALUE_PAGES_MODIFIED_ISO}>{VALUE_UPDATED_TEXT}</time></p>
       </section>
       {m.years.length > 0 && (
         <section className="mt-8" aria-labelledby="years">
           <h2 id="years" className="text-xl font-semibold mb-1">{name} prices by year</h2>
           <p className="text-sm text-muted-foreground mb-3">{VALUE_YEARS_INTRO(m)}</p>
-          <ul className="flex flex-wrap gap-2">
-            {m.years.map((y) => (
-              <li key={y.year}>
-                <Link to={yearPath(m, y)} className="inline-flex min-h-[44px] items-center rounded-xl border border-border px-4 tabular-nums hover:border-primary/50">{y.year}</Link>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <caption className="sr-only">{name} asking prices for every year</caption>
+              <thead className="text-left text-muted-foreground">
+                <tr className="border-b border-border"><th className="px-4 py-3 font-medium">Year</th><th className="px-4 py-3 font-medium">Median asking price</th><th className="px-4 py-3 font-medium">Typical range</th><th className="px-4 py-3 font-medium">Typical mileage</th><th className="px-4 py-3 font-medium">Adverts</th></tr>
+              </thead>
+              <tbody>
+                {m.years.map((y) => (
+                  <tr key={y.year} className="border-b border-border last:border-0">
+                    <td className="px-4 py-3"><Link to={yearPath(m, y)} className="inline-flex min-h-[44px] items-center text-primary hover:underline tabular-nums">{y.year}</Link></td>
+                    <td className="px-4 py-3 font-semibold text-primary tabular-nums">{gbp(y.median)}</td>
+                    <td className="px-4 py-3 text-muted-foreground tabular-nums whitespace-nowrap">{gbp(y.low)} – {gbp(y.high)}</td>
+                    <td className="px-4 py-3 text-muted-foreground tabular-nums whitespace-nowrap">{y.mileage ? miles(y.mileage) : "–"}</td>
+                    <td className="px-4 py-3 text-muted-foreground tabular-nums">{y.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+      {depreciation && (
+        <section className="mt-8" aria-labelledby="depreciation">
+          <h2 id="depreciation" className="text-xl font-semibold mb-2">{VALUE_DEPRECIATION_H2(m)}</h2>
+          <p className="text-muted-foreground leading-relaxed">{depreciation}</p>
+        </section>
+      )}
+      {mileageYear && (
+        <section className="mt-8" aria-labelledby="mileage-model">
+          <h2 id="mileage-model" className="text-xl font-semibold mb-2">{VALUE_MILEAGE_H2(m)}</h2>
+          <p className="text-sm text-muted-foreground mb-3">{VALUE_MILEAGE_INTRO(m, mileageYear)}</p>
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <caption className="sr-only">{mileageYear.year} {name} asking prices by mileage</caption>
+              <thead className="text-left text-muted-foreground">
+                <tr className="border-b border-border"><th className="px-4 py-3 font-medium">Mileage</th><th className="px-4 py-3 font-medium">Median asking price</th><th className="px-4 py-3 font-medium">Adverts</th></tr>
+              </thead>
+              <tbody>
+                {mileageYear.byMileage.map((r) => (
+                  <tr key={r.label} className="border-b border-border last:border-0">
+                    <td className="px-4 py-3">{r.label}</td>
+                    <td className="px-4 py-3 font-semibold text-primary tabular-nums">{gbp(r.median)}</td>
+                    <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
       <div className="mt-8 rounded-xl border border-border p-6">
@@ -209,6 +256,15 @@ export default function ModelValue() {
         <p className="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p>
         <Button asChild variant="hero" size="xl" className="mt-4"><Link to="/">Value my {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
       </div>
+      <section className="mt-12" aria-labelledby="price-types">
+        <h2 id="price-types" className="text-xl font-semibold mb-3">{PRICE_TYPES_H2}</h2>
+        {PRICE_TYPES_COPY(m).map((p) => <p key={p} className="text-muted-foreground leading-relaxed mt-3">{p}</p>)}
+        <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+          {PRICE_TYPES_LINKS.map(([href, label]) => (
+            <li key={href}><Link to={href} className="inline-flex min-h-[44px] items-center text-primary hover:underline">{label}</Link></li>
+          ))}
+        </ul>
+      </section>
       <Guidance m={m} />
       <MoreFromMake slug={m.slug} make={m.make} />
       <p className="mt-10 text-sm"><Link to="/value" className="text-primary hover:underline">See all models</Link></p>
@@ -252,7 +308,7 @@ export function ModelYearValue() {
         <Link to={valuePath(m)} className="hover:text-foreground">{name}</Link> <span aria-hidden>/</span>{" "}
         <span aria-current="page">{y.year}</span>
       </nav>
-      <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">What's my {y.year} {name} worth?</h1>
+      <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">How much is my {y.year} {name} worth?</h1>
       <p className="text-muted-foreground mt-4 leading-relaxed">{yearIntro(m, y)}</p>
       <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {stats.map(([k, v]) => (

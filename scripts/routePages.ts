@@ -3,10 +3,10 @@
 import type { RouteMeta } from "../src/data/routeMeta";
 import { getRouteMeta } from "../src/data/routeMeta";
 import { routeHtml } from "./routeHtml";
-import { GUIDES, guideArticleHtml, guideFaqJsonLd, guidesIndexBodyHtml } from "../src/data/guides";
+import { GUIDES, GUIDE_ARTICLE_JSONLD_ID, guideArticleHtml, guideArticleJsonLd, guideFaqJsonLd, guidesIndexBodyHtml } from "../src/data/guides";
 import { CAR_MODELS } from "../src/data/carModels";
 import { MODEL_PRICES } from "../src/data/modelPriceBands";
-import { registryOnlyModels, valueBodyHtml, valueFallbackBodyHtml, valueHeadHtml, valueIndexBodyHtml, valuePath, yearBodyHtml, yearPath, type ValueRef } from "../src/data/valuePages";
+import { hubHeadHtml, registryOnlyModels, valueBodyHtml, valueFallbackBodyHtml, valueHeadHtml, valueIndexBodyHtml, valuePath, yearBodyHtml, yearPath, type ValueRef } from "../src/data/valuePages";
 import { VALUE_SLUG_REGISTRY } from "../src/data/valueSlugRegistry";
 import { carModelBodyHtml, carModelJsonLd, carPath, carRedirectBodyHtml, carRedirectHeadHtml, carValueMatch, carValuesIndexBodyHtml } from "../src/data/carValueContent";
 import { homepageFaqHeadHtml, staticPageBodyHtml } from "../src/data/staticPageContent";
@@ -22,7 +22,7 @@ export function routeExtra(meta: RouteMeta): Extra | undefined {
   if (meta.path === "/") return { bodyHtml: staticPageBodyHtml("/"), headHtml: homepageFaqHeadHtml };
   const pageBody = staticPageBodyHtml(meta.path);
   if (pageBody) return { bodyHtml: pageBody };
-  if (meta.path === "/value") return { bodyHtml: valueIndexBodyHtml() };
+  if (meta.path === "/value") return { bodyHtml: valueIndexBodyHtml(), headHtml: hubHeadHtml("Car values", "/value") };
   const vm = MODEL_PRICES.find((m) => valuePath(m) === meta.path);
   if (vm) return { bodyHtml: valueBodyHtml(vm), headHtml: valueHeadHtml(vm) };
   const fallback = registryOnlyModels().find((v) => valuePath(v) === meta.path);
@@ -34,8 +34,9 @@ export function routeExtra(meta: RouteMeta): Extra | undefined {
   }
   if (meta.path === "/guides") return { bodyHtml: guidesIndexBodyHtml() };
   const guide = GUIDES.find((g) => g.path === meta.path);
-  if (guide) return { bodyHtml: guideArticleHtml(guide), headHtml: '<script type="application/ld+json" id="guide-faq-jsonld">' + guideFaqJsonLd(guide) + '</script>' };
-  if (meta.path === "/car-values") return { bodyHtml: carValuesIndexBodyHtml() };
+  if (guide) return { bodyHtml: guideArticleHtml(guide), headHtml: '<script type="application/ld+json" id="guide-faq-jsonld">' + guideFaqJsonLd(guide) + '</script>\n'
+    + `<script type="application/ld+json" id="${GUIDE_ARTICLE_JSONLD_ID}">${guideArticleJsonLd(guide)}</script>` };
+  if (meta.path === "/car-values") return { bodyHtml: carValuesIndexBodyHtml(), headHtml: hubHeadHtml("Car values by make and model", "/car-values") };
   const car = CAR_MODELS.find((m) => carPath(m) === meta.path);
   if (car) {
     // Matched models permanently redirect to /value/<slug> (noindex + canonical come from carModelMeta).

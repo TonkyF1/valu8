@@ -591,8 +591,8 @@ export function TeslaFlow() {
           <div className="t8-readout">
             {!hasCar ? (
               <>
-                <h1 id="t8-h" className="t8-h1 t8-h1-bs">Know its value.<br /><em>Make the right move.</em></h1>
-                <p className="t8-sub t8-sub-bs">Get a free valuation from the number plate in seconds, then unlock personalised insights to help you negotiate with confidence.</p>
+                <h1 id="t8-h" className="t8-h1 t8-h1-bs">Free car valuation<br /><em>by registration.</em></h1>
+                <p className="t8-sub t8-sub-bs">Know its value. Make the right move. Get a free UK car valuation from the number plate in seconds, then unlock personalised insights to help you negotiate with confidence.</p>
               </>
             ) : band ? (
               <>

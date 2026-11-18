@@ -13,9 +13,9 @@ import { VALUE_SLUG_REGISTRY, type ValueSlugEntry } from "./valueSlugRegistry";
 export type ValueRef = Pick<ModelPrices, "slug" | "make" | "model">;
 
 export const VALUE_INDEX_PATH = "/value";
-export const VALUE_INDEX_TITLE = "What's my car worth? Typical UK asking prices by model | Valu8";
+export const VALUE_INDEX_TITLE = "How much is my car worth? UK prices by model | Valu8";
 export const VALUE_INDEX_DESCRIPTION = `Typical asking prices from UK adverts for the ${MODEL_PRICES.length} most-advertised used car models, by year. Then get a free valuation for your own car.`;
-export const VALUE_INDEX_H1 = "What's my car worth? Typical asking prices by model";
+export const VALUE_INDEX_H1 = "How much is my car worth? Typical UK asking prices by model";
 export const VALUE_INDEX_INTRO = "Typical asking prices from UK adverts for the most-advertised used cars, grouped by year. Pick your model for a quick guide, then value your own car for free.";
 
 /** Display name (modelDisplayName); kept as the short name used across these pages. */
@@ -76,7 +76,60 @@ export const VALUE_TABLE_NOTE = (m: ModelPrices) =>
   `Typical asking prices from UK adverts (${m.listings.toLocaleString("en-GB")} ${valueName(m)} adverts, updated ${PRICE_DATA_UPDATED}). Typical range is the middle half of asking prices. Year groups with fewer than 15 adverts are not shown.`;
 
 export const VALUE_YEARS_INTRO = (m: ModelPrices) =>
-  `Pick a year for typical ${valueName(m)} asking prices, mileage and how mileage moves the price. Years with fewer than 15 adverts are not listed.`;
+  `Typical ${valueName(m)} asking prices for every year we have enough adverts for. Pick a year for its mileage breakdown. Years with fewer than 15 adverts are not listed.`;
+
+// ---------- Year-by-year data on the model page (P1-2) ----------
+
+/** ISO date the /value page content last changed (WebPage dateModified). Bump it with every price-data refresh. */
+export const VALUE_PAGES_MODIFIED_ISO = "2026-11-18";
+export const VALUE_UPDATED_TEXT = `Prices last updated: ${PRICE_DATA_UPDATED}.`;
+
+const MIN_YEAR_ADVERTS = 15;
+
+/** Median year-on-year fall in median asking price, over consecutive years with at least 15 adverts each.
+ *  Null when there are fewer than 4 such steps or the result is outside 5–35%. */
+export function valueDepreciation(m: ModelPrices): { pct: number; steps: number; from: number; to: number } | null {
+  const ys = m.years.filter((y) => y.count >= MIN_YEAR_ADVERTS && y.median > 0).sort((a, b) => a.year - b.year);
+  const drops: number[] = [];
+  for (let i = 0; i + 1 < ys.length; i++) if (ys[i + 1].year === ys[i].year + 1) drops.push(1 - ys[i].median / ys[i + 1].median);
+  if (drops.length < 4) return null;
+  const d = [...drops].sort((a, b) => a - b);
+  const mid = d.length % 2 ? d[(d.length - 1) / 2] : (d[d.length / 2 - 1] + d[d.length / 2]) / 2;
+  const pct = Math.round(mid * 100);
+  // Outside 5–35% the sample is too patchy to say anything useful (e.g. vans, or gaps between years).
+  if (pct < 5 || pct > 35) return null;
+  return { pct, steps: drops.length, from: ys[0].year, to: ys[ys.length - 1].year };
+}
+
+export const VALUE_DEPRECIATION_H2 = (m: ValueRef) => `How much a ${valueName(m)} loses per year`;
+export function valueDepreciationText(m: ModelPrices): string | null {
+  const d = valueDepreciation(m);
+  if (!d) return null;
+  const name = valueName(m);
+  return `Comparing ${d.from} to ${d.to} ${name} adverts year by year, each extra year of age typically takes about ${d.pct}% off the median asking price (the middle of ${d.steps} year-on-year changes). Mileage and condition move the price as much as age, so treat this as a rough guide.`;
+}
+
+/** The year with the most adverts that has a mileage breakdown (at least 2 rows). */
+export function valueMileageYear(m: ModelPrices): YearPrices | null {
+  const ys = m.years.filter((y) => y.byMileage.length >= 2);
+  if (!ys.length) return null;
+  return ys.reduce((a, b) => (b.count > a.count ? b : a));
+}
+export const VALUE_MILEAGE_H2 = (m: ValueRef) => `How mileage changes the price of a ${valueName(m)}`;
+export const VALUE_MILEAGE_INTRO = (m: ModelPrices, y: YearPrices) =>
+  `Median asking prices by mileage for the ${y.year} ${valueName(m)}, the year with the most adverts (${y.count}).`;
+
+export const PRICE_TYPES_H2 = "Private sale, part-exchange or dealer: which price is this?";
+export const PRICE_TYPES_COPY = (m: ValueRef): string[] => [
+  `The figures on this page are asking prices from UK used-car adverts. They show what sellers are hoping to get for a ${valueName(m)}, so the price a car actually sells for is often a little lower after negotiation.`,
+  `Selling privately usually gets you closest to these figures, once you leave some room to haggle. A part-exchange offer from a dealer is usually lower, because the dealer has to prepare and resell the car at a profit.`,
+  `Buying from a dealer usually costs more than buying privately, but can include preparation and a warranty. A free Valu8 valuation gives you a private-sale estimate for your own car, and the optional £2.99 Full report adds part-exchange and dealer figures.`,
+];
+export const PRICE_TYPES_LINKS: [string, string][] = [
+  ["/guides/part-exchange-vs-private-sale", "Part-exchange vs private sale"],
+  ["/guides/private-sale-vs-dealer-prices", "Private sale vs dealer prices"],
+  ["/guides/what-is-my-car-worth", "What is my car worth?"],
+];
 
 /** Other /value pages for the same make (internal links), A–Z. */
 export function sameMakeModels(slug: string, make: string): ValueModel[] {
@@ -136,12 +189,41 @@ export function valueBreadcrumbJsonLd(m: ValueRef): string {
   }).replace(/</g, "\\u003c");
 }
 
+/** WebPage JSON-LD for /value/:slug with dateModified (same title and description as the page head). */
+export function valueWebPageJsonLd(m: ValueRef): string {
+  const priced = MODEL_PRICES.find((x) => x.slug === m.slug);
+  const meta = priced ? valueMeta(priced) : valueFallbackMeta(m);
+  return JSON.stringify({
+    "@context": "https://schema.org", "@type": "WebPage",
+    "@id": SITE_URL + valuePath(m), url: SITE_URL + valuePath(m),
+    name: meta.title, description: meta.description, inLanguage: "en-GB",
+    dateModified: VALUE_PAGES_MODIFIED_ISO,
+    isPartOf: { "@type": "WebSite", name: "Valu8", url: `${SITE_URL}/` },
+  }).replace(/</g, "\\u003c");
+}
+
+/** BreadcrumbList JSON-LD for a hub page (Home / hub). */
+export function hubBreadcrumbJsonLd(name: string, path: string): string {
+  return JSON.stringify({
+    "@context": "https://schema.org", "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name, item: SITE_URL + path },
+    ],
+  }).replace(/</g, "\\u003c");
+}
+export const HUB_BREADCRUMB_JSONLD_ID = "hub-breadcrumb-jsonld";
+export const hubHeadHtml = (name: string, path: string) =>
+  `<script type="application/ld+json" id="${HUB_BREADCRUMB_JSONLD_ID}">${hubBreadcrumbJsonLd(name, path)}</script>`;
+
+export const VALUE_WEBPAGE_JSONLD_ID = "value-webpage-jsonld";
 export const VALUE_BREADCRUMB_JSONLD_ID = "value-breadcrumb-jsonld";
 export const VALUE_FAQ_JSONLD_ID = "value-faq-jsonld";
 
 export function valueHeadHtml(m: ValueRef): string {
   return `<script type="application/ld+json" id="${VALUE_BREADCRUMB_JSONLD_ID}">${valueBreadcrumbJsonLd(m)}</script>\n`
-    + `<script type="application/ld+json" id="${VALUE_FAQ_JSONLD_ID}">${valueFaqJsonLd(m)}</script>`;
+    + `<script type="application/ld+json" id="${VALUE_FAQ_JSONLD_ID}">${valueFaqJsonLd(m)}</script>\n`
+    + `<script type="application/ld+json" id="${VALUE_WEBPAGE_JSONLD_ID}">${valueWebPageJsonLd(m)}</script>`;
 }
 
 // ---------- Registry-only model pages (published slug, no current price data) ----------
@@ -201,10 +283,32 @@ export function neighbourYears(m: ModelPrices, y: YearPrices): YearPrices[] {
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-function yearLinksHtml(m: ModelPrices): string {
+/** Full year table: one row per year, each year linking to its (noindex) year page. */
+function yearTableHtml(m: ModelPrices): string {
   if (!m.years.length) return "";
-  return `<h2>${esc(valueName(m))} prices by year</h2><ul>`
-    + m.years.map((y) => `<li><a href="${yearPath(m, y)}">${y.year} ${esc(valueName(m))}</a></li>`).join("") + `</ul>`;
+  const name = esc(valueName(m));
+  return `<section><h2>${name} prices by year</h2><p>${esc(VALUE_YEARS_INTRO(m))}</p>`
+    + `<table><caption>${name} asking prices for every year</caption><thead><tr><th>Year</th><th>Median asking price</th><th>Typical range</th><th>Typical mileage</th><th>Adverts</th></tr></thead><tbody>`
+    + m.years.map((y) => `<tr><td><a href="${yearPath(m, y)}">${y.year}</a></td><td>${gbp(y.median)}</td><td>${gbp(y.low)} – ${gbp(y.high)}</td><td>${y.mileage ? miles(y.mileage) : "–"}</td><td>${y.count}</td></tr>`).join("")
+    + `</tbody></table></section>`;
+}
+
+function depreciationHtml(m: ModelPrices): string {
+  const t = valueDepreciationText(m);
+  return t ? `<section><h2>${esc(VALUE_DEPRECIATION_H2(m))}</h2><p>${esc(t)}</p></section>` : "";
+}
+
+function mileageHtml(m: ModelPrices): string {
+  const y = valueMileageYear(m);
+  if (!y) return "";
+  return `<section><h2>${esc(VALUE_MILEAGE_H2(m))}</h2><p>${esc(VALUE_MILEAGE_INTRO(m, y))}</p>`
+    + `<table><caption>${y.year} ${esc(valueName(m))} asking prices by mileage</caption><thead><tr><th>Mileage</th><th>Median asking price</th><th>Adverts</th></tr></thead><tbody>`
+    + y.byMileage.map((r) => `<tr><td>${esc(r.label)}</td><td>${gbp(r.median)}</td><td>${r.count}</td></tr>`).join("") + `</tbody></table></section>`;
+}
+
+function priceTypesHtml(m: ValueRef): string {
+  return `<section><h2>${esc(PRICE_TYPES_H2)}</h2>${PRICE_TYPES_COPY(m).map((p) => `<p>${esc(p)}</p>`).join("")}`
+    + `<ul>${PRICE_TYPES_LINKS.map(([href, label]) => `<li><a href="${href}">${esc(label)}</a></li>`).join("")}</ul></section>`;
 }
 
 function moreFromMakeHtml(m: ValueRef): string {
@@ -226,9 +330,12 @@ export function valueBodyHtml(m: ModelPrices): string {
   const name = esc(valueName(m));
   return `<main id="main"><nav aria-label="Breadcrumb"><a href="/">Home</a> / <a href="${VALUE_INDEX_PATH}">Car values</a> / <span aria-current="page">${name}</span></nav>`
     + `<h1>${esc(valueH1(m))}</h1><p>${esc(valueAnswer(m) ?? "")}</p><p>${esc(valueIntro(m))}</p>`
-    + `<table><caption>Typical ${name} asking prices by year</caption><thead><tr><th>Year</th><th>Median asking price</th><th>Typical range</th></tr></thead><tbody>`
+    + `<table><caption>Typical ${name} asking prices by year group</caption><thead><tr><th>Years</th><th>Median asking price</th><th>Typical range</th></tr></thead><tbody>`
     + m.bands.map((b) => `<tr><td>${esc(b.band)}</td><td>${gbp(b.median)}</td><td>${gbp(b.low)} – ${gbp(b.high)}</td></tr>`).join("")
-    + `</tbody></table><p>${esc(VALUE_TABLE_NOTE(m))}</p>${yearLinksHtml(m)}<p><a href="/valuation/new">Value my ${esc(valueName(m))} free</a></p>`
+    + `</tbody></table><p>${esc(VALUE_TABLE_NOTE(m))}</p><p><time datetime="${VALUE_PAGES_MODIFIED_ISO}">${esc(VALUE_UPDATED_TEXT)}</time></p>`
+    + yearTableHtml(m) + depreciationHtml(m) + mileageHtml(m)
+    + `<p><a href="/valuation/new">Value my ${esc(valueName(m))} free</a></p>`
+    + priceTypesHtml(m)
     + guidanceHtml(m)
     + moreFromMakeHtml(m)
     + `<p><a href="/value">All models</a></p></main>`;
@@ -240,7 +347,7 @@ export function yearBodyHtml(m: ModelPrices, y: YearPrices): string {
     ? `<table><caption>${y.year} ${name} asking prices by mileage</caption><thead><tr><th>Mileage</th><th>Median asking price</th><th>Adverts</th></tr></thead><tbody>`
       + y.byMileage.map((r) => `<tr><td>${esc(r.label)}</td><td>${gbp(r.median)}</td><td>${r.count}</td></tr>`).join("") + `</tbody></table>`
     : "";
-  return `<main id="main"><h1>What's my ${y.year} ${name} worth?</h1><p>${esc(yearIntro(m, y))}</p>`
+  return `<main id="main"><h1>How much is my ${y.year} ${name} worth?</h1><p>${esc(yearIntro(m, y))}</p>`
     + `<ul><li>Median asking price: ${gbp(y.median)}</li><li>Typical range: ${gbp(y.low)} – ${gbp(y.high)}</li><li>UK adverts: ${y.count}</li>`
     + (y.mileage ? `<li>Typical mileage: ${miles(y.mileage)}</li>` : "") + `</ul>${rows}<p>${esc(YEAR_NOTE(m, y))}</p>`
     + `<p><a href="/valuation/new">Value my ${y.year} ${esc(valueName(m))} free</a></p>`
@@ -262,6 +369,6 @@ export function valueFallbackBodyHtml(m: ValueRef): string {
 
 export function valueIndexBodyHtml(): string {
   return `<main id="main"><h1>${esc(VALUE_INDEX_H1)}</h1><p>${esc(VALUE_INDEX_INTRO)}</p>`
-    + valueModelsByMake().map((g) => `<section><h2>${esc(g.make)}</h2><ul>` + g.models.map((v) => `<li><a href="${valueModelPath(v)}">What's my ${esc(modelDisplayName(v))} worth?</a></li>`).join("") + `</ul></section>`).join("")
+    + valueModelsByMake().map((g) => `<section><h2>${esc(g.make)}</h2><ul>` + g.models.map((v) => `<li><a href="${valueModelPath(v)}">How much is my ${esc(modelDisplayName(v))} worth?</a></li>`).join("") + `</ul></section>`).join("")
     + `<p><a href="/valuation/new">Value a car free</a></p></main>`;
 }
