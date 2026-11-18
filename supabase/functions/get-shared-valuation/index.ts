@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { reportEntitlement } from "../_shared/entitlement.ts";
+import { reportForViewer } from "../_shared/sharedReport.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -79,31 +80,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Share links always get Essentials only: strip paid Full Report fields server-side
-    // so buyers cannot read asking/comps/condition/advert/repairs from the JSON.
-    const stripSharedReport = (raw: unknown) => {
-      if (!raw || typeof raw !== "object") return raw;
-      const { saleFeedback: _sf, advert: _ad, photoInsights: _pi,
-        recommendedAskingPrice: _rap, negotiationBuffer: _nb,
-        conditionScore: _cs, conditionLabel: _cl,
-        repairEstimate: _re, repairEstimates: _res, advisoryCosts: _ac,
-        fixableUpside: _fu, ...rest } = raw as Record<string, unknown>;
-      const out: Record<string, unknown> = { ...rest };
-      if (Array.isArray(out.comparableListings)) {
-        out.comparableListings = (out.comparableListings as unknown[])
-          .filter((c: any) => c && c.price > 0)
-          .slice(0, 3);
-      }
-      if (out.recommendations && typeof out.recommendations === "object") {
-        const rec = { ...(out.recommendations as Record<string, unknown>) };
-        delete rec.recommendedAskingPrice;
-        delete rec.negotiationBuffer;
-        delete rec.listingPrice;
-        out.recommendations = rec;
-      }
-      return out;
-    };
-
     // The guest who made this valuation (their token hashes to guest_token_hash) gets their own full
     // report back, exactly like a signed-in owner reading their row. The page still locks paid
     // sections until report-entitlement says paid; this just means a paying guest sees real figures.
@@ -124,10 +100,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    // The owner, or anyone viewing a valuation that has been paid for / unlocked (same check as report-entitlement),
+    // gets the full report. Unpaid share links still get Essentials only.
+    const paid = (await reportEntitlement(admin as any, String(data.id))).paid;
     return new Response(
       JSON.stringify({
         ...row,
-        report: isOwner ? data.report : stripSharedReport(data.report),
+        report: reportForViewer(data.report, isOwner, paid),
         photo_urls: signed,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

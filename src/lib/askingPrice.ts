@@ -62,3 +62,40 @@ export function displayPrivateRange(r: any): { low: number; high: number; mid: n
   const low = headline?.low ?? p.privateLow, high = headline?.high ?? p.privateHigh;
   return { low, high, mid: p.privateSale, headline, text: formatPriceRange({ low, high, mid: p.privateSale, rule: "" }, " – ") };
 }
+
+const RANGE_NUM = "£\\s?[\\d,]+(?:\\.\\d+)?";
+const RANGE_SEP = "\\s*(?:[–—-]|to)\\s*";
+const MENTION_RES: RegExp[] = [
+  new RegExp(`\\(\\s*typically\\s+${RANGE_NUM}${RANGE_SEP}${RANGE_NUM}\\s*\\)`, "gi"),
+  new RegExp(`\\btypically\\s+${RANGE_NUM}${RANGE_SEP}${RANGE_NUM}`, "gi"),
+  new RegExp(`\\brange(?:\\s+of)?\\s+${RANGE_NUM}${RANGE_SEP}${RANGE_NUM}`, "gi"),
+];
+const MENTION_KEYS = ["headline", "valueReasoning", "honestAnalysis", "marketContext", "marketPositioning"] as const;
+
+/**
+ * AI-written prose can quote the narrow comps band ("typically £2,500–£2,850") while the page shows the headline range.
+ * When a headline range applies, rewrite those mentions to the displayed range. Asking-range wording ("List at £a–£b")
+ * and the sellerTip are never touched. Returns a new object; no-op when no headline range applies.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function alignRangeMentions<T extends Record<string, any>>(r: T): T {
+  if (!r || typeof r !== "object" || r.valuationUnavailable || !r.values) return r;
+  const d = displayPrivateRange(r);
+  if (!d.headline) return r;
+  const text = formatPriceRange({ low: d.low, high: d.high, mid: d.mid, rule: "" }, "–");
+  const out: Record<string, any> = { ...r };
+  for (const k of MENTION_KEYS) {
+    const v = out[k];
+    if (typeof v !== "string") continue;
+    out[k] = v
+      .replace(MENTION_RES[0], `(typically ${text})`)
+      .replace(MENTION_RES[1], `typically ${text}`)
+      .replace(MENTION_RES[2], (m) => (/^range\s+of/i.test(m) ? `range of ${text}` : `range ${text}`));
+  }
+  return out as T;
+}
+
+/** Only show an asking/listing figure that is a real positive number (never "–"). */
+export function hasAskFigure(n: unknown): n is number {
+  return typeof n === "number" && Number.isFinite(n) && n > 0;
+}

@@ -87,7 +87,8 @@ export async function downloadPremiumPdf(v: VehicleInfo, r: ValuationReport, opt
   } else {
     if (r.sellerTip) box("SELLER TIP", r.sellerTip);
     const buf = r.recommendations?.negotiationBuffer ?? r.negotiationBuffer;
-    box("LISTING PLAN", `List at ${gbp(r.recommendations?.recommendedAskingPrice ?? r.recommendations?.listingPrice)}${buf ? `, leaving about ${gbp(buf)} to negotiate` : ""}.`);
+    const ask = r.recommendations?.recommendedAskingPrice ?? r.recommendations?.listingPrice;
+    if (typeof ask === "number" && Number.isFinite(ask) && ask > 0) box("LISTING PLAN", `List at ${gbp(ask)}${buf ? `, leaving about ${gbp(buf)} to negotiate` : ""}.`);
   }
   foot();
 
