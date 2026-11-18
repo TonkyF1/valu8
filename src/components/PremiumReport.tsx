@@ -3,7 +3,7 @@ import { FitPrice } from "@/components/FitPrice";
 import type { ValuationReport } from "@/lib/valuation";
 import type { Intent } from "@/lib/intent";
 import { askingFor, saveAskingFor } from "@/lib/intent";
-import { normaliseReportPricing, displayPrivateRange } from "@/lib/askingPrice";
+import { normaliseReportPricing, displayPrivateRange, hasAskFigure } from "@/lib/askingPrice";
 import { buyerGuide, compareAsking, diffLine, parseAsking, VERDICT_COPY, buyerChecks } from "@/lib/buyerGuide";
 import { rangeReasonCopy } from "../../supabase/functions/_shared/cheapRange";
 
@@ -70,10 +70,12 @@ export function PremiumReport({ r, registration, intent = "selling", valuationId
       )}
       <div className="grid sm:grid-cols-2 gap-3 px-5 pb-5">
         {r.sellerTip && <div className="rounded-xl bg-[#111111] text-white p-4"><p className="text-xs uppercase tracking-widest text-[#00D6C8]">Seller tip</p><p className="text-sm mt-1">{r.sellerTip}</p></div>}
+        {hasAskFigure(r.recommendations?.recommendedAskingPrice ?? r.recommendations?.listingPrice) && (
         <div className="rounded-xl bg-[#111111] text-white p-4">
           <p className="text-xs uppercase tracking-widest text-[#00D6C8]">Listing plan</p>
           <p className="text-sm mt-1">List at {gbp(r.recommendations?.recommendedAskingPrice ?? r.recommendations?.listingPrice)}{(r.recommendations?.negotiationBuffer ?? r.negotiationBuffer) ? `, leaving about ${gbp(r.recommendations?.negotiationBuffer ?? r.negotiationBuffer)} to negotiate` : ""}.</p>
         </div>
+        )}
       </div>
       <p className="px-5 pb-4 text-[11px] opacity-60">Guidance only, not financial advice.</p>
     </section>

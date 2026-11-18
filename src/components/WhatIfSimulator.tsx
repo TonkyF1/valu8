@@ -19,6 +19,8 @@ const SLOT_LABELS: Record<string, string> = {
 interface Props {
   insights: PhotoInsight[];
   privateSale: number;
+  /** The report's displayed private-sale range (displayPrivateRange(r).text); used for "Now" so it matches the report. */
+  range?: string;
   recommendedAskingPrice?: number;
   negotiationBuffer?: number;
 }
@@ -26,6 +28,7 @@ interface Props {
 export function WhatIfSimulator({
   insights,
   privateSale,
+  range,
   recommendedAskingPrice,
   negotiationBuffer,
 }: Props) {
@@ -165,7 +168,7 @@ export function WhatIfSimulator({
           {/* Progress bar — before to projected */}
           <div className="mt-4 relative">
             <div className="flex items-baseline justify-between mb-1.5 text-[10px] tabular-nums">
-              <span className="text-muted-foreground">Now <span className="text-foreground/85">{headlinePrivateText(privateSale)}</span></span>
+              <span className="text-muted-foreground">Now <span className="text-foreground/85">{range ?? headlinePrivateText(privateSale)}</span></span>
               <span className="text-muted-foreground">Max <span className="text-foreground/85">{headlinePrivateText(privateSale + maxPossibleUpside)}</span></span>
             </div>
             <div className="relative h-1.5 rounded-full bg-muted/40 overflow-hidden">

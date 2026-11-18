@@ -8,7 +8,7 @@ import type { ValuationReport } from "@/lib/valuation";
 
 const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
 
-export function drawShareCard(v: { year: number; make: string; model: string; mileage: number }, r: ValuationReport): HTMLCanvasElement {
+export function drawShareCard(v: { year: number; make: string; model: string; mileage: number }, r: ValuationReport, entitled = false): HTMLCanvasElement {
   const c = document.createElement("canvas");
   c.width = 1200; c.height = 630;
   const g = c.getContext("2d");
@@ -25,16 +25,25 @@ export function drawShareCard(v: { year: number; make: string; model: string; mi
   if (!r.valuationUnavailable && r.values) {
     const cp = normaliseReportPricing(r);
     const pr = reportPriceRange(r, cp.privateSale); // under £5,000: the private sale tier is a range
-    const tiers: [string, number][] = [["Part-exchange", cp.tradeIn], ["Private sale", cp.privateSale], ["Dealer retail", cp.retail]];
+    // Part-exchange and dealer figures are £2.99-only: unpaid cards show just the private-sale box and an upsell line.
+    const tiers: [string, number][] = entitled
+      ? [["Part-exchange", cp.tradeIn], ["Private sale", cp.privateSale], ["Dealer retail", cp.retail]]
+      : [["Private sale", cp.privateSale]];
     tiers.forEach(([label, val], i) => {
-      const x = 72 + i * 360, y = 330, hi = i === 1;
+      const hi = label === "Private sale";
+      const x = entitled ? 72 + i * 360 : 72, y = 330;
+      const w = entitled ? 330 : 1056;
       g.fillStyle = hi ? "rgba(0,212,200,0.16)" : "rgba(255,255,255,0.05)";
       g.strokeStyle = hi ? "#00d4c8" : "rgba(255,255,255,0.15)"; g.lineWidth = 2;
-      g.beginPath(); g.roundRect?.(x, y, 330, 160, 20); if (!g.roundRect) g.rect(x, y, 330, 160); g.fill(); g.stroke();
+      g.beginPath(); g.roundRect?.(x, y, w, 160, 20); if (!g.roundRect) g.rect(x, y, w, 160); g.fill(); g.stroke();
       g.fillStyle = "#a1a1aa"; g.font = "500 26px system-ui, sans-serif"; g.fillText(label, x + 28, y + 52);
-      g.fillStyle = hi ? "#00d4c8" : "#ffffff"; if (hi && pr) { g.font = "700 38px system-ui, sans-serif"; g.fillText(formatPriceRange(pr), x + 28, y + 118, 290); }
+      g.fillStyle = hi ? "#00d4c8" : "#ffffff"; if (hi && pr) { g.font = "700 38px system-ui, sans-serif"; g.fillText(formatPriceRange(pr), x + 28, y + 118, w - 40); }
       else { g.font = "700 54px system-ui, sans-serif"; g.fillText(gbp(val), x + 28, y + 122); }
     });
+    if (!entitled) {
+      g.fillStyle = "#a1a1aa"; g.font = "500 26px system-ui, sans-serif";
+      g.fillText("Part-exchange and dealer prices come with the £2.99 report · valu8.uk", 72, 535, 1056);
+    }
   } else {
     g.fillStyle = "#ffffff"; g.font = "600 40px system-ui, sans-serif"; g.fillText("Specialist appraisal recommended", 72, 400);
   }
@@ -43,8 +52,8 @@ export function drawShareCard(v: { year: number; make: string; model: string; mi
   return c;
 }
 
-export async function shareReportImage(v: Parameters<typeof drawShareCard>[0], r: ValuationReport, url: string): Promise<"shared" | "downloaded"> {
-  const canvas = drawShareCard(v, r);
+export async function shareReportImage(v: Parameters<typeof drawShareCard>[0], r: ValuationReport, url: string, entitled = false): Promise<"shared" | "downloaded"> {
+  const canvas = drawShareCard(v, r, entitled);
   const blob: Blob = await new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("toBlob failed"))), "image/png"));
   const name = `Valu8_${v.make}_${v.model}_${v.year}.png`.replace(/\s+/g, "-");
   const file = new File([blob], name, { type: "image/png" });

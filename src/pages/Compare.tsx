@@ -12,12 +12,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { ValuationReport } from "@/lib/valuation";
 import { estimateUlez, estimateVed, summariseAdvisoryCosts } from "../../supabase/functions/_shared/insights";
 import { hasPhotos } from "@/lib/askingPrice";
+import { fetchReportPaid } from "@/components/ReportCheckout";
 
 interface Row { id: string; make: string; model: string; year: number; mileage: number; registration: string | null; report: ValuationReport; created_at: string; photo_urls?: unknown }
 
 const gbp = (n?: number | null) => (n == null || !Number.isFinite(n) ? "—" : `£${Math.round(n).toLocaleString("en-GB")}`);
 
-function facts(v: Row) {
+export const PAID_ONLY_LINE = "Part-ex and dealer prices come with the £2.99 report";
+
+export function facts(v: Row, entitled = false) {
   const r = v.report ?? ({} as ValuationReport);
   const veh = r.vehicle ?? {};
   const ved = estimateVed({ firstRegistered: veh.firstRegistered, year: v.year, fuelType: veh.fuelType, co2: veh.co2Emissions, engineCc: veh.engineCapacity });
@@ -26,8 +29,8 @@ function facts(v: Row) {
   const costs = summariseAdvisoryCosts(adv);
   return [
     ["Private sale", r.values?.privateSale ? headlinePrivateText(normaliseReportPricing(r).privateSale, r) : gbp(undefined)],
-    ["Dealer retail", gbp(r.values?.privateSale ? normaliseReportPricing(r).retail : undefined)],
-    ["Trade-in", gbp(r.values?.privateSale ? normaliseReportPricing(r).tradeIn : undefined)],
+    ["Dealer retail", !entitled ? PAID_ONLY_LINE : gbp(r.values?.privateSale ? normaliseReportPricing(r).retail : undefined)],
+    ["Trade-in", !entitled ? PAID_ONLY_LINE : gbp(r.values?.privateSale ? normaliseReportPricing(r).tradeIn : undefined)],
     ["Condition", r.conditionScore != null && hasPhotos(v.photo_urls) ? `${r.conditionScore}/10 (${r.conditionLabel})` : "Add photos to score"],
     ["Year", String(v.year)],
     ["Mileage", `${v.mileage.toLocaleString("en-GB")} mi`],
@@ -58,7 +61,14 @@ export default function Compare() {
   const label = (r: Row) => `${r.year} ${r.make} ${r.model}${r.registration ? ` (${r.registration})` : ""}`;
   const pick = (k: "a" | "b", id: string) => { const p = new URLSearchParams(params); p.set(k, id); setParams(p, { replace: true }); };
 
-  const fa = A ? facts(A) : null, fb = B ? facts(B) : null;
+  const [paidIds, setPaidIds] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    for (const id of [a, b]) {
+      if (!id || id in paidIds) continue;
+      fetchReportPaid(id).catch(() => false).then((p) => setPaidIds((s) => ({ ...s, [id]: p })));
+    }
+  }, [a, b, paidIds]);
+  const fa = A ? facts(A, !!paidIds[A.id]) : null, fb = B ? facts(B, !!paidIds[B.id]) : null;
 
   return (
     <div className="min-h-screen flex flex-col">

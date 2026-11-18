@@ -5,7 +5,7 @@ import { premiumEnforced, showPremiumReport } from "@/lib/entitlements";
 import { REPORT_CTA, ReportCheckout, fetchReportPaid, reportOfferLine } from "@/components/ReportCheckout";
 import { metaPurchaseOnce } from "@/lib/metaPixel";
 import { sumPhotoImpacts } from "../../supabase/functions/_shared/pricing";
-import { hasPhotos, normaliseReportPricing } from "@/lib/askingPrice";
+import { hasPhotos, normaliseReportPricing, alignRangeMentions, displayPrivateRange } from "@/lib/askingPrice";
 import { reportPriceRange, headlinePrivateText, rangeReasonCopy } from "../../supabase/functions/_shared/cheapRange";
 import { fixableUpside as computeFixableUpside } from "../../supabase/functions/_shared/photo-insights";
 import { marketConfidenceTier } from "../../supabase/functions/_shared/pricing";
@@ -321,7 +321,7 @@ export default function Report() {
 
   // Latest DVSA expiry wins over the seller-entered field.
   const motExpiryForText = (v.report as any)?.motHistory?.[0]?.expiryDate ?? v.mot_expiry;
-  const r = cleanReportText(v.report, motExpiryForText);
+  const r = alignRangeMentions(cleanReportText(v.report, motExpiryForText));
   const fuelDisplay = normaliseFuel((r as any).vehicle?.fuelType);
   if ((r as any).vehicle) (r as any).vehicle = { ...(r as any).vehicle, fuelType: fuelDisplay };
   const modelDisplay = displayModel(v.make, v.model, fuelDisplay);
@@ -631,7 +631,7 @@ export default function Report() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     import("@/lib/shareCard")
-                      .then((m) => m.shareReportImage(v, r, `${window.location.origin}/shared/${v.id}`))
+                      .then((m) => m.shareReportImage(v, r, `${window.location.origin}/shared/${v.id}`, premium))
                       .then((res) => { if (res === "downloaded") toast.success("Share image downloaded"); })
                       .catch(() => toast.error("Couldn't create share image"));
                   }}>
@@ -1156,6 +1156,7 @@ export default function Report() {
           <WhatIfSimulator
             insights={r.photoInsights}
             privateSale={normaliseReportPricing(r).privateSale}
+            range={displayPrivateRange(r).text}
             recommendedAskingPrice={
               r.recommendedAskingPrice ||
               r.recommendations?.recommendedAskingPrice ||

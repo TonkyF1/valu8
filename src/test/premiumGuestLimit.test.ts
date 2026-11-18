@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import ts from "typescript";
+import { reportForViewer } from "../../supabase/functions/_shared/sharedReport";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 const token = "a".repeat(64);
@@ -102,7 +103,7 @@ describe("get-shared-valuation hides a locked price until paid", () => {
     report: { priceLocked: true, values: { privateSale: 4200 }, headline: "Worth about £4,200", valuationUnavailable: false } };
   const db = () => ({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: row, error: null }) }) }) }), storage: { from: () => ({}) } });
   const fn = (paid: boolean) => load("get-shared-valuation", {
-    createClient: db, reportEntitlement: async () => (paid ? { paid: true, via: "purchase" } : { paid: false }),
+    createClient: db, reportForViewer, reportEntitlement: async () => (paid ? { paid: true, via: "purchase" } : { paid: false }),
   }, false);
   it("unpaid: no figures at all", async () => {
     const b = await (await fn(false)(request({ id: row.id }))).json();

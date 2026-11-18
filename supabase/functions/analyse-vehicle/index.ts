@@ -2051,7 +2051,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       // non-price advice is kept after the template. Other prose keeps the reconciled AI text.
       if (shownP && shownP.privateSale > 0) {
         const gbp = (n: number) => "£" + Math.round(n).toLocaleString("en-GB");
-        const lo = Number(rangeLow) || 0, hi = Number(rangeHigh) || 0, P = shownP.privateSale;
+        // Quote the SAME range the report displays (report.priceRange: cheap/old-car headline range) when there is one,
+        // else the comps band. Keeps "Why this price" consistent with the headline.
+        const shownRange = (report as any).priceRange;
+        const lo = Number(shownRange?.low) || Number(rangeLow) || 0, hi = Number(shownRange?.high) || Number(rangeHigh) || 0, P = shownP.privateSale;
         const aL = Number(askRangeOut?.low) || 0, aH = Number(askRangeOut?.high) || 0;
         const tipRest = stripPriceSentences(String((report as any).sellerTip ?? ""));
         const listPart = aL > 0 && aH > aL ? `List at ${gbp(aL)}–${gbp(aH)}` : `List at about ${gbp(Math.round(P * 1.03 / 50) * 50)}`;
