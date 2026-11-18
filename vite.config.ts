@@ -4,17 +4,9 @@ import path from "path";
 import fs from "fs";
 import type { Plugin } from "vite";
 import { componentTagger } from "lovable-tagger";
-import { getRouteMeta } from "./src/data/routeMeta";
 import { ALL_ROUTES } from "./src/data/allRoutes";
-import { routeHtml } from "./scripts/routeHtml";
 import { buildSitemap } from "./scripts/sitemap";
-import { GUIDES, guideArticleHtml, guideFaqJsonLd, guidesIndexBodyHtml } from "./src/data/guides";
-import { CAR_MODELS } from "./src/data/carModels";
-import { MODEL_PRICES } from "./src/data/modelPriceBands";
-import { valueBodyHtml, valueIndexBodyHtml, valuePath, yearBodyHtml, yearPath } from "./src/data/valuePages";
-import { carModelBodyHtml, carModelJsonLd, carPath, carValuesIndexBodyHtml } from "./src/data/carValueContent";
-import { homepageFaqHeadHtml, staticPageBodyHtml } from "./src/data/staticPageContent";
-import { enrichedYearFaqJsonLd, findEnrichedYear } from "./src/data/enrichedYears";
+import { buildRouteHtml, homepageHtml, notFoundHtml } from "./scripts/routePages";
 
 function routeMetadataHtml(): Plugin {
   let outDir = "";
@@ -26,41 +18,16 @@ function routeMetadataHtml(): Plugin {
       const indexPath = path.join(outDir, "index.html");
       const shell = fs.readFileSync(indexPath, "utf8");
       // Validate and update the homepage from the same source as every route.
-      fs.writeFileSync(indexPath, routeHtml(shell, getRouteMeta("/"), false, { bodyHtml: staticPageBodyHtml("/"), headHtml: homepageFaqHeadHtml }));
+      fs.writeFileSync(indexPath, homepageHtml(shell));
       for (const meta of ALL_ROUTES) {
         if (meta.path === "/") continue;
         const fileBase = path.join(outDir, meta.path.slice(1));
-        const guide = GUIDES.find((g) => g.path === meta.path);
-        const car = CAR_MODELS.find((m) => carPath(m) === meta.path);
-        const vm = MODEL_PRICES.find((m) => valuePath(m) === meta.path);
-        const vy = MODEL_PRICES.flatMap((m) => m.years.map((y) => ({ m, y }))).find(({ m, y }) => yearPath(m, y) === meta.path);
-        const pageBody = staticPageBodyHtml(meta.path);
-        const extra = pageBody
-          ? { bodyHtml: pageBody }
-          : meta.path === "/value"
-          ? { bodyHtml: valueIndexBodyHtml() }
-          : vm
-            ? { bodyHtml: valueBodyHtml(vm) }
-          : vy
-            ? { bodyHtml: yearBodyHtml(vy.m, vy.y), ...(findEnrichedYear(vy.m.slug, vy.y.year) ? { headHtml: '<script type="application/ld+json" id="year-faq-jsonld">' + enrichedYearFaqJsonLd(findEnrichedYear(vy.m.slug, vy.y.year)!, vy.m, vy.y) + '</script>' } : {}) }
-            : meta.path === "/guides"
-          ? { bodyHtml: guidesIndexBodyHtml() }
-          : guide
-            ? { bodyHtml: guideArticleHtml(guide), headHtml: '<script type="application/ld+json" id="guide-faq-jsonld">' + guideFaqJsonLd(guide) + '</script>' }
-            : meta.path === "/car-values"
-              ? { bodyHtml: carValuesIndexBodyHtml() }
-              : car
-                ? { bodyHtml: carModelBodyHtml(car), headHtml: '<script type="application/ld+json" id="car-value-jsonld">' + carModelJsonLd(car) + '</script>' }
-                : undefined;
-        const html = routeHtml(shell, meta, false, meta.path === "/check-an-advert" ? { ...extra, headHtml: '<meta http-equiv="refresh" content="0; url=/check" />' } : extra);
+        const html = buildRouteHtml(shell, meta);
         fs.mkdirSync(fileBase, { recursive: true });
         fs.writeFileSync(path.join(fileBase, "index.html"), html);
         fs.writeFileSync(`${fileBase}.html`, html);
       }
-      fs.writeFileSync(path.join(outDir, "404.html"), routeHtml(shell, {
-        path: "/404", title: "Page not found | Valu8",
-        description: "This page doesn't exist. Value your car free with Valu8.", noindex: true,
-      }, true));
+      fs.writeFileSync(path.join(outDir, "404.html"), notFoundHtml(shell));
       fs.writeFileSync(path.join(outDir, "sitemap.xml"), buildSitemap());
     },
   };

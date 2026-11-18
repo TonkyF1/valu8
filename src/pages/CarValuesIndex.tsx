@@ -4,8 +4,9 @@ import { Footer } from "@/components/Footer";
 import { CAR_MODELS } from "@/data/carModels";
 import { useSeo } from "@/lib/seo";
 import { getRouteMeta } from "@/data/routeMeta";
-import { CAR_VALUES_H1, VALUE_HUB_H2, VALUE_HUB_INTRO } from "@/data/carValueContent";
-import { VALUE_MODELS, valueModelName, valueModelPath, valueModelsByMake } from "@/data/valueModels";
+import { CAR_VALUES_H1, VALUE_HUB_H2, VALUE_HUB_INTRO, carHref } from "@/data/carValueContent";
+import { VALUE_MODELS, valueModelPath, valueModelsByMake } from "@/data/valueModels";
+import { modelDisplayName } from "@/data/modelDisplayName";
 
 export default function CarValuesIndex() {
   useSeo(getRouteMeta("/car-values"));
@@ -23,7 +24,7 @@ export default function CarValuesIndex() {
               <h2 id={`mk-${make}`} className="font-semibold mb-1">{make}</h2>
               <ul>
                 {CAR_MODELS.filter((m) => m.make === make).map((m) => (
-                  <li key={m.slug}><Link className="inline-flex min-h-[44px] items-center text-primary hover:underline" to={`/car-values/${m.makeSlug}/${m.slug}`}>{m.make} {m.model} value</Link></li>
+                  <li key={m.slug}><Link className="inline-flex min-h-[44px] items-center text-primary hover:underline" to={carHref(m)}>{m.make} {m.model} value</Link></li>
                 ))}
               </ul>
             </section>
@@ -38,7 +39,7 @@ export default function CarValuesIndex() {
                 <h3 id={`vm-${g.make}`} className="font-semibold mb-1">{g.make}</h3>
                 <ul>
                   {g.models.map((v) => (
-                    <li key={v.slug}><Link className="inline-flex min-h-[44px] items-center text-primary hover:underline" to={valueModelPath(v)}>{valueModelName(v)} asking prices</Link></li>
+                    <li key={v.slug}><Link className="inline-flex min-h-[44px] items-center text-primary hover:underline" to={valueModelPath(v)}>{modelDisplayName(v)} asking prices</Link></li>
                   ))}
                 </ul>
               </section>

@@ -1,12 +1,14 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { useSeo } from "@/lib/seo";
 import { getValueRouteMeta } from "@/data/valueRoutes";
-import { valueModelName, valueModelPath, valueModelsByMake } from "@/data/valueModels";
+import { valueModelPath, valueModelsByMake } from "@/data/valueModels";
+import { modelDisplayName } from "@/data/modelDisplayName";
 import { findModelPrices, findYearPrices } from "@/data/modelPriceBands";
+import { VALUE_BREADCRUMB_JSONLD_ID, VALUE_FAQ_JSONLD_ID, VALUE_NO_DATA_COPY, findRegistryOnly, valueAnswer, valueH1, valueBreadcrumbJsonLd, valueFaqJsonLd, valueGuidance, type ValueRef } from "@/data/valuePages";
 import { VALUE_INDEX_H1, VALUE_INDEX_INTRO, sameMakeModels, VALUE_TABLE_NOTE, VALUE_YEARS_INTRO, YEAR_NOTE, gbp, miles, neighbourYears, valueIntro, valueName, valuePath, yearIntro, yearPath } from "@/data/valuePages";
 import NotFound from "./NotFound";
 import { useEffect, type MouseEvent } from "react";
@@ -23,6 +25,91 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Keep one head JSON-LD block per id: reuse the prerendered one when present, else add it; remove on leave. */
+function useHeadJsonLd(id: string, json: string | null) {
+  useEffect(() => {
+    if (!json) return;
+    let el = document.getElementById(id) as HTMLScriptElement | null;
+    if (!el) { el = document.createElement("script"); el.type = "application/ld+json"; el.id = id; document.head.appendChild(el); }
+    el.textContent = json;
+    return () => { document.getElementById(id)?.remove(); };
+  }, [id, json]);
+}
+
+/** Same visible content as guidanceHtml() in valuePages.ts (the build-time HTML). */
+function Guidance({ m }: { m: ValueRef }) {
+  const g = valueGuidance(m);
+  return (
+    <>
+      <section className="mt-12" aria-labelledby="how">
+        <h2 id="how" className="text-xl font-semibold mb-3">How we value a {g.name}</h2>
+        <ol className="space-y-2 text-sm text-muted-foreground list-decimal pl-5">
+          {g.steps.map((t) => <li key={t}>{t}</li>)}
+        </ol>
+      </section>
+      {g.segment && (
+        <section className="mt-10" aria-labelledby="tips">
+          <h2 id="tips" className="text-xl font-semibold mb-3">What moves the value of a {g.segment.label}</h2>
+          <ul className="space-y-2 text-sm">
+            {g.segment.tips.map((t) => (
+              <li key={t} className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" aria-hidden />{t}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <section className="mt-10" aria-labelledby="faq">
+        <h2 id="faq" className="text-xl font-semibold mb-3">{g.name} valuation FAQ</h2>
+        <div className="space-y-3">
+          {g.faqs.map((f) => (
+            <div key={f.q} className="rounded-xl border border-border p-4">
+              <h3 className="font-medium">{f.q}</h3>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{f.a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+      {g.related.length > 0 && (
+        <section className="mt-10" aria-labelledby="related">
+          <h2 id="related" className="text-xl font-semibold mb-3">Related valuations</h2>
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {g.related.map((v) => (
+              <li key={v.slug}>
+                <Link to={valueModelPath(v)} className="inline-flex min-h-[44px] items-center rounded-full border border-border px-4 hover:border-primary/50">{modelDisplayName(v)}</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </>
+  );
+}
+
+function Crumbs({ name }: { name: string }) {
+  return (
+    <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground mb-4">
+      <Link to="/" className="hover:text-foreground">Home</Link> <span aria-hidden>/</span>{" "}
+      <Link to="/value" className="hover:text-foreground">Car values</Link> <span aria-hidden>/</span>{" "}
+      <span aria-current="page">{name}</span>
+    </nav>
+  );
+}
+
+/** Same visible content as valueFallbackBodyHtml() in valuePages.ts. */
+function NoPriceModel({ m }: { m: ValueRef }) {
+  const name = valueName(m);
+  return (
+    <Shell>
+      <Crumbs name={name} />
+      <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{valueH1(m)}</h1>
+      <p className="text-muted-foreground mt-4 leading-relaxed">{VALUE_NO_DATA_COPY(m)}</p>
+      <div className="mt-6"><Button asChild variant="hero" size="xl"><Link to="/">Value my {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button></div>
+      <Guidance m={m} />
+      <MoreFromMake slug={m.slug} make={m.make} />
+      <p className="mt-10 text-sm"><Link to="/value" className="text-primary hover:underline">See all models</Link></p>
+    </Shell>
+  );
+}
+
 function MoreFromMake({ slug, make }: { slug: string; make: string }) {
   const others = sameMakeModels(slug, make);
   if (!others.length) return null;
@@ -31,7 +118,7 @@ function MoreFromMake({ slug, make }: { slug: string; make: string }) {
       <h2 id="more-make" className="text-lg font-semibold mb-2">More {make} asking prices</h2>
       <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
         {others.map((v) => (
-          <li key={v.slug}><Link to={valueModelPath(v)} className="inline-flex min-h-[44px] items-center text-primary hover:underline">{valueModelName(v)}</Link></li>
+          <li key={v.slug}><Link to={valueModelPath(v)} className="inline-flex min-h-[44px] items-center text-primary hover:underline">{modelDisplayName(v)}</Link></li>
         ))}
       </ul>
     </section>
@@ -51,7 +138,7 @@ export function ValueIndex() {
             {g.models.map((v) => (
               <li key={v.slug}>
                 <Link to={valueModelPath(v)} className="flex min-h-[44px] items-center justify-between rounded-xl border border-border px-4 py-3 hover:border-primary/50">
-                  <span>{valueModelName(v)}</span><ArrowRight className="h-4 w-4 text-primary" aria-hidden />
+                  <span>{modelDisplayName(v)}</span><ArrowRight className="h-4 w-4 text-primary" aria-hidden />
                 </Link>
               </li>
             ))}
@@ -66,8 +153,13 @@ export function ValueIndex() {
 export default function ModelValue() {
   const { slug } = useParams();
   const m = findModelPrices(slug);
-  useSeo(m ? getValueRouteMeta(valuePath(m)) : null);
-  if (!m) return <NotFound />;
+  // A published slug with no current price data still gets its page (registry), just without the table.
+  const ref: ValueRef | undefined = m ?? findRegistryOnly(slug);
+  useSeo(ref ? getValueRouteMeta(valuePath(ref)) : null);
+  useHeadJsonLd(VALUE_BREADCRUMB_JSONLD_ID, ref ? valueBreadcrumbJsonLd(ref) : null);
+  useHeadJsonLd(VALUE_FAQ_JSONLD_ID, ref ? valueFaqJsonLd(ref) : null);
+  if (!ref) return <NotFound />;
+  if (!m) return <NoPriceModel m={ref} />;
   const name = valueName(m);
   return (
     <Shell>
@@ -76,7 +168,8 @@ export default function ModelValue() {
         <Link to="/value" className="hover:text-foreground">Car values</Link> <span aria-hidden>/</span>{" "}
         <span aria-current="page">{name}</span>
       </nav>
-      <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">What's my {name} worth?</h1>
+      <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{valueH1(m)}</h1>
+      <p className="mt-4 text-lg leading-relaxed text-foreground">{valueAnswer(m)}</p>
       <p className="text-muted-foreground mt-4 leading-relaxed">{valueIntro(m)}</p>
       <section className="mt-8" aria-labelledby="prices">
         <h2 id="prices" className="text-xl font-semibold mb-3">Typical {name} asking prices by year</h2>
@@ -116,6 +209,7 @@ export default function ModelValue() {
         <p className="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p>
         <Button asChild variant="hero" size="xl" className="mt-4"><Link to="/">Value my {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
       </div>
+      <Guidance m={m} />
       <MoreFromMake slug={m.slug} make={m.make} />
       <p className="mt-10 text-sm"><Link to="/value" className="text-primary hover:underline">See all models</Link></p>
     </Shell>

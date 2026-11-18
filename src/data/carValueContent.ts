@@ -3,10 +3,13 @@
 // without running JavaScript. Deliberately no prices: figures only come from a live valuation.
 import { CAR_MODELS, SEGMENT_LABEL, SEGMENT_TIPS, type CarModelPage } from "./carModels";
 import { SITE_URL } from "./routeMeta";
-import { VALUE_MODELS, joinMakeModel, valueModelName, valueModelPath, valueModelsByMake, type ValueModel } from "./valueModels";
+import { VALUE_SLUG_REGISTRY } from "./valueSlugRegistry";
+import { VALUE_MODELS, joinMakeModel, valueModelPath, valueModelsByMake, type ValueModel } from "./valueModels";
+import { modelDisplayName } from "./modelDisplayName";
 
-/** The matching /value/<make-model> asking-price page, when we have one. */
-export const carValueMatch = (m: CarModelPage): ValueModel | undefined => VALUE_MODELS.find((p) => p.slug === `${m.makeSlug}-${m.slug}`);
+/** The matching /value/<make-model> page, when one has been published (registry: it stays served even if
+ *  its price data drops out, so a matched /car-values page never flips back to a competing live page). */
+export const carValueMatch = (m: CarModelPage): ValueModel | undefined => VALUE_SLUG_REGISTRY.find((p) => p.slug === `${m.makeSlug}-${m.slug}`);
 
 export const VALUE_HUB_H2 = "Typical asking prices for every model";
 export const VALUE_HUB_INTRO = (n: number) => `Typical asking prices from UK adverts, by year, for ${n} makes and models. Each page shows the middle asking price and typical range for each year group.`;
@@ -20,8 +23,8 @@ export function carIntro(m: CarModelPage): string {
   return `Get a free, honest valuation for your ${name} in a couple of minutes. We check the official DVSA MOT record, compare your car with real UK adverts for the same model in our database, and read your photos for condition, then give you a free private-sale estimate, with part-exchange and dealer figures in the £2.99 Full report.`;
 }
 
-export function carSteps(m: CarModelPage): string[] {
-  const name = carName(m);
+/** "How we value a …" steps, from the model name alone (shared by /car-values and /value pages). */
+export function modelSteps(name: string): string[] {
   return [
     `Find ${name}s for sale now across UK dealers, close to your year and mileage.`,
     "Adjust each listing for your car's age and mileage, then take the median.",
@@ -30,9 +33,9 @@ export function carSteps(m: CarModelPage): string[] {
   ];
 }
 
-export function carFaqs(m: CarModelPage): { q: string; a: string }[] {
-  const name = carName(m);
-  const seg = SEGMENT_LABEL[m.segment];
+/** Valuation FAQ from the model name; segLabel (e.g. "supermini") is used when the segment is known. */
+export function modelFaqs(name: string, segLabel?: string): { q: string; a: string }[] {
+  const seg = segLabel ?? "car";
   return [
     { q: `How much is my ${name} worth?`, a: `It depends mostly on age, mileage, condition and spec. Valu8 compares your ${name} with similar cars currently for sale in the UK, corrects each one to your car's age and mileage, then adjusts for your MOT history and photos.` },
     { q: `Is a private sale better than part-exchange for a ${name}?`, a: "Usually you'll get more selling privately, because a dealer needs margin to resell. The £2.99 Full report shows both figures so you can decide whether the difference is worth the effort." },
@@ -40,6 +43,19 @@ export function carFaqs(m: CarModelPage): { q: string; a: string }[] {
     { q: "Is Valu8 free?", a: "The valuation (Essentials) is free. The Full seller report is a one-off £2.99 — no subscription." },
   ];
 }
+
+export const carSteps = (m: CarModelPage): string[] => modelSteps(carName(m));
+export const carFaqs = (m: CarModelPage): { q: string; a: string }[] => modelFaqs(carName(m), SEGMENT_LABEL[m.segment]);
+
+/** Where internal links to a model should point: its /value page when one exists (the only indexable
+ *  model page), otherwise the /car-values page. */
+export const carHref = (m: CarModelPage): string => { const v = carValueMatch(m); return v ? valueModelPath(v) : carPath(m); };
+
+/** Matched /car-values pages are permanent redirects to /value: refresh tag and a one-link body
+ *  (title, canonical and noindex come from carModelMeta in routeMeta.ts). */
+export const carRedirectName = (v: ValueModel) => modelDisplayName(v);
+export const carRedirectHeadHtml = (v: ValueModel) => `<meta http-equiv="refresh" content="0; url=${SITE_URL}${valueModelPath(v)}">`;
+export const carRedirectBodyHtml = (v: ValueModel) => `<p><a href="${valueModelPath(v)}">This page has moved to ${esc(carRedirectName(v))} prices and valuation</a></p>`;
 
 export function carRelated(m: CarModelPage): CarModelPage[] {
   const sameMake = CAR_MODELS.filter((x) => x.make === m.make && x !== m);
@@ -64,7 +80,7 @@ export function carModelBodyHtml(m: CarModelPage): string {
     + `<h2>How we value a ${name}</h2><ol>${carSteps(m).map((s) => `<li>${esc(s)}</li>`).join("")}</ol>`
     + `<h2>What moves the value of a ${seg}</h2><ul>${SEGMENT_TIPS[m.segment].map((t) => `<li>${esc(t)}</li>`).join("")}</ul>`
     + `<h2>${name} valuation FAQ</h2>${carFaqs(m).map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join("")}`
-    + `<h2>Related valuations</h2><ul>${carRelated(m).map((x) => `<li><a href="${carPath(x)}">${esc(carName(x))}</a></li>`).join("")}<li><a href="/car-values">All models</a></li></ul>`
+    + `<h2>Related valuations</h2><ul>${carRelated(m).map((x) => `<li><a href="${carHref(x)}">${esc(carName(x))}</a></li>`).join("")}<li><a href="/car-values">All models</a></li></ul>`
     + `</article></main>`;
 }
 
@@ -92,9 +108,9 @@ export function carValuesIndexBodyHtml(): string {
   const makes = [...new Set(CAR_MODELS.map((m) => m.make))].sort();
   return `<main id="main"><h1>${CAR_VALUES_H1}</h1>`
     + `<p>Free, honest valuations for the UK's most popular used cars. Pick your model to see how we value it, or <a href="/valuation/new">value your car now</a>.</p>`
-    + makes.map((make) => `<section><h2>${esc(make)}</h2><ul>${CAR_MODELS.filter((m) => m.make === make).map((m) => `<li><a href="${carPath(m)}">${esc(carName(m))} value</a></li>`).join("")}</ul></section>`).join("")
+    + makes.map((make) => `<section><h2>${esc(make)}</h2><ul>${CAR_MODELS.filter((m) => m.make === make).map((m) => `<li><a href="${carHref(m)}">${esc(carName(m))} value</a></li>`).join("")}</ul></section>`).join("")
     + `<section><h2>${VALUE_HUB_H2}</h2><p>${esc(VALUE_HUB_INTRO(VALUE_MODELS.length))}</p>`
-    + valueModelsByMake().map((g) => `<h3>${esc(g.make)}</h3><ul>${g.models.map((v) => `<li><a href="${valueModelPath(v)}">${esc(valueModelName(v))} asking prices</a></li>`).join("")}</ul>`).join("")
+    + valueModelsByMake().map((g) => `<h3>${esc(g.make)}</h3><ul>${g.models.map((v) => `<li><a href="${valueModelPath(v)}">${esc(modelDisplayName(v))} asking prices</a></li>`).join("")}</ul>`).join("")
     + `<p><a href="/value">All models</a></p></section>`
     + `</main>`;
 }

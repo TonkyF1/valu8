@@ -66,9 +66,23 @@
         for (var i = 0; i < exact.length; i++) if (exact[i] === p) { known = true; break; }
       }
       if (!known) {
-        var dyn = [/^\/valuation\/[^/]+$/, /^\/valuation\/[^/]+\/analysing$/, /^\/valuation\/[^/]+\/edit$/, /^\/shared\/[^/]+$/, /^\/car-values\/[^/]+\/[^/]+$/, /^\/guides\/[^/]+$/, /^\/value\/[^/]+$/, /^\/value\/[^/]+\/[^/]+$/];
+        var dyn = [/^\/valuation\/[^/]+$/, /^\/valuation\/[^/]+\/analysing$/, /^\/valuation\/[^/]+\/edit$/, /^\/shared\/[^/]+$/, /^\/guides\/[^/]+$/];
         for (var j = 0; j < dyn.length; j++) if (dyn[j].test(p)) { known = true; break; }
       }
+      // Valid model pages, injected at build time (scripts/routePages.ts): v = /value slugs, y = /value/{slug}/{year}
+      // years as "2012-2016 2018", c = /car-values make/model pairs. Left null in dev, where any such path counts as known.
+      var R = /*VALU8_ROUTE_DATA*/null;
+      var has = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
+      var mt;
+      if (!known && (mt = p.match(/^\/value\/([^/]+)$/))) known = !R || R.v.indexOf(mt[1]) >= 0;
+      if (!known && (mt = p.match(/^\/value\/([^/]+)\/(\d{4})$/))) {
+        if (!R) known = true;
+        else if (has(R.y, mt[1])) {
+          var yr = +mt[2], parts = R.y[mt[1]].split(" ");
+          for (var r = 0; r < parts.length && !known; r++) { var b = parts[r].split("-"); known = yr >= +b[0] && yr <= +(b[1] || b[0]); }
+        }
+      } else if (!known && !R && /^\/value\/[^/]+\/[^/]+$/.test(p)) known = true;
+      if (!known && (mt = p.match(/^\/car-values\/([^/]+)\/([^/]+)$/))) known = !R || R.c.indexOf(mt[1] + "/" + mt[2]) >= 0;
       if (known && canonHref === "https://valu8.uk/" && p !== "/") {
         // A real page served with the homepage shell (e.g. a shared report): don't claim the homepage URL.
         if (canonEl && canonEl.parentNode) canonEl.parentNode.removeChild(canonEl);

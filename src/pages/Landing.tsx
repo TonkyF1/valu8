@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { AccuracyDisclaimer } from "@/components/AccuracyDisclaimer";
 import { useAuth } from "@/contexts/AuthContext";
 import { CAR_MODELS } from "@/data/carModels";
+import { carHref } from "@/data/carValueContent";
 import { useSeo } from "@/lib/seo";
 import { TeslaFlow } from "@/components/tesla/TeslaFlow";
 import { getRouteMeta } from "@/data/routeMeta";
@@ -77,7 +78,7 @@ export default function Landing() {
           <ul className="flex flex-wrap justify-center gap-2 text-sm">
             {CAR_MODELS.slice(0, 16).map((m) => (
               <li key={m.makeSlug + m.slug}>
-                <Link to={`/car-values/${m.makeSlug}/${m.slug}`} className="inline-flex min-h-[44px] items-center rounded-full border border-border px-4 hover:border-primary/50">{m.make} {m.model}</Link>
+                <Link to={carHref(m)} className="inline-flex min-h-[44px] items-center rounded-full border border-border px-4 hover:border-primary/50">{m.make} {m.model}</Link>
               </li>
             ))}
           </ul>

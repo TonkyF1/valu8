@@ -1,6 +1,8 @@
 import { CAR_MODELS, type CarModelPage } from "./carModels";
 import { GUIDES } from "./guides";
-import { VALUE_SLUGS, joinMakeModel } from "./valueModels";
+import { joinMakeModel } from "./valueModels";
+import { modelDisplayName } from "./modelDisplayName";
+import { VALUE_SLUG_REGISTRY } from "./valueSlugRegistry";
 
 export const SITE_URL = "https://valu8.uk";
 
@@ -43,16 +45,17 @@ export const STATIC_ROUTES: RouteMeta[] = [
 
 export function carModelMeta(m: CarModelPage): RouteMeta {
   const name = joinMakeModel(m.make, m.model);
-  // /value/* pages carry unique asking-price tables — stronger than the overlapping /car-values/* copy.
+  // /value/<make-model> is the only indexable model page. A /car-values/* page with a /value match is a
+  // permanent redirect there (noindex, canonical + refresh to /value; built in scripts/routePages.ts).
   const valueSlug = `${m.makeSlug}-${m.slug}`;
-  const valueMatch = VALUE_SLUGS.has(valueSlug);
+  const valueMatch = VALUE_SLUG_REGISTRY.find((v) => v.slug === valueSlug);
   return {
     path: `/car-values/${m.makeSlug}/${m.slug}`,
-    title: `What's my ${name} worth? Free ${name} valuation | Valu8`,
+    title: valueMatch ? `${modelDisplayName(valueMatch)} prices and valuation | Valu8` : `What's my ${name} worth? Free ${name} valuation | Valu8`,
     description: `Free ${name} valuation using real UK adverts in our database, your MOT history and photos. See an estimated private-sale value for your ${name}.`,
     priority: "0.7",
     inSitemap: !valueMatch,
-    ...(valueMatch ? { canonicalPath: `/value/${valueSlug}` } : {}),
+    ...(valueMatch ? { canonicalPath: `/value/${valueSlug}`, noindex: true } : {}),
   };
 }
 

@@ -1,11 +1,12 @@
 import { useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { SEGMENT_LABEL, SEGMENT_TIPS, findModel } from "@/data/carModels";
-import { carFaqs, carIntro, carName, carModelJsonLd, carRelated, carSteps, carValueLinkText, carValueMatch } from "@/data/carValueContent";
+import { carFaqs, carHref, carIntro, carName, carModelJsonLd, carRelated, carSteps, carValueLinkText, carValueMatch } from "@/data/carValueContent";
+import { valueModelPath } from "@/data/valueModels";
 import { useSeo } from "@/lib/seo";
 import { carModelMeta } from "@/data/routeMeta";
 import NotFound from "./NotFound";
@@ -14,10 +15,12 @@ export default function CarValue() {
   const { make, model } = useParams();
   const car = findModel(make, model);
   const name = car ? carName(car) : "";
-  useSeo(car ? carModelMeta(car) : null);
+  // Models with a /value page permanently redirect there; only unmatched models render this page.
+  const match = car ? carValueMatch(car) : undefined;
+  useSeo(car && !match ? carModelMeta(car) : null);
   // One head JSON-LD block (the build emits it for crawlers; keep it in sync on client navigation).
   useEffect(() => {
-    if (!car) return;
+    if (!car || match) return;
     let el = document.getElementById("car-value-jsonld") as HTMLScriptElement | null;
     if (!el) {
       el = document.createElement("script");
@@ -27,7 +30,8 @@ export default function CarValue() {
     }
     el.textContent = carModelJsonLd(car);
     return () => { document.getElementById("car-value-jsonld")?.remove(); };
-  }, [car]);
+  }, [car, match]);
+  if (match) return <Navigate to={valueModelPath(match)} replace />;
   if (!car) return <NotFound />;
 
   const seg = SEGMENT_LABEL[car.segment];
@@ -90,7 +94,7 @@ export default function CarValue() {
           <ul className="flex flex-wrap gap-2 text-sm">
             {carRelated(car).map((m) => (
               <li key={m.makeSlug + m.slug}>
-                <Link to={`/car-values/${m.makeSlug}/${m.slug}`} className="inline-flex min-h-[44px] items-center rounded-full border border-border px-4 hover:border-primary/50">
+                <Link to={carHref(m)} className="inline-flex min-h-[44px] items-center rounded-full border border-border px-4 hover:border-primary/50">
                   {m.make} {m.model}
                 </Link>
               </li>

@@ -19,3 +19,8 @@
 ## Price arc grade
 - [x] Grade each car Poor → Excellent (mileage, latest MOT, photos, mileage drop) and colour its fifth of the semi-circle, end grades filling to the ends.
 - [x] Mileage box: use newest real DVSA odometer reading (km→miles) and explain when there's none (e.g. under 3 years, no MOT yet).
+
+## SEO consolidation (step 1 of 6)
+- [x] P0-1: /value/{model} is the only indexable model page; matched /car-values model pages redirect there; links updated; tests added.
+- [x] P0-2 + P0-3: add-only /value slug registry with no-price fallback pages; unknown /value and /car-values slugs treated as not found.
+- [x] P1-1 + P1-4: 'How much is my X worth?' titles/H1/answer line on /value pages (titles <=60, descriptions <=155) and one display-name helper.
