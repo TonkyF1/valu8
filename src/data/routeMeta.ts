@@ -49,7 +49,7 @@ export function carModelMeta(m: CarModelPage): RouteMeta {
   return {
     path: `/car-values/${m.makeSlug}/${m.slug}`,
     title: `What's my ${name} worth? Free ${name} valuation | Valu8`,
-    description: `Free ${name} valuation using real UK adverts in our database, your MOT history and photos. See private sale, part-exchange and dealer values for your ${name}.`,
+    description: `Free ${name} valuation using real UK adverts in our database, your MOT history and photos. See an estimated private-sale value for your ${name}.`,
     priority: "0.7",
     inSitemap: !valueMatch,
     ...(valueMatch ? { canonicalPath: `/value/${valueSlug}` } : {}),

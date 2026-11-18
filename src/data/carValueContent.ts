@@ -17,7 +17,7 @@ export const carPath = (m: CarModelPage) => `/car-values/${m.makeSlug}/${m.slug}
 
 export function carIntro(m: CarModelPage): string {
   const name = carName(m);
-  return `Get a free, honest valuation for your ${name} in a couple of minutes. We check the official DVSA MOT record, compare your car with real UK adverts for the same model in our database, and read your photos for condition, then give you private sale, part-exchange and dealer retail figures.`;
+  return `Get a free, honest valuation for your ${name} in a couple of minutes. We check the official DVSA MOT record, compare your car with real UK adverts for the same model in our database, and read your photos for condition, then give you a free private-sale estimate, with part-exchange and dealer figures in the £2.99 Full report.`;
 }
 
 export function carSteps(m: CarModelPage): string[] {
@@ -35,7 +35,7 @@ export function carFaqs(m: CarModelPage): { q: string; a: string }[] {
   const seg = SEGMENT_LABEL[m.segment];
   return [
     { q: `How much is my ${name} worth?`, a: `It depends mostly on age, mileage, condition and spec. Valu8 compares your ${name} with similar cars currently for sale in the UK, corrects each one to your car's age and mileage, then adjusts for your MOT history and photos.` },
-    { q: `Is a private sale better than part-exchange for a ${name}?`, a: "Usually you'll get more selling privately, because a dealer needs margin to resell. Your report shows both figures so you can decide whether the difference is worth the effort." },
+    { q: `Is a private sale better than part-exchange for a ${name}?`, a: "Usually you'll get more selling privately, because a dealer needs margin to resell. The £2.99 Full report shows both figures so you can decide whether the difference is worth the effort." },
     { q: "Does high mileage hurt the value?", a: `Yes. As a rule of thumb in our model, a car with double the mileage of an otherwise similar ${seg} is worth around 12% less, and very high mileage (over 140,000) carries an extra discount.` },
     { q: "Is Valu8 free?", a: "The valuation (Essentials) is free. The Full seller report is a one-off £2.99 — no subscription." },
   ];

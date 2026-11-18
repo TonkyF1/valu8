@@ -11,7 +11,7 @@ import { getRouteMeta } from "@/data/routeMeta";
 import { ExampleReport, Faq, FAQS, FreeVsPremium, HowItWorks, PremiumSection, ValuationContext, WhyValu8 } from "@/components/home/BuyerSellerSections";
 
 const FEATURES = [
-  { icon: BadgePoundSterling, title: "Market-based pricing", body: "Private-sale, trade-in and dealer estimates based on comparable UK adverts for the make, model, year and mileage." },
+  { icon: BadgePoundSterling, title: "Market-based pricing", body: "A private-sale estimate based on comparable UK adverts for the make, model, year and mileage, with part-exchange and dealer estimates in the £2.99 Full report." },
   { icon: Camera, title: "Photo condition check", body: "Upload a few photos and AI flags visible wear, damage and selling points that move the price." },
   { icon: FileCheck2, title: "Official DVSA MOT history", body: "Every test, advisory and failure, plus indicative repair-cost bands for current advisories." },
   { icon: Gauge, title: "Mileage consistency", body: "MOT mileage charted over time, with any drops flagged for a closer look." },

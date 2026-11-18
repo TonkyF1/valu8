@@ -10,13 +10,14 @@ import { getRouteMeta } from "@/data/routeMeta";
 
 const FREE = [
   "Instant valuation from your reg and mileage",
-  "Private sale, part-exchange and dealer figures",
+  "Estimated private-sale value",
   "DVSA MOT history and mileage check",
   "GOV.UK recall-check link, tax and ULEZ estimates",
   "\"Is this advert fair?\" checks when buying",
 ];
 
 const PREMIUM = [
+  "Part-exchange and dealer figures",
   "Priced against comparable UK adverts",
   "AI photo condition score and what it does to the price",
   "Suggested asking price and negotiation buffer",

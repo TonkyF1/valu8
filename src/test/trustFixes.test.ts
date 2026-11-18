@@ -13,10 +13,12 @@ const app = read("src/App.tsx");
 const indexHtml = read("index.html");
 
 describe("trust details", () => {
-  it("privacy no longer says ICO registration is pending and never shows a number we haven't confirmed", () => {
+  it("privacy shows the confirmed ICO registration ZC283979 and never says pending", () => {
     expect(privacy).not.toMatch(/registration pending/i);
-    expect(privacy).toContain('export const ICO_REGISTRATION_NUMBER = "";');
-    expect(privacy).toContain("we have paid the Information Commissioner's Office data protection fee");
+    expect(privacy).toContain('export const ICO_REGISTRATION_NUMBER = "ZC283979";');
+    expect(privacy).toContain("Registered with the Information Commissioner's Office, registration reference <strong");
+    expect(privacy).toContain(", registered 4 November 2026.");
+    expect(staticPageBodyHtml("/privacy")).toContain("Registered with the Information Commissioner's Office, registration reference <strong>ZC283979</strong>, registered 4 November 2026.");
     expect(staticPageBodyHtml("/privacy")).not.toMatch(/pending/i);
   });
   it("terms allow valuing a car you are buying", () => {
@@ -68,6 +70,7 @@ describe("headline and old advert-check URL", () => {
   it("/check-an-advert goes to the advert checker", () => {
     expect(app).toContain('<Route path="/check-an-advert" element={<Navigate to="/check" replace />} />');
     expect(getRouteMeta("/check-an-advert")).toMatchObject({ canonicalPath: "/check", noindex: true, inSitemap: false });
+    expect(read("vite.config.ts")).toContain(`meta.path === "/check-an-advert" ? { ...extra, headHtml: '<meta http-equiv="refresh" content="0; url=/check" />' } : extra`);
   });
   it("new copy keeps the copy rules: no em dashes", () => {
     for (const s of [flow.match(/Free guest valuations[^<]*/)![0], "Buying? Check an advert", staticPageBodyHtml("/") ?? ""]) expect(s).not.toContain("\u2014");

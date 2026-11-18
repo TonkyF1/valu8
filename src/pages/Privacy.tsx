@@ -5,11 +5,10 @@ import { useSeo } from "@/lib/seo";
 import { getRouteMeta } from "@/data/routeMeta";
 
 /**
- * ICO registration number. The data protection fee was paid on 4 November 2026; fill this in once the number
- * appears on the ICO's public register (it was not listed when checked on 17 November 2026).
- * While empty, the page says the fee has been paid, without a number.
+ * ICO registration reference. Registered with the ICO on 4 November 2026 (reference ZC283979).
+ * If ever emptied, the page falls back to saying the fee has been paid, without a number.
  */
-export const ICO_REGISTRATION_NUMBER = "";
+export const ICO_REGISTRATION_NUMBER = "ZC283979";
 
 const Mail = () => <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>;
 
@@ -30,14 +29,14 @@ export default function Privacy() {
       <main id="main" className="flex-1 container max-w-3xl py-12 md:py-16">
         <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Legal</div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gradient mb-6">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground mb-10">Last updated: 17 November 2026</p>
+        <p className="text-sm text-muted-foreground mb-10">Last updated: 18 November 2026</p>
 
         <div className="max-w-none space-y-8 text-sm leading-relaxed text-foreground/85">
           <Section n={1} title="Who we are">
             <p>Valu8 (valu8.uk) gives free car valuations to people in the United Kingdom. Valu8 is the data controller for the personal data described here. You can reach us at <Mail />.</p>
             <p>
               {ICO_REGISTRATION_NUMBER
-                ? <>Registered with the Information Commissioner's Office, registration number <strong className="text-foreground">{ICO_REGISTRATION_NUMBER}</strong>.</>
+                ? <>Registered with the Information Commissioner's Office, registration reference <strong className="text-foreground">{ICO_REGISTRATION_NUMBER}</strong>, registered 4 November 2026.</>
                 : <>ICO: we have paid the Information Commissioner's Office data protection fee. Our registration number will be added here once it appears on the ICO's public register.</>}
             </p>
           </Section>

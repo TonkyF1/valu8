@@ -52,7 +52,7 @@ function routeMetadataHtml(): Plugin {
               : car
                 ? { bodyHtml: carModelBodyHtml(car), headHtml: '<script type="application/ld+json" id="car-value-jsonld">' + carModelJsonLd(car) + '</script>' }
                 : undefined;
-        const html = routeHtml(shell, meta, false, extra);
+        const html = routeHtml(shell, meta, false, meta.path === "/check-an-advert" ? { ...extra, headHtml: '<meta http-equiv="refresh" content="0; url=/check" />' } : extra);
         fs.mkdirSync(fileBase, { recursive: true });
         fs.writeFileSync(path.join(fileBase, "index.html"), html);
         fs.writeFileSync(`${fileBase}.html`, html);

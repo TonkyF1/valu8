@@ -30,7 +30,7 @@ The table above shows **asking prices**, which is what sellers advertise for. Wh
 - **Part-exchange:** usually lower again, because the dealer needs room to prepare and resell the car.
 - **Dealer retail:** usually the highest, as it includes preparation, warranty and margin.
 
-Your free Valu8 valuation shows all three for your car, so you can see the gap before you decide. More on choosing a route in [part-exchange vs private sale](/guides/part-exchange-vs-private-sale), and what to do if a dealer's figure feels low in [part-exchange offer too low?](/guides/part-exchange-offer-too-low)
+Your free Valu8 valuation gives you a private-sale estimate for your car, and the optional £2.99 Full report adds part-exchange and dealer figures, so you can see the gap before you decide. More on choosing a route in [part-exchange vs private sale](/guides/part-exchange-vs-private-sale), and what to do if a dealer's figure feels low in [part-exchange offer too low?](/guides/part-exchange-offer-too-low)
 
 ## What moves the price of a 2016 Fiesta
 
