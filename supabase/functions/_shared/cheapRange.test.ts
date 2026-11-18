@@ -36,3 +36,20 @@ Deno.test("emails: range under £5k, single figure above", () => {
   const adv = buildReportEmail("advert", { id: "y", make: "Ford", model: "Ka", estimate_private: 1000, asking_price: 1200 }, "https://u");
   assert(adv.text.includes("£700 – £1,500"));
 });
+
+Deno.test("emails: the free report email has no part-ex or dealer figures; an entitled one does", () => {
+  const item = { id: "x", make: "Ford", model: "Fiesta", report: { values: { privateSale: 9000, dealerTradeIn: 7000, dealerRetail: 11000 } } };
+  const free = buildReportEmail("valuation", item, "https://u");
+  for (const part of [free.html, free.text]) {
+    assert(!part.includes("Part-ex:") && !/>Part-ex</.test(part) && !part.includes("Dealer:") && !/>Dealer</.test(part), "no part-ex/dealer stats");
+    assert(!part.includes("£7,000") && !part.includes("£11,000"), "no part-ex/dealer figures");
+    assert(part.includes("Part-exchange and dealer prices come with the full £2.99 report"));
+  }
+  assert(free.text.includes("Get the full report · £2.99: ") && free.text.includes("#report-checkout"), "text part carries the offer URL");
+  const paid = buildReportEmail("valuation", item, "https://u", true);
+  assert(paid.text.includes("Part-ex: £7,000") && paid.text.includes("Dealer: £11,000"));
+  assert(paid.html.includes("£7,000") && paid.html.includes("£11,000"));
+  assert(!paid.text.includes("Part-exchange and dealer prices come with the full £2.99 report"));
+  const adv = buildReportEmail("advert", { id: "y", make: "Ford", model: "Ka", estimate_private: 1000, asking_price: 1200, estimate_dealer_low: 1300, estimate_dealer_high: 1700 }, "https://u");
+  assert(!adv.text.includes("Dealer range") && !adv.text.includes("£1,700") && !adv.html.includes("Dealer range"));
+});

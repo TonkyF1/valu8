@@ -43,6 +43,9 @@ Deno.test("emails: valuation emails carry the £2.99 report link tagged utm_sour
   assert(url.includes("utm_source=email") && url.includes("#report-checkout"));
   const m = buildReportEmail("valuation", { id: "abc", make: "Ford", model: "Fiesta", report: { values: { privateSale: 9000, dealerTradeIn: 7000, dealerRetail: 11000 } } }, "https://u");
   assert(m.html.includes("utm_source=email") && m.html.includes("£2.99"));
+  // Free (not entitled) by default: the £2.99 line points at the offer button, and the text part prints its URL.
+  assert(m.text.includes("Part-exchange and dealer prices come with the full £2.99 report") && m.text.includes(url));
+  assert(!m.text.includes("£7,000") && !m.text.includes("£11,000"));
   const f = await buildFollowupEmail("valuation", { id: "abc", make: "Ford", model: "Fiesta", report: {} }, "https://u");
   assert(f.html.includes("utm_campaign=followup") && f.text!.includes("£2.99"));
 });

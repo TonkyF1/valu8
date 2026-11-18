@@ -2,7 +2,7 @@ import type { ValuationReport } from "@/lib/valuation";
 import { buildPdfFilename } from "@/lib/pdf";
 import type { Intent } from "@/lib/intent";
 import { askingFor } from "@/lib/intent";
-import { normaliseReportPricing } from "@/lib/askingPrice";
+import { normaliseReportPricing, displayPrivateRange } from "@/lib/askingPrice";
 import { buyerGuide, compareAsking, diffLine, VERDICT_COPY, buyerChecks } from "@/lib/buyerGuide";
 
 interface VehicleInfo { make: string; model: string; year: number; mileage: number; registration: string | null; created_at: string }
@@ -44,9 +44,13 @@ export async function downloadPremiumPdf(v: VehicleInfo, r: ValuationReport, opt
   const val = r.values; let y = 90;
   doc.setFillColor(...INK); doc.roundedRect(m, y, W - 2 * m, 130, 10, 10, "F");
   doc.setTextColor(200, 200, 200); doc.setFontSize(9); doc.text(buying ? "ESTIMATED FAIR PRICE · PRIVATE SALE" : "PRIVATE SALE VALUE", m + 20, y + 28);
-  doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); fitFontSize(doc, gbp(val.privateSale), W - 2 * m - 40, 32, 14); doc.text(gbp(val.privateSale), m + 20, y + 64);
+  // One range everywhere: the Report page's headline range when it applies, else the comps band (see displayPrivateRange).
+  const range = displayPrivateRange(r), conf = r.marketConfidence ? ` · ${r.marketConfidence} confidence` : "";
+  const headline = !buying && range.headline ? range.text : gbp(val.privateSale);
+  doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); fitFontSize(doc, headline, W - 2 * m - 40, 32, 14); doc.text(headline, m + 20, y + 64);
   doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(200, 200, 200);
-  if (r.valueRange) doc.text(`Range ${gbp(r.valueRange.privateSaleLow)} - ${gbp(r.valueRange.privateSaleHigh)}${r.marketConfidence ? ` · ${r.marketConfidence} confidence` : ""}`, m + 20, y + 84);
+  if (!buying && range.headline) doc.text(`Realistic private sale ${gbp(range.mid)}${conf}`, m + 20, y + 84);
+  else if (range.low > 0 && range.high > 0) doc.text(`${buying ? "Estimated range" : "Range"} ${range.text}${conf}`, m + 20, y + 84);
   const bx = m + 20, bw = W - 2 * m - 40, span = Math.max(1, val.dealerRetail - val.dealerTradeIn);
   doc.setFillColor(70, 70, 70); doc.rect(bx, y + 100, bw, 4, "F");
   doc.setFillColor(...TEAL); doc.circle(bx + bw * Math.min(1, Math.max(0, (val.privateSale - val.dealerTradeIn) / span)), y + 102, 6, "F");

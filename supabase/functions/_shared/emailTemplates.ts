@@ -55,7 +55,12 @@ export function conditionFact(report: any, photoUrls: unknown): string | null {
   return `Photo condition ${Math.round(score * 10) / 10}/10`;
 }
 
-export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubscribe: string) {
+/** Free-email line pointing at the £2.99 offer button (the plain-text part prints that button's URL too). */
+export const FULL_REPORT_PRICES_LINE = "Part-exchange and dealer prices come with the full £2.99 report. Use the button below to get it.";
+
+/** `entitled` = the £2.99 Full Report is unlocked for this valuation (paid or redeemed referral). Part-ex and dealer
+ *  figures are paid-only, so they appear only when entitled. */
+export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubscribe: string, entitled = false) {
   const name = carTitle(item);
   const subject = `Your Valu8 report for ${name} is ready`;
   if (kind === "valuation") {
@@ -65,10 +70,10 @@ export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubs
     const price = pr ? pr.privateSale : Number(item.private_value) || 0;
     const low = pr ? pr.privateLow : Number(r?.valueRange?.privateSaleLow) || 0;
     const high = pr ? pr.privateHigh : Number(r?.valueRange?.privateSaleHigh) || 0;
-    const stats = [
+    const stats = entitled ? [
       ...(pr && pr.tradeIn > 0 ? [{ label: "Part-ex", value: gbp(pr.tradeIn) }] : []),
       ...(pr && pr.retail > 0 ? [{ label: "Dealer", value: gbp(pr.retail) }] : []),
-    ];
+    ] : [];
     // Headline is a range under £5,000 or for cars 16y+ (see cheapRange.ts). Sub-line matches the reason.
     const cheap = pr ? reportPriceRange(r, price) : cheapPriceRange(price);
     const { html, text } = renderEmail({
@@ -82,6 +87,7 @@ export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubs
         : { label: "Realistic private sale", value: gbp(price), sub: low > 0 && high > 0 ? `Range ${gbp(low)} – ${gbp(high)}` : null },
       stats,
       facts: [motFact(r, item.mot_expiry), conditionFact(r, item.photo_urls)].filter(Boolean) as string[],
+      lines: entitled ? [] : [FULL_REPORT_PRICES_LINE],
       buttons: [
         { label: "View your valuation", url: `${SITE}/valuation/${item.id}`, primary: true },
         { label: REPORT_OFFER_LABEL, url: reportOfferUrl(item.id, "report_ready") },
@@ -91,7 +97,6 @@ export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubs
     });
     return { subject, html, text };
   }
-  const low = Number(item.estimate_dealer_low) || 0, high = Number(item.estimate_dealer_high) || 0;
   const cheap = cheapPriceRange(Number(item.estimate_private));
   const fair = cheap ? formatPriceRange(cheap, " – ") : gbp(item.estimate_private);
   const { html, text } = renderEmail({
@@ -99,7 +104,7 @@ export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubs
     heading: `Your advert check for ${name} is ready`,
     carLine: carLine(item),
     price: { label: "Fair private price", value: fair, sub: item.asking_price > 0 ? `Advertised at ${gbp(item.asking_price)}` : null },
-    stats: low > 0 && high > 0 ? [{ label: "Dealer range", value: `${gbp(low)} – ${gbp(high)}` }] : [],
+    stats: [],
     buttons: [{ label: "View your check", url: `${SITE}/dashboard`, primary: true }],
     note: "Your check is saved in your Valu8 account.",
     unsubscribe,

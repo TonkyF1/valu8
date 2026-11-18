@@ -1,7 +1,7 @@
 import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
-import { reportPriceRange, formatPriceRange, rangeReasonCopy } from "../../supabase/functions/_shared/cheapRange";
+import { rangeReasonCopy } from "../../supabase/functions/_shared/cheapRange";
 import { groupMotByYear, motYearSummary } from "@/lib/motGroups";
-import { normaliseReportPricing } from "@/lib/askingPrice";
+import { normaliseReportPricing, displayPrivateRange } from "@/lib/askingPrice";
 import type jsPDF from "jspdf";
 import type { ValuationReport } from "@/lib/valuation";
 import { format } from "date-fns";
@@ -97,9 +97,9 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
       doc.text(t.label.toUpperCase(), x + 10, y + 16);
       doc.setTextColor(t.highlight ? 17 : 17, t.highlight ? 17 : 17, t.highlight ? 17 : 17);
       // Under £5,000 or 16y+ the private sale tier is a range (see cheapRange.ts)
-      const pr = t.highlight ? reportPriceRange(r, t.value) : null;
-      doc.setFontSize(pr ? 13 : 18);
-      doc.text(pr ? formatPriceRange(pr) : `£${t.value.toLocaleString()}`, x + 10, y + 42);
+      const pr = t.highlight ? displayPrivateRange(r) : null;
+      doc.setFontSize(pr?.headline ? 13 : 18);
+      doc.text(pr?.headline ? pr.text : `£${t.value.toLocaleString()}`, x + 10, y + 42);
     });
     y += 84;
   }
@@ -142,10 +142,10 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
   }
   if (!valuationUnavailable && (r.valueRange || r.valueReasoning)) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...MUTED);
-    const cheap = reportPriceRange(r, normaliseReportPricing(r).privateSale);
-    const low = cheap?.low ?? r.valueRange?.privateSaleLow ?? r.values.privateSale;
-    const high = cheap?.high ?? r.valueRange?.privateSaleHigh ?? r.values.privateSale;
-    doc.text(`PRIVATE SALE RANGE  £${low.toLocaleString()} – £${high.toLocaleString()}${r.marketConfidence ? `  •  ${r.marketConfidence.toUpperCase()} CONFIDENCE` : ""}`, margin, y - 8);
+    // Same range as the Report page headline (see displayPrivateRange).
+    const range = displayPrivateRange(r);
+    const cheap = range.headline;
+    doc.text(`PRIVATE SALE RANGE  ${range.text}${r.marketConfidence ? `  •  ${r.marketConfidence.toUpperCase()} CONFIDENCE` : ""}`, margin, y - 8);
     if (cheap) {
       doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...MUTED);
       doc.text(rangeReasonCopy(cheap), margin, y + 4);
