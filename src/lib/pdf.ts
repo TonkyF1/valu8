@@ -1,5 +1,5 @@
 import { vehicleTitle } from "../../supabase/functions/_shared/vehicle-text";
-import { reportPriceRange, formatPriceRange } from "../../supabase/functions/_shared/cheapRange";
+import { reportPriceRange, formatPriceRange, rangeReasonCopy } from "../../supabase/functions/_shared/cheapRange";
 import { groupMotByYear, motYearSummary } from "@/lib/motGroups";
 import { normaliseReportPricing } from "@/lib/askingPrice";
 import type jsPDF from "jspdf";
@@ -96,7 +96,7 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
       doc.setFont("helvetica", "bold"); doc.setFontSize(8);
       doc.text(t.label.toUpperCase(), x + 10, y + 16);
       doc.setTextColor(t.highlight ? 17 : 17, t.highlight ? 17 : 17, t.highlight ? 17 : 17);
-      // Under £5,000 the private sale tier is a range (see cheapRange.ts)
+      // Under £5,000 or 16y+ the private sale tier is a range (see cheapRange.ts)
       const pr = t.highlight ? reportPriceRange(r, t.value) : null;
       doc.setFontSize(pr ? 13 : 18);
       doc.text(pr ? formatPriceRange(pr) : `£${t.value.toLocaleString()}`, x + 10, y + 42);
@@ -146,6 +146,11 @@ export async function downloadValuationPdf(v: VehicleInfo, r: ValuationReport, o
     const low = cheap?.low ?? r.valueRange?.privateSaleLow ?? r.values.privateSale;
     const high = cheap?.high ?? r.valueRange?.privateSaleHigh ?? r.values.privateSale;
     doc.text(`PRIVATE SALE RANGE  £${low.toLocaleString()} – £${high.toLocaleString()}${r.marketConfidence ? `  •  ${r.marketConfidence.toUpperCase()} CONFIDENCE` : ""}`, margin, y - 8);
+    if (cheap) {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...MUTED);
+      doc.text(rangeReasonCopy(cheap), margin, y + 4);
+      y += 12;
+    }
     if (r.valueReasoning) {
       y = wrappedText(doc, r.valueReasoning, margin, y + 8, pageW - margin * 2, 9, 12, MUTED);
       y += 6;

@@ -13,7 +13,7 @@ import { inferPerformanceTrim, type TrimHint } from "@/lib/perfTrim";
 import { functionErrorBody, getGuestToken, photoToDataUrl, rememberGuestValuation } from "@/lib/guest";
 import { PHOTO_SLOTS, fillEmptySlots, type PhotoSlotKey } from "@/lib/cars";
 import { normaliseReportPricing } from "@/lib/askingPrice";
-import { reportPriceRange } from "../../../supabase/functions/_shared/cheapRange";
+import { reportPriceRange, rangeReasonCopy } from "../../../supabase/functions/_shared/cheapRange";
 import { ElementsCheckout } from "@/components/ReportCheckout";
 import { CheckoutSheet } from "./CheckoutSheet";
 import { closeKeyboard, scrollPageTop } from "@/lib/scrollTop";
@@ -39,7 +39,7 @@ type Gearbox = "Automatic" | "Manual";
 const gearboxOf = (t?: string): Gearbox | "" => (/auto|semi|dsg|cvt|tiptronic|steptronic|tronic|pdk|dct/i.test(t ?? "") ? "Automatic" : /manual/i.test(t ?? "") ? "Manual" : "");
 interface Photo { key: PhotoSlotKey; file: File; preview: string }
 type Stage = "idle" | "looking" | "estimating" | "estimate" | "refining" | "refined";
-interface Band { low: number; high: number; single: boolean }
+interface Band { low: number; high: number; single: boolean; why?: string }
 
 const SHORT_SLOT: Record<string, string> = { front: "Front 3/4 angle", rear: "Rear 3/4 angle", side: "Driver's side", interior: "Interior", odometer: "Odometer", engine: "Engine bay" };
 const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
@@ -52,7 +52,7 @@ function bandFor(report: any): Band | null {
   const p = normaliseReportPricing(report).privateSale;
   if (!(p > 0)) return null;
   const r = reportPriceRange(report, p);
-  return r ? { low: r.low, high: r.high, single: false } : { low: p, high: p, single: true };
+  return r ? { low: r.low, high: r.high, single: false, why: rangeReasonCopy(r) } : { low: p, high: p, single: true };
 }
 const bandText = (b: Band) => (b.single ? gbp(b.low) : `${gbp(b.low)}–${gbp(b.high)}`);
 
@@ -601,6 +601,7 @@ export function TeslaFlow() {
                   {(lines) => lines.map((l, i) => <RollingPrice key={i} text={l} />)}
                 </FitPrice>
                 <div className="t8-meta">{refined ? "Updated with your details" : "Private sale"}</div>
+                {band.why && <p className="t8-range-why" data-testid="t8-range-why">{band.why}</p>}
                 {grade && (
                   <div className="t8-grade" style={{ color: grade.color, borderColor: `${grade.color}59`, background: `${grade.color}14` }} aria-label={`Car grade: ${grade.label}`}>{grade.label}</div>
                 )}

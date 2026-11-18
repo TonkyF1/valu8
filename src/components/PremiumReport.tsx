@@ -5,6 +5,7 @@ import type { Intent } from "@/lib/intent";
 import { askingFor, saveAskingFor } from "@/lib/intent";
 import { normaliseReportPricing } from "@/lib/askingPrice";
 import { buyerGuide, compareAsking, diffLine, parseAsking, VERDICT_COPY, buyerChecks } from "@/lib/buyerGuide";
+import { reportPriceRange, rangeReasonCopy } from "../../supabase/functions/_shared/cheapRange";
 
 const gbp = (n?: number) => (typeof n === "number" && isFinite(n) ? `£${Math.round(n).toLocaleString("en-GB")}` : "–");
 
@@ -12,6 +13,7 @@ const gbp = (n?: number) => (typeof n === "number" && isFinite(n) ? `£${Math.ro
 export function PremiumReport({ r, registration, intent = "selling", valuationId }: { r: ValuationReport; registration?: string | null; intent?: Intent; valuationId?: string }) {
   if (intent === "buying") return <BuyerPremiumReport r={r} registration={registration} valuationId={valuationId} />;
   const v = r.values;
+  const pr = reportPriceRange(r, v.privateSale);
   const lo = r.valueRange?.privateSaleLow, hi = r.valueRange?.privateSaleHigh;
   const span = Math.max(1, v.dealerRetail - v.dealerTradeIn);
   const pos = Math.min(100, Math.max(0, ((v.privateSale - v.dealerTradeIn) / span) * 100));
@@ -31,6 +33,7 @@ export function PremiumReport({ r, registration, intent = "selling", valuationId
         <p className="text-xs uppercase tracking-widest opacity-60">Private sale value</p>
         <FitPrice text={gbp(v.privateSale)} align="left" allowSplit={false} floorPx={18} boxClassName="mt-1" className="text-4xl font-bold" style={{ display: "inline-block" }} testId="pr-headline" />
         {lo && hi ? <p className="text-sm opacity-70 mt-1">Range {gbp(lo)} – {gbp(hi)}{r.marketConfidence ? ` · ${r.marketConfidence} confidence` : ""}</p> : null}
+        {pr ? <p className="text-sm opacity-70 mt-1" data-testid="pr-range-why">{rangeReasonCopy(pr)}</p> : null}
         <div className="mt-4 h-1.5 rounded-full bg-white/15 relative">
           <div className="absolute -top-1 h-3.5 w-3.5 rounded-full bg-[#00D6C8]" style={{ left: `calc(${pos}% - 7px)` }} />
         </div>

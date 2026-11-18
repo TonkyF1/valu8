@@ -15,6 +15,7 @@
 /* Auto-fit price box: the price scales down (or a range wraps to two lines) so it never leaves the screen. */
 .t8-pricebox{padding:0 16px;display:flex;justify-content:center}
 .t8-meta{margin-top:12px;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--t8-dim)}
+.t8-range-why{margin:8px auto 0;max-width:36ch;padding:0 16px;font-size:12px;line-height:1.4;font-weight:400;letter-spacing:0;text-transform:none;color:var(--t8-dim);text-align:center}
 .t8-fade{transition:opacity .6s var(--t8-ease),transform .7s var(--t8-ease)}
 .t8-hide{opacity:0;transform:translate3d(0,10px,0)}
 
