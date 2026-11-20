@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { setJsonLd } from "./newPageMeta";
 import { BadgePoundSterling, Camera, FileCheck2, Gauge, ShieldAlert, Wind } from "lucide-react";
 import { Header, TestModeBanner } from "@/components/Layout";
 import { Footer } from "@/components/Footer";
@@ -25,6 +27,10 @@ const FEATURES = [
 export default function Landing() {
   const { user, loading } = useAuth();
   useSeo(getRouteMeta("/"));
+  useEffect(() => setJsonLd("homepage-faq-jsonld", {
+    "@context": "https://schema.org", "@type": "FAQPage",
+    mainEntity: HOME_FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+  }), []);
 
   // Returning from sign-in with an unfinished valuation: carry on where they left off.
   let pending = false;
@@ -89,10 +95,6 @@ export default function Landing() {
         </section>
       </main>
       <Footer />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-        "@context": "https://schema.org", "@type": "FAQPage",
-        mainEntity: HOME_FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-      }) }} />
     </div>
   );
 }
