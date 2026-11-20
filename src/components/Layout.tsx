@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink as RouterNavLink, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeftRight, LayoutDashboard, Menu, Plus, SearchCheck, UserCircle2, Tag, Car } from "lucide-react";
+import { ArrowLeftRight, BookOpen, HelpCircle, Info, LayoutDashboard, ListChecks, Menu, Plus, SearchCheck, UserCircle2, Tag, Car } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { HomeLink, START_PATH } from "@/components/HomeLink";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,14 @@ const PUBLIC_NAV: Item[] = [
   { to: START_PATH, label: "Value a car", icon: Car },
   { to: "/check", label: "Check an advert", icon: SearchCheck },
   { to: "/pricing", label: "Pricing", icon: Tag },
+];
+
+const MORE_NAV: Item[] = [
+  { to: "/how-it-works", label: "How it works", icon: ListChecks },
+  { to: "/car-values", label: "Car values", icon: Car },
+  { to: "/guides", label: "Guides", icon: BookOpen },
+  { to: "/faq", label: "FAQ", icon: HelpCircle },
+  { to: "/about", label: "About", icon: Info },
 ];
 
 const USER_NAV: Item[] = [
@@ -109,6 +117,13 @@ export function Header() {
                       <Icon className="h-4 w-4 text-primary" aria-hidden /> {label}
                     </RouterNavLink>
                   ))}
+                  <div className="my-2 border-t border-border/60" />
+                  {MORE_NAV.filter((m) => !items.some((i) => i.to === m.to)).map(({ to, label, icon: Icon }) => (
+                    <RouterNavLink key={to} to={to} onClick={() => setOpen(false)}
+                      className={({ isActive }) => cn("flex items-center gap-3 rounded-lg px-3 py-3 text-[15px] font-medium transition-colors", isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground")}>
+                      <Icon className="h-4 w-4 text-primary" aria-hidden /> {label}
+                    </RouterNavLink>
+                  ))}
                 </nav>
                 <div className="border-t border-border/60 p-4">
                   {user ? (
@@ -125,6 +140,41 @@ export function Header() {
           </div>
         </div>
       </header>
+      <StickyValueCta />
     </>
+  );
+}
+
+/** Long content pages that get the small bottom "Value a car" pill on phones. Not home, the flow, the dashboard or app screens. */
+const STICKY_PREFIXES = ["/guides", "/about", "/contact", "/pricing", `/${"accuracy"}`, "/how-it-works", "/faq", "/example-report", "/value", "/car-values"];
+
+export function showsStickyCta(pathname: string): boolean {
+  return STICKY_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
+/** Phone-only pill: appears after a little scrolling and hides near the footer so it never covers links. */
+function StickyValueCta() {
+  const { pathname } = useLocation();
+  const on = showsStickyCta(pathname);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!on) { setVisible(false); return; }
+    const check = () => {
+      const y = window.scrollY, h = document.documentElement.scrollHeight - window.innerHeight;
+      setVisible(y > 500 && h - y > 360);
+    };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    return () => { window.removeEventListener("scroll", check); window.removeEventListener("resize", check); };
+  }, [on, pathname]);
+  if (!on) return null;
+  return (
+    <div data-testid="sticky-cta" aria-hidden={!visible}
+      className={cn("md:hidden fixed left-1/2 -translate-x-1/2 z-30 bottom-[max(16px,env(safe-area-inset-bottom))] transition-all duration-300", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none")}>
+      <HomeLink focusReg tabIndex={visible ? 0 : -1} className={cn(buttonVariants({ variant: "hero", size: "sm" }), "rounded-full px-5 min-h-[44px]")}>
+        <Car className="h-4 w-4" aria-hidden /> Value a car
+      </HomeLink>
+    </div>
   );
 }

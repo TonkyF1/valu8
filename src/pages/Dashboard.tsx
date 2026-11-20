@@ -112,6 +112,9 @@ export default function Dashboard() {
     return out.slice(0, 3);
   })();
 
+  const feedbackDue = rows.filter((r) => needsSaleFeedbackPrompt(r));
+  const attention = motReminders.length + (feedbackDue.length > 0 ? 1 : 0);
+
   const firstName = user?.email?.split("@")[0]?.replace(/[^a-zA-Z]/g, "") || "there";
   const greeting = (() => {
     const h = new Date().getHours();
@@ -179,8 +182,9 @@ export default function Dashboard() {
         </section>
 
         {/* MOT revalue reminders */}
-        {motReminders.length > 0 && (
-          <section aria-label="MOT reminders" className="grid gap-2.5 mb-8">
+        {!loading && attention > 0 && (
+          <section aria-label="Needs attention" className="grid gap-2.5 mb-8">
+            <h2 className="text-sm font-semibold tracking-tight flex items-center gap-2">Needs attention <span className="text-muted-foreground font-normal">{attention}</span></h2>
             {motReminders.map(({ row, due }) => {
               const name = vehicleTitle({ year: row.year, make: row.make, model: row.model });
               const when = due.status === "overdue"
@@ -210,6 +214,18 @@ export default function Dashboard() {
                 </div>
               );
             })}
+              {feedbackDue.length > 0 && (
+                <div className="rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 to-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center items-start gap-3 shadow-[0_0_40px_-12px_hsl(var(--primary)/0.45)]">
+                  <HandCoins className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden />
+                  <div className="flex-1 min-w-0 text-sm">
+                    <p className="font-medium">Sold your {vehicleTitle({ year: feedbackDue[0].year, make: feedbackDue[0].make, model: feedbackDue[0].model })}?</p>
+                    <p className="text-muted-foreground mt-0.5">If you've sold {feedbackDue.length > 1 ? "any of these cars" : "it"}, telling us the price takes a few seconds and helps us make our valuations more accurate. Totally optional. <Link to="/accuracy" className="text-primary underline underline-offset-2">See our accuracy results</Link>.</p>
+                  </div>
+                  <Button asChild size="sm" variant="hero" className="shrink-0 min-h-[44px] w-full sm:w-auto">
+                    <Link to={`/valuation/${feedbackDue[0].id}#sale-feedback`}>Sold it? Tell us what you got</Link>
+                  </Button>
+                </div>
+              )}
           </section>
         )}
 
@@ -268,11 +284,8 @@ export default function Dashboard() {
                   </div>
                   <h3 className="text-xl sm:text-2xl font-semibold tracking-tight">No valuations yet</h3>
                   <p className="text-muted-foreground mt-2 text-sm max-w-sm mx-auto">
-                    Get your first photo aware valuation in under a minute.
+                    Use New valuation above to get your first photo aware valuation in under a minute.
                   </p>
-                  <Button asChild variant="hero" size="lg" className="mt-7">
-                    <Link to="/"><Plus className="h-4 w-4" /> Start your first valuation</Link>
-                  </Button>
                 </div>
               </div>
             );
@@ -304,21 +317,8 @@ export default function Dashboard() {
             );
           }
 
-          const feedbackDue = rows.filter((r) => needsSaleFeedbackPrompt(r));
           return (
             <div className="grid gap-3">
-              {feedbackDue.length > 0 && (
-                <div className="rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 to-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center items-start gap-3 shadow-[0_0_40px_-12px_hsl(var(--primary)/0.45)]">
-                  <HandCoins className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden />
-                  <div className="flex-1 min-w-0 text-sm">
-                    <p className="font-medium">Sold your {vehicleTitle({ year: feedbackDue[0].year, make: feedbackDue[0].make, model: feedbackDue[0].model })}?</p>
-                    <p className="text-muted-foreground mt-0.5">If you've sold {feedbackDue.length > 1 ? "any of these cars" : "it"}, telling us the price takes a few seconds and helps us make our valuations more accurate. Totally optional. <Link to="/accuracy" className="text-primary underline underline-offset-2">See our accuracy results</Link>.</p>
-                  </div>
-                  <Button asChild size="sm" variant="hero" className="shrink-0 min-h-[44px] w-full sm:w-auto">
-                    <Link to={`/valuation/${feedbackDue[0].id}#sale-feedback`}>Sold it? Tell us what you got</Link>
-                  </Button>
-                </div>
-              )}
               {list.map((r) => {
                 const cover = coverUrls[r.id] || null;
                 const variant = (r as any).report?.variant || (r as any).variant;
@@ -358,7 +358,7 @@ export default function Dashboard() {
                             </span>
                           )}
                         </div>
-                        <p className="sm:hidden mt-1 text-base font-bold tabular-nums text-primary">
+                        <p className="sm:hidden mt-1 text-xl font-bold tabular-nums text-primary">
                           {valuationUnavailable ? <span className="text-sm font-semibold text-amber-300">Specialist valuation recommended</span> : <>{headlinePrivateText(Math.round((r.private_value || 0) / 50) * 50, r.report)} <span className="text-[11px] font-medium text-muted-foreground">private sale</span></>}
                         </p>
                         <div className="flex items-center gap-x-2.5 gap-y-1 mt-1.5 text-xs text-muted-foreground flex-wrap">

@@ -43,6 +43,9 @@ const CarValuesIndex = lazy(() => import("./pages/CarValuesIndex"));
 const ModelValue = lazy(() => import("./pages/ModelValue"));
 const ValueIndex = lazy(() => import("./pages/ModelValue").then((m) => ({ default: m.ValueIndex })));
 const ModelYearValue = lazy(() => import("./pages/ModelValue").then((m) => ({ default: m.ModelYearValue })));
+const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage"));
+const FaqPage = lazy(() => import("./pages/FaqPage"));
+const ExampleReportPage = lazy(() => import("./pages/ExampleReportPage"));
 const GuidesIndex = lazy(() => import("./pages/GuidesIndex"));
 const Guide = lazy(() => import("./pages/Guide"));
 const EmbedInfo = lazy(() => import("./pages/EmbedInfo"));
@@ -93,6 +96,9 @@ const App = () => (
             <Route path="/value/:slug/:year" element={<ModelYearValue />} />
             <Route path="/car-values" element={<CarValuesIndex />} />
             <Route path="/car-values/:make/:model" element={<CarValue />} />
+            <Route path="/how-it-works" element={<HowItWorksPage />} />
+            <Route path="/faq" element={<FaqPage />} />
+            <Route path="/example-report" element={<ExampleReportPage />} />
             <Route path="/guides" element={<GuidesIndex />} />
             <Route path="/guides/:slug" element={<Guide />} />
             <Route path="/embed-info" element={<EmbedInfo />} />

@@ -32,6 +32,8 @@ const Chev = () => (<svg width="16" height="16" viewBox="0 0 16 16" fill="none" 
 
 /** Sends the visitor back up to the registration card (TeslaFlow listens), ready for the premium path. */
 export function goToReg(premium: boolean) {
+  // Outside the homepage there is no reg card to scroll to: open the homepage instead.
+  if (typeof window !== "undefined" && window.location.pathname !== "/") { window.location.assign("/"); return; }
   window.dispatchEvent(new CustomEvent("valu8:reg", { detail: { premium } }));
 }
 
@@ -222,20 +224,21 @@ export const FAQS: { q: string; a: string }[] = [
   { q: "Who can see my valuation?", a: "Your valuations are private to your account unless you choose to share a report link. See our privacy policy for how data is handled." },
 ];
 
-export function Faq() {
+export function Faq({ items = FAQS, more = false, cta = true }: { items?: typeof FAQS; more?: boolean; cta?: boolean } = {}) {
   return (
     <section className="bs-sec" aria-labelledby="bs-faq-h">
       <h2 id="bs-faq-h" className="bs-h2">Questions</h2>
       <div className="bs-faq">
-        {FAQS.map((f, i) => (
+        {items.map((f, i) => (
           <details key={f.q} open={i === 0}>
             <summary>{f.q}<Chev /></summary>
             <p>{f.a}</p>
           </details>
         ))}
       </div>
-      <button type="button" className="bs-cta" style={{ marginTop: 22 }} onClick={() => goToReg(false)}>Value a car · Free</button>
-      <p className="bs-reass">Enter a registration to start.</p>
+      {more && <p className="bs-reass" style={{ marginTop: 18 }}><Link to="/faq" className="bs-link">More questions →</Link></p>}
+      {cta && <><button type="button" className="bs-cta" style={{ marginTop: 22 }} onClick={() => goToReg(false)}>Value a car · Free</button>
+      <p className="bs-reass">Enter a registration to start.</p></>}
     </section>
   );
 }
