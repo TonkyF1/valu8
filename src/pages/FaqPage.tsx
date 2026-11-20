@@ -9,7 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Faq, FAQS } from "@/components/home/BuyerSellerSections";
 
-const META = newPageMeta("/faq", { title: 'Car valuation FAQs: your questions answered | Valu8', description: "Straight answers on Valu8 car valuations: what's free, what the £2.99 report adds, how prices are worked out and who can see your valuation." });
+const META = newPageMeta("/faq", { title: "Car valuation FAQs: your questions answered | Valu8", description: "Straight answers on Valu8 car valuations: what's free, what the £2.99 report adds, how prices are worked out and who can see your valuation." });
 
 export default function FaqPage() {
   useSeo(META);
