@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, NavLink as RouterNavLink, useLocation } from "react-router-dom";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeftRight, BookOpen, HelpCircle, Info, LayoutDashboard, ListChecks, Menu, Plus, SearchCheck, UserCircle2, Tag, Car } from "lucide-react";
@@ -140,41 +140,6 @@ export function Header() {
           </div>
         </div>
       </header>
-      <StickyValueCta />
     </>
-  );
-}
-
-/** Long content pages that get the small bottom "Value a car" pill on phones. Not home, the flow, the dashboard or app screens. */
-const STICKY_PREFIXES = ["/guides", "/about", "/contact", "/pricing", `/${"accuracy"}`, "/how-it-works", "/faq", "/example-report", "/value", "/car-values"];
-
-export function showsStickyCta(pathname: string): boolean {
-  return STICKY_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
-}
-
-/** Phone-only pill: appears after a little scrolling and hides near the footer so it never covers links. */
-function StickyValueCta() {
-  const { pathname } = useLocation();
-  const on = showsStickyCta(pathname);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    if (!on) { setVisible(false); return; }
-    const check = () => {
-      const y = window.scrollY, h = document.documentElement.scrollHeight - window.innerHeight;
-      setVisible(y > 500 && h - y > 360);
-    };
-    check();
-    window.addEventListener("scroll", check, { passive: true });
-    window.addEventListener("resize", check);
-    return () => { window.removeEventListener("scroll", check); window.removeEventListener("resize", check); };
-  }, [on, pathname]);
-  if (!on) return null;
-  return (
-    <div data-testid="sticky-cta" aria-hidden={!visible}
-      className={cn("md:hidden fixed left-1/2 -translate-x-1/2 z-30 bottom-[max(16px,env(safe-area-inset-bottom))] transition-all duration-300", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none")}>
-      <HomeLink focusReg tabIndex={visible ? 0 : -1} className={cn(buttonVariants({ variant: "hero", size: "sm" }), "rounded-full px-5 min-h-[44px]")}>
-        <Car className="h-4 w-4" aria-hidden /> Value a car
-      </HomeLink>
-    </div>
   );
 }
