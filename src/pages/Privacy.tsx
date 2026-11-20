@@ -74,6 +74,7 @@ export default function Privacy() {
               <li>PostHog (EU): analytics, only with your consent.</li>
               <li>Meta Platforms Ireland: advertising measurement (Meta Pixel and Conversions API), only with your consent. Meta acts as a joint controller for this measurement and its own use is covered by Meta's privacy policy.</li>
               <li>Stripe: takes payment for the Full report. We never see your card details.</li>
+              <li>carVertical (affiliate link): the "Full vehicle history check" button links to carVertical's own site. Valu8 earns a commission if you buy. We don't share your registration or personal data with them; they handle any purchase under their own privacy policy.</li>
             </ul>
             <p>Each processor acts only on our instructions. Where data leaves the UK, it is protected by appropriate safeguards such as the UK International Data Transfer Addendum.</p>
           </Section>
