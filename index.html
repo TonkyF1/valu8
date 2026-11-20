@@ -62,7 +62,7 @@
       // Pre-built route pages already carry their own canonical; trust it.
       if (!known && canonHref && canonHref !== "https://valu8.uk/") known = true;
       if (!known) {
-        var exact = ["/auth", "/reset-password", "/dashboard", "/valuation/new", "/buyer", "/check-an-advert", "/check", "/accuracy", "/pricing", "/compare", "/admin", "/profile", "/car-values", "/privacy", "/bot", "/terms", "/disclaimers", "/about", "/contact", "/unsubscribe", "/email-answer", "/guides", "/value", "/embed-info"];
+        var exact = ["/auth", "/reset-password", "/dashboard", "/valuation/new", "/buyer", "/check-an-advert", "/check", "/accuracy", "/pricing", "/compare", "/admin", "/profile", "/car-values", "/privacy", "/bot", "/terms", "/disclaimers", "/about", "/contact", "/unsubscribe", "/email-answer", "/guides", "/value", "/embed-info", "/how-it-works", "/faq", "/example-report"];
         for (var i = 0; i < exact.length; i++) if (exact[i] === p) { known = true; break; }
       }
       if (!known) {

@@ -5,10 +5,13 @@
 // Node-safe: imported by scripts/sitemap.ts at build time. src/test/sitemapLastmod.test.ts keeps it complete.
 
 export const PAGE_LASTMOD: Record<string, string> = {
-  "/": "2026-11-18", // H1 "Free car valuation by registration", popular model links
+  "/": "2026-11-20", // shortened: example report, full FAQ and how-it-works moved to their own pages
   "/check": "2026-11-17", // guest limit copy
   "/car-values": "2026-11-18", // hub lists /value pages
   "/pricing": "2026-11-18", // part-ex and dealer figures moved to the £2.99 Full report
+  "/how-it-works": "2026-11-20", // new page (Tony approved the sitemap URL 20 Nov)
+  "/faq": "2026-11-20", // new page
+  "/example-report": "2026-11-20", // new page
   "/about": "2026-11-06",
   "/contact": "2026-11-06",
   "/privacy": "2026-11-20", // carVertical registration line
