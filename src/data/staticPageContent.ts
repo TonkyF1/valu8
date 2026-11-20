@@ -1,24 +1,74 @@
 import { embedInfoBodyHtml } from "./embedContent";
 import { escapeHtml } from "../../scripts/routeHtml";
 import { popularModelsHtml } from "./popularModels";
+import { HOME_FAQS, SITE_FAQS, faqPageJsonLd, type SiteFaq } from "./siteFaqs";
 
 /** Render non-interactive page copy into the build-time HTML root. React replaces it on mount. */
 function page(title: string, intro: string, sections: [string, string][]): string {
   return `<main id="main"><header><h1>${escapeHtml(title)}</h1><p>${escapeHtml(intro)}</p></header>${sections.map(([heading, body]) => `<section><h2>${escapeHtml(heading)}</h2><p>${body}</p></section>`).join("")}</main>`;
 }
 
-const homepageFaqJsonLd = JSON.stringify({
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    ["How is the valuation worked out?", "Prices are estimated from comparable UK adverts for your make and model, adjusted for your car's age and mileage. Every report shows its confidence level and how the figure was built."],
-    ["Where does the data come from?", "MOT history comes from the official DVSA database. Market prices are estimates built from comparable UK adverts plus an AI market estimate, and are clearly labelled as estimates. Photo condition checks are done by AI."],
-    ["Is it really free?", "The valuation (Essentials) is free. The Full seller report is a one-off £2.99 — no subscription. Pay by card, Apple Pay or Google Pay."],
-    ["Do I need photos?", "No, but adding a few lets us spot condition issues and selling points that move the price, and gives you better advert copy."],
-    ["Who can see my valuation?", "Your valuations are private to your account unless you choose to share a report link. See our privacy policy for how data is handled."],
-    ["Should I sell privately or part-exchange?", "The £2.99 Full report shows both. Private sale usually gets more money; part-exchange is quicker. We show the gap so you can decide if it's worth it."],
-  ].map(([name, text]) => ({ "@type": "Question", name, acceptedAnswer: { "@type": "Answer", text } })),
-});
+// FAQPage JSON-LD must match the FAQs a visitor can see: the homepage shows the first four, /faq shows them all.
+const homepageFaqJsonLd = faqPageJsonLd(HOME_FAQS);
+
+/** Build-time HTML with raw section bodies (lists, h3s), for pages whose copy isn't one paragraph per section. */
+function richPage(title: string, intro: string, sections: [string, string][]): string {
+  return `<main id="main"><header><h1>${escapeHtml(title)}</h1><p>${escapeHtml(intro)}</p></header>${sections.map(([heading, body]) => `<section><h2>${escapeHtml(heading)}</h2>${body}</section>`).join("")}</main>`;
+}
+const p = (t: string) => `<p>${escapeHtml(t)}</p>`;
+const items = (rows: [string, string][]) => rows.map(([h, t]) => `<h3>${escapeHtml(h)}</h3>${p(t)}`).join("");
+const faqItems = (list: SiteFaq[]) => list.map((f) => `<h3>${escapeHtml(f.q)}</h3>${p(f.a)}`).join("");
+const READY_LINKS = '<p><a href="/">Value a car, free</a> · <a href="/pricing">Pricing</a> · <a href="/guides">Guides</a> · <a href="/faq">FAQ</a></p>';
+
+// Copy for /how-it-works, /faq and /example-report mirrors HowItWorksPage, FaqPage and ExampleReportPage
+// (sections from src/components/home/BuyerSellerSections.tsx). React replaces it on mount.
+const HOW_STEPS: [string, string][] = [["Registration", "Enter the number plate of the car you’re buying or selling"], ["Details", "Confirm the mileage, trim and history"], ["Photos", "Add a few photos (optional) for a condition score"], ["Result", "Get a free valuation, then unlock buying or selling guidance"]];
+const howStepsHtml = `<ol>${HOW_STEPS.map(([t, d]) => `<li><strong>${escapeHtml(t)}</strong>: ${escapeHtml(d)}</li>`).join("")}</ol>`;
+
+function howItWorksBodyHtml(): string {
+  return richPage("How Valu8 works", "Enter a UK number plate and get a free private-sale estimate built from comparable adverts, adjusted for age and mileage and backed by official MOT history.", [
+    ["How it works", howStepsHtml],
+    ["More than a number. A valuation with context.", p("How Valu8 reaches its estimates, in plain English.") + items([
+      ["Comparable UK adverts", "We look at typical asking prices for the same make and model in UK adverts."],
+      ["Age and mileage", "Each comparable is adjusted to the car’s age and mileage, so like is compared with like."],
+      ["MOT history", "Official DVSA records add context: passes, advisories and the mileage at every test."],
+      ["Condition", "Optional photos let us flag visible wear and selling points that can move the estimate."],
+      ["Confidence rating", "Shows how much comparable market data sits behind the estimate. Low confidence means fewer similar cars, so treat the figure as a rougher guide."],
+    ]) + p("Valu8 doesn’t buy or sell vehicles. We provide valuations to help you make more informed decisions.") + p("Valuations and negotiation ranges are estimates, not guaranteed prices. They don’t replace a vehicle history check or a mechanical inspection.")],
+    ["Built for both sides of the deal.", items([
+      ["Understand the market", "See estimated vehicle values informed by relevant market information."],
+      ["Buy with confidence", "Understand what a car may be worth before making an offer."],
+      ["Sell smarter", "Choose a realistic asking price and approach negotiations prepared."],
+      ["Independent valuations", "We don’t buy or sell cars, so our service isn’t designed to generate purchase offers for your vehicle."],
+      ["Affordable insights", "Get personalised buying or selling guidance for just £2.99."],
+    ])],
+    ["Ready to value your car?", READY_LINKS + '<p><a href="/example-report">See an example report</a></p>'],
+  ]);
+}
+
+function faqBodyHtml(): string {
+  return richPage("Car valuation FAQs", "Straight answers about how Valu8 values a car, what is free and what the £2.99 report adds.", [
+    ["Questions", faqItems(SITE_FAQS)],
+    ["Ready to value your car?", READY_LINKS.replace(' · <a href="/faq">FAQ</a>', ' · <a href="/how-it-works">How Valu8 works</a>')],
+  ]);
+}
+
+function exampleReportBodyHtml(): string {
+  return richPage("Example Valu8 car valuation report", "An illustrative report for a made-up car, showing the buying and selling guidance the £2.99 report adds to the free valuation.", [
+    ["See how Valu8 helps you make the right deal.", p("Explore how our premium reports turn vehicle valuations into personalised buying and selling guidance.")
+      + p("Example car: 2018 Ford Fiesta 1.0 EcoBoost, 42,000 miles, medium confidence.")
+      + '<ul><li>Part-exchange: £6,400</li><li>Private sale: £7,700</li><li>Dealer retail: £9,100</li></ul>'
+      + items([
+        ["Your Personalised Selling Strategy", "A suggested advertised asking price, an estimated selling range of £7,500 to £7,900, a negotiation target of £7,700 and the lowest offer to accept, plus a ready-to-use advert: 2018 Ford Fiesta 1.0 EcoBoost, 42,000 miles. Six MOT passes with the mileage consistent at every test. Two minor advisories on the latest MOT. Light scuff on the rear bumper, priced to reflect it. Drives well and ready for a new owner."],
+        ["Your Personalised Buying Strategy", "An estimated fair purchase price, a suggested opening offer and a negotiation range, compared with the advertised asking price of £8,495."],
+      ])
+      + p("Priced from comparable UK adverts, each adjusted to this car’s age and mileage. MOT: 6 passes, 2 minor advisories, mileage consistent.")
+      + p("Illustrative example only, not a real vehicle or valuation.")],
+    ["A valuation tells you the price. Valu8 helps you make the deal.", p("Turn a car’s estimated value into practical buying or selling guidance. Know what to offer, what to ask and how to negotiate with confidence. One-off payment. No subscription.")],
+    ["Ready to value your car?", READY_LINKS],
+  ]);
+}
+
 
 const legalSections: Record<string, [string, string][]> = {
   "/privacy": [
@@ -60,12 +110,13 @@ export function staticPageBodyHtml(path: string): string | undefined {
       ["We don't buy cars", "We don't buy cars, so we've no reason to nudge your number up or down. Independent: we don't buy, sell or broker cars. The free valuation gives a private-sale estimate, and the £2.99 Full report adds part-ex and dealer prices. Official DVSA MOT history and mileage records. Optional photo condition score. Free guest valuations are limited each day; a free account gives you more."],
       ["Free UK car valuation", "Buying or selling, get a free valuation from the number plate. Your report includes official DVSA MOT data where available. <a href=\"/valuation/new\">Start your free valuation</a> or <a href=\"/check\">check if a used car advert is fairly priced</a>."],
       ["Buying a used car?", "<a href=\"/check\">Check an advert</a>: copy in the details from any UK car advert to see how the asking price compares with our estimated ranges."],
-      ["How it works", "Enter your registration and mileage, confirm the car and add service notes, optionally add photos for a condition score, then get your valuation and report."],
-      ["What's in every report", "A market-based private-sale estimate, with part-exchange and dealer estimates in the £2.99 Full report; optional photo condition checks; official DVSA MOT history; mileage consistency information; a GOV.UK recall-check link; and estimated tax and clean-air-zone information with links to official checkers."],
-      ["Private sale, part-exchange or dealer price", "The £2.99 Full report shows the different price types so you can choose a selling route and set an asking price with room to negotiate. All figures are estimates, not guaranteed offers."],
-      ["Questions", "Essentials is free. The optional Full seller report is a one-off £2.99 with no subscription. Photos are optional. Valuations remain private unless you share a report link."],
-      ["Popular car valuations", "Explore <a href=\"/value\">typical UK asking prices by make and model</a> or read our <a href=\"/guides\">UK car valuation, buying and selling guides</a>."],
-    ]).replace(/<\/main>$/, popularModelsHtml() + "</main>");
+      ["Free to value. £2.99 to make the deal.", "The free valuation gives a private-sale estimate from the registration, its confidence level and the data behind it, official DVSA MOT history and vehicle details from DVLA records. The £2.99 Premium Valuation Report adds guidance for buyers (a suggested opening offer, an indicative negotiation range and how the asking price compares) and sellers (a suggested advertised asking price, the lowest offer to accept and ready-to-post advert text). <a href=\"/pricing\">See pricing</a>."],
+      ["How it works", "Enter the number plate of the car you're buying or selling, confirm the mileage, trim and history, optionally add a few photos for a condition score, then get a free valuation and unlock buying or selling guidance. <a href=\"/how-it-works\">How Valu8 works</a>."],
+      ["What's in every report", "A market-based private-sale estimate, with part-exchange and dealer estimates in the £2.99 Full report; optional photo condition checks; official DVSA MOT history; mileage consistency information; a GOV.UK recall-check link; and estimated tax and clean-air-zone information with links to official checkers. <a href=\"/example-report\">See an example report</a>."],
+    ]).replace(/<\/main>$/, `<section><h2>Questions</h2>${faqItems(HOME_FAQS)}<p><a href="/faq">More questions</a></p></section>`
+      + '<section><h2>More about Valu8</h2><p><a href="/example-report">See an example report</a> · <a href="/how-it-works">How Valu8 works</a> · <a href="/guides">Guides</a></p></section>'
+      + `<section><h2>Popular car valuations</h2><p>Explore <a href="/value">typical UK asking prices by make and model</a> or read our <a href="/guides">UK car valuation, buying and selling guides</a>.</p></section>`
+      + popularModelsHtml() + "</main>");
   }
   const simple: Record<string, [string, string, [string, string][]]> = {
     "/valuation/new": ["Find out what your car is worth", "Enter your UK registration to start a free private-sale valuation.", [["Start with your registration", "We look up the vehicle record and MOT history, then you can confirm details, mileage, service history and photos. <a href=\"/car-values\">Browse car values by model</a>."], ["Free valuation", "Essentials valuations are free, with a daily limit for guests. An optional Full seller report is available for a one-off £2.99. Valuation figures are estimates, not guaranteed offers."]]],
@@ -77,6 +128,9 @@ export function staticPageBodyHtml(path: string): string | undefined {
   };
   if (simple[path]) return page(...simple[path]);
   if (path === "/embed-info") return embedInfoBodyHtml();
+  if (path === "/how-it-works") return howItWorksBodyHtml();
+  if (path === "/faq") return faqBodyHtml();
+  if (path === "/example-report") return exampleReportBodyHtml();
   if (path === "/privacy") return page("Privacy Policy", "How Valu8 collects, uses and protects your data under UK GDPR.", legalSections[path]);
   if (path === "/terms") return page("Terms of Service", "The terms for using Valu8 car valuations.", legalSections[path]);
   if (path === "/disclaimers") return page("Disclaimers & Data Sources", "Honest small print so you know exactly what a Valu8 report is — and isn't.", legalSections[path]);
@@ -84,3 +138,5 @@ export function staticPageBodyHtml(path: string): string | undefined {
 }
 
 export const homepageFaqHeadHtml = `<script type="application/ld+json" id="homepage-faq-jsonld">${homepageFaqJsonLd}</script>`;
+/** /faq: FAQPage JSON-LD for the full visible list. */
+export const faqPageHeadHtml = `<script type="application/ld+json" id="faq-page-jsonld">${faqPageJsonLd(SITE_FAQS)}</script>`;
