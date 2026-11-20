@@ -60,6 +60,7 @@ import { ReportNav, SoldItPrompt, useReportSections } from "@/components/report/
 import { ShareCard, completeReferral } from "@/components/ShareCard";
 import { clearShareRef, getShareRef } from "@/lib/attribution";
 import { MotHistoryByYear } from "@/components/report/MotHistoryByYear";
+import { HistoryCheckButton } from "@/components/report/HistoryCheckButton";
 import { FREE_TEASER_COMPS, reportPaywallEnabled } from "@/lib/reportPaywall";
 import { MiniTier, Section, CollapsibleSection, RecBlock, SLOT_LABELS, PhotoFeedback, InsightRow } from "@/components/report/ReportParts";
 
@@ -1348,7 +1349,8 @@ export default function Report() {
           );
         })()}
 
-
+        {/* Affiliate: full vehicle history check via carVertical (plain link, disclosure beside it). Free, paid and shared views. */}
+        {!valuationUnavailable && <HistoryCheckButton />}
 
         {/* Sale feedback: placed after the detail sections (end of the reading flow) so it does not interrupt the report; real sale prices power /accuracy */}
         {!isShared && user && (v as any).user_id === user.id && (
