@@ -1,7 +1,7 @@
 import { ExternalLink, FileSearch } from "lucide-react";
 
 /** Affiliate link exactly as supplied. Plain link: no redirect, wrapper, masking, shortener or iframe. */
-export const HISTORY_CHECK_URL = "https://www.carvertical.deal/4BZC6ZM/5DKLH2/?source_id=AFF&sub1=valu8_result";
+export const HISTORY_CHECK_URL = "https://www.carvertical.deal/4BZC6ZM/5DKLH2/?source_id=AFF";
 export const HISTORY_CHECK_DISCLOSURE = "Affiliate link: Valu8 earns a commission if you buy.";
 
 /** "Full vehicle history check" via carVertical, with the required affiliate disclosure next to the button. */
