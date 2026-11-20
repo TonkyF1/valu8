@@ -15,6 +15,9 @@ import { MetaPixelTracker } from "@/components/MetaPixelTracker";
 import { trackLanded } from "@/lib/funnel";
 
 trackLanded();
+const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage"));
+const FaqPage = lazy(() => import("./pages/FaqPage"));
+const ExampleReportPage = lazy(() => import("./pages/ExampleReportPage"));
 const NewValuation = lazy(() => import("./pages/NewValuation"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -93,6 +96,9 @@ const App = () => (
             <Route path="/value/:slug/:year" element={<ModelYearValue />} />
             <Route path="/car-values" element={<CarValuesIndex />} />
             <Route path="/car-values/:make/:model" element={<CarValue />} />
+            <Route path="/how-it-works" element={<HowItWorksPage />} />
+            <Route path="/faq" element={<FaqPage />} />
+            <Route path="/example-report" element={<ExampleReportPage />} />
             <Route path="/guides" element={<GuidesIndex />} />
             <Route path="/guides/:slug" element={<Guide />} />
             <Route path="/embed-info" element={<EmbedInfo />} />

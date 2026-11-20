@@ -9,7 +9,8 @@ import { valueModelPath } from "@/data/valueModels";
 import { useSeo } from "@/lib/seo";
 import { TeslaFlow } from "@/components/tesla/TeslaFlow";
 import { getRouteMeta } from "@/data/routeMeta";
-import { ExampleReport, Faq, FAQS, FreeVsPremium, HowItWorks, PremiumSection, ValuationContext, WhyValu8 } from "@/components/home/BuyerSellerSections";
+import { HOME_FAQS } from "@/components/home/BuyerSellerSections";
+import { FaqT, FeaturesT, FreeVsPremiumT, Steps } from "@/components/home/TeslaSections";
 
 const FEATURES = [
   { icon: BadgePoundSterling, title: "Market-based pricing", body: "A private-sale estimate based on comparable UK adverts for the make, model, year and mileage, with part-exchange and dealer estimates in the £2.99 Full report." },
@@ -36,63 +37,39 @@ export default function Landing() {
       <main id="main" className="flex-1">
         <TeslaFlow />
 
-        <div className="bs">
-          <PremiumSection />
-          <div className="bs-rule" />
-          <ExampleReport />
-          <div className="bs-rule" />
-          <FreeVsPremium />
-          <div className="bs-rule" />
-          <HowItWorks />
-          <div className="bs-rule" />
-          <ValuationContext />
-          <div className="bs-rule" />
-          <WhyValu8 />
-          <div className="bs-rule" />
+        <div className="t8p">
+          <Steps />
+          <FreeVsPremiumT />
+          <FeaturesT items={FEATURES} />
+          <FaqT items={HOME_FAQS} more />
 
-          <section className="container max-w-5xl py-14" aria-labelledby="features-h">
-            <h2 id="features-h" className="text-xl md:text-2xl font-semibold tracking-tight text-center mb-2">What's in every report</h2>
-            <p className="text-sm text-muted-foreground text-center mb-6">Market data where available, official records always.</p>
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {FEATURES.map((f) => (
-                <li key={f.title} className="flex gap-4 sm:block rounded-xl border border-border/70 bg-card/50 p-4 sm:p-5">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 sm:mb-3"><f.icon className="h-[18px] w-[18px] text-primary" aria-hidden /></span>
-                  <div>
-                    <h3 className="font-semibold text-[15px] mb-1">{f.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{f.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          <section className="t8p-sec" aria-labelledby="models-h">
+            <div className="t8p-in">
+              <p className="t8p-label">Car values</p>
+              <h2 id="models-h" className="t8p-h">{POPULAR_MODELS_H2}</h2>
+              <ul className="t8p-chips">
+                {popularValueModels().map((v) => (
+                  <li key={v.slug}><Link to={valueModelPath(v)}>{popularModelLabel(v)}</Link></li>
+                ))}
+              </ul>
+              <ul className="t8p-links">
+                <li><Link to="/value">See typical prices for all models</Link></li>
+                <li><Link to="/guides">Car buying and selling guides</Link></li>
+                <li><Link to="/how-it-works">How Valu8 works</Link></li>
+                <li><Link to="/example-report">See an example report</Link></li>
+              </ul>
+            </div>
           </section>
-
-          {/* TODO(social-proof): add a customer quotes section here once we have REAL, consented
-              customer quotes or a review-platform widget. Never add invented testimonials. */}
-
-          <div className="bs-rule" />
-          <Faq />
         </div>
 
-        <section className="container max-w-3xl pb-12 pt-4" aria-labelledby="models-h">
-          <h2 id="models-h" className="text-base font-semibold text-center mb-4">{POPULAR_MODELS_H2}</h2>
-          <ul className="flex flex-wrap justify-center gap-2 text-sm">
-            {popularValueModels().map((v) => (
-              <li key={v.slug}>
-                <Link to={valueModelPath(v)} className="inline-flex min-h-[44px] items-center rounded-full border border-border px-4 hover:border-primary/50">{popularModelLabel(v)}</Link>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-center text-sm"><Link to="/value" className="text-primary hover:underline">See typical prices for all models</Link></p>
-        </section>
-
-        <section className="container max-w-3xl pb-28 sm:pb-8">
-          <AccuracyDisclaimer />
+        <section className="t8p pb-24 sm:pb-10">
+          <div className="container max-w-3xl pt-2"><AccuracyDisclaimer /></div>
         </section>
       </main>
       <Footer />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         "@context": "https://schema.org", "@type": "FAQPage",
-        mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+        mainEntity: HOME_FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
       }) }} />
     </div>
   );

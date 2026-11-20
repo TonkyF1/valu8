@@ -159,12 +159,17 @@ export function FreeVsPremium() {
   );
 }
 
-export function HowItWorks() {
-  const steps = [["Registration", "Enter the number plate of the car you’re buying or selling"], ["Details", "Confirm the mileage, trim and history"], ["Photos", "Add a few photos (optional) for a condition score"], ["Result", "Get a free valuation, then unlock buying or selling guidance"]];
+export const HOW_STEPS: [string, string][] = [
+  ["Enter the registration", "Type the number plate of the car you’re buying or selling. We fetch the make, model, year and MOT history."],
+  ["Confirm the details", "Check the mileage and trim, and add a few photos if you like for a condition score."],
+  ["Get your result", "See a free valuation straight away, then unlock buying or selling guidance for £2.99 if you want it."],
+];
+
+export function HowItWorks({ as: H = "h2", heading = "How it works" }: { as?: "h1" | "h2"; heading?: string }) {
   return (
     <section className="bs-sec wide" aria-labelledby="bs-how-h">
-      <h2 id="bs-how-h" className="bs-h2">How it works</h2>
-      <ol className="bs-steps">{steps.map(([t, d], i) => <li key={t}><span className="n">{i + 1}</span><div><b>{t}</b><span>{d}</span></div></li>)}</ol>
+      <H id="bs-how-h" className="bs-h2">{heading}</H>
+      <ol className="bs-steps">{HOW_STEPS.map(([t, d], i) => <li key={t}><span className="n">{i + 1}</span><div><b>{t}</b><span>{d}</span></div></li>)}</ol>
     </section>
   );
 }
@@ -222,20 +227,26 @@ export const FAQS: { q: string; a: string }[] = [
   { q: "Who can see my valuation?", a: "Your valuations are private to your account unless you choose to share a report link. See our privacy policy for how data is handled." },
 ];
 
-export function Faq() {
+/** The few questions shown on the homepage (the homepage FAQPage markup covers exactly these). */
+export const HOME_FAQS = FAQS.slice(0, 4);
+
+export function Faq({ items = FAQS, as: H = "h2", heading = "Questions", more = false, cta = true }: { items?: { q: string; a: string }[]; as?: "h1" | "h2"; heading?: string; more?: boolean; cta?: boolean }) {
   return (
     <section className="bs-sec" aria-labelledby="bs-faq-h">
-      <h2 id="bs-faq-h" className="bs-h2">Questions</h2>
+      <H id="bs-faq-h" className="bs-h2">{heading}</H>
       <div className="bs-faq">
-        {FAQS.map((f, i) => (
+        {items.map((f, i) => (
           <details key={f.q} open={i === 0}>
             <summary>{f.q}<Chev /></summary>
             <p>{f.a}</p>
           </details>
         ))}
       </div>
-      <button type="button" className="bs-cta" style={{ marginTop: 22 }} onClick={() => goToReg(false)}>Value a car · Free</button>
-      <p className="bs-reass">Enter a registration to start.</p>
+      {more && <p className="bs-reass" style={{ marginTop: 18 }}><Link to="/faq" className="bs-link">More questions and answers</Link></p>}
+      {cta && <>
+        <button type="button" className="bs-cta" style={{ marginTop: 22 }} onClick={() => goToReg(false)}>Value a car · Free</button>
+        <p className="bs-reass">Enter a registration to start.</p>
+      </>}
     </section>
   );
 }
