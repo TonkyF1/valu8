@@ -25,10 +25,10 @@ describe("range reason copy", () => {
     // Stored under-£5,000 range with a legacy rule still gets the cheap-car wording.
     expect(rangeReasonCopy({ low: 700, high: 1500, mid: 1000, rule: "x" })).toBe(RANGE_COPY.cheap);
   });
-  it("is used on the report, Tesla flow, emails, Premium report and PDF", () => {
+  it("is used on the report, emails, Premium report and PDF (not under the homepage price, by owner request)", () => {
+    expect(readFileSync("src/components/tesla/TeslaFlow.tsx", "utf8")).not.toContain("rangeReasonCopy");
     const files = [
       "src/pages/Report.tsx",
-      "src/components/tesla/TeslaFlow.tsx",
       "supabase/functions/_shared/emailTemplates.ts",
       "src/components/PremiumReport.tsx",
       "src/lib/pdf.ts",
