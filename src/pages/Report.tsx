@@ -1350,7 +1350,7 @@ export default function Report() {
         })()}
 
         {/* Affiliate: full vehicle history check via carVertical (plain link, disclosure beside it). Free, paid and shared views. */}
-        {!valuationUnavailable && <HistoryCheckButton />}
+        {!valuationUnavailable && <HistoryCheckButton registration={v.registration} />}
 
         {/* Sale feedback: placed after the detail sections (end of the reading flow) so it does not interrupt the report; real sale prices power /accuracy */}
         {!isShared && user && (v as any).user_id === user.id && (
