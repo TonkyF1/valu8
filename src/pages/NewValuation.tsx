@@ -384,7 +384,7 @@ export default function NewValuation() {
           valuation_unavailable: !!report.valuationUnavailable,
         });
         setPhase("done");
-        setTimeout(() => navigate(`/valuation/${guestId}`), 600);
+        navigate(`/valuation/${guestId}`);
         return;
       }
 
@@ -422,7 +422,7 @@ export default function NewValuation() {
       });
 
       setPhase("done");
-      setTimeout(() => navigate(`/valuation/${data.id}`), 600);
+      navigate(`/valuation/${data.id}`);
     } catch (err: any) {
       posthog.capture?.("Valuation Failed", { message: err?.message });
       toast.error(err.message || "Failed to create valuation");

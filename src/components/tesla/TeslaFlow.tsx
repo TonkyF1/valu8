@@ -10,6 +10,7 @@ import { Turnstile, turnstileEnabled, turnstileHeaders } from "@/components/Turn
 import { getAttribution } from "@/lib/attribution";
 import { getUtm, track } from "@/lib/funnel";
 import { inferPerformanceTrim, type TrimHint } from "@/lib/perfTrim";
+import { quickReportFrom, shownBand } from "@/lib/quickEstimate";
 import { functionErrorBody, getGuestToken, photoToDataUrl, rememberGuestValuation } from "@/lib/guest";
 import { PHOTO_SLOTS, fillEmptySlots, type PhotoSlotKey } from "@/lib/cars";
 import { normaliseReportPricing } from "@/lib/askingPrice";
@@ -81,6 +82,8 @@ export function TeslaFlow() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [valuationId, setValuationId] = useState<string | null>(null);
   const [band, setBand] = useState<Band | null>(null);
+  // Price-first: early estimate shown while the full report loads. Display-only; never feeds canPay, snapshots or saves.
+  const [quickBand, setQuickBand] = useState<Band | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [grade, setGrade] = useState<CarGrade | null>(null);
   const [refineDone, setRefineDone] = useState(false);
@@ -267,12 +270,27 @@ export function TeslaFlow() {
     setTimeout(() => setCheckoutOpen(true), delay);
   }
 
+  const quickDone = useRef(0);
+  async function runQuick(l: Lookup, extra: Parameters<typeof analyseBody>[1], e0: number) {
+    try {
+      const { body } = analyseBody(l, extra);
+      const { data, error } = await supabase.functions.invoke("analyse-vehicle", { body: { ...body, quick: true } });
+      if (error) return;
+      const report = quickReportFrom(data);
+      if (!report) return;
+      // Late answers are dropped: wrong search, or the full result already landed.
+      if (epoch.current !== e0 || quickDone.current === e0) return;
+      const b = bandFor(report);
+      if (b) setQuickBand(b);
+    } catch { /* fall back to the full result */ }
+  }
+
   async function start(raw?: string, premium = false) {
     const cleaned = normaliseReg(raw ?? reg);
     if (!isPlausibleUkReg(cleaned)) { setErr("Enter a valid UK number plate, e.g. AB12 CDE."); return; }
     closeKeyboard();
     setPremiumBusy(premium); setPremiumArmed(false); setLocked(false); setPayErr(null); setUnavailable(false);
-    setErr(null); setGuestLimit(null); setStage("looking"); setBand(null); setValuationId(null); setGrade(null); setNeedMileage(false);
+    setErr(null); setGuestLimit(null); setStage("looking"); setBand(null); setQuickBand(null); setValuationId(null); setGrade(null); setNeedMileage(false);
     if (turnstileEnabled()) setTsOn(true);
     const e0 = ++epoch.current;
     let l: Lookup;
@@ -316,9 +334,13 @@ export function TeslaFlow() {
     }
     setStage("estimating");
     track("submitted");
+    // Price-first: ask for the early estimate in parallel with the full report. If it fails, is slow or isn't
+    // offered, nothing changes: the full call below behaves exactly as before.
+    if (!premium) void runQuick(l, { mileage: l.lastMileage, variant: v, transmission: gb }, e0);
     try {
       const res = await value(l, { mileage: l.lastMileage, variant: v, transmission: gb, premiumIntent: premium }, null);
       if (epoch.current !== e0) return;
+      quickDone.current = e0;
       if (!res) {
         // Daily free limit: the details step now offers the paid report (one Pay button). The page is already at the top.
         setStage("estimate");
@@ -356,7 +378,7 @@ export function TeslaFlow() {
   }
 
   /** Fades the loader out (after a short minimum so it never flashes), then runs `next`. */
-  function closeLoader(t0: number, next: () => void, minMs = 900) {
+  function closeLoader(t0: number, next: () => void, minMs = 300) {
     const wait = Math.max(0, minMs - (Date.now() - t0));
     setTimeout(() => {
       setLoaderOut(true);
@@ -403,20 +425,20 @@ export function TeslaFlow() {
         // Price stays hidden until paid: finish the ring, then hand straight over to the checkout.
         applyLocked(res.id, res.priceable);
         lockedSig.current = detailSig();
-        const wait = Math.max(0, 1600 - (Date.now() - t0));
-        setTimeout(() => setRefineDone(true), wait);
+        const wait = 0; // no padding: the ring completes as soon as the result is in
+        setRefineDone(true);
         setTimeout(() => {
           if (!live()) return;
           if (!res.priceable) { closeLoader(0, () => { setStage("estimate"); setPayErr(UNPRICEABLE); }); return; }
           track("offer_click", "premium_premium_path"); posthog.capture?.("Premium Report Click", { where: "locked" });
           setCheckoutOpen(true);
           closeLoader(0, () => setStage("estimate"));
-        }, wait + 1100);
+        }, wait + 300);
         return;
       }
       // Let the ring finish cleanly before revealing the result.
-      const wait = Math.max(0, 1600 - (Date.now() - t0));
-      setTimeout(() => setRefineDone(true), wait);
+      const wait = 0; // no padding: the ring completes as soon as the result is in
+      setRefineDone(true);
       setTimeout(() => {
         if (!live()) return;
         applyResult(res.id, res.report, !band, miles, lookup);
@@ -424,7 +446,7 @@ export function TeslaFlow() {
         // Under the loader's last frame: the result opens at the top with no visible jump.
         scrollPageTop({ instant: true });
         if (premium) openPremium(premiumBusy ? "premium_path" : "details", res.report, 700);
-      }, wait + 1300);
+      }, wait + 400);
     } catch (e2: any) {
       if (!live()) return;
       const m = e2?.message || "We couldn't update the valuation. Please try again.";
@@ -455,7 +477,7 @@ export function TeslaFlow() {
   }
 
   function reset() {
-    setStage("idle"); setLookup(null); setBand(null); setValuationId(null); setGrade(null); setErr(null); setGuestLimit(null);
+    setStage("idle"); setLookup(null); setBand(null); setQuickBand(null); setValuationId(null); setGrade(null); setErr(null); setGuestLimit(null);
     setPhotos([]); setMods(""); setNotes(""); setReg(""); setCheckoutOpen(false); setPremiumBusy(false); setGearbox(""); setGearboxGuessed(false);
     setPremiumArmed(false); setLocked(false); setPayErr(null); setLimitKind("free"); setUnavailable(false);
     epoch.current++; refinedOnce.current = false; sheetCloseRef.current = null; saveFlowSnapshot(null);
@@ -467,6 +489,7 @@ export function TeslaFlow() {
 
   const busyLookup = stage === "looking" || stage === "estimating";
   const hasCar = !!lookup && stage !== "idle" && stage !== "looking";
+  const shown = shownBand(band, quickBand, stage);
   const fr = band && grade ? gradeArc(grade.index) : null;
   const name = lookup ? [lookup.year, titleCase(lookup.make), titleCase(lookup.model), variant && !(lookup.model ?? "").toLowerCase().includes(variant.toLowerCase()) ? (variant.toLowerCase().startsWith(`${(lookup.model ?? "").toLowerCase().split(" ")[0]} `) ? variant.slice((lookup.model ?? "").split(" ")[0].length).trim() : variant) : ""].filter(Boolean).join(" ") : "";
   const facts = lookup ? [lookup.engineCapacity ? `${lookup.engineCapacity.toLocaleString("en-GB")} cc` : "", titleCase(lookup.fuelType), titleCase(lookup.colour)].filter(Boolean).join(" · ") : "";
@@ -594,14 +617,14 @@ export function TeslaFlow() {
                 <h1 id="t8-h" className="t8-h1 t8-h1-bs">Free car valuation<br /><em>by registration.</em></h1>
                 <p className="t8-sub t8-sub-bs">Know its value. Make the right move. Get a free UK car valuation from the number plate in seconds, then unlock personalised insights to help you negotiate with confidence.</p>
               </>
-            ) : band ? (
+            ) : shown.band ? (
               <>
                 <h1 id="t8-h" className="sr-only">Your free estimate</h1>
-                <FitPrice key={refined ? "r" : "e"} text={bandText(band)} className="t8-price" boxClassName="t8-pricebox" minPx={36} floorPx={16} testId="t8-price">
+                <FitPrice key={refined ? "r" : "e"} text={bandText(shown.band)} className="t8-price" boxClassName="t8-pricebox" minPx={36} floorPx={16} testId="t8-price">
                   {(lines) => lines.map((l, i) => <RollingPrice key={i} text={l} />)}
                 </FitPrice>
-                <div className="t8-meta">{refined ? "Updated with your details" : "Private sale"}</div>
-                {band.why && <p className="t8-range-why" data-testid="t8-range-why">{band.why}</p>}
+                <div className="t8-meta">{shown.early ? "Early estimate, firming up" : refined ? "Updated with your details" : "Private sale"}</div>
+                {!shown.early && shown.band.why && <p className="t8-range-why" data-testid="t8-range-why">{shown.band.why}</p>}
                 {grade && (
                   <div className="t8-grade" style={{ color: grade.color, borderColor: `${grade.color}59`, background: `${grade.color}14` }} aria-label={`Car grade: ${grade.label}`}>{grade.label}</div>
                 )}

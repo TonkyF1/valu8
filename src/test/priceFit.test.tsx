@@ -98,7 +98,7 @@ describe("FitPrice component", () => {
 
 describe("wired into every big price", () => {
   it("Tesla flow odometer sits in a full-width fit box (sized on the final value)", () => {
-    expect(flow).toMatch(/<FitPrice key=\{refined \? "r" : "e"\} text=\{bandText\(band\)\} className="t8-price"/);
+    expect(flow).toMatch(/<FitPrice key=\{refined \? "r" : "e"\} text=\{bandText\(shown\.band\)\} className="t8-price"/);
     expect(flow).toMatch(/lines\.map\(\(l, i\) => <RollingPrice key=\{i\} text=\{l\} \/>\)/);
     expect(css).toMatch(/\.t8-readout\{[^}]*width:100%/);
     expect(css).toMatch(/\.t8-pricebox\{padding:0 16px/);
