@@ -1,6 +1,5 @@
-// Node-safe copy of the visible FAQ list (FAQS in src/components/home/BuyerSellerSections.tsx), for build-time
-// HTML and FAQPage JSON-LD on / and /faq. src/test/seoNewPages.test.tsx fails if the two ever differ, so edit
-// both together (or have the component import SITE_FAQS from here).
+// The site's single FAQ list (Node-safe). BuyerSellerSections.tsx re-exports it as FAQS for the visible FAQs on
+// / and /faq, and the build uses it for their prebuilt HTML and FAQPage JSON-LD, so all of them always match.
 export type SiteFaq = { q: string; a: string };
 
 export const SITE_FAQS: SiteFaq[] = [

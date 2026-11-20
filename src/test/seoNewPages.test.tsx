@@ -10,6 +10,7 @@ import { PAGE_LASTMOD } from "@/data/pageLastmod";
 import { HOME_FAQS, HOME_FAQ_COUNT, SITE_FAQS } from "@/data/siteFaqs";
 import { FAQS } from "@/components/home/BuyerSellerSections";
 import { popularValueModels } from "@/data/popularModels";
+import { newPageMeta } from "@/pages/newPageMeta";
 
 const shell = readFileSync("index.html", "utf8");
 const built = (path: string) => buildRouteHtml(shell, getRouteMeta(path));
@@ -43,6 +44,10 @@ describe("new pages: route metadata", () => {
       const src = readFileSync(want.file, "utf8");
       const usesRouteMeta = src.includes(`getRouteMeta("${path}")`);
       if (!usesRouteMeta) expect(src).toContain(`title: "${want.title}"`);
+      // The browser uses routeMeta, so its title and description match the build HTML exactly.
+      expect(newPageMeta(path, { title: "fallback", description: "fallback" })).toEqual(getRouteMeta(path));
+      const desc = getRouteMeta(path).description;
+      expect(src.includes(`description: "${desc}"`) || usesRouteMeta, `${path} fallback description`).toBe(true);
     });
   }
 });
@@ -69,8 +74,8 @@ describe("new pages: prebuilt HTML", () => {
 });
 
 describe("FAQPage JSON-LD matches the visible FAQs", () => {
-  it("the build-time FAQ copy is identical to the FAQs the site shows", () => {
-    expect(SITE_FAQS).toEqual(FAQS);
+  it("the build-time FAQ copy is the same list the site shows", () => {
+    expect(FAQS).toBe(SITE_FAQS);
     expect(readFileSync("src/pages/Landing.tsx", "utf8")).toContain(`FAQS.slice(0, ${HOME_FAQ_COUNT})`);
   });
   it("homepage: exactly one FAQPage, with the four visible questions and answers", () => {
