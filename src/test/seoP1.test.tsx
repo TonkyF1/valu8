@@ -25,9 +25,10 @@ const jsonLd = (html: string) => [...html.matchAll(/<script type="application\/l
 const types = (blocks: any[]) => blocks.flatMap((b) => (Array.isArray(b) ? b : b["@graph"] ?? [b])).map((b: any) => b["@type"]);
 const built = (path: string) => buildRouteHtml(shell, ALL_ROUTES.find((r) => r.path === path) ?? getRouteMeta(path));
 
-describe("sitemap unchanged by P1", () => {
-  it("is byte-identical to the pre-SEO-work sitemap (sha1 9762fe89…)", () => {
-    expect(createHash("sha1").update(buildSitemap()).digest("hex")).toBe("9762fe89e1f910e3fbb9c9884859c377c9e607ba");
+describe("sitemap URLs unchanged by P1", () => {
+  it("matches the pre-SEO-work sitemap (sha1 9762fe89…) once the <lastmod> dates (added 20 Nov 2026, Tony approved) are removed", () => {
+    const withoutLastmod = buildSitemap().replace(/<lastmod>[^<]*<\/lastmod>/g, "");
+    expect(createHash("sha1").update(withoutLastmod).digest("hex")).toBe("9762fe89e1f910e3fbb9c9884859c377c9e607ba");
   });
 });
 
