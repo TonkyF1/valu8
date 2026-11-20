@@ -18,6 +18,7 @@ import { detectPerformanceVariant, filterCompsByPerformance, downgradeConfidence
 import { shrinkThinAnchor, aiAgeFactor, THIN_COMP_FULL_WEIGHT } from "../_shared/calibration.ts";
 import { valueWithOwnComps } from "../_shared/ownCompsAdjust.ts";
 import { pricePmBoth, blendWithOwnComps, resolveBody } from "../_shared/priceModel.ts";
+import { pickMcTier, pickMcCandidate } from "../_shared/mcTier.ts";
 import { motSignals, motAdjustment as motSignalAdjustment } from "../_shared/motSignals.ts";
 import { similarAdverts, anchorPrice, anchorBlock, anchorDeviation, anchorArm, DEVIATION_REASON_PROPERTY } from "../_shared/aiAnchor.ts";
 import { ensemble } from "../_shared/ensemble.ts";
@@ -122,13 +123,14 @@ async function fetchMarketCheckPricing(
   variant?: string,
 ): Promise<MarketPricing | null> {
   const candidates = compSearchModels(make, model);
-  let best: MarketPricing | null = null;
-  for (const m of candidates.length ? candidates : [model]) {
-    const r = await fetchMarketCheckPricingFor(make, m, year, mileage, variant);
-    if (r && r.listings.length >= 3) return r;
-    if (r && r.listings.length > (best?.listings.length ?? 0)) best = r;
-  }
-  return best;
+  const list = candidates.length ? candidates : [model];
+  // First candidate alone (the common case, and the cheapest on API calls); only if it is not good enough are the
+  // remaining candidates searched, in parallel. Selection is the same as the old one-after-another loop.
+  const first = await fetchMarketCheckPricingFor(make, list[0], year, mileage, variant);
+  if (first && first.listings.length >= 3) return first;
+  if (list.length === 1) return first;
+  const rest = await Promise.all(list.slice(1).map((m) => fetchMarketCheckPricingFor(make, m, year, mileage, variant)));
+  return pickMcCandidate<MarketPricing>([first, ...rest]);
 }
 
 // Performance variants: the generic tiers return the first 50 listings sorted
@@ -307,63 +309,36 @@ async function fetchMarketCheckPricingFor(
   const milesLow = Math.max(0, mileage - 20000);
   const milesHigh = mileage + 20000;
 
+  type Tier = { params: Record<string, string>; label: string; min: number };
+  const tiers: Tier[] = [];
   if (trim) {
-    let r = await tryFetch(new URLSearchParams({
-      api_key: MC_KEY,
-      make, model: baseModel, year: String(year), trim,
-      miles_range: `${milesLow}-${milesHigh}`,
-    }), `${year} ${make} ${baseModel} ${trim} (similar mileage)`);
-    if (r && r.listings.length >= 5) return r;
-
-    r = await tryFetch(new URLSearchParams({
-      api_key: MC_KEY,
-      make, model: baseModel, year: String(year), trim,
-    }), `${year} ${make} ${baseModel} ${trim}`);
-    if (r && r.listings.length >= 3) return r;
-
-    r = await tryFetch(new URLSearchParams({
-      api_key: MC_KEY,
-      make, model: baseModel, trim,
-      year_range: `${year - 2}-${year + 2}`,
-    }), `${make} ${baseModel} ${trim} ${year - 2}-${year + 2}`);
-    if (r && r.listings.length >= 3) return r;
+    tiers.push(
+      { params: { api_key: MC_KEY, make, model: baseModel, year: String(year), trim, miles_range: `${milesLow}-${milesHigh}` }, label: `${year} ${make} ${baseModel} ${trim} (similar mileage)`, min: 5 },
+      { params: { api_key: MC_KEY, make, model: baseModel, year: String(year), trim }, label: `${year} ${make} ${baseModel} ${trim}`, min: 3 },
+      { params: { api_key: MC_KEY, make, model: baseModel, trim, year_range: `${year - 2}-${year + 2}` }, label: `${make} ${baseModel} ${trim} ${year - 2}-${year + 2}`, min: 3 },
+    );
   }
-
-  let r = await tryFetch(new URLSearchParams({
-    api_key: MC_KEY,
-    make, model: baseModel, year: String(year),
-    miles_range: `${milesLow}-${milesHigh}`,
-  }), `${year} ${make} ${baseModel} (similar mileage)`);
-  if (r && r.listings.length >= 5) return r;
-
-  r = await tryFetch(new URLSearchParams({
-    api_key: MC_KEY,
-    make, model: baseModel, year: String(year),
-  }), `${year} ${make} ${baseModel}`);
-  if (r && r.listings.length >= 3) return r;
-
-  r = await tryFetch(new URLSearchParams({
-    api_key: MC_KEY,
-    make, model: baseModel,
-    year_range: `${year - 2}-${year + 2}`,
-    miles_range: `${Math.max(0, mileage - 40000)}-${mileage + 40000}`,
-  }), `${make} ${baseModel} ${year - 2}-${year + 2} (similar mileage)`);
-  if (r && r.listings.length >= 5) return r;
-
-  r = await tryFetch(new URLSearchParams({
-    api_key: MC_KEY,
-    make, model: baseModel,
-    year_range: `${year - 2}-${year + 2}`,
-  }), `${make} ${baseModel} ${year - 2}-${year + 2}`);
-  if (r && r.listings.length >= 5) return r;
-
-  // Wider net for old/cheap cars where stock is thin; comps are mileage/age-corrected later.
-  const wide = await tryFetch(new URLSearchParams({
-    api_key: MC_KEY,
-    make, model: baseModel,
-    year_range: `${year - 4}-${year + 4}`,
-  }), `${make} ${baseModel} ${year - 4}-${year + 4}`);
-  return wide && wide.listings.length > (r?.listings.length ?? 0) ? wide : r;
+  tiers.push(
+    { params: { api_key: MC_KEY, make, model: baseModel, year: String(year), miles_range: `${milesLow}-${milesHigh}` }, label: `${year} ${make} ${baseModel} (similar mileage)`, min: 5 },
+    { params: { api_key: MC_KEY, make, model: baseModel, year: String(year) }, label: `${year} ${make} ${baseModel}`, min: 3 },
+    { params: { api_key: MC_KEY, make, model: baseModel, year_range: `${year - 2}-${year + 2}`, miles_range: `${Math.max(0, mileage - 40000)}-${mileage + 40000}` }, label: `${make} ${baseModel} ${year - 2}-${year + 2} (similar mileage)`, min: 5 },
+    { params: { api_key: MC_KEY, make, model: baseModel, year_range: `${year - 2}-${year + 2}` }, label: `${make} ${baseModel} ${year - 2}-${year + 2}`, min: 5 },
+    // Wider net for old/cheap cars where stock is thin; comps are mileage/age-corrected later.
+    { params: { api_key: MC_KEY, make, model: baseModel, year_range: `${year - 4}-${year + 4}` }, label: `${make} ${baseModel} ${year - 4}-${year + 4}`, min: 0 },
+  );
+  // Tiers are fetched in parallel waves of 3 (was one at a time, each up to 5s + retry). A later wave only runs when
+  // no tier so far was good enough; the pick uses the same first-good-tier rule as before (see _shared/mcTier.ts).
+  // Waves of 3 rather than all at once keep MarketCheck bursts small (it throttles bursts) and API usage low.
+  const mins = tiers.map((t) => t.min);
+  const got: (MarketPricing | null)[] = [];
+  const WAVE = 3;
+  for (let i = 0; i < tiers.length; i += WAVE) {
+    const batch = tiers.slice(i, i + WAVE);
+    got.push(...await Promise.all(batch.map((t) => tryFetch(new URLSearchParams(t.params), t.label))));
+    const d = pickMcTier<MarketPricing>(got, mins, tiers.length);
+    if (d.done) return d.pick;
+  }
+  return pickMcTier<MarketPricing>(got, mins, tiers.length).pick;
 }
 
 
@@ -767,17 +742,34 @@ Deno.serve(async (req) => {
 
   try {
     // Rate limit / daily cap / optional Turnstile / premium (only if PREMIUM_ENFORCED=true).
-    const g = await guard(req, { feature: "analyse", requireUser: false, requirePremium: true, turnstile: true, perMinute: 4, perDay: 25, ipPerHour: 40 });
+    // Price-first "quick" mode: same pricing engine, AI step skipped, returns only the headline private-sale range.
+    // It has its own (separate) rate-limit bucket, needs no Turnstile token (the single-use token is kept for the full call),
+    // saves nothing, uses no guest free-cap slot and never returns the paid-only figures.
+    const quickPeek = (await req.clone().json().catch(() => null)) as { quick?: unknown } | null;
+    const isQuick = quickPeek?.quick === true;
+    const g = isQuick
+      ? await guard(req, { feature: "analyse-quick", requireUser: false, turnstile: false, perMinute: 6, perDay: 60, ipPerHour: 60 })
+      : await guard(req, { feature: "analyse", requireUser: false, requirePremium: true, turnstile: true, perMinute: 4, perDay: 25, ipPerHour: 40 });
     if (g.response) return g.response;
 
     const body = (await req.json().catch(() => null)) as AnalyseRequest | null;
+    if (isQuick) {
+      // Quick answers never use photos, saves, locked/premium flows or the guest valuation caps.
+      if (!body || (body as any).premiumIntent === true) return json({ quick: false });
+      if (!g.userId) {
+        const qcap = envInt("GUEST_QUICK_DAILY_CAP", 20);
+        if (!(await checkLimit(`quick:guest:ip:${clientIp(req)}:d`, 86400, qcap))) return json({ quick: false });
+      }
+      (body as any).photoUrls = []; (body as any).photos = []; (body as any).guestPhotos = [];
+      (body as any).refineOf = undefined; (body as any).guestSave = undefined;
+    }
     let tokenHash: string | null = null;
     let guestValuationId: string | null = null;
     let refineExisting = false;
     // Price locked until paid: a guest past today's free cap who chose the Premium Report. The valuation is
     // still made (so they can pay), but its figures are only returned once report_purchases says paid.
     let priceLocked = false;
-    if (!g.userId) {
+    if (!g.userId && !isQuick) {
       if (typeof body?.guestToken !== "string" || !/^[a-f0-9]{64}$/.test(body.guestToken)) {
         return json({ error: "Please refresh the page and try again." }, 400);
       }
@@ -829,7 +821,7 @@ Deno.serve(async (req) => {
     }
 
     const AI_API_KEY = Deno.env.get("AI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
-    if (!AI_API_KEY) {
+    if (!AI_API_KEY && !isQuick) {
       return new Response(JSON.stringify({ error: "AI provider not configured (set AI_API_KEY or LOVABLE_API_KEY)" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -1098,7 +1090,13 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
 
     const aiStart = Date.now();
     const aiModel = Deno.env.get("AI_MODEL") || "google/gemini-2.5-flash";
-    const aiResp = await fetch(AI_GATEWAY_URL, {
+    // Quick mode: no AI call. A neutral stand-in carries the model-based estimate as the only "AI" input
+    // (used by the pricing engine just as a thin-comps prior), so the price path is the same as the full call.
+    const quickPrior = isQuick ? Math.max(0, Math.round(preAi?.pmWithMot ?? 0)) : 0;
+    const aiResp = isQuick ? new Response(JSON.stringify({ choices: [{ message: { tool_calls: [{ function: { arguments: JSON.stringify({
+      conditionScore: 7, conditionLabel: "", privateSaleValue: quickPrior, honestAnalysis: "", marketPositioning: "", valueReasoning: "",
+      strengths: [], watchPoints: [], photoObservations: "", photoInsights: [], recommendations: { whereToSell: [], highlights: [], documents: [] },
+    }) } }] } }] }), { status: 200 }) : await fetch(AI_GATEWAY_URL, {
       method: "POST",
       headers: { Authorization: `Bearer ${AI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1139,7 +1137,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     }
 
     const aiData = await aiResp.json();
-    capturePosthogAiGeneration({
+    if (!isQuick) capturePosthogAiGeneration({
       model: aiModel, latencyMs: aiLatency, httpStatus: 200,
       inputTokens: aiData?.usage?.prompt_tokens,
       outputTokens: aiData?.usage?.completion_tokens,
@@ -1834,6 +1832,23 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       askRangeOut = { low: c.askLow, high: c.askHigh };
     }
     const listingPrice = recommendedAskingPrice || (valuationUnavailable ? 0 : roundToGrain(values.privateSale * 1.03));
+
+    // Quick mode ends here, once the headline range is final. Only offered when the figure does not depend on the AI
+    // (market comps path, or the confident own-comps engine); otherwise the client simply waits for the full result.
+    // Returns the private-sale range only (what the free report shows): no trade/retail/ask figures, nothing saved.
+    if (isQuick) {
+      if (valuationUnavailable || !(values.privateSale > 0) || !(dataSource === "marketcheck" || engineShown) || !(quickPrior > 0)) {
+        return json({ quick: false });
+      }
+      return json({
+        quick: true,
+        report: {
+          values: { privateSale: values.privateSale },
+          valueRange: { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
+          priceRange: cheapPriceRange(values.privateSale, Number(body.year) > 1900 ? new Date().getFullYear() - Number(body.year) : undefined) ?? undefined,
+        },
+      });
+    }
 
     // Build factorsUp/Down: prefer AI output, fall back to deterministic adjustments.
     const aiUp = (ai.factorsUp ?? []).map((s) => String(s).trim()).filter(Boolean).slice(0, 4);
