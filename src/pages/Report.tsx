@@ -1076,6 +1076,9 @@ export default function Report() {
           </section>
         )}
 
+        {/* Affiliate (free/locked view): after "Why this price", below the price and the unlock offer. Unlocked reports show it once under MOT History. Only the reg is passed; no locked report data. */}
+        {locked && !valuationUnavailable && <HistoryCheckButton registration={v.registration} />}
+
         {/* Share my valuation (image card + native share sheet). While the report is locked it also carries the
             referral offer: a friend who values their car through the link unlocks this report free. Owners only. */}
         {!isShared && !valuationUnavailable && (isGuest || (user && (v as any).user_id === user.id)) && Number(r?.values?.privateSale) > 0 && (
