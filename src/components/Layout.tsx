@@ -24,7 +24,7 @@ const PUBLIC_NAV: Item[] = [
 
 const MORE_NAV: Item[] = [
   { to: "/how-it-works", label: "How it works", icon: ListChecks },
-  { to: "/car-values", label: "Car values", icon: Car },
+  { to: "/value", label: "Car values", icon: Car },
   { to: "/guides", label: "Guides", icon: BookOpen },
   { to: "/faq", label: "FAQ", icon: HelpCircle },
   { to: "/about", label: "About", icon: Info },

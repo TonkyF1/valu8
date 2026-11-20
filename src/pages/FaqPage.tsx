@@ -3,15 +3,20 @@ import { Footer } from "@/components/Footer";
 import { HomeLink } from "@/components/HomeLink";
 import { Link } from "react-router-dom";
 import { useSeo } from "@/lib/seo";
+import { newPageMeta, setJsonLd } from "./newPageMeta";
+import { useEffect } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Faq, FAQS } from "@/components/home/BuyerSellerSections";
 
-// Titles for new pages are set here until they are added to routeMeta (owned by Marketing).
-const META = { path: "/faq", title: "Car valuation FAQs: your questions answered | Valu8", description: "Answers to common questions about Valu8 car valuations: how accurate they are, what the £2.99 report includes, where the data comes from and who can see your valuation." };
+const META = newPageMeta("/faq", { title: "Car valuation FAQs: your questions answered | Valu8", description: "Straight answers on Valu8 car valuations: what's free, what the £2.99 report adds, how prices are worked out and who can see your valuation." });
 
 export default function FaqPage() {
   useSeo(META);
+  useEffect(() => setJsonLd("faq-page-jsonld", {
+    "@context": "https://schema.org", "@type": "FAQPage",
+    mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+  }), []);
   return (
     <div className="min-h-screen flex flex-col">
       <TestModeBanner /><Header />
@@ -31,10 +36,6 @@ export default function FaqPage() {
         </section>
       </main>
       <Footer />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-        "@context": "https://schema.org", "@type": "FAQPage",
-        mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-      }) }} />
     </div>
   );
 }

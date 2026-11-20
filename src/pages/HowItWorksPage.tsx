@@ -3,12 +3,12 @@ import { Footer } from "@/components/Footer";
 import { HomeLink } from "@/components/HomeLink";
 import { Link } from "react-router-dom";
 import { useSeo } from "@/lib/seo";
+import { newPageMeta } from "./newPageMeta";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { HowItWorks, ValuationContext, WhyValu8 } from "@/components/home/BuyerSellerSections";
 
-// Titles for new pages are set here until they are added to routeMeta (owned by Marketing).
-const META = { path: "/how-it-works", title: "How Valu8 works: free car valuation by reg | Valu8", description: "How Valu8 turns a UK number plate into a free car valuation: comparable adverts, age and mileage, official MOT history and optional photos." };
+const META = newPageMeta("/how-it-works", { title: "How Valu8 works: free car valuation by reg | Valu8", description: "How Valu8 turns a UK number plate into a free car valuation: comparable adverts, age and mileage, official MOT history and optional photos." });
 
 export default function HowItWorksPage() {
   useSeo(META);

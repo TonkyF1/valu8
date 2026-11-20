@@ -3,12 +3,12 @@ import { Footer } from "@/components/Footer";
 import { HomeLink } from "@/components/HomeLink";
 import { Link } from "react-router-dom";
 import { useSeo } from "@/lib/seo";
+import { newPageMeta } from "./newPageMeta";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ExampleReport, PremiumSection } from "@/components/home/BuyerSellerSections";
 
-// Titles for new pages are set here until they are added to routeMeta (owned by Marketing).
-const META = { path: "/example-report", title: "Example Valu8 car valuation report | Valu8", description: "See what a Valu8 car valuation report looks like: the private-sale estimate, the buyer and seller guidance in the £2.99 report, and how the figures are set out." };
+const META = newPageMeta("/example-report", { title: "Example Valu8 car valuation report | Valu8", description: "See an illustrative £2.99 Valu8 report for a 2018 Ford Fiesta: private-sale, part-exchange and dealer figures, plus buying and selling guidance." });
 
 export default function ExampleReportPage() {
   useSeo(META);
