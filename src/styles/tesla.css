@@ -20,10 +20,11 @@
 .t8-hide{opacity:0;transform:translate3d(0,10px,0)}
 
 /* Odometer digits */
-.t8-digit{display:inline-block;height:1em;overflow:hidden;position:relative}
+.t8-digit{display:inline-block;vertical-align:top;height:var(--t8u,1em);overflow:hidden;position:relative}
 .t8-digit>span{display:flex;flex-direction:column;transition:transform 1.25s var(--t8-ease);will-change:transform}
-.t8-digit>span>i{font-style:normal;height:1em;line-height:1em;display:block;text-align:center}
-.t8-char{display:inline-block;height:1em;line-height:1em}
+.t8-digit>span>i{font-style:normal;height:var(--t8u,1em);line-height:var(--t8u,1em);display:block;text-align:center}
+/* vertical-align:top on both: an overflow:hidden inline-block sits on the line's baseline by its bottom edge, which put digits ~7px higher than £ , – */
+.t8-char{display:inline-block;vertical-align:top;height:var(--t8u,1em);line-height:var(--t8u,1em)}
 
 /* Arc + car */
 .t8-viz{position:relative;width:min(390px,100vw);height:268px;margin-top:4px}
