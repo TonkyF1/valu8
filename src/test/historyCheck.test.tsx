@@ -36,3 +36,29 @@ describe("carVertical history check button", () => {
     expect(html).not.toMatch(/discount|cashback|% off/i);
   });
 });
+
+describe("carVertical card placement in Report.tsx", () => {
+  const src = require("fs").readFileSync("src/pages/Report.tsx", "utf8") as string;
+  const uses = [...src.matchAll(/<HistoryCheckButton\b[^>]*\/>/g)];
+  it("has exactly two render sites: one for locked (free) views, one for unlocked", () => {
+    expect(uses.length).toBe(2);
+    const lockedIdx = src.indexOf("{locked && !valuationUnavailable && <HistoryCheckButton");
+    const unlockedIdx = src.indexOf("{!valuationUnavailable && <HistoryCheckButton");
+    expect(lockedIdx).toBeGreaterThan(0);
+    expect(unlockedIdx).toBeGreaterThan(lockedIdx);
+    // unlocked site sits inside the `!locked` block, so a report never renders both
+    expect(src.lastIndexOf("{!locked && (<>", unlockedIdx)).toBeGreaterThan(lockedIdx);
+    expect(src.indexOf("</>)}", unlockedIdx)).toBeGreaterThan(unlockedIdx);
+  });
+  it("free site comes after Why this price and the unlock block, only passes the reg", () => {
+    const lockedIdx = src.indexOf("{locked && !valuationUnavailable && <HistoryCheckButton");
+    expect(lockedIdx).toBeGreaterThan(src.indexOf('data-testid="why-this-price"'));
+    expect(lockedIdx).toBeGreaterThan(src.indexOf("<ReportCheckout valuationId"));
+    expect(uses.every((m) => /^<HistoryCheckButton registration=\{v\.registration\} \/>$/.test(m[0]))).toBe(true);
+  });
+  it("renders the card for a locked view with just the reg", () => {
+    const html = renderToStaticMarkup(<HistoryCheckButton registration="LJ13 YVO" />);
+    expect(html).toContain('data-testid="history-check"');
+    expect(html).toContain("sub3=LJ13YVO");
+  });
+});
