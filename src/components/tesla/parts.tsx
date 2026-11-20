@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const reduceMotion = () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -12,16 +12,30 @@ export function RollingPrice({ text, className }: { text: string; className?: st
     const r1 = requestAnimationFrame(() => { r2 = requestAnimationFrame(() => setShown(text)); });
     return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
   }, [text]);
+  // Whole-pixel row height: with a fractional font size (fitted prices) every column row and the static glyphs would
+  // round differently, so digits looked a pixel or two up/down. All rows/glyphs share one integer height instead.
+  const root = useRef<HTMLSpanElement>(null);
+  const [unit, setUnit] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const measure = () => { const f = parseFloat(getComputedStyle(el).fontSize); if (f > 0) setUnit(Math.round(f)); };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [text]);
   const chars = text.split("");
   const n = chars.length;
   return (
-    <span className={className} aria-label={text} role="text">
+    <span ref={root} className={className} aria-label={text} role="text" style={unit ? ({ "--t8u": `${unit}px` } as React.CSSProperties) : undefined}>
       {chars.map((c, i) => {
         if (!/\d/.test(c)) return <span key={`c${i}`} className="t8-char" aria-hidden>{c}</span>;
         const d = /\d/.test(shown[i] ?? "") ? Number(shown[i]) : 0;
         return (
           <span key={`d${i}`} className="t8-digit" aria-hidden>
-            <span style={{ transform: `translate3d(0,${-d}em,0)`, transitionDelay: `${(n - i) * 35}ms` }}>
+            <span style={{ transform: `translate3d(0,calc(${-d} * var(--t8u, 1em)),0)`, transitionDelay: `${(n - i) * 35}ms` }}>
               {Array.from({ length: 10 }, (_, k) => <i key={k}>{k}</i>)}
             </span>
           </span>
