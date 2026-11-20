@@ -15,6 +15,8 @@ export type RouteMeta = {
   inSitemap: boolean;
   /** When set, build HTML + client SEO emit this URL as rel=canonical (and og:url). */
   canonicalPath?: string;
+  /** Sitemap <lastmod> (YYYY-MM-DD). Otherwise taken from PAGE_LASTMOD (pageLastmod.ts). */
+  lastmod?: string;
 };
 
 export const STATIC_ROUTES: RouteMeta[] = [

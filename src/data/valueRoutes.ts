@@ -2,14 +2,15 @@
 // full price tables (modelPriceBands.ts), which should only load with the /value pages themselves.
 import type { RouteMeta } from "./routeMeta";
 import { MODEL_PRICES } from "./modelPriceBands";
-import { VALUE_INDEX_DESCRIPTION, VALUE_INDEX_PATH, VALUE_INDEX_TITLE, registryOnlyModels, valueFallbackMeta, valueMeta, yearMeta } from "./valuePages";
+import { VALUE_INDEX_DESCRIPTION, VALUE_INDEX_PATH, VALUE_INDEX_TITLE, VALUE_PAGES_MODIFIED_ISO, registryOnlyModels, valueFallbackMeta, valueMeta, yearMeta } from "./valuePages";
 
 export const VALUE_ROUTES: RouteMeta[] = [
-  { path: VALUE_INDEX_PATH, title: VALUE_INDEX_TITLE, description: VALUE_INDEX_DESCRIPTION, priority: "0.8", inSitemap: true },
-  ...MODEL_PRICES.map((m): RouteMeta => ({ ...valueMeta(m), priority: "0.7", inSitemap: true })),
+  { path: VALUE_INDEX_PATH, title: VALUE_INDEX_TITLE, description: VALUE_INDEX_DESCRIPTION, priority: "0.8", inSitemap: true, lastmod: VALUE_PAGES_MODIFIED_ISO },
+  ...MODEL_PRICES.map((m): RouteMeta => ({ ...valueMeta(m), priority: "0.7", inSitemap: true, lastmod: VALUE_PAGES_MODIFIED_ISO })),
   // Templated year pages: noindex,follow and not in the sitemap (yearMeta). Enriched years are indexable.
-  ...MODEL_PRICES.flatMap((m) => m.years.map((y): RouteMeta => { const ym = yearMeta(m, y); return { ...ym, priority: "0.6", inSitemap: !ym.noindex }; })),
-  // Published slugs (valueSlugRegistry.ts) with no price data right now: still served and indexable, never in the sitemap.
+  ...MODEL_PRICES.flatMap((m) => m.years.map((y): RouteMeta => { const ym = yearMeta(m, y); return { ...ym, priority: "0.6", inSitemap: !ym.noindex, lastmod: VALUE_PAGES_MODIFIED_ISO }; })),
+  // Published slugs (valueSlugRegistry.ts) with no price data right now: still served and indexable, but never in the
+  // sitemap: they only carry a short "not enough adverts" note (thin), so we don't ask Google to prioritise them.
   ...registryOnlyModels().map((v): RouteMeta => ({ ...valueFallbackMeta(v), priority: "0.7", inSitemap: false })),
 ];
 
