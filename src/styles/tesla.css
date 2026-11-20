@@ -7,6 +7,8 @@
   radial-gradient(70% 45% at 50% 0%,rgba(0,214,200,.07),transparent 70%),
   radial-gradient(60% 35% at 50% 62%,rgba(255,255,255,.035),transparent 70%)}
 .t8-hero{position:relative;min-height:calc(100svh - 64px);display:flex;flex-direction:column;align-items:center;padding:18px 0 0}
+/* With the flow's Back pill (top:10px, 40px tall) on narrow screens the readout starts below it, so the price never sits behind it. */
+.t8-hero:not(.t8-idle){padding-top:60px}
 .t8-main{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .t8-h1{margin:0;text-align:center;font-weight:500;font-size:30px;line-height:1.1;letter-spacing:-.035em;padding:0 20px}
 .t8-sub{margin:10px 0 0;text-align:center;font-size:15px;color:var(--t8-mute);letter-spacing:-.01em;padding:0 24px}
@@ -183,6 +185,7 @@
 
 @media (min-width:900px){
   .t8-hero{padding-top:8px}
+  .t8-hero:not(.t8-idle){padding-top:8px}
   .t8-h1{font-size:44px}
   .t8-price{font-size:64px}
   .t8-readout{min-height:96px}
