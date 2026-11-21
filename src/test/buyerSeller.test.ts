@@ -123,7 +123,7 @@ describe("buyer and seller copy", () => {
     expect(read("src/components/Layout.tsx")).toContain("Value a car");
     expect(read("src/components/Layout.tsx")).not.toContain("Value my car");
     const m = getRouteMeta("/");
-    expect(m.title).toBe("Free Car Valuation UK | Check Used Car Values | Valu8");
+    expect(m.title).toBe("Free Car Valuation Online by Reg | Value My Car UK | Valu8");
     copyOk(m.description);
   });
 });

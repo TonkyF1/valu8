@@ -63,8 +63,8 @@ describe("headline and old advert-check URL", () => {
     const home = staticPageBodyHtml("/") ?? "";
     expect(home).toContain("<h1>Free car valuation by registration</h1>");
     expect(flow).toContain('<h1 id="t8-h" className="t8-h1 t8-h1-bs">Free car valuation<br /><em>by registration.</em></h1>');
-    // The brand line stays visible, now in the intro under the H1 (same text in the build HTML and the hero).
-    expect(home).toContain("Know its value. Make the right move. Get a free UK car valuation");
+    // Tony removed the hero tagline (21 Nov 2026); the build HTML intro no longer carries it either.
+    expect(home).not.toContain("Know its value. Make the right move.");
     expect(flow).not.toContain("Know its value. Make the right move.");
     const meta = getRouteMeta("/");
     expect(indexHtml).toContain(`<title>${meta.title}</title>`);
