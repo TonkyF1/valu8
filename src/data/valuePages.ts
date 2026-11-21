@@ -298,63 +298,89 @@ export function neighbourYears(m: ModelPrices, y: YearPrices): YearPrices[] {
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+// ---- Presentation classes shared with the React page (src/components/value/ValueVisuals.tsx), so the prerendered
+// HTML already has the final card layout and nothing re-flows when React takes over. Text is unchanged.
+const CARD = "rounded-2xl border border-border bg-card/60 p-5 md:p-7";
+const TABLE_WRAP = "overflow-x-auto rounded-xl border border-border text-sm [&_table]:w-full [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-medium [&_th]:text-muted-foreground [&_td]:px-4 [&_td]:py-3 [&_tr]:border-b [&_tr]:border-border [&_tbody_tr:last-child]:border-0 [&_a]:text-primary [&_caption]:sr-only";
+const CHEVRON = `<svg class="h-5 w-5 shrink-0 text-primary transition-transform group-open:rotate-180" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`;
+const SUMMARY = "flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden";
+const card = (inner: string, cls = "mt-6") => `<section class="${CARD} ${cls}">${inner}</section>`;
+const disclosure = (summaryHtml: string, inner: string, cls = "", chrome = false) =>
+  `<details class="group ${cls}"><summary class="${SUMMARY}"${chrome ? " data-decor" : ""}><span class="min-w-0">${summaryHtml}</span>${CHEVRON}</summary><div class="pt-3">${inner}</div></details>`;
+const VIEW_TABLE = `<span class="text-sm font-medium text-primary">View table</span>`;
+const tableDisclosure = (table: string) => disclosure(VIEW_TABLE, `<div class="${TABLE_WRAP}">${table}</div>`, "mt-5 border-t border-border pt-2", true);
+const chips = (items: string) => `<ul class="flex flex-wrap gap-2 text-sm">${items}</ul>`;
+const CHIP = "inline-flex min-h-[44px] items-center rounded-full border border-border bg-card/60 px-4";
+
 /** Full year table: one row per year, each year linking to its (noindex) year page. */
 function yearTableHtml(m: ModelPrices): string {
   if (!m.years.length) return "";
   const name = esc(valueName(m));
-  return `<section><h2>${name} prices by year</h2><p>${esc(VALUE_YEARS_INTRO(m))}</p>`
-    + `<table><caption>${name} asking prices for every year</caption><thead><tr><th>Year</th><th>Median asking price</th><th>Typical range</th><th>Typical mileage</th><th>Adverts</th></tr></thead><tbody>`
+  return card(`<section><h2>${name} prices by year</h2><p class="text-sm text-muted-foreground mb-5">${esc(VALUE_YEARS_INTRO(m))}</p>`
+    + tableDisclosure(`<table><caption>${name} asking prices for every year</caption><thead><tr><th>Year</th><th>Median asking price</th><th>Typical range</th><th>Typical mileage</th><th>Adverts</th></tr></thead><tbody>`
     + m.years.map((y) => `<tr><td><a href="${yearPath(m, y)}">${y.year}</a></td><td>${gbp(y.median)}</td><td>${gbp(y.low)} – ${gbp(y.high)}</td><td>${y.mileage ? miles(y.mileage) : "–"}</td><td>${y.count}</td></tr>`).join("")
-    + `</tbody></table></section>`;
+    + `</tbody></table>`) + `</section>`);
 }
 
 function depreciationHtml(m: ModelPrices): string {
   const t = valueDepreciationText(m);
-  return t ? `<section><h2>${esc(VALUE_DEPRECIATION_H2(m))}</h2><p>${esc(t)}</p></section>` : "";
+  return t ? `<section class="${CARD}"><h2>${esc(VALUE_DEPRECIATION_H2(m))}</h2><p class="text-sm text-muted-foreground leading-relaxed">${esc(t)}</p></section>` : "";
 }
 
 function mileageHtml(m: ModelPrices): string {
   const y = valueMileageYear(m);
   if (!y) return "";
-  return `<section><h2>${esc(VALUE_MILEAGE_H2(m))}</h2><p>${esc(VALUE_MILEAGE_INTRO(m, y))}</p>`
-    + `<table><caption>${y.year} ${esc(valueName(m))} asking prices by mileage</caption><thead><tr><th>Mileage</th><th>Median asking price</th><th>Adverts</th></tr></thead><tbody>`
-    + y.byMileage.map((r) => `<tr><td>${esc(r.label)}</td><td>${gbp(r.median)}</td><td>${r.count}</td></tr>`).join("") + `</tbody></table></section>`;
+  return `<section class="${CARD}"><h2>${esc(VALUE_MILEAGE_H2(m))}</h2><p class="text-sm text-muted-foreground mb-4">${esc(VALUE_MILEAGE_INTRO(m, y))}</p>`
+    + tableDisclosure(`<table><caption>${y.year} ${esc(valueName(m))} asking prices by mileage</caption><thead><tr><th>Mileage</th><th>Median asking price</th><th>Adverts</th></tr></thead><tbody>`
+    + y.byMileage.map((r) => `<tr><td>${esc(r.label)}</td><td>${gbp(r.median)}</td><td>${r.count}</td></tr>`).join("") + `</tbody></table>`) + `</section>`;
 }
 
 function priceTypesHtml(m: ValueRef): string {
-  return `<section><h2>${esc(PRICE_TYPES_H2)}</h2>${PRICE_TYPES_COPY(m).map((p) => `<p>${esc(p)}</p>`).join("")}`
-    + `<ul>${PRICE_TYPES_LINKS.map(([href, label]) => `<li><a href="${href}">${esc(label)}</a></li>`).join("")}</ul></section>`;
+  return card(disclosure(`<h2>${esc(PRICE_TYPES_H2)}</h2>`,
+    PRICE_TYPES_COPY(m).map((p) => `<p class="text-sm text-muted-foreground leading-relaxed mt-3">${esc(p)}</p>`).join("")
+    + `<ul class="mt-4 flex flex-wrap gap-2 text-sm">${PRICE_TYPES_LINKS.map(([href, label]) => `<li><a class="${CHIP} text-primary" href="${href}">${esc(label)}</a></li>`).join("")}</ul>`));
 }
 
 function moreFromMakeHtml(m: ValueRef): string {
   const others = sameMakeModels(m.slug, m.make);
   if (!others.length) return "";
-  return `<h2>More ${esc(m.make)} asking prices</h2><ul>` + others.map((v) => `<li><a href="${valueModelPath(v)}">${esc(modelDisplayName(v))}</a></li>`).join("") + `</ul>`;
+  return `<section class="mt-10"><h2>More ${esc(m.make)} asking prices</h2>` + chips(others.map((v) => `<li><a class="${CHIP}" href="${valueModelPath(v)}">${esc(modelDisplayName(v))}</a></li>`).join("")) + `</section>`;
 }
 
 function guidanceHtml(m: ValueRef): string {
   const g = valueGuidance(m);
   const name = esc(g.name);
-  return `<section><h2>How we value a ${name}</h2><ol>${g.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol></section>`
-    + (g.segment ? `<section><h2>What moves the value of a ${esc(g.segment.label)}</h2><ul>${g.segment.tips.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></section>` : "")
-    + `<section><h2>${name} valuation FAQ</h2>${g.faqs.map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join("")}</section>`
-    + (g.related.length ? `<section><h2>Related valuations</h2><ul>${g.related.map((v) => `<li><a href="${valueModelPath(v)}">${esc(modelDisplayName(v))}</a></li>`).join("")}</ul></section>` : "");
+  return card(disclosure(`<h2>How we value a ${name}</h2>`, `<ol class="space-y-3 text-sm text-muted-foreground [counter-reset:step]">${g.steps.map((s) => `<li class="flex gap-3 [counter-increment:step] before:content-[counter(step)] before:mt-0.5 before:flex before:h-6 before:w-6 before:shrink-0 before:items-center before:justify-center before:rounded-full before:border before:border-primary/40 before:text-xs before:font-semibold before:text-primary">${esc(s)}</li>`).join("")}</ol>`))
+    + (g.segment ? card(`<section><h2>What moves the value of a ${esc(g.segment.label)}</h2><ul class="grid gap-3 text-sm sm:grid-cols-2">${g.segment.tips.map((t) => `<li class="rounded-xl border border-border bg-background/60 p-3">${esc(t)}</li>`).join("")}</ul></section>`) : "")
+    + card(`<section><h2>${name} valuation FAQ</h2><div class="divide-y divide-border">${g.faqs.map((f) => disclosure(`<h3>${esc(f.q)}</h3>`, `<p class="text-sm text-muted-foreground leading-relaxed pb-3">${esc(f.a)}</p>`)).join("")}</div></section>`)
+    + (g.related.length ? `<section class="mt-8"><h2>Related valuations</h2>${chips(g.related.map((v) => `<li><a class="${CHIP}" href="${valueModelPath(v)}">${esc(modelDisplayName(v))}</a></li>`).join(""))}</section>` : "");
 }
+
+const MAIN_CLASS = "container max-w-3xl py-8 md:py-14 pb-28 md:pb-14 [&_h1]:text-4xl md:[&_h1]:text-5xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:font-medium [&_h3]:py-1 [&_nav]:text-xs [&_nav]:text-muted-foreground [&_nav]:mb-4 [&_section>h2]:mb-3 [&_.cta_h2]:text-lg";
+const MAIN_OPEN = `<main id="main" class="${MAIN_CLASS}">`;
+const CRUMBS = (name: string) => `<nav aria-label="Breadcrumb"><a href="/">Home</a> / <a href="${VALUE_INDEX_PATH}">Car values</a> / <span aria-current="page">${name}</span></nav>`;
+const HERO = "rounded-3xl border border-border bg-gradient-to-b from-card to-background p-5 md:p-9";
+const CTA_BOX = (name: string) => `<div class="cta mt-6 rounded-2xl border border-primary/30 bg-background/70 p-5"><h2>Get a figure for your ${name}</h2><p class="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p><p class="mt-4"><a class="inline-flex w-full min-h-14 items-center justify-center rounded-md bg-primary px-6 py-3 font-semibold text-primary-foreground" href="/valuation/new">Value my ${name} free</a></p></div>`;
 
 export function valueBodyHtml(m: ModelPrices): string {
   const name = esc(valueName(m));
-  return `<main id="main"><nav aria-label="Breadcrumb"><a href="/">Home</a> / <a href="${VALUE_INDEX_PATH}">Car values</a> / <span aria-current="page">${name}</span></nav>`
-    + `<h1>${esc(valueH1(m))}</h1><p>${esc(valueAnswer(m) ?? "")}</p><p>${esc(valueIntro(m))}</p>`
-    + `<table><caption>Typical ${name} asking prices by year group</caption><thead><tr><th>Years</th><th>Median asking price</th><th>Typical range</th></tr></thead><tbody>`
-    + m.bands.map((b) => `<tr><td>${esc(b.band)}</td><td>${gbp(b.median)}</td><td>${gbp(b.low)} – ${gbp(b.high)}</td></tr>`).join("")
-    + `</tbody></table><p>${esc(VALUE_TABLE_NOTE(m))}</p><p><time datetime="${VALUE_PAGES_MODIFIED_ISO}">${esc(VALUE_UPDATED_TEXT)}</time></p>`
-    + yearTableHtml(m) + depreciationHtml(m) + mileageHtml(m)
-    + (findEnrichedModel(m.slug) ? `<section>${enrichedModelHtml(findEnrichedModel(m.slug)!, m)}</section>` : "")
-    + `<p><a href="/valuation/new">Value my ${esc(valueName(m))} free</a></p>`
+  const hasDep = !!valueDepreciationText(m), hasMil = !!valueMileageYear(m);
+  const dm = depreciationHtml(m) + mileageHtml(m);
+  return `${MAIN_OPEN}${CRUMBS(name)}<div class="${HERO} [&_h1+p]:mt-5 [&_h1+p]:text-lg md:[&_h1+p]:text-xl [&_h1+p]:leading-relaxed">`
+    + `<h1>${esc(valueH1(m))}</h1><p>${esc(valueAnswer(m) ?? "")}</p>`
+    + CTA_BOX(name) + `<p class="text-muted-foreground mt-6 text-sm leading-relaxed">${esc(valueIntro(m))}</p></div>`
+    + card(`<section><h2>Typical ${name} asking prices by year group</h2>`
+      + tableDisclosure(`<table><caption>Typical ${name} asking prices by year group</caption><thead><tr><th>Years</th><th>Median asking price</th><th>Typical range</th></tr></thead><tbody>`
+      + m.bands.map((b) => `<tr><td>${esc(b.band)}</td><td>${gbp(b.median)}</td><td>${gbp(b.low)} – ${gbp(b.high)}</td></tr>`).join("")
+      + `</tbody></table>`)
+      + `<p class="text-xs text-muted-foreground mt-4 leading-relaxed">${esc(VALUE_TABLE_NOTE(m))}</p><p class="text-xs text-muted-foreground mt-1"><time datetime="${VALUE_PAGES_MODIFIED_ISO}">${esc(VALUE_UPDATED_TEXT)}</time></p></section>`)
+    + yearTableHtml(m)
+    + (hasDep || hasMil ? `<div class="mt-6 grid gap-6 ${hasDep && hasMil ? "md:grid-cols-2" : ""}">${dm}</div>` : "")
+    + (findEnrichedModel(m.slug) ? card(disclosure(`<span class="text-lg font-semibold">Read the full ${name} guide</span>`, `<article class="text-foreground/85 leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mt-10 [&_h2]:mb-3 [&_p]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-primary [&_a]:underline">${enrichedModelHtml(findEnrichedModel(m.slug)!, m)}</article>`, "", true)) : "")
     + priceTypesHtml(m)
     + guidanceHtml(m)
     + moreFromMakeHtml(m)
-    + `<p><a href="/value">All models</a></p></main>`;
+    + `<p class="mt-10 text-sm"><a class="text-primary" href="/value">All models</a></p></main>`;
 }
 
 export function yearBodyHtml(m: ModelPrices, y: YearPrices): string {
@@ -375,7 +401,7 @@ export function yearBodyHtml(m: ModelPrices, y: YearPrices): string {
 /** Build-time body for a registry-only slug: same breadcrumb, H1 and guidance as a priced page, no table. */
 export function valueFallbackBodyHtml(m: ValueRef): string {
   const name = esc(valueName(m));
-  return `<main id="main"><nav aria-label="Breadcrumb"><a href="/">Home</a> / <a href="${VALUE_INDEX_PATH}">Car values</a> / <span aria-current="page">${name}</span></nav>`
+  return `${MAIN_OPEN}${CRUMBS(name)}`
     + `<h1>${esc(valueH1(m))}</h1><p>${esc(VALUE_NO_DATA_COPY(m))}</p>`
     + `<p><a href="/valuation/new">Value my ${name} free</a></p>`
     + guidanceHtml(m)
