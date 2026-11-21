@@ -62,3 +62,14 @@ Deno.test("gb1: X3 M40i is priced from X3/X4 M40i evidence (family level), above
   assert(m40.level === "model" || m40.level === "family", m40.level);
   assert(m40.privatePrice > std.privatePrice, `${m40.privatePrice} vs ${std.privatePrice}`);
 });
+
+Deno.test("rs4: 2013 4,163cc petrol A4 (LL13 JRX) is confidently the RS4; 2003-2011 stays ambiguous", () => {
+  const h = inferPerformanceTrim({ make: "AUDI", model: "A4", fuel: "Petrol", cc: 4163, year: 2013 });
+  assertEquals(h?.variant, "RS4"); assertEquals(h?.confident, true);
+  const r = resolveVariant({ make: "AUDI", model: "A4", fuel: "Petrol", cc: 4163, year: 2013 });
+  assertEquals(r.variant, "RS4"); assertEquals(r.ambiguousPerf, false);
+  const old = inferPerformanceTrim({ make: "AUDI", model: "A4", fuel: "Petrol", cc: 4163, year: 2006 });
+  assertEquals(old?.confident, false); assertEquals(old?.options, ["RS4", "S4"]);
+  assertEquals(inferPerformanceTrim({ make: "AUDI", model: "A5", fuel: "Petrol", cc: 4163, year: 2013 })?.variant, "RS5");
+  assertEquals(inferPerformanceTrim({ make: "AUDI", model: "A5", fuel: "Petrol", cc: 4163, year: 2008 })?.variant, "S5");
+});

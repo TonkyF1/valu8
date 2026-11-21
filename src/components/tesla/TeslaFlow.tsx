@@ -366,9 +366,12 @@ export function TeslaFlow() {
 
   const detailSig = () => JSON.stringify([mileage, variant, gearbox, mods, notes, photos.map((p) => p.preview)]);
 
-  async function refine(e?: React.FormEvent, premium = false) {
+  async function refine(e?: React.FormEvent, premium = false, pick?: string) {
     e?.preventDefault();
     if (!lookup) return;
+    // A trim picked from the "Which is it?" chips re-runs the valuation with that trim straight away.
+    const trim = pick ?? variant;
+    if (pick !== undefined) { setVariant(pick); setTrimAuto(false); }
     // Locked valuation already made with these details: go straight to the checkout.
     if (premium && locked && valuationId && !unavailable && lockedSig.current === detailSig()) {
       setPayErr(null); track("offer_click", "premium_premium_path"); setCheckoutOpen(true); return;
@@ -392,7 +395,7 @@ export function TeslaFlow() {
         if (error) throw error;
         photoUrls.push(path); labeled.push({ slot: p.key, url: path });
       }
-      const res = await value(lookup, { mileage: miles, variant, transmission: gearbox, mods, notes, photoUrls, photosLabeled: labeled, guestPhotos, refineOf: valuationId, premiumIntent: premium }, valuationId);
+      const res = await value(lookup, { mileage: miles, variant: trim, transmission: gearbox, mods, notes, photoUrls, photosLabeled: labeled, guestPhotos, refineOf: valuationId, premiumIntent: premium }, valuationId);
       if (!live()) return;
       if (!res) {
         // Daily limit: fade the loader away, then show the notice by the buttons.
@@ -609,6 +612,14 @@ export function TeslaFlow() {
                 <h1 id="t8-h" className="sr-only">Your car</h1>
                 <div className="t8-price" style={{ opacity: 0.35 }} aria-hidden>{stage === "estimating" ? "£–" : unavailable ? "" : "£–"}</div>
                 <div className="t8-meta">{stage === "estimating" ? "Working out your estimate" : unavailable ? "We couldn't price this one" : locked || (guestLimit && premiumBusy && limitKind === "free") ? "Unlocks with your Premium Report" : needMileage ? "Add your mileage below" : "Private sale"}</div>
+                {unavailable && !variant && trimHint && trimHint.options.length > 0 && stage === "estimate" && (
+                  <div className="t8-pick" data-testid="pick-variant" role="group" aria-label="Which version is it?">
+                    <span>{trimHint.options.length === 1 ? `Is it the ${trimHint.options[0]}?` : "Which is it?"}</span>
+                    {trimHint.options.map((o) => (
+                      <button key={o} type="button" className="t8-chip" onClick={() => { void refine(undefined, false, o); }}>{o}</button>
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </div>
