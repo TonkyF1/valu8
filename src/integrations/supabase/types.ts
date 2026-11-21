@@ -588,6 +588,54 @@ export type Database = {
           },
         ]
       }
+      site_events: {
+        Row: {
+          browser: string | null
+          created_at: string
+          device: string | null
+          event: string
+          id: number
+          path: string | null
+          props: Json
+          referrer_domain: string | null
+          session_id: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          viewport: string | null
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string
+          device?: string | null
+          event: string
+          id?: number
+          path?: string | null
+          props?: Json
+          referrer_domain?: string | null
+          session_id: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          viewport?: string | null
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string
+          device?: string | null
+          event?: string
+          id?: number
+          path?: string | null
+          props?: Json
+          referrer_domain?: string | null
+          session_id?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          viewport?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -862,6 +910,98 @@ export type Database = {
           sale_type: string | null
           side: string | null
           year: number | null
+        }
+        Relationships: []
+      }
+      site_dropoff: {
+        Row: {
+          lost_since_previous: number | null
+          ord: number | null
+          pct_lost_since_previous: number | null
+          pct_of_visits: number | null
+          stage: string | null
+          visits: number | null
+        }
+        Relationships: []
+      }
+      site_event_counts: {
+        Row: {
+          day: string | null
+          event: string | null
+          events: number | null
+          visits: number | null
+        }
+        Relationships: []
+      }
+      site_exit_pages: {
+        Row: {
+          exits: number | null
+          path: string | null
+        }
+        Relationships: []
+      }
+      site_funnel_by_source: {
+        Row: {
+          clicked_premium: number | null
+          device: string | null
+          got_valuation: number | null
+          opened_checkout: number | null
+          paid: number | null
+          source: string | null
+          started_valuation: number | null
+          visits: number | null
+        }
+        Relationships: []
+      }
+      site_funnel_daily: {
+        Row: {
+          clicked_premium: number | null
+          day: string | null
+          got_valuation: number | null
+          opened_checkout: number | null
+          paid: number | null
+          started_valuation: number | null
+          visits: number | null
+        }
+        Relationships: []
+      }
+      site_funnel_hourly: {
+        Row: {
+          clicked_premium: number | null
+          got_valuation: number | null
+          hour: string | null
+          opened_checkout: number | null
+          paid: number | null
+          started_valuation: number | null
+          visits: number | null
+        }
+        Relationships: []
+      }
+      site_page_engagement: {
+        Row: {
+          avg_max_scroll_pct: number | null
+          avg_seconds: number | null
+          page_views: number | null
+          path: string | null
+          visits: number | null
+        }
+        Relationships: []
+      }
+      site_sessions: {
+        Row: {
+          device: string | null
+          did_checkout: boolean | null
+          did_cta: boolean | null
+          did_paid: boolean | null
+          did_start: boolean | null
+          did_valuation: boolean | null
+          first_seen: string | null
+          last_seen: string | null
+          page_views: number | null
+          referrer_domain: string | null
+          session_id: string | null
+          source: string | null
+          utm_source: string | null
         }
         Relationships: []
       }
