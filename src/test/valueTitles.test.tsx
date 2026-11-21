@@ -68,11 +68,13 @@ describe("/value model page titles, descriptions, H1 and answer line", () => {
     expect(valueTitle(by("mercedes-benz-c-class"))).toBe("Mercedes-Benz C-Class value: UK prices by year | Valu8");
     expect(valueTitle(by("land-rover-range-rover-evoque"))).toBe("How much is my Range Rover Evoque worth? UK prices | Valu8");
     expect(valueTitle(by("ford-kuga"))).toBe("How much is my Ford Kuga worth? UK prices by year | Valu8");
+    // The Kuga page itself carries its own hand-written title (enrichedModels.ts).
+    expect(valueMeta(by("ford-kuga")).title).toBe("Ford Kuga valuation: UK prices by year and mileage | Valu8");
   });
   it("description uses the lowest/highest band medians and drops the bracket only when too long", () => {
-    const kuga = by("ford-kuga");
-    const meds = kuga.bands.map((b) => b.median);
-    expect(valueMeta(kuga).description).toBe(`A used Ford Kuga is typically advertised for £${Math.min(...meds).toLocaleString("en-GB")}–£${Math.max(...meds).toLocaleString("en-GB")} in the UK, by year (${kuga.listings} adverts, ${PRICE_DATA_UPDATED}). Get a free valuation by reg.`);
+    const yaris = by("toyota-yaris");
+    const meds = yaris.bands.map((b) => b.median);
+    expect(valueMeta(yaris).description).toBe(`A used Toyota Yaris is typically advertised for £${Math.min(...meds).toLocaleString("en-GB")}–£${Math.max(...meds).toLocaleString("en-GB")} in the UK, by year (${yaris.listings} adverts, ${PRICE_DATA_UPDATED}). Get a free valuation by reg.`);
     expect(valueMeta(by("land-rover-range-rover-evoque")).description).not.toContain("(");
     expect(valueFallbackMeta({ slug: "x-y", make: "X", model: "Y" }).description).toBe("See what a used X Y is worth in the UK and get a free valuation by registration from Valu8.");
   });

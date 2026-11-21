@@ -14,6 +14,20 @@ import { VALUE_INDEX_H1, VALUE_INDEX_INTRO, sameMakeModels, VALUE_TABLE_NOTE, VA
 import NotFound from "./NotFound";
 import { useEffect, type MouseEvent } from "react";
 import { enrichedYearFaqJsonLd, enrichedYearHtml, findEnrichedYear } from "@/data/enrichedYears";
+import { enrichedModelHtml, findEnrichedModel } from "@/data/enrichedModels";
+
+const ARTICLE_CLASS = "mt-8 text-foreground/85 leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-10 [&_h2]:mb-3 [&_p]:my-4 [&_strong]:text-foreground [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-4 [&_li]:my-1.5 [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2";
+
+/** Client-side navigation for internal links inside prerendered article HTML. */
+function useArticleClick() {
+  const navigate = useNavigate();
+  return (e: MouseEvent<HTMLElement>) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const href = (e.target as HTMLElement).closest("a")?.getAttribute("href");
+    if (!href || !href.startsWith("/") || href.startsWith("//")) return;
+    e.preventDefault(); navigate(href);
+  };
+}
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -161,11 +175,13 @@ export default function ModelValue() {
   useHeadJsonLd(VALUE_BREADCRUMB_JSONLD_ID, ref ? valueBreadcrumbJsonLd(ref) : null);
   useHeadJsonLd(VALUE_FAQ_JSONLD_ID, ref ? valueFaqJsonLd(ref) : null);
   useHeadJsonLd(VALUE_WEBPAGE_JSONLD_ID, ref ? valueWebPageJsonLd(ref) : null);
+  const onArticleClick = useArticleClick();
   if (!ref) return <NotFound />;
   if (!m) return <NoPriceModel m={ref} />;
   const name = valueName(m);
   const depreciation = valueDepreciationText(m);
   const mileageYear = valueMileageYear(m);
+  const enrichedModel = findEnrichedModel(m.slug);
   return (
     <Shell>
       <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground mb-4">
@@ -251,6 +267,9 @@ export default function ModelValue() {
           </div>
         </section>
       )}
+      {enrichedModel && (
+        <article className={ARTICLE_CLASS} onClick={onArticleClick} dangerouslySetInnerHTML={{ __html: enrichedModelHtml(enrichedModel, m) }} />
+      )}
       <div className="mt-8 rounded-xl border border-border p-6">
         <h2 className="text-lg font-semibold">Get a figure for your {name}</h2>
         <p className="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p>
@@ -278,7 +297,7 @@ export function ModelYearValue() {
   const y = findYearPrices(m, year);
   useSeo(m && y ? getValueRouteMeta(yearPath(m, y)) : null);
   const enriched = m && y ? findEnrichedYear(m.slug, y.year) : undefined;
-  const navigate = useNavigate();
+  const onArticleClick = useArticleClick();
   useEffect(() => {
     if (!enriched || !m || !y) return;
     let el = document.getElementById("year-faq-jsonld") as HTMLScriptElement | null;
@@ -287,12 +306,6 @@ export function ModelYearValue() {
     return () => { document.getElementById("year-faq-jsonld")?.remove(); };
   }, [enriched, m, y]);
   if (!m || !y) return <NotFound />;
-  const onArticleClick = (e: MouseEvent<HTMLElement>) => {
-    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    const href = (e.target as HTMLElement).closest("a")?.getAttribute("href");
-    if (!href || !href.startsWith("/") || href.startsWith("//")) return;
-    e.preventDefault(); navigate(href);
-  };
   const name = valueName(m);
   const stats: [string, string][] = [
     ["Median asking price", gbp(y.median)],
@@ -342,7 +355,7 @@ export function ModelYearValue() {
       <p className="text-xs text-muted-foreground mt-3 leading-relaxed">{YEAR_NOTE(m, y)}</p>
       {enriched && (
         <article
-          className="mt-8 text-foreground/85 leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-10 [&_h2]:mb-3 [&_p]:my-4 [&_strong]:text-foreground [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-4 [&_li]:my-1.5 [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2"
+          className={ARTICLE_CLASS}
           onClick={onArticleClick}
           dangerouslySetInnerHTML={{ __html: enrichedYearHtml(enriched, m, y) }}
         />

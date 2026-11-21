@@ -6,7 +6,7 @@ import { buildSitemap, sitemapLastmod } from "../../scripts/sitemap";
 import { buildRouteHtml } from "../../scripts/routePages";
 import { ALL_ROUTES } from "@/data/allRoutes";
 import { PAGE_LASTMOD } from "@/data/pageLastmod";
-import { VALUE_PAGES_MODIFIED_ISO, registryOnlyModels, valuePath } from "@/data/valuePages";
+import { VALUE_PAGES_MODIFIED_ISO, registryOnlyModels, valuePageModifiedIso, valuePath } from "@/data/valuePages";
 
 const shell = readFileSync("index.html", "utf8");
 const xml = buildSitemap();
@@ -66,7 +66,8 @@ describe("sitemap.xml", () => {
 
   it("dates /value pages from VALUE_PAGES_MODIFIED_ISO and everything else from PAGE_LASTMOD (no stale keys)", () => {
     for (const r of ALL_ROUTES.filter((r) => r.inSitemap)) {
-      if (r.path === "/value" || r.path.startsWith("/value/")) expect(sitemapLastmod(r), r.path).toBe(VALUE_PAGES_MODIFIED_ISO);
+      if (r.path === "/value" || r.path.split("/").length > 3) expect(sitemapLastmod(r), r.path).toBe(VALUE_PAGES_MODIFIED_ISO);
+      else if (r.path.startsWith("/value/")) expect(sitemapLastmod(r), r.path).toBe(valuePageModifiedIso(r.path.slice("/value/".length)));
       else if (!r.path.startsWith("/car-values/")) expect(PAGE_LASTMOD[r.path], `add ${r.path} to src/data/pageLastmod.ts`).toBeDefined();
     }
     const listed = new Set(ALL_ROUTES.filter((r) => r.inSitemap).map((r) => r.path));

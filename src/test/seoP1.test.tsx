@@ -11,7 +11,7 @@ import { MODEL_PRICES } from "@/data/modelPriceBands";
 import { GUIDES } from "@/data/guides";
 import { POPULAR_VALUE_SLUGS, popularValueModels } from "@/data/popularModels";
 import { VALUE_SLUGS } from "@/data/valueModels";
-import { VALUE_PAGES_MODIFIED_ISO, valueDepreciation, valueMileageYear, valuePath, yearPath } from "@/data/valuePages";
+import { valuePageModifiedIso, valueDepreciation, valueMileageYear, valuePath, yearPath } from "@/data/valuePages";
 import { staticPageBodyHtml } from "@/data/staticPageContent";
 import { buildRouteHtml } from "../../scripts/routePages";
 import { buildSitemap } from "../../scripts/sitemap";
@@ -53,7 +53,7 @@ describe("/value model pages: year-by-year data", () => {
       for (const y of m.years) expect(html, `${m.slug} ${y.year}`).toContain(`<td><a href="${yearPath(m, y)}">${y.year}</a></td>`);
       const page = jsonLd(html).find((b) => b["@type"] === "WebPage");
       expect(page, m.slug).toBeDefined();
-      expect(page.dateModified).toBe(VALUE_PAGES_MODIFIED_ISO);
+      expect(page.dateModified).toBe(valuePageModifiedIso(m.slug));
       expect(page.url).toBe(`https://valu8.uk${valuePath(m)}`);
       expect(page.inLanguage).toBe("en-GB");
       expect(html).toContain("Private sale, part-exchange or dealer: which price is this?");

@@ -2,6 +2,7 @@
 // Figures are typical asking prices from UK adverts (generated into modelPriceBands.ts), not valuations.
 import { MODEL_PRICES, PRICE_DATA_UPDATED, type ModelPrices, type YearPrices } from "./modelPriceBands";
 import { enrichedYearHtml, findEnrichedYear } from "./enrichedYears";
+import { enrichedModelHtml, findEnrichedModel } from "./enrichedModels";
 import { VALUE_MODELS, valueModelPath, valueModelsByMake, type ValueModel } from "./valueModels";
 import { modelDisplayName } from "./modelDisplayName";
 import { CAR_MODELS, SEGMENT_LABEL, SEGMENT_TIPS, type CarModelPage } from "./carModels";
@@ -46,6 +47,8 @@ export function valueMeta(m: ModelPrices) {
   const all = m.bands.map((b) => b.median);
   const lo = gbp(Math.min(...all)), hi = gbp(Math.max(...all));
   const range = lo === hi ? lo : `${lo}–${hi}`;
+  const e = findEnrichedModel(m.slug);
+  if (e) return { path: valuePath(m), title: e.title, description: e.description(m) };
   const full = `A used ${name} is typically advertised for ${range} in the UK, by year (${m.listings.toLocaleString("en-GB")} adverts, ${PRICE_DATA_UPDATED}). Get a free valuation by reg.`;
   return {
     path: valuePath(m),
@@ -82,6 +85,11 @@ export const VALUE_YEARS_INTRO = (m: ModelPrices) =>
 
 /** ISO date the /value page content last changed (WebPage dateModified). Bump it with every price-data refresh. */
 export const VALUE_PAGES_MODIFIED_ISO = "2026-11-18";
+/** dateModified / sitemap lastmod for one /value/:slug page: a hand-enriched model's own date when it's later. */
+export function valuePageModifiedIso(slug: string): string {
+  const e = findEnrichedModel(slug);
+  return e && e.modifiedIso > VALUE_PAGES_MODIFIED_ISO ? e.modifiedIso : VALUE_PAGES_MODIFIED_ISO;
+}
 export const VALUE_UPDATED_TEXT = `Prices last updated: ${PRICE_DATA_UPDATED}.`;
 
 const MIN_YEAR_ADVERTS = 15;
@@ -164,9 +172,16 @@ export function valueGuidance(m: ValueRef): ValueGuidance {
     name,
     steps: modelSteps(name),
     segment: car ? { label: SEGMENT_LABEL[car.segment], tips: SEGMENT_TIPS[car.segment] } : null,
-    faqs: modelFaqs(name, car ? SEGMENT_LABEL[car.segment] : undefined),
+    faqs: [...modelFaqs(name, car ? SEGMENT_LABEL[car.segment] : undefined), ...enrichedFaqs(m)],
     related,
   };
+}
+
+/** Model-specific FAQs from enrichedModels.ts (priced models only, as the answers use the price data). */
+function enrichedFaqs(m: ValueRef): { q: string; a: string }[] {
+  const e = findEnrichedModel(m.slug);
+  const priced = e && MODEL_PRICES.find((x) => x.slug === m.slug);
+  return e && priced ? e.faqs(priced) : [];
 }
 
 /** FAQPage JSON-LD for /value/:slug, same text as the visible FAQ (escaped for inline <script>). */
@@ -197,7 +212,7 @@ export function valueWebPageJsonLd(m: ValueRef): string {
     "@context": "https://schema.org", "@type": "WebPage",
     "@id": SITE_URL + valuePath(m), url: SITE_URL + valuePath(m),
     name: meta.title, description: meta.description, inLanguage: "en-GB",
-    dateModified: VALUE_PAGES_MODIFIED_ISO,
+    dateModified: valuePageModifiedIso(m.slug),
     isPartOf: { "@type": "WebSite", name: "Valu8", url: `${SITE_URL}/` },
   }).replace(/</g, "\\u003c");
 }
@@ -334,6 +349,7 @@ export function valueBodyHtml(m: ModelPrices): string {
     + m.bands.map((b) => `<tr><td>${esc(b.band)}</td><td>${gbp(b.median)}</td><td>${gbp(b.low)} – ${gbp(b.high)}</td></tr>`).join("")
     + `</tbody></table><p>${esc(VALUE_TABLE_NOTE(m))}</p><p><time datetime="${VALUE_PAGES_MODIFIED_ISO}">${esc(VALUE_UPDATED_TEXT)}</time></p>`
     + yearTableHtml(m) + depreciationHtml(m) + mileageHtml(m)
+    + (findEnrichedModel(m.slug) ? `<section>${enrichedModelHtml(findEnrichedModel(m.slug)!, m)}</section>` : "")
     + `<p><a href="/valuation/new">Value my ${esc(valueName(m))} free</a></p>`
     + priceTypesHtml(m)
     + guidanceHtml(m)
