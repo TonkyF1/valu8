@@ -10,6 +10,7 @@ import { PAGE_LASTMOD } from "@/data/pageLastmod";
 import { HOME_FAQS, HOME_FAQ_COUNT, SITE_FAQS } from "@/data/siteFaqs";
 import { FAQS } from "@/components/home/BuyerSellerSections";
 import { popularValueModels } from "@/data/popularModels";
+import { HOMEPAGE_INTRO } from "@/data/staticPageContent";
 import { newPageMeta } from "@/pages/newPageMeta";
 
 const shell = readFileSync("index.html", "utf8");
@@ -95,9 +96,12 @@ describe("FAQPage JSON-LD matches the visible FAQs", () => {
 
 describe("homepage keeps its SEO essentials", () => {
   const home = root(built("/"));
-  it("H1, brand line, report H2, guides link, and normal links to the new pages", () => {
+  it("H1, intro, report H2, guides link, and normal links to the new pages", () => {
     expect(home).toContain("<h1>Free car valuation by registration</h1>");
-    expect(home).toContain("Know its value. Make the right move.");
+    // Tony removed the hero tagline (21 Nov 2026); the prerendered intro must not bring it back for crawlers.
+    expect(home).not.toContain("Know its value. Make the right move.");
+    expect(home).toContain(HOMEPAGE_INTRO);
+    expect(HOMEPAGE_INTRO.toLowerCase()).toContain("buying or selling, know the right price");
     expect(home).toContain("<h2>What's in every report</h2>");
     for (const href of ["/guides", "/how-it-works", "/faq", "/example-report", "/value"]) expect(home).toContain(`href="${href}"`);
     for (const v of popularValueModels()) expect(home).toContain(`href="/value/${v.slug}"`);
@@ -107,13 +111,13 @@ describe("homepage keeps its SEO essentials", () => {
 });
 
 describe("sitemap", () => {
-  it("lists the three new pages, dated 20 Nov 2026, and the homepage's new date", () => {
+  it("lists the three new pages, dated 20 Nov 2026, and the homepage's date (21 Nov 2026: intro without the removed tagline)", () => {
     const xml = buildSitemap();
     for (const path of Object.keys(NEW_PAGES)) {
       expect(PAGE_LASTMOD[path]).toBe("2026-11-20");
       expect(xml).toContain(`<loc>https://valu8.uk${path}</loc><lastmod>2026-11-20</lastmod>`);
     }
-    expect(xml).toContain("<loc>https://valu8.uk/</loc><lastmod>2026-11-20</lastmod>");
+    expect(xml).toContain("<loc>https://valu8.uk/</loc><lastmod>2026-11-21</lastmod>");
     expect(readFileSync("public/sitemap.xml", "utf8")).toBe(xml);
   });
 });

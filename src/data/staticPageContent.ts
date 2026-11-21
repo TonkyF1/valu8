@@ -102,7 +102,9 @@ const legalSections: Record<string, [string, string][]> = {
 
 /** Homepage hero: the H1 carries the search terms; the brand line moves into the intro. Mirrored in TeslaFlow.tsx. */
 export const HOMEPAGE_H1 = "Free car valuation by registration";
-export const HOMEPAGE_INTRO = "Know its value. Make the right move. Get a free UK car valuation from the number plate in seconds, then unlock personalised insights to help you negotiate with confidence.";
+/** Prerendered intro under the H1. Tony removed the visible hero tagline (21 Nov 2026), so this only repeats what the
+ *  hero still shows (the "Buying or Selling, Know the right price" line by the reg box) plus what the free valuation gives. */
+export const HOMEPAGE_INTRO = "Buying or selling, know the right price. Enter a UK number plate for a free car valuation: an estimated private-sale value with official DVSA MOT history.";
 
 export function staticPageBodyHtml(path: string): string | undefined {
   if (path === "/") {
@@ -119,7 +121,7 @@ export function staticPageBodyHtml(path: string): string | undefined {
       + popularModelsHtml() + "</main>");
   }
   const simple: Record<string, [string, string, [string, string][]]> = {
-    "/valuation/new": ["Find out what your car is worth", "Enter your UK registration to start a free private-sale valuation.", [["Start with your registration", "We look up the vehicle record and MOT history, then you can confirm details, mileage, service history and photos. <a href=\"/car-values\">Browse car values by model</a>."], ["Free valuation", "Essentials valuations are free, with a daily limit for guests. An optional Full seller report is available for a one-off £2.99. Valuation figures are estimates, not guaranteed offers."]]],
+    "/valuation/new": ["Find out what your car is worth", "Enter your UK registration to start a free private-sale valuation.", [["Start with your registration", "We look up the vehicle record and MOT history, then you can confirm details, mileage, service history and photos. <a href=\"/value\">Browse car values by model</a>."], ["Free valuation", "Essentials valuations are free, with a daily limit for guests. An optional Full seller report is available for a one-off £2.99. Valuation figures are estimates, not guaranteed offers."]]],
     "/check": ["Is this used car a fair price?", "Copy in the details from any UK car advert to compare its asking price with our estimated private-sale and dealer ranges.", [["Check a used car advert", "Enter the make, model, year, mileage and asking price, with an optional advert link and seller type. The check is free. Guests get a few checks each day, and a free account gives you more."], ["Understand the result", "Results give an estimated market-based starting point for questions and negotiation. They do not replace a viewing, inspection or independent vehicle history check."]]],
     "/accuracy": ["How accurate are we?", "We compare our private-sale estimates with the prices our users report selling for.", [["Collecting real sale feedback", "We will publish predicted-versus-sold figures once at least 20 owners have reported sale prices. Every reported sale counts, with no cherry-picking."], ["Why estimates differ from dealer adverts", "Dealer asking prices can include preparation, warranty and margin, and are a starting point for negotiation. A private-sale estimate normally sits below them."]]],
     "/pricing": ["A price you can defend, without paying a dealer's margin", "Essentials is free. Unlock the Full seller report for a one-off £2.99 when you want the extra detail.", [["Essentials — free", "Includes an instant valuation from reg and mileage, an estimated private-sale value, DVSA MOT history and mileage information, a GOV.UK recall-check link, tax and clean-air-zone estimates, and advert price checks."], ["Full seller report — £2.99 one-off", "Adds part-exchange and dealer figures, comparable UK advert pricing, optional AI photo condition scoring, a suggested asking price and negotiation buffer, ready-to-post advert copy, advisory repair-cost bands and a shareable report. Pay by card, Apple Pay or Google Pay. No subscription."]]],
@@ -137,6 +139,12 @@ export function staticPageBodyHtml(path: string): string | undefined {
   return undefined;
 }
 
-export const homepageFaqHeadHtml = `<script type="application/ld+json" id="homepage-faq-jsonld">${homepageFaqJsonLd}</script>`;
+/** WebSite + Organization JSON-LD in the static homepage HTML. Same ids and JSON as Landing.tsx, which upserts by id
+ *  (setJsonLd), so crawlers that don't run JS see it and the app never adds a second copy. */
+export const HOMEPAGE_WEBSITE_JSONLD = { "@context": "https://schema.org", "@type": "WebSite", name: "Valu8", url: "https://valu8.uk/" };
+export const HOMEPAGE_ORG_JSONLD = { "@context": "https://schema.org", "@type": "Organization", name: "Valu8", url: "https://valu8.uk/" };
+export const homepageFaqHeadHtml = `<script type="application/ld+json" id="homepage-faq-jsonld">${homepageFaqJsonLd}</script>`
+  + `<script type="application/ld+json" id="homepage-website-jsonld">${JSON.stringify(HOMEPAGE_WEBSITE_JSONLD)}</script>`
+  + `<script type="application/ld+json" id="homepage-org-jsonld">${JSON.stringify(HOMEPAGE_ORG_JSONLD)}</script>`;
 /** /faq: FAQPage JSON-LD for the full visible list. */
 export const faqPageHeadHtml = `<script type="application/ld+json" id="faq-page-jsonld">${faqPageJsonLd(SITE_FAQS)}</script>`;

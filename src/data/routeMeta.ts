@@ -20,11 +20,11 @@ export type RouteMeta = {
 };
 
 export const STATIC_ROUTES: RouteMeta[] = [
-  { path: "/", title: "Free Car Valuation UK | Check Used Car Values | Valu8", description: "Buying or selling a used car? Check its estimated value for free using the registration number. Unlock personalised buying and selling insights for £2.99.", priority: "1.0", inSitemap: true },
+  { path: "/", title: "Free Car Valuation Online by Reg | Value My Car UK | Valu8", description: "Value your car free by registration: an instant UK private-sale estimate with official DVSA MOT history. Buying? Check any advert. Full report £2.99.", priority: "1.0", inSitemap: true },
   { path: "/valuation/new", title: "New valuation | Valu8", description: "Enter a UK registration to get a free private sale valuation in minutes.", inSitemap: false, canonicalPath: "/" },
-  { path: "/check", title: "Is this used car a fair price? Free advert price checker | Valu8", description: "Enter a UK used car advert's make, model, year, mileage and asking price. We'll tell you if it's overpriced, fair or a bargain against UK market data.", priority: "0.8", inSitemap: true },
+  { path: "/check", title: "Car price check: is this used car a fair price? | Valu8", description: "Free used car price checker. Enter any UK advert's make, model, year, mileage and asking price to see if it's overpriced, fair or a bargain.", priority: "0.8", inSitemap: true },
   { path: "/accuracy", title: "How accurate is Valu8? Predicted vs real sale prices", description: "We compare our car valuations with the prices people actually sell for, and will publish the results once enough owners report a sale.", noindex: true, inSitemap: false },
-  { path: "/car-values", title: "Car values by make and model | Valu8", description: "Free valuations for the UK's most popular cars, from the Ford Fiesta to the Tesla Model 3.", priority: "0.8", inSitemap: true },
+  { path: "/car-values", title: "Car values by make and model | Valu8", description: "Free online car valuation by registration, plus typical UK asking prices by year for the most popular models. See what your car is worth to sell.", priority: "0.8", inSitemap: true },
   { path: "/pricing", title: "Pricing | Valu8", description: "Essentials valuations are free. The Full seller report is a one-off £2.99, no subscription. Pay by card, Apple Pay or Google Pay.", priority: "0.6", inSitemap: true },
   { path: "/how-it-works", title: "How Valu8 works: free car valuation by reg | Valu8", description: "How Valu8 turns a UK number plate into a free car valuation: comparable adverts, age and mileage, official MOT history and optional photos.", priority: "0.6", inSitemap: true },
   { path: "/faq", title: "Car valuation FAQs: your questions answered | Valu8", description: "Straight answers on Valu8 car valuations: what's free, what the £2.99 report adds, how prices are worked out and who can see your valuation.", priority: "0.5", inSitemap: true },

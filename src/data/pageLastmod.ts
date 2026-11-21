@@ -5,7 +5,7 @@
 // Node-safe: imported by scripts/sitemap.ts at build time. src/test/sitemapLastmod.test.ts keeps it complete.
 
 export const PAGE_LASTMOD: Record<string, string> = {
-  "/": "2026-11-20", // shortened: example report, full FAQ and how-it-works moved to their own pages
+  "/": "2026-11-21", // prerendered intro no longer repeats the removed hero tagline
   "/check": "2026-11-17", // guest limit copy
   "/car-values": "2026-11-18", // hub lists /value pages
   "/pricing": "2026-11-18", // part-ex and dealer figures moved to the £2.99 Full report
