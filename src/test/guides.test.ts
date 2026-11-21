@@ -33,7 +33,7 @@ describe("guides", () => {
   });
 
   it("uses the seo_title as route title", () => {
-    expect(getRouteMeta("/guides/what-is-my-car-worth").title).toBe("What Is My Car Worth? UK Car Values Explained");
+    expect(getRouteMeta("/guides/what-is-my-car-worth").title).toBe("How much is my car worth? UK car valuation guide | Valu8");
   });
 
   it("prerenders guide HTML with canonical, description, body and FAQ JSON-LD", () => {

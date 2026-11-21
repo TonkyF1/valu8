@@ -5,16 +5,18 @@ import { popularModelsHtml } from "./popularModels";
 export const GUIDE_SOURCES: string[] = [
   `---
 slug: /guides/what-is-my-car-worth
-seo_title: "What Is My Car Worth? UK Car Values Explained"
-meta_description: "Why your car has a private-sale, part-exchange and dealer price, what moves its value, and how to get a free, realistic estimate from your reg."
-target_search_phrasing: "what is my car worth UK", "how much is my car worth", "how are car valuations calculated", "why is my part exchange value so low"
+seo_title: "How much is my car worth? UK car valuation guide | Valu8"
+meta_description: "How to value your car in the UK: private-sale, part-exchange and dealer prices, what moves the figure, and a free valuation by reg in under a minute."
+target_search_phrasing: "how much is my car worth", "what is my car worth UK", "car valuation", "value my car", "how much is my car worth to sell", "car valuation uk", "used car valuation"
 ---
 
-# What is my car worth? UK car values explained
+# How much is my car worth? A UK car valuation guide
 
-"What's my car worth?" sounds like it should have one answer. In reality, a used car has several prices at the same time, and which one you're looking at makes a big difference. Once you know how they fit together, it's much easier to set a fair asking price, judge an offer or spot a good deal.
+**The quick answer:** your car is worth what a buyer will pay for it today, and that depends on who the buyer is. Enter your reg for a [free Valu8 valuation](/valuation/new) and you get an estimated private-sale value, built from comparable UK adverts and adjusted for your car's age and mileage, plus its official DVSA MOT history. The rest of this guide explains what sits behind that number, so you can judge any valuation or offer you're given.
 
 ## Your car has three prices, not one
+
+"What's my car worth?" sounds like it should have one answer. In reality, a used car has several prices at the same time, and which one you're looking at makes a big difference.
 
 **1. Part-exchange (trade-in) value**
 What a dealer is likely to allow for your car against another one. It's usually the lowest figure, because the dealer has to prepare the car, may add a warranty, and takes the risk of it not selling quickly.
@@ -25,11 +27,32 @@ What another person is likely to pay you if you sell it yourself. Usually higher
 **3. Dealer retail value**
 What the same car would typically be advertised for on a forecourt. Usually the highest, because it often includes preparation, a warranty and the extra consumer rights you get when buying from a business.
 
-A lot of disappointment comes from mixing these up. If you see similar cars on dealer forecourts and then get a part-exchange offer, the gap can feel unfair, but you're comparing two different things. Compare like with like.
+A lot of disappointment comes from mixing these up. If you see similar cars on dealer forecourts and then get a part-exchange offer, the gap can feel unfair, but you're comparing two different things. In the Valu8 advert data (more than 93,000 UK adverts, November 2026), private adverts were typically about **30% below** dealer adverts for the same model, year and mileage band. See [private sale vs dealer prices](/guides/private-sale-vs-dealer-prices) for the full figures.
 
 A free [Valu8 valuation](/valuation/new) gives you an estimated private-sale value for your reg and mileage, plus your MOT history. The optional £2.99 Full report adds part-exchange and dealer prices side by side, so you can see where your car sits.
 
+## How much is my car worth to sell?
+
+If you're selling, the figure you need depends on how you sell:
+
+- **Selling privately:** aim for the private-sale value. Set your asking price a little above the figure you'd accept, so there's room to negotiate. Our guide to [pricing a car for private sale](/guides/how-to-price-a-car-for-private-sale) walks through it step by step.
+- **Part-exchanging:** expect less than the private-sale value. Compare the whole deal, not just the allowance. See [part-exchange vs private sale](/guides/part-exchange-vs-private-sale).
+- **Selling to a car-buying service:** treat any online quote as a starting point. The final offer usually follows an inspection, and it can come down if the car's condition or history isn't as described.
+
+Whichever route you take, the asking prices of similar cars are a starting point, not a promise. Cars usually sell for a little less than their advertised price after negotiation.
+
 ## What moves your car's value
+
+Here's how much the main factors shifted typical UK asking prices in our advert data (November 2026). Each comparison is like for like: same make and model, and the same year unless it says otherwise.
+
+| Factor | Typical effect on asking price |
+|---|---|
+| Each extra year of age | about 12% lower |
+| Over 80,000 miles vs under 40,000 (same year) | about 39% lower |
+| Diesel vs petrol (same model and year) | about 14% lower |
+| Private advert vs dealer advert | about 30% lower |
+
+These are averages across many cars, not a rule for yours. The detail is in [what lowers a car's value most](/guides/what-lowers-a-cars-value).
 
 **Age and mileage.** These are the big two. What matters is mileage *for the car's age*: higher-than-usual miles generally bring the value down, and genuinely low miles can push it up.
 
@@ -37,7 +60,7 @@ A free [Valu8 valuation](/valuation/new) gives you an estimated private-sale val
 
 **Service history.** A full, documented history with invoices reassures buyers and tends to be worth paying for. Gaps raise questions.
 
-**MOT history.** Buyers can check every past MOT for free on [GOV.UK](https://www.gov.uk/check-mot-history), including failures, advisories and recorded mileage. A clean record with mileage that rises steadily helps; repeat advisories or a mileage drop hurt.
+**MOT history.** Buyers can check every past MOT for free on [GOV.UK](https://www.gov.uk/check-mot-history), including failures, advisories and recorded mileage. A clean record with mileage that rises steadily helps; repeat advisories or a mileage drop hurt. See [do MOT advisories affect my car's value?](/guides/mot-advisories-car-value)
 
 **Specification.** Engine, trim and gearbox matter, as do options people actually look for. Performance versions can be worth a lot more than standard ones.
 
@@ -45,11 +68,28 @@ A free [Valu8 valuation](/valuation/new) gives you an estimated private-sale val
 
 **Running costs.** Things like vehicle tax and whether a car is compliant with clean air zones can affect what buyers will pay.
 
+## Typical prices for popular models
+
+To get a feel for the market before you value your own car, here are typical asking prices for 2018 to 2020 cars of some of the UK's most-advertised models (November 2026). Each model's page has prices for every year and by mileage.
+
+| Model (2018 to 2020) | Median asking price | Typical range |
+|---|---|---|
+| [Ford Fiesta](/value/ford-fiesta) | £7,000 | £5,500 to £8,500 |
+| [Vauxhall Corsa](/value/vauxhall-corsa) | £7,000 | £5,500 to £8,400 |
+| [Nissan Qashqai](/value/nissan-qashqai) | £8,000 | £6,750 to £9,000 |
+| [Ford Kuga](/value/ford-kuga) | £8,700 | £7,000 to £10,350 |
+| [Toyota Yaris](/value/toyota-yaris) | £9,500 | £7,750 to £12,000 |
+| [Kia Sportage](/value/kia-sportage) | £9,750 | £8,000 to £11,500 |
+| [Volkswagen Golf](/value/volkswagen-golf) | £10,900 | £8,800 to £12,800 |
+| [BMW 3 Series](/value/bmw-3-series) | £12,500 | £9,700 to £14,900 |
+
+Typical range is the middle half of asking prices. For every other model, see [car values by model](/value).
+
 ## Why different valuation sites give different numbers
 
 Valuation tools use different data and methods. Some lean on advertised prices, some on trade data, some on a mix. Advertised prices are asking prices, not final sale prices, so they show where the market starts rather than where every deal ends.
 
-That's why any online figure should be treated as an estimate, not a promise. Valu8 is upfront about this: our prices are estimated from comparable UK adverts in our database, adjusted for your car's age and mileage, and each report shows a confidence level and how the figure was built. You can read more on our [accuracy page](/accuracy).
+That's why any online figure should be treated as an estimate, not a promise. Valu8 is upfront about this: our prices are estimated from comparable UK adverts in our database, adjusted for your car's age and mileage, and each report shows a confidence level and how the figure was built. See [how Valu8 works](/how-it-works) for the detail.
 
 ## How to get a realistic number
 
@@ -59,17 +99,17 @@ That's why any online figure should be treated as an estimate, not a promise. Va
 4. **Look at similar cars for sale near you.** Same model, year, trim and similar mileage, and note whether they're private or dealer adverts.
 5. **Decide which price you need.** Selling privately? Focus on the private-sale estimate. Trading in? Focus on part-exchange, and compare the whole deal.
 
-## Turning a value into an asking price
+## Buying rather than selling?
 
-If you're selling privately, set your asking price a little above the figure you'd be happy with, so there's room to negotiate. A Valu8 report includes a suggested asking price, a negotiation buffer and a ready-to-post advert to get you started.
-
-Not sure whether to sell privately or trade in? See our guide to [part-exchange vs private sale](/guides/part-exchange-vs-private-sale). Selling yourself? Read [how to sell a car privately and safely](/guides/how-to-sell-a-car-privately-safely) first.
-
-## Looking up a particular model?
-
-Our [car values by model](/car-values) pages cover popular UK cars, from the Ford Fiesta to the Nissan Qashqai, and are a quick way to get a feel for a model before you value a specific car.
+The same logic works in reverse. If you've found a car for sale, our free [advert price checker](/check) compares the asking price with similar UK adverts and tells you whether it looks overpriced, fair or a bargain. See also [how to tell if a used car is overpriced](/guides/how-to-tell-if-a-used-car-is-overpriced).
 
 ## FAQs
+
+**How can I find out what my car is worth for free?**
+Enter your registration on Valu8 for a free estimated private-sale value and your DVSA MOT history. There's nothing to pay: guests get a limited number of free valuations each day, and a free account gives you more.
+
+**How much is my car worth to sell privately?**
+Usually close to what similar cars are advertised for privately, less a little for negotiation. A free Valu8 valuation gives you a private-sale estimate for your reg and mileage.
 
 **Is an online car valuation accurate?**
 It's an estimate. A good one uses real market data and your car's details, but the final price depends on condition, spec, location, timing and negotiation. Treat it as a well-informed starting point.
@@ -81,19 +121,19 @@ Forecourt prices are dealer retail prices. They include preparation, often a war
 Both matter, and they're judged together. A car with high mileage for its age will usually be worth less than the same car with typical miles.
 
 **Is a Valu8 valuation free?**
-The valuation (Essentials) is free. The Full seller report is a one-off £2.99 — no subscription. Pay by card, Apple Pay or Google Pay.
+The valuation (Essentials) is free. The Full seller report is a one-off £2.99, no subscription. Pay by card, Apple Pay or Google Pay.
 
 ---
 
-**Want to know what your car's worth?** [Get your free Valu8 valuation](/valuation/new) – an estimated private-sale price from your reg, with part-exchange and dealer prices in the optional £2.99 Full report.`,
+**Want to know what your car's worth?** [Get your free Valu8 valuation](/valuation/new): an estimated private-sale price from your reg, with part-exchange and dealer prices in the optional £2.99 Full report.`,
   `---
 slug: /guides/part-exchange-vs-private-sale
-seo_title: "Part-Exchange vs Private Sale: Which Is Right for You?"
-meta_description: "Part-exchange or sell privately? Compare price, speed, effort and risk, then get a free estimate of both values for your car with Valu8."
-target_search_phrasing: "part exchange vs private sale", "is it better to part exchange or sell privately", "private sale or part exchange which pays more"
+seo_title: "Part exchange vs private sale: which pays more? (UK)"
+meta_description: "Part exchange or sell privately? How trade-in values are worked out, how much more a private sale typically pays, and how to decide for your car."
+target_search_phrasing: "part exchange vs private sale", "is it better to part exchange or sell privately", "private sale or part exchange which pays more", "car trade in value", "trade in vs private sale"
 ---
 
-# Part-exchange vs private sale: which is right for you?
+# Part-exchange vs private sale: which pays more?
 
 When you're ready to change cars, you've got two main routes for the old one. You can hand it to the dealer as part of the deal on your next car (part-exchange), or you can advertise it and sell it to another person yourself (a private sale).
 
@@ -122,6 +162,17 @@ Every used car really has three prices at any moment:
 A common mistake is comparing a part-exchange offer against forecourt prices online and feeling short-changed. Those are different products. Compare your part-exchange offer with a realistic **private-sale** figure instead.
 
 A free [Valu8 valuation](/valuation/new) gives you an estimated private-sale value for your reg and mileage, plus your MOT history. The optional £2.99 Full report adds part-exchange and dealer prices side by side, so you can see the gap for your car before you decide. Like any valuation, they're estimates, not a guaranteed offer.
+
+## How dealers work out your part-exchange (trade-in) value
+
+A dealer's part-exchange figure usually starts from what they think they can sell your car for, then takes off what it will cost them to get there:
+
+- **Preparation and repairs:** a service, MOT work, tyres, bodywork and a valet.
+- **Warranty and admin:** many dealers add a warranty and have to handle the paperwork.
+- **Risk and time:** the car may sit unsold for weeks, or go to auction if it doesn't suit their forecourt.
+- **Margin:** the dealer needs to make money on the car.
+
+That's why a trade-in value is usually below a realistic private-sale price. How far below depends on the car. In the Valu8 advert data (November 2026), private adverts were typically about 30% below dealer adverts for the same model, year and mileage band, and a part-exchange offer is usually lower again. The gap was widest for cheaper cars. See [part exchange value vs private sale: the numbers](/guides/private-sale-vs-dealer-prices).
 
 ## Look at the whole deal, not just the allowance
 
@@ -616,7 +667,7 @@ No. Valu8 doesn't buy, sell or broker cars, so we have no reason to push your nu
   `---
 slug: /guides/mot-advisories-car-value
 seo_title: "Do MOT advisories affect my car's value? A UK seller's guide"
-meta_description: "How MOT advisories, failures and mileage records affect what your car is worth, what buyers and dealers look for, and which fixes are worth doing before you sell."
+meta_description: "How MOT advisories, failures and mileage records affect what your car is worth, what buyers look for, and which fixes are worth doing before you sell."
 target_search_phrasing: "do mot advisories affect car value", "mot history affect resale value", "selling a car with mot advisories", "check mot history before selling"
 ---
 
@@ -685,7 +736,7 @@ No. We don't buy, sell or broker cars. All figures are estimates, not offers.`,
   `---
 slug: /guides/how-to-price-a-car-for-private-sale
 seo_title: "How to price a car for private sale in the UK"
-meta_description: "A step-by-step way to set a private sale asking price: find like-for-like cars, adjust for mileage and condition, leave room to negotiate and pick a sensible round number."
+meta_description: "How to set a private sale asking price step by step: find like-for-like cars, adjust for mileage and condition, and leave room to negotiate."
 target_search_phrasing: "how to price a car for private sale", "what price should I sell my car for", "how much should I ask for my car", "private sale asking price"
 ---
 
@@ -770,7 +821,7 @@ No. We don't buy, sell or broker cars. All figures are estimates, not offers.
   `---
 slug: /guides/what-lowers-a-cars-value
 seo_title: "What lowers a car's value most? UK advert data"
-meta_description: "Age, mileage, condition, MOT history and fuel type all move used car prices. Here's how much each one shifts typical UK asking prices, and what you can do about it."
+meta_description: "Age, mileage, condition, MOT history and fuel type all move used car prices. How much each shifts typical UK asking prices, and what you can do about it."
 target_search_phrasing: "what lowers a car's value", "what affects car value most", "how much does mileage affect car value", "how much does a car depreciate per year"
 ---
 
@@ -854,12 +905,12 @@ In our data, diesel versions were typically advertised for about 14% less than p
 No. We don't buy, sell or broker cars. All figures are estimates, not offers.`,
   `---
 slug: /guides/private-sale-vs-dealer-prices
-seo_title: "Part exchange vs selling privately: what UK adverts show"
-meta_description: "How much more do you get selling privately than through a dealer? Real UK advert data on the private vs dealer price gap, and when part-exchange still makes sense."
-target_search_phrasing: "part exchange vs selling privately", "how much more do you get selling privately", "private sale vs dealer price", "is it worth selling my car privately"
+seo_title: "Part exchange value vs private sale: UK price gap data"
+meta_description: "How much less is a part exchange value than a private sale? UK advert data on the private vs dealer price gap, and when trading in still makes sense."
+target_search_phrasing: "part exchange value", "how much more do you get selling privately", "private sale vs dealer price", "is it worth selling my car privately", "trade in value vs private sale"
 ---
 
-# Part exchange vs selling privately: what the numbers show
+# Part exchange value vs private sale: what the numbers show
 
 Selling privately usually gets you more money. Part-exchange is quicker and easier. The question is how big the gap is for your car, and whether it's worth the time. This guide uses typical asking prices from more than 93,000 UK adverts in the Valu8 database (November 2026) to show where the gap is biggest.
 
@@ -889,9 +940,9 @@ Private cars on sale also tend to be older and higher mileage. In our data, priv
 
 A dealer's price usually covers preparation, any repairs, a warranty, finance options and the extra consumer rights a buyer gets from a business. The dealer also has to make a margin. That's why a dealer can't give you their forecourt price for your car.
 
-## Where part-exchange fits
+## Where part-exchange value fits
 
-A part-exchange offer is what a dealer will allow for your car against another one. It's usually below a realistic private sale price, because the dealer still has to prepare the car and resell it. If your offer feels low, our guide to [a part-exchange offer that's too low](/guides/part-exchange-offer-too-low) explains what to do next.
+Your part-exchange (trade-in) value is what a dealer will allow for your car against another one. It's usually below a realistic private sale price, because the dealer still has to prepare the car and resell it. If your offer feels low, our guide to [a part-exchange offer that's too low](/guides/part-exchange-offer-too-low) explains what to do next.
 
 ## When selling privately is worth it
 
@@ -921,6 +972,9 @@ Yes. For cars a dealer would advertise under £5,000, private adverts were typic
 
 **Is part-exchange ever the better option?**
 Yes, when the difference is small, the car has problems, or you need a quick and simple sale.
+
+**What is a good part-exchange value?**
+One that is close to a realistic private-sale price for your car, once you allow for the time and costs of selling privately. Get a free private-sale estimate for your reg first, so you know what you're comparing the offer with.
 
 **Does Valu8 buy cars?**
 No. We don't buy, sell or broker cars, so we have no reason to push your number up or down. All figures are estimates, not offers.`
