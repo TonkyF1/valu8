@@ -4,6 +4,7 @@
  * Campaign tags (utm_source/medium/campaign) from the landing URL are kept in
  * sessionStorage for this tab only, sent with the landed step and saved with each valuation.
  */
+import { ev } from "@/lib/analytics";
 const URL_BASE = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
@@ -85,6 +86,7 @@ export function onTrack(cb: Listener): () => void { listeners.add(cb); return ()
 export function track(step: FunnelStep, detail?: string, extra?: Partial<Utm>) {
   if (!URL_BASE || !KEY || sent.has(step)) return;
   sent.add(step);
+  ev(step, detail ? { detail } : undefined);
   listeners.forEach((cb) => { try { cb(step); } catch { /* ignore */ } });
   try {
     fetch(`${URL_BASE}/rest/v1/funnel_events`, {

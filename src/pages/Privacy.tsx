@@ -29,7 +29,7 @@ export default function Privacy() {
       <main id="main" className="flex-1 container max-w-3xl py-12 md:py-16">
         <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Legal</div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gradient mb-6">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground mb-10">Last updated: 18 November 2026</p>
+        <p className="text-sm text-muted-foreground mb-10">Last updated: 21 November 2026</p>
 
         <div className="max-w-none space-y-8 text-sm leading-relaxed text-foreground/85">
           <Section n={1} title="Who we are">
@@ -47,6 +47,7 @@ export default function Privacy() {
               <li><strong className="text-foreground">Valuation inputs</strong>: make, model, trim, year, mileage, condition answers, notes, and any photos you choose to upload.</li>
               <li><strong className="text-foreground">Your email address (optional)</strong>: only if you create an account or ask us to email you, for example "Email me if this price changes".</li>
               <li><strong className="text-foreground">Anonymous funnel steps</strong>: which steps of the valuation form were reached (for example "registration entered" or "result seen"), a coarse traffic source (such as "facebook" or "direct"), any campaign tags in the link you arrived from (utm_source, utm_medium and utm_campaign, for example "facebook / paid / report299"), a device type (mobile, tablet or desktop) and the time. This uses a random number that lives only in memory for that one page visit. It sets no cookies and contains no personal data. The campaign tags are kept in your browser's session storage for that tab only (cleared when you close it) and are also saved with any valuation you run, so we can see which campaigns lead to valuations. If you buy a Full report, we record the purchase as an anonymous funnel step too.</li>
+              <li><strong className="text-foreground">Anonymous usage analytics</strong>: which pages are viewed, which links and buttons are used, how far a page is scrolled and for how long, plus a coarse device type, browser family and the site you came from. It uses no cookies and stores nothing on your device, keeps no IP address or user agent, records no screen or keystrokes, and never includes your registration, email or any personal detail. A random visit number lives in the page&apos;s memory only and is gone when you close or reload it.</li>
               <li><strong className="text-foreground">How you found us</strong>: a campaign tag and referring site domain, kept in your browser's local storage (not a cookie).</li>
               <li><strong className="text-foreground">Analytics (only if you accept)</strong>: PostHog page and usage analytics, with text inputs masked, when switched on. Nothing loads until you click "Accept".</li>
               <li><strong className="text-foreground">Advertising measurement (only if you accept)</strong>: when switched on, the Meta Pixel tells Meta (Facebook and Instagram) that a visitor from our ads viewed a page, finished a free valuation, opened checkout or bought a Full report, so we can measure and improve our ads. If you accept and then buy a report, we also send Meta the purchase directly from our server (the Conversions API), with your email address scrambled (hashed) first so Meta can match it without us sending it in plain text. If you reject, or never choose, nothing is sent to Meta and no Meta script loads.</li>
@@ -84,7 +85,7 @@ export default function Privacy() {
               <li>Account and saved valuations: until you delete them or your account.</li>
               <li>Guest valuations (no account): kept so your link keeps working; ask us and we will delete them.</li>
               <li>Email for alerts: until you unsubscribe or ask us to delete it.</li>
-              <li>Anonymous funnel steps: up to 13 months.</li>
+              <li>Anonymous funnel steps and usage analytics: up to 13 months.</li>
               <li>Anonymised vehicle and price records: kept to improve our valuations, as they no longer identify you.</li>
             </ul>
           </Section>
