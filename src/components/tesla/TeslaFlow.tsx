@@ -592,7 +592,6 @@ export function TeslaFlow() {
             {!hasCar ? (
               <>
                 <h1 id="t8-h" className="t8-h1 t8-h1-bs">Free car valuation<br /><em>by registration.</em></h1>
-                <p className="t8-sub t8-sub-bs">Know its value. Make the right move. Get a free UK car valuation from the number plate in seconds, then unlock personalised insights to help you negotiate with confidence.</p>
               </>
             ) : band ? (
               <>

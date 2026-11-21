@@ -111,7 +111,8 @@ describe("buyer and seller copy", () => {
     const flow = read("src/components/tesla/TeslaFlow.tsx");
     // SEO (Nov 2026): the H1 carries the search terms; the brand line is kept in the intro under it.
     expect(flow).toContain("Free car valuation<br /><em>by registration.</em>");
-    expect(flow).toContain("Know its value. Make the right move.");
+    // Tagline paragraph removed from the visible hero (Nov 2026, Tony); prerender intro is owned by Marketing.
+    expect(flow).not.toContain("Know its value. Make the right move.");
     expect(flow).toContain("Buying or Selling, Know the right price");
     expect(flow).not.toMatch(/t8-sub[^"]*">Buying or selling/);
     expect(flow).not.toContain("Coming soon");
