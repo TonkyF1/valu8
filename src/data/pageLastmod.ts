@@ -14,7 +14,7 @@ export const PAGE_LASTMOD: Record<string, string> = {
   "/example-report": "2026-11-20", // new page
   "/about": "2026-11-06",
   "/contact": "2026-11-06",
-  "/privacy": "2026-11-20", // carVertical registration line
+  "/privacy": "2026-11-21", // anonymous usage analytics line
   "/terms": "2026-11-17",
   "/disclaimers": "2026-11-06",
   "/embed-info": "2026-11-10",

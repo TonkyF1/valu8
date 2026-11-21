@@ -9,6 +9,7 @@ import { isFoundVehicle, isPlausibleUkReg, normaliseReg } from "@/lib/registrati
 import { Turnstile, turnstileEnabled, turnstileHeaders } from "@/components/Turnstile";
 import { getAttribution } from "@/lib/attribution";
 import { getUtm, track } from "@/lib/funnel";
+import { ev } from "@/lib/analytics";
 import { inferPerformanceTrim, type TrimHint } from "@/lib/perfTrim";
 import { functionErrorBody, getGuestToken, photoToDataUrl, rememberGuestValuation } from "@/lib/guest";
 import { PHOTO_SLOTS, fillEmptySlots, type PhotoSlotKey } from "@/lib/cars";
@@ -292,6 +293,7 @@ export function TeslaFlow() {
     } catch (e: any) {
       if (epoch.current !== e0) return;
       track("lookup_fail");
+      ev("lookup_error", { kind: /busy/i.test(String(e?.message)) ? "busy" : "not_found" });
       const m = String(e?.message || "We couldn't find a car with that registration.").trim();
       setErr(/[.!?]$/.test(m) ? m : `${m}.`);
       setStage("idle");
@@ -330,6 +332,7 @@ export function TeslaFlow() {
       // Premium path: no checkout yet. The car lands at the top of the page; the details step (one Pay button) is just below.
     } catch (e: any) {
       if (epoch.current !== e0) return;
+      ev("valuation_error", { stage: "first" });
       setErr(e?.message || "We couldn't value this car just now. Please try again.");
       setStage("estimate");
     }
@@ -345,6 +348,7 @@ export function TeslaFlow() {
     } else setGrade(null);
     track("result_seen");
     track("valuation_completed");
+    ev("valuation_result", { outcome: b ? "priced" : "unpriced", refined: !first });
     posthog.capture?.("Valuation Report Generated", { valuation_id: id, guest: !user, home_flow: true, refined: !first, private_value: report?.values?.privateSale, valuation_unavailable: !!report?.valuationUnavailable });
   }
 
@@ -352,6 +356,7 @@ export function TeslaFlow() {
   function applyLocked(id: string, priceable: boolean) {
     setValuationId(id); setLocked(true); setBand(null); setGrade(null); setUnavailable(!priceable);
     track("valuation_completed");
+    ev("valuation_result", { outcome: priceable ? "locked" : "unpriced" });
     posthog.capture?.("Valuation Report Generated", { valuation_id: id, guest: true, home_flow: true, price_locked: true, valuation_unavailable: !priceable });
   }
 

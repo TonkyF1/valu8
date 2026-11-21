@@ -49,6 +49,7 @@ import { SaleFeedbackCard } from "@/components/SaleFeedbackCard";
 import { ValuationFeedbackCard } from "@/components/ValuationFeedbackCard";
 import { PriceAlertOptIn } from "@/components/PriceAlertOptIn";
 import { track } from "@/lib/funnel";
+import { evOnce } from "@/lib/analytics";
 import { GuestMarketingConsent } from "@/components/MarketingConsent";
 import { stripSaleFeedback } from "@/lib/saleFeedback";
 import { useAuth } from "@/contexts/AuthContext";
@@ -165,7 +166,7 @@ export default function Report() {
       setReportPaid(true);
       // Consented visitors only (no-op unless the Meta Pixel loaded). Same event id as the server-side Purchase.
       const sid = new URLSearchParams(window.location.search).get("session_id");
-      if (sid) metaPurchaseOnce(sid);
+      if (sid) { metaPurchaseOnce(sid); evOnce("purchase", "purchase_completed", { source: "return_url" }); }
     }
     return paid;
   }, [id]);
