@@ -25,9 +25,9 @@ const faqLd = () => {
 };
 
 describe("Ford Kuga value page", () => {
-  it("targets 'Ford Kuga valuation' in a title within 60 characters and a description within 155", () => {
+  it("targets 'how much is my Ford Kuga worth' and 'Ford Kuga valuation' in a title within 60 characters and a description within 155", () => {
     const meta = valueMeta(kuga);
-    expect(meta.title).toBe("Ford Kuga valuation: UK prices by year and mileage | Valu8");
+    expect(meta.title).toBe("How much is my Ford Kuga worth? Free valuation | Valu8");
     expect(meta.title.length).toBeLessThanOrEqual(60);
     expect(meta.description.startsWith("Free Ford Kuga valuation by reg")).toBe(true);
     expect(meta.description.length).toBeLessThanOrEqual(155);
@@ -54,12 +54,12 @@ describe("Ford Kuga value page", () => {
   it("dates only the Kuga page from its own change (2026-11-21)", () => {
     expect(valuePageModifiedIso("ford-kuga")).toBe("2026-11-21");
     expect(buildSitemap()).toContain("<loc>https://valu8.uk/value/ford-kuga</loc><lastmod>2026-11-21</lastmod>");
-    expect(valuePageModifiedIso("toyota-yaris")).toBe(VALUE_PAGES_MODIFIED_ISO);
+    expect(valuePageModifiedIso("ford-fiesta")).toBe(VALUE_PAGES_MODIFIED_ISO);
   });
 
   it("new copy uses no em dashes", () => {
     const e = findEnrichedModel("ford-kuga")!;
-    const text = [e.title, e.description(kuga), e.markdown(kuga), ...e.faqs(kuga).flatMap((f) => [f.q, f.a])].join("\n");
+    const text = [e.title, e.description!(kuga), e.markdown(kuga), ...e.faqs(kuga).flatMap((f) => [f.q, f.a])].join("\n");
     expect(text).not.toContain("—");
   });
 });
