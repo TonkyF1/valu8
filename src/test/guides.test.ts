@@ -16,10 +16,11 @@ const SLUGS = [
   "how-to-price-a-car-for-private-sale",
   "what-lowers-a-cars-value",
   "private-sale-vs-dealer-prices",
+  "electric-car-value",
 ];
 
 describe("guides", () => {
-  it("has the ten expected guides", () => {
+  it("has the eleven expected guides", () => {
     expect(GUIDES.map((g) => g.slug)).toEqual(SLUGS);
   });
 

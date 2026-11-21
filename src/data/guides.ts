@@ -977,7 +977,76 @@ Yes, when the difference is small, the car has problems, or you need a quick and
 One that is close to a realistic private-sale price for your car, once you allow for the time and costs of selling privately. Get a free private-sale estimate for your reg first, so you know what you're comparing the offer with.
 
 **Does Valu8 buy cars?**
-No. We don't buy, sell or broker cars, so we have no reason to push your number up or down. All figures are estimates, not offers.`
+No. We don't buy, sell or broker cars, so we have no reason to push your number up or down. All figures are estimates, not offers.`,
+  `---
+slug: /guides/electric-car-value
+seo_title: "What is my electric car worth? Used EV values in the UK"
+meta_description: "What a used electric car is worth in the UK: typical asking prices for popular EVs, how battery health, range and mileage move it, and how to value yours."
+target_search_phrasing: "how much is my electric car worth", "used electric car value", "electric car depreciation uk", "how much is my tesla worth", "nissan leaf value", "ev battery health value"
+---
+
+# What is my electric car worth? Used EV values in the UK
+
+Valuing a used electric car works like valuing any other car: age, mileage, condition and history all count. But buyers also want to know about the battery, the range and the charging, and EV prices have moved more than most in the last few years. This guide uses typical asking prices from UK adverts in the Valu8 database (November 2026) to show what that looks like for some of the most-advertised electric cars.
+
+## Typical asking prices for popular electric cars
+
+| Model | Registered | Median asking price | Typical range | Adverts |
+|---|---|---|---|---|
+| [Nissan Leaf](/value/nissan-leaf) | 2018 to 2020 | £9,000 | £7,000 to £9,700 | 61 |
+| [Nissan Leaf](/value/nissan-leaf) | 2021 or newer | £11,200 | £9,850 to £12,750 | 179 |
+| [Tesla Model 3](/value/tesla-model-3) | 2018 to 2020 | £14,000 | £12,450 to £14,800 | 112 |
+| [Tesla Model 3](/value/tesla-model-3) | 2021 or newer | £21,000 | £14,700 to £24,750 | 109 |
+| [CUPRA Born](/value/cupra-born) | 2021 or newer | £18,000 | £14,250 to £21,900 | 71 |
+| [Skoda Enyaq](/value/skoda-enyaq) | 2021 or newer | £21,050 | £14,600 to £25,900 | 64 |
+| [Tesla Model Y](/value/tesla-model-y) | 2021 or newer | £24,700 | £23,250 to £25,950 | 158 |
+
+Typical range is the middle half of asking prices. Each model's page has prices for every year we have enough adverts for, and by mileage.
+
+## What the numbers show
+
+**The exact year can matter less than you'd expect.** In our adverts, 2019, 2020 and 2021 Tesla Model 3s are all advertised for close to £14,000, and 2022 and 2023 Model Ys both for about £24,500. For these cars, version, mileage and battery condition explain more of the price than a year either way.
+
+**Mileage matters a lot.** A 2022 CUPRA Born in our adverts typically has about 72,000 miles and a median asking price of £14,400; a 2023 one has about 30,000 miles and a median of £19,100. A 2022 Skoda Enyaq (about 69,000 miles) has a median of £14,550, against £22,900 for a 2023 car (about 23,000 miles). Part of each gap is the extra year, but high-mileage EVs are advertised well below low-mileage ones.
+
+**Newer generations hold more.** The second-generation Nissan Leaf, with a bigger battery and more range, is advertised for roughly double the first: a median of £4,500 for a 2017 Leaf against £8,600 for a 2019 one.
+
+## Why battery health, range and charging move the price
+
+Our advert data doesn't record battery health or range, so the figures above mix every version and condition. For one car, these are the things that move the price up or down:
+
+- **Battery health (state of health).** Every battery holds a little less charge as it ages. A recent battery health report from a dealer or an independent EV specialist answers the first question most buyers will ask, and is one of the best things you can show them.
+- **Battery size and range.** Bigger-battery versions of the same model cost more, because they go further. Quote the exact version and, if you can, the range the car shows on a full charge.
+- **Battery warranty.** EV batteries usually have their own warranty, often around eight years with a mileage limit. A car that is still covered is easier to sell, so check what's left on yours.
+- **Charging.** Include the charging cables that came with the car. Buyers also look at the rapid-charging connector (most newer EVs use CCS; older Nissan Leafs use CHAdeMO) and how fast the car can charge.
+- **Battery ownership.** Some early electric cars were sold with the battery on a separate monthly lease. A car that owns its battery outright is simpler to sell.
+
+## How to value your own electric car
+
+1. **Start with your reg.** A free [Valu8 valuation](/valuation/new) gives you an estimated private-sale value from comparable UK adverts, adjusted for age and mileage, plus your official DVSA MOT history.
+2. **Get a battery health report** if you don't have a recent one, especially if you're selling privately.
+3. **Compare like with like.** Look at adverts for the same model, version (battery size), year and similar mileage. Model pages such as the [Tesla Model 3](/value/tesla-model-3), [Tesla Model Y](/value/tesla-model-y) and [Nissan Leaf](/value/nissan-leaf) show the spread by year and mileage.
+4. **Decide how you'll sell.** A dealer's part-exchange offer is usually below a private sale. See [part-exchange vs private sale](/guides/part-exchange-vs-private-sale).
+
+Buying a used EV instead? Our free [advert price checker](/check) compares an advert's asking price with similar UK adverts.
+
+## FAQs
+
+**Do electric cars lose value faster than petrol cars?**
+Many have in recent years, partly because new EV prices and incentives have changed. It varies a lot by model, version and mileage, so look at the year-by-year prices for your model and get a valuation for your own car rather than relying on a rule of thumb.
+
+**Does battery health affect an electric car's value?**
+Yes. Battery health and remaining range are the first things buyers ask about. A recent battery health report helps you justify your price.
+
+**Is a high-mileage electric car worth much less?**
+In our adverts, yes. High-mileage EVs are advertised well below low-mileage cars of a similar age, as the CUPRA Born and Skoda Enyaq figures above show.
+
+**How much is my Tesla worth?**
+In our UK adverts (November 2026), 2021-or-newer Tesla Model 3s have a median asking price of £21,000 and Model Ys £24,700. Version, mileage and condition move it, so enter your reg for a free valuation of your exact car.
+
+---
+
+**Find out what your electric car is worth.** [Get your free Valu8 valuation](/valuation/new): an estimated private-sale price from your reg, with part-exchange and dealer prices in the optional £2.99 Full report.`
 ];
 
 export type Guide = {

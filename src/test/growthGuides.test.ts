@@ -70,8 +70,18 @@ describe("growth plan guides", () => {
     }
   });
 
+  it("electric car value guide: EV models, battery section, links to the EV /value pages, in the sitemap", () => {
+    const e = g("electric-car-value");
+    expect(e.title).toBe("What is my electric car worth? Used EV values in the UK");
+    expect(e.markdown).toContain("## Why battery health, range and charging move the price");
+    for (const s of ["tesla-model-3", "tesla-model-y", "nissan-leaf", "cupra-born", "skoda-enyaq"]) expect(e.markdown).toContain(`](/value/${s})`);
+    expect(e.faqs.length).toBeGreaterThanOrEqual(4);
+    expect(PAGE_LASTMOD["/guides/electric-car-value"]).toBe("2026-11-21");
+    expect(buildSitemap()).toContain("<loc>https://valu8.uk/guides/electric-car-value</loc><lastmod>2026-11-21</lastmod>");
+  });
+
   it("new copy uses no em dashes and never calls anyone a partner", () => {
-    for (const s of ["what-is-my-car-worth", "part-exchange-vs-private-sale", "private-sale-vs-dealer-prices"]) {
+    for (const s of ["what-is-my-car-worth", "part-exchange-vs-private-sale", "private-sale-vs-dealer-prices", "electric-car-value"]) {
       expect(g(s).markdown, s).not.toContain("—");
       expect(g(s).markdown.toLowerCase(), s).not.toContain("partner");
     }

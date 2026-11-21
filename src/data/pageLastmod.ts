@@ -29,6 +29,7 @@ export const PAGE_LASTMOD: Record<string, string> = {
   "/guides/how-to-price-a-car-for-private-sale": "2026-11-10",
   "/guides/what-lowers-a-cars-value": "2026-11-10",
   "/guides/private-sale-vs-dealer-prices": "2026-11-21", // part exchange value targeting, new FAQ
+  "/guides/electric-car-value": "2026-11-21", // new guide (needs Tony's OK: new sitemap URL)
 };
 
 /** /car-values/<make>/<model> pages with no /value match (indexable, in the sitemap). None today. */
