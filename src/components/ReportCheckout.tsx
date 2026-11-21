@@ -20,7 +20,7 @@ import { funnelDevice, funnelSessionId, track } from "@/lib/funnel";
 import { ev } from "@/lib/analytics";
 import { metaPixelLoaded } from "@/lib/metaPixel";
 import { getIntent, useIntent, type Intent } from "@/lib/intent";
-import { PREMIUM_CTA, PREMIUM_TITLE } from "@/components/tesla/premium";
+import { DIGITAL_CONSENT, MONEY_BACK, PREMIUM_CTA, PREMIUM_TITLE } from "@/components/tesla/premium";
 
 const PK = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined) || STRIPE_PUBLISHABLE_KEY;
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
@@ -173,6 +173,9 @@ function CheckoutForm({ valuationId, onError, onRetry, startFailed = false }: { 
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      <p data-testid="money-back" className="flex items-start gap-2 rounded-xl border border-[#00D6C8]/25 bg-[#00D6C8]/[0.06] px-3 py-2.5 text-[13px] leading-snug text-[#F7F5F3]">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#00D6C8]" aria-hidden /> <span><b className="font-semibold">Money-back promise.</b> {MONEY_BACK}</span>
+      </p>
       <div className={expressReady ? "" : "hidden"}>
         <ExpressCheckoutElement
           onReady={(e) => {
@@ -209,6 +212,9 @@ function CheckoutForm({ valuationId, onError, onRetry, startFailed = false }: { 
       >
         {submitting ? "Processing…" : "Pay £2.99"}
       </button>
+      <p data-testid="digital-consent" className="text-center text-[12px] leading-snug text-[#CFCFCF]">
+        {DIGITAL_CONSENT} <a href="/terms#refunds" target="_blank" rel="noopener" className="underline underline-offset-2 text-[#F7F5F3]">Refunds and cancellation</a>
+      </p>
       <p className="flex items-center justify-center gap-1 text-xs opacity-70">
         <ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Secure payment by Stripe · Apple Pay · Google Pay · Card
       </p>
@@ -352,7 +358,7 @@ export function ReportCheckout({ valuationId, verifying, onPaid, locked = false 
             >
               {REPORT_CTA}
             </button>
-            <p className="text-center text-xs opacity-80">One-off payment. No subscription. We don't buy cars.</p>
+            <p className="text-center text-xs opacity-80">One-off payment. {MONEY_BACK}</p>
             <p className="flex items-center justify-center gap-1 text-xs opacity-70"><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Secure payment by Stripe · Apple Pay · Google Pay · Card</p>
           </div>
           <details className="group rounded-xl border border-white/10" data-testid="whats-in-report">

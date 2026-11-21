@@ -14,7 +14,7 @@ export default function Terms() {
       <main id="main" className="flex-1 container max-w-3xl py-12 md:py-16">
         <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2">Legal</div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gradient mb-6">Terms of Service</h1>
-        <p className="text-sm text-muted-foreground mb-10">Last updated: 17 November 2026</p>
+        <p className="text-sm text-muted-foreground mb-10">Last updated: 21 November 2026</p>
 
         <div className="space-y-6 text-sm leading-relaxed text-foreground/85">
           <section>
@@ -23,10 +23,19 @@ export default function Terms() {
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">2. The service</h2>
-            <p>Valu8 generates indicative AI valuations for used vehicles in the UK private sale market. The service is provided "as is". Essentials valuations are free; the Full seller report is a one-off £2.99 with no subscription.</p>
+            <p>Valu8 generates indicative AI valuations for used vehicles in the UK private sale market. The service is provided "as is". The free valuation costs nothing; the Premium Report is a one-off £2.99 per car with no subscription.</p>
+          </section>
+          <section id="refunds" className="scroll-mt-24">
+            <h2 className="text-lg font-semibold text-foreground">3. Refunds and cancellation</h2>
+            <ul className="list-disc pl-5 space-y-1.5">
+              <li><strong className="text-foreground">Money-back promise.</strong> Not useful? Email us at <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a> within 14 days of buying for a full refund. Include the car's registration or the email address you paid with. You don't need to give a reason. We refund to the original payment method, usually within 5 to 10 working days.</li>
+              <li><strong className="text-foreground">Your right to cancel.</strong> Under the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013 you normally have 14 days to cancel a purchase. The Premium Report is digital content supplied straight away, so at checkout you ask us to supply it immediately and acknowledge that you lose the statutory right to cancel once it has been supplied. Our money-back promise above still applies within those 14 days.</li>
+              <li><strong className="text-foreground">If something goes wrong.</strong> If a report is faulty, not as described or doesn't open after you've paid, email us and we'll fix it or refund you. Your rights under the Consumer Rights Act 2015 are not affected.</li>
+              <li>If we can't value a car, we don't ask you to pay for a report on it.</li>
+            </ul>
           </section>
           <section>
-            <h2 className="text-lg font-semibold text-foreground">3. Acceptable use</h2>
+            <h2 className="text-lg font-semibold text-foreground">4. Acceptable use</h2>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Value only vehicles you own, are selling or are considering buying, or are otherwise authorised to value.</li>
               <li>Do not upload photos containing third-party personal data (e.g. people, number plates of other vehicles).</li>
@@ -34,23 +43,23 @@ export default function Terms() {
             </ul>
           </section>
           <section>
-            <h2 className="text-lg font-semibold text-foreground">4. Accuracy &amp; no warranty</h2>
+            <h2 className="text-lg font-semibold text-foreground">5. Accuracy &amp; no warranty</h2>
             <p>Valuations are estimates only and may vary materially from actual sale prices. Valu8 provides no warranty as to accuracy, fitness for purpose, or merchantability.</p>
           </section>
           <section>
-            <h2 className="text-lg font-semibold text-foreground">5. Liability</h2>
+            <h2 className="text-lg font-semibold text-foreground">6. Liability</h2>
             <p>To the maximum extent permitted by law, Valu8 is not liable for losses arising from reliance on a valuation, including missed sale opportunities or undervaluation/overvaluation.</p>
           </section>
           <section>
-            <h2 className="text-lg font-semibold text-foreground">6. Account termination</h2>
+            <h2 className="text-lg font-semibold text-foreground">7. Account termination</h2>
             <p>We may suspend or terminate accounts that breach these terms. You may close your account at any time.</p>
           </section>
           <section>
-            <h2 className="text-lg font-semibold text-foreground">7. Governing law</h2>
+            <h2 className="text-lg font-semibold text-foreground">8. Governing law</h2>
             <p>These terms are governed by the laws of England &amp; Wales.</p>
           </section>
           <section>
-            <h2 className="text-lg font-semibold text-foreground">8. Contact</h2>
+            <h2 className="text-lg font-semibold text-foreground">9. Contact</h2>
             <p>{LEGAL_NAME.trim() ? `Valu8 is operated by ${LEGAL_NAME.trim()}${LEGAL_ADDRESS.trim() ? `, ${LEGAL_ADDRESS.trim()}` : ""}. ` : ""}Questions about these terms? Email <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">{CONTACT_EMAIL}</a>.</p>
           </section>
         </div>

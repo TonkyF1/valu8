@@ -64,6 +64,9 @@ import { MotHistoryByYear } from "@/components/report/MotHistoryByYear";
 import { HistoryCheckButton } from "@/components/report/HistoryCheckButton";
 import { FREE_TEASER_COMPS, reportPaywallEnabled } from "@/lib/reportPaywall";
 import { MiniTier, Section, CollapsibleSection, RecBlock, SLOT_LABELS, PhotoFeedback, InsightRow } from "@/components/report/ReportParts";
+import { PriceMovers } from "@/components/report/PriceMovers";
+import { ConfidenceCard, confidenceTier, isLowTier, tierText, type ConfidenceTier } from "@/components/report/ConfidenceCard";
+import { priceMovers, motExpiredOn, fmtPct } from "@/lib/priceMovers";
 
 interface Valuation {
   id: string; make: string; model: string; year: number; mileage: number;
@@ -217,7 +220,7 @@ export default function Report() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const seoVehicle = v ? `${v.year} ${displayMake(v.make)} ${displayModel(v.model)}` : "Car";
+  const seoVehicle = v ? `${v.year} ${displayMake(v.make)} ${displayModel(v.make, String(v.model ?? "").split(" · ")[0])}`.replace(/\s+/g, " ").trim() : "Car";
   const seoValue = v && !(v.report as any)?.valuationUnavailable && v.report?.values?.privateSale ? ` Private sale estimate ${headlinePrivateText(normaliseReportPricing(v.report).privateSale, v.report)}.` : "";
   useSeo({
     title: `${seoVehicle} valuation | Valu8`,
@@ -348,39 +351,17 @@ export default function Report() {
   // the same sample-size thresholds the engine uses. Very Low shows as Low.
   const storedTier = (r as any).engineVersion === "v2.2-ledger" ? r.marketConfidence : undefined;
   const computedTier = storedTier ?? marketConfidenceTier({ sampleSize: Number(sampleSize ?? liveCount ?? 0) });
-  const liveTier: "High" | "Medium" | "Low" = computedTier === "High" ? "High" : computedTier === "Medium" ? "Medium" : "Low";
+  // The server's confidence, shown as stored (Very Low stays Very low). liveTier is only the colour bucket.
+  const tier: ConfidenceTier = confidenceTier(computedTier) ?? "Low";
+  const liveTier: "High" | "Medium" | "Low" = tier === "High" ? "High" : tier === "Medium" ? "Medium" : "Low";
 
-  // Specialist Valuation logic — combines multiple signals so a normal
-  // mainstream car doesn't trigger it from a temporary MarketCheck gap.
-  const carAge = new Date().getUTCFullYear() - v.year;
-  const expectedMileage = Math.max(1, carAge * 8500);
-  const mileageRatio = v.mileage / expectedMileage;
-  const aiConfidence = r.marketConfidence ?? "Medium";
-  const photoInsightCount = Array.isArray(r.photoInsights) ? r.photoInsights.length : 0;
-
-  const rarityReasons: string[] = [];
-  // Only count *genuinely* thin markets — common cars routinely sit in the 25–80 range
-  // for a specific year/model and should NOT trigger the specialist treatment.
-  if (liveCount != null && liveCount < 15) rarityReasons.push("very few comparable cars are on the UK market");
-  if (carAge >= 25) rarityReasons.push("its age puts it into modern-classic territory");
-  if (carAge <= 0 && liveCount != null && liveCount < 60) rarityReasons.push("it's a brand-new model with very limited resale data");
-  if (mileageRatio < 0.25) rarityReasons.push("it has exceptionally low mileage for its age");
-  if (mileageRatio > 2.8) rarityReasons.push("it has an unusually high mileage profile");
-  if (r.rareCarWarning) rarityReasons.push("of its rare specification or trim");
-  if (aiConfidence === "Very Low") rarityReasons.push("our AI flagged it as a harder-than-average car to price");
-
-  // Trigger expert overlay ONLY when the car is genuinely difficult to price.
-  const strongSingleSignal =
-    (liveCount != null && liveCount < 3) ||
-    !!r.rareCarWarning ||
-    aiConfidence === "Very Low";
+  // "Extra checks" note: only when the SERVER says so (expertInsight.shown) and never on a low-confidence figure.
+  // No client-side rarity override: the report must not contradict the engine's own confidence.
   const expertShown = !!r.expertInsight?.shown && !(
     /photos?/i.test(r.expertInsight?.reason ?? "") && !hasPhotos(v.photo_urls)
   );
-  const showSpecialistBadge =
-    expertShown ||
-    (strongSingleSignal && rarityReasons.length >= 1) ||
-    rarityReasons.length >= 3;
+  const showSpecialistBadge = expertShown && !isLowTier(tier);
+  const specialistExplanation = showSpecialistBadge && r.expertInsight?.reason ? r.expertInsight.reason : null;
 
   const liveConfidenceLine = isOwnComps
     ? "Priced from comparable UK adverts (Valu8 data)."
@@ -392,21 +373,16 @@ export default function Report() {
       ? "Based on a healthy sample of similar cars on the market right now."
       : "Fewer live comparables right now — treat this as a strong estimate rather than a precise figure.";
 
-  const specialistExplanation = (() => {
-    if (!showSpecialistBadge) return null;
-    // Prefer the server-provided reason — it knows exactly which data sources fed the valuation.
-    // Guard stale reports: never show "from your photos" when the valuation has none.
-    const serverReason = r.expertInsight?.reason;
-    if (serverReason && !( /photos?/i.test(serverReason) && !hasPhotos(v.photo_urls) )) return serverReason;
-    const top = rarityReasons.slice(0, 2);
-    if (top.length === 0) {
-      return `We've layered expert analysis on top of ${isLiveListings ? "live market data" : isOwnComps ? "comparable UK adverts" : "our AI market estimate"} to give you a confident figure on a harder-than-average car to price.`;
-    }
-    if (top.length === 1) {
-      return `Because ${top[0]}, we've layered expert analysis on top of ${isLiveListings ? "live market data" : isOwnComps ? "comparable UK adverts" : "our AI market estimate"} to give you a confident figure.`;
-    }
-    return `Because ${top[0]} and ${top[1]}, we've layered expert analysis on top of ${isLiveListings ? "live market data" : isOwnComps ? "comparable UK adverts" : "our AI market estimate"} to give you a confident figure.`;
-  })();
+  const motExpired = motExpiredOn(r as any, v.mot_expiry);
+  const movers = priceMovers(r as any, { year: v.year, mileage: v.mileage, model: v.model, motExpiry: v.mot_expiry, hasPhotos: hasPhotos(v.photo_urls), modelName: modelDisplay });
+  const motMover = movers.find((m) => m.key === "mot-expired");
+  const confidenceCard = !valuationUnavailable ? (
+    <ConfidenceCard className="mb-4" tier={tier}
+      reason={(r as any).marketConfidenceReason || liveConfidenceLine}
+      sources={r.expertInsight?.sources ?? null}
+      checksReason={specialistExplanation} />
+  ) : null;
+  const moversCard = !valuationUnavailable && movers.length > 0 ? <PriceMovers className="mb-4" movers={movers} id="r-movers" /> : null;
 
   const share = async () => {
     const shareUrl = `${window.location.origin}/shared/${v?.id ?? id}`;
@@ -448,59 +424,7 @@ export default function Report() {
 
 </>
   );
-  const specialistCallout = (
-<>
-                {/* Specialist Valuation callout — proper trust block, not a footnote */}
-                {showSpecialistBadge && specialistExplanation && (
-                  <div className="mt-4 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.08] to-primary/[0.02] px-4 py-3 flex gap-3">
-                    <div className="shrink-0 h-7 w-7 rounded-lg bg-primary/15 border border-primary/30 grid place-items-center mt-0.5">
-                      <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs  text-primary font-semibold mb-1">
-                        Expert Insight Applied
-                      </div>
-                      <p className="text-[12.5px] leading-[1.55] text-foreground/85">
-                        {specialistExplanation}
-                      </p>
-                      {Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
-                        <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                          {r.expertInsight!.sources.map((s, i) => (
-                            <li key={i} className="inline-flex items-center gap-1.5">
-                              <Check className="h-3 w-3 text-primary/80" />
-                              <span>{s}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-</>
-  );
-  const dataUsed = (
-<>
-                {/* Always-on "Data used" strip for the common, well-supported case
-                    where no Expert Insight badge is shown. Keeps transparency. */}
-                {!showSpecialistBadge && Array.isArray(r.expertInsight?.sources) && r.expertInsight!.sources.length > 0 && (
-                  <div className="mt-4 rounded-xl border border-border/60 bg-card/40 px-4 py-3">
-                    <div className="text-xs  text-muted-foreground font-semibold mb-1.5">
-                      Data used for this valuation
-                    </div>
-                    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-foreground/75">
-                      {r.expertInsight!.sources.map((s, i) => (
-                        <li key={i} className="inline-flex items-center gap-1.5">
-                          <Check className="h-3 w-3 text-primary/70" />
-                          <span>{s}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-</>
-  );
-  const priceExtras = (<>{priceAlert}{liveTicker}{specialistCallout}{dataUsed}</>);
+  const priceExtras = (<>{priceAlert}{liveTicker}</>);
   const whyBody = (
                 <div className="mt-3 space-y-3">
                   <p className="text-sm leading-[1.6] text-[#E8E8E8]">
@@ -516,27 +440,6 @@ export default function Report() {
                   <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">
                     {r.marketContext || liveConfidenceLine}
                   </p>
-                  {(() => {
-                    const positives = (r.factorsUp && r.factorsUp.length > 0)
-                      ? r.factorsUp
-                      : (r.priceAdjustments?.filter(a => a.impactPct > 0).map(a => a.label) ?? []);
-                    const negatives = (r.factorsDown && r.factorsDown.length > 0)
-                      ? r.factorsDown
-                      : (r.priceAdjustments?.filter(a => a.impactPct < 0).map(a => a.label) ?? []);
-                    if (positives.length === 0 && negatives.length === 0) {
-                      return r.valueReasoning ? (
-                        <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">{r.valueReasoning}</p>
-                      ) : null;
-                    }
-                    const join = (arr: string[]) =>
-                      arr.length <= 1 ? (arr[0] ?? "") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
-                    return (
-                      <p className="text-sm leading-[1.6] text-[#E8E8E8]/85">
-                        {positives.length > 0 && <>{join(positives)} {positives.length > 1 ? "all push" : "pushes"} the value up. </>}
-                        {negatives.length > 0 && <>We've nudged it down for {join(negatives)}.</>}
-                      </p>
-                    );
-                  })()}
                 </div>
   );
   const whyThisPrice = (
@@ -565,6 +468,46 @@ export default function Report() {
             )}
 </>
   );
+
+  const motHistorySection = (() => {
+          const latest = r.motHistory?.[0];
+          const previewText = latest
+            ? `${latest.result === "Fail" ? "Fail" : "Pass"} · ${format(new Date(latest.date), "d MMM yyyy")}${latest.mileage > 0 ? ` · ${latest.mileage.toLocaleString()} mi` : ""}`
+            : "No prior MOT records";
+          const hasFail = r.motHistory?.some((m: any) => m.result === "Fail");
+          return (
+            <CollapsibleSection
+              title="MOT History"
+              icon={FileCheck2}
+              defaultOpen={!!hasFail}
+              preview={previewText}
+              badge={
+                <>
+                  {r.motSource === "dvsa" && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium rounded-full px-2 py-0.5 border text-primary bg-primary/5 border-primary/30">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                      Live DVSA
+                    </span>
+                  )}
+                  {r.motHistory.length > 0 && (
+                    <span className="text-[11px] font-medium text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">
+                      {r.motHistory.length} {r.motHistory.length === 1 ? "test" : "tests"}
+                    </span>
+                  )}
+                </>
+              }
+            >
+              {r.motNotice && r.motSource !== "dvsa" && (
+                <p className="text-xs text-muted-foreground mb-3">{r.motNotice}</p>
+              )}
+              {r.motHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No prior MOT records (vehicle under 3 years old).</p>
+              ) : (
+                <MotHistoryByYear history={r.motHistory} />
+              )}
+            </CollapsibleSection>
+          );
+        })();
 
   const downloadPdf = async () => {
     const tid = toast.loading("Generating PDF…");
@@ -698,7 +641,9 @@ export default function Report() {
         <div id="r-summary" className="scroll-mt-44" />
         {/* Quick Summary — confident verdict + scannable bullets + trust strip */}
         {!valuationUnavailable && !locked && (() => {
-          const verdict = !hasPhotos(v.photo_urls)
+          const verdict = motExpired
+              ? { label: "Renew the MOT first", tone: "amber" as const, line: `The MOT ran out on ${format(motExpired, "d MMM yyyy")}. Buyers pay noticeably less for a car without one, so a fresh pass before you list usually pays for itself.` }
+              : !hasPhotos(v.photo_urls)
               ? { label: "Sell privately", tone: "primary" as const, line: "A private sale usually gets the most money. Add photos to get a condition score and a sharper price." }
               : r.conditionScore >= 8
               ? { label: "Sell privately", tone: "primary" as const, line: "A clean private sale is your best route — quality examples like this attract serious buyers fast." }
@@ -752,14 +697,16 @@ export default function Report() {
                   <li className="flex gap-2.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
-                      Market: <strong className="text-foreground">{showSpecialistBadge ? "Expert insight" : `${liveTier} confidence`}</strong>
+                      Market: <strong className="text-foreground">{tierText(tier)} confidence</strong>
                       {liveCount != null && liveCount > 0 && <span className="text-muted-foreground"> · {liveCount.toLocaleString()} similar cars for sale in the UK</span>}
                     </span>
                   </li>
                   <li className="flex gap-2.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <span className="text-foreground/90">
-                      {upside > 0
+                      {motExpired
+                        ? (<>MOT: <strong className="text-amber-300">Expired {format(motExpired, "d MMM yyyy")}</strong>{motMover?.pct != null && <span className="text-muted-foreground"> · {fmtPct(motMover.pct)} on the price</span>}</>)
+                        : upside > 0
                         ? (<>Upside if you tidy flagged items: <strong className="tabular-nums text-primary">+£{upside.toLocaleString()}</strong></>)
                         : latestAdv > 0
                         ? (<>Latest MOT: <strong className="text-amber-300">{latestAdv} current advisor{latestAdv === 1 ? "y" : "ies"}</strong></>)
@@ -829,12 +776,7 @@ export default function Report() {
                 {valuationUnavailable ? "Valuation status" : "Realistic Private Sale Price"}
               </span>
               {!valuationUnavailable && (
-                showSpecialistBadge ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs  px-2.5 py-1 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
-                    <ShieldCheck className="h-3 w-3" /> Expert insight
-                  </span>
-                ) : (
-                  <span className={cn(
+                <span data-testid="price-confidence" className={cn(
                     "inline-flex items-center gap-1.5 text-xs  px-2.5 py-1 rounded-full border font-semibold",
                     liveTier === "High" && "text-primary bg-primary/10 border-primary/30",
                     liveTier === "Medium" && "text-amber-400 bg-amber-500/10 border-amber-500/30",
@@ -845,9 +787,8 @@ export default function Report() {
                       liveTier === "High" && "bg-primary animate-pulse",
                       liveTier === "Medium" && "bg-amber-400",
                       liveTier === "Low" && "bg-muted-foreground",
-                    )} /> {liveTier} confidence
+                    )} /> {tierText(tier)} confidence
                   </span>
-                )
               )}
             </div>
 
@@ -893,6 +834,12 @@ export default function Report() {
                   );
                 })()}
 
+                {motExpired && (
+                  <p data-testid="mot-expired-callout" className="mt-3 max-w-[48ch] rounded-lg border border-amber-400/30 bg-amber-400/[0.07] px-3 py-2 text-[13px] leading-snug text-amber-100">
+                    <strong className="font-semibold text-amber-200">MOT expired {format(motExpired, "d MMM yyyy")}.</strong>{" "}
+                    {motMover?.pct != null ? <>That takes about <span className="tabular-nums">{fmtPct(motMover.pct).replace("\u2212", "")}</span> off. </> : null}A fresh MOT usually wins most of it back.
+                  </p>
+                )}
                 {offerFirst ? (
                   <p className="mt-3 text-[13px] leading-relaxed text-foreground/90 max-w-[48ch]" data-testid="offer-line">
                     {reportOfferLine({ isRange: !!reportPriceRange(r, normaliseReportPricing(r).privateSale), intent: reportIntent })}
@@ -1060,21 +1007,24 @@ export default function Report() {
           <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />
         )}
 
-        {/* Free result: the valuation's supporting detail sits below the offer, so the offer is the first thing after the price. */}
-        {offerFirst && (
-          <section className="premium-card p-5 sm:p-6 mb-6 animate-fade-in-up" aria-label="About this valuation">
-            <details className="group" data-testid="why-this-price">
-              <summary className="cursor-pointer list-none inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-primary/90 hover:text-primary">
-                <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-                Why this price
-              </summary>
-              {whyBody}
-              {dataUsed}
-              {valuedWith}
-            </details>
-            {specialistCallout}
-            {priceAlert}
-          </section>
+        {/* What moved your price + how sure we are: free and Premium (free: below the offer, so the offer follows the price). */}
+        {moversCard}
+        {confidenceCard}
+        {offerFirst && <div className="mb-4">{priceAlert}</div>}
+
+        {/* Free report: the official records the homepage, /pricing and the FAQ promise are free (MOT history, mileage, tax, ULEZ, recalls). */}
+        {locked && !valuationUnavailable && (
+          <>
+            {motHistorySection}
+            <SectionBoundary>
+              <VehicleInsights
+                report={r}
+                vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, mot_expiry: v.mot_expiry, service_notes: (v as any).service_notes ?? null }}
+                isShared={isShared}
+                freeTier
+              />
+            </SectionBoundary>
+          </>
         )}
 
         {/* Affiliate (free/locked view): after "Why this price", below the price and the unlock offer. Unlocked reports show it once under MOT History. Only the reg is passed; no locked report data. */}
@@ -1313,45 +1263,7 @@ export default function Report() {
 
         <div id="r-mot" className="scroll-mt-44" />
         {/* MOT history */}
-        {(() => {
-          const latest = r.motHistory?.[0];
-          const previewText = latest
-            ? `${latest.result === "Fail" ? "Fail" : "Pass"} · ${format(new Date(latest.date), "d MMM yyyy")}${latest.mileage > 0 ? ` · ${latest.mileage.toLocaleString()} mi` : ""}`
-            : "No prior MOT records";
-          const hasFail = r.motHistory?.some((m: any) => m.result === "Fail");
-          return (
-            <CollapsibleSection
-              title="MOT History"
-              icon={FileCheck2}
-              defaultOpen={!!hasFail}
-              preview={previewText}
-              badge={
-                <>
-                  {r.motSource === "dvsa" && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium rounded-full px-2 py-0.5 border text-primary bg-primary/5 border-primary/30">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                      Live DVSA
-                    </span>
-                  )}
-                  {r.motHistory.length > 0 && (
-                    <span className="text-[11px] font-medium text-muted-foreground bg-muted/40 border border-border/40 rounded-full px-2 py-0.5">
-                      {r.motHistory.length} {r.motHistory.length === 1 ? "test" : "tests"}
-                    </span>
-                  )}
-                </>
-              }
-            >
-              {r.motNotice && r.motSource !== "dvsa" && (
-                <p className="text-xs text-muted-foreground mb-3">{r.motNotice}</p>
-              )}
-              {r.motHistory.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No prior MOT records (vehicle under 3 years old).</p>
-              ) : (
-                <MotHistoryByYear history={r.motHistory} />
-              )}
-            </CollapsibleSection>
-          );
-        })()}
+        {motHistorySection}
 
         {/* Affiliate: full vehicle history check via carVertical (plain link, disclosure beside it). Free, paid and shared views. */}
         {!valuationUnavailable && <HistoryCheckButton registration={v.registration} />}

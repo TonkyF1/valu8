@@ -79,8 +79,31 @@ type Tab = Record<string, readonly [number, number]>;
 const TE = PM_MODEL.te as unknown as { g: number; make: Tab; model: Tab; trim: Tab };
 
 /** Feature vector in PM_MODEL.features order (NaN = missing). Exported for parity tests. */
-export function featurize(x: PmInput): { vec: number[]; n_model: number; n_trim: number; known: PmResult["known"] } {
-  const make = normMake(s(x.make)), mdl = pmModelKey(make, normModel(s(x.make), s(x.model))), model = make + "|" + mdl, trim = model + "|" + normTrim(x.variant);
+/** Inference only: wider "full service history" wording a seller types ("full Ford service history", "full main dealer history"). */
+const FSH_WIDE = /full (?:[a-z]+ ){1,2}(?:service |dealer )?history|full (?:main )?dealer history|full service record/;
+/** Minimum adverts behind a trim bucket before an inference lookup trusts it (1-advert buckets are one seller's price). */
+export const PM_MIN_TRIM_N = 3;
+
+/**
+ * Inference trim lookup (pm-trim-1). Training (parity) looks the variant string up exactly, which at inference had two flaws:
+ *  - a blank variant hit the "make|model|" bucket, usually ONE advert with no trim (44 models), so every bare valuation of
+ *    those models was priced off that one advert (Fiesta: +12% vs the model average);
+ *  - a typed variant with extra words ("Zetec 1.0 EcoBoost") missed the "zetec" bucket entirely and fell back to the model.
+ * Here: blank -> the model average (unknown trim); typed -> the longest known word-prefix with enough adverts.
+ */
+export function inferenceTrimKey(model: string, variant: unknown): string | null {
+  const toks = normTrim(variant).split(" ").filter(Boolean);
+  for (let n = toks.length; n >= 1; n--) {
+    const k = model + "|" + toks.slice(0, n).join(" ");
+    const hit = TE.trim[k];
+    if (hit && hit[1] >= (n === toks.length ? 1 : PM_MIN_TRIM_N)) return k;
+  }
+  return null;
+}
+
+export function featurize(x: PmInput, opts?: { inference?: boolean }): { vec: number[]; n_model: number; n_trim: number; known: PmResult["known"] } {
+  const make = normMake(s(x.make)), mdl = pmModelKey(make, normModel(s(x.make), s(x.model))), model = make + "|" + mdl;
+  const trim = opts?.inference ? inferenceTrimKey(model, x.variant) ?? "\u0000none" : model + "|" + normTrim(x.variant);
   const age = Math.min(45, Math.max(0, REF_YEAR - Number(x.year)));
   const mi = Math.min(400000, Math.max(0, Number(x.mileage)));
   const ccRaw = Number(x.engine_cc); const cc = Number.isFinite(ccRaw) && ccRaw > 500 && ccRaw < 8000 ? ccRaw : NaN;
@@ -92,6 +115,7 @@ export function featurize(x: PmInput): { vec: number[]; n_model: number; n_trim:
     body: BODIES.indexOf(normBody(x.body)), dealer: x.seller === "dealer" ? 1 : 0, perf,
   };
   for (const [k, rx] of TEXT) f[k] = rx.test(txt) ? 1 : 0;
+  if (opts?.inference && FSH_WIDE.test(txt)) f.t_fsh = 1;
   const mk = TE.make[make] ?? [TE.g, 0];
   const md = TE.model[model] ?? [mk[0], 0];
   const tr = TE.trim[trim] ?? [md[0], 0];
@@ -123,13 +147,13 @@ const bandOf = (p: number) => (BANDS.find(([b]) => p < b)?.[1] ?? "40k+");
 const r50 = (x: number) => Math.round(x / 50) * 50;
 /** Price one car for one seller type, with a calibrated ~80% range (conformal, from out-of-fold residuals). */
 export function pricePm(x: PmInput): PmResult {
-  const ft = featurize({ ...x, body: resolveBody(x.make, x.model, x.body).body });
+  const ft = featurize({ ...x, body: resolveBody(x.make, x.model, x.body).body }, { inference: true });
   let p = Math.exp(score(ft.vec));
   // gb-1: unknown gearbox (blank) with a known automatic share -> geometric blend of the manual and automatic prices
   // instead of silently pricing a manual. No share (no adverts) keeps the old behaviour.
   const share = Number(x.autoShare);
   if (!/auto|dsg|cvt|semi|manual/i.test(s(x.gearbox)) && x.autoShare != null && Number.isFinite(share) && share > 0) {
-    const pa = Math.exp(score(featurize({ ...x, gearbox: "automatic", body: resolveBody(x.make, x.model, x.body).body }).vec));
+    const pa = Math.exp(score(featurize({ ...x, gearbox: "automatic", body: resolveBody(x.make, x.model, x.body).body }, { inference: true }).vec));
     const w = Math.min(1, share);
     p = Math.exp(w * Math.log(pa) + (1 - w) * Math.log(p));
   }

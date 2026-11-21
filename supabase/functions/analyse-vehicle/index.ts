@@ -17,7 +17,8 @@ import { fixOdometerWording, compSearchModels } from "../_shared/vehicle-text.ts
 import { detectPerformanceVariant, filterCompsByPerformance, downgradeConfidence, type PerfVariant, type PerfMatch } from "../_shared/performance.ts";
 import { shrinkThinAnchor, aiAgeFactor, THIN_COMP_FULL_WEIGHT } from "../_shared/calibration.ts";
 import { valueWithOwnComps } from "../_shared/ownCompsAdjust.ts";
-import { pricePmBoth, blendWithOwnComps, resolveBody } from "../_shared/priceModel.ts";
+import { pricePmBoth, pricePm, blendWithOwnComps, resolveBody } from "../_shared/priceModel.ts";
+import { priceFactorsFrom } from "../_shared/priceFactors.ts";
 import { pickMcTier, pickMcCandidate } from "../_shared/mcTier.ts";
 import { motSignals, motAdjustment as motSignalAdjustment } from "../_shared/motSignals.ts";
 import { similarAdverts, anchorPrice, anchorBlock, anchorDeviation, anchorArm, DEVIATION_REASON_PROPERTY } from "../_shared/aiAnchor.ts";
@@ -1553,6 +1554,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         version: "owncomps-1", privateSale: oc.finalPrivate, low: oc.finalLow, high: oc.finalHigh, unavailable: oc.unavailable,
         level: oc.level, confidence: oc.confidence, confidenceScore: oc.confidenceScore, nComps: oc.nComps, segment: oc.segment,
         adjustments: oc.adjustments.map((a) => ({ key: a.key, pct: a.pct, basis: a.basis })),
+        trimUpliftPct: oc.trimUpliftPct,
       };
       ownNearest = Array.isArray(oc.nearest) ? oc.nearest : [];
       debugInfo.ownComps = { ...ownCompsShadow, nearest: oc.nearest, perfKey: oc.perfKey, trimUpliftPct: oc.trimUpliftPct };
@@ -1582,6 +1584,21 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       };
       debugInfo.pm = pmShadow;
     } catch (e) { console.warn("pm shadow failed", e); pmShadow = null; }
+
+    // pf-1: what the trim and the seller's own words did to the model price, so the report can say why (never changes a price).
+    let priceFactors: ReturnType<typeof priceFactorsFrom> = null;
+    try {
+      const pmIn = {
+        make: body.make, model: body.model, variant: body.variant ?? null, year: body.year, mileage: pricedMiles,
+        fuel: body.fuelType ?? null, gearbox: body.transmission ?? null, body: body.bodyStyle ?? null,
+        engine_cc: Number(body.engineCapacity ?? (body.guestSave?.vehicle as any)?.engineCapacity) || null,
+        desc: [body.serviceNotes, body.modifications].filter(Boolean).join(" ") || null, autoShare: gbShare, seller: "private" as const,
+      };
+      priceFactors = priceFactorsFrom({
+        full: pricePm(pmIn).price, noTrim: pricePm({ ...pmIn, variant: null }).price, noDetails: pricePm({ ...pmIn, desc: null }).price,
+        ocTrimPct: (ownCompsShadow?.trimUpliftPct as number | undefined) ?? null, variant: body.variant ?? null, details: pmIn.desc,
+      });
+    } catch (e) { console.warn("price factors failed", e); }
 
     // AI safety cap: on the AI-only path, pull clear blowups down to a bounded multiple of a CONFIDENT
     // own-comps figure (see _shared/aiCap.ts). All figures and the private range are scaled together so
@@ -2034,6 +2051,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       engineVersion: "v2.2-ledger",
       ...(ownCompsShadow ? { ownCompsShadow } : {}),
       pmShadow,
+      priceFactors: priceFactors ?? undefined,
       ensembleShadow,
       anchor: anchorShadow,
       ...(detectedModel ? { detectedModel: `${displayMake(body.make)} ${detectedModel}`.trim() } : {}),

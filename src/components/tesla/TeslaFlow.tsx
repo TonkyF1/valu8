@@ -18,8 +18,10 @@ import { reportPriceRange } from "../../../supabase/functions/_shared/cheapRange
 import { ElementsCheckout } from "@/components/ReportCheckout";
 import { CheckoutSheet } from "./CheckoutSheet";
 import { closeKeyboard, scrollPageTop } from "@/lib/scrollTop";
+import { priceMovers, type PriceMover } from "@/lib/priceMovers";
+import { PriceMovers } from "@/components/report/PriceMovers";
 import { HOME_EVENT, depthOf, popAction, pushFor, readFlowSnapshot, saveFlowSnapshot, viewOf, type FlowView } from "@/lib/flowHistory";
-import { LOCKED_ROWS, PREMIUM_CTA, PREMIUM_NAME, PREMIUM_TITLE, includesFor, includesLine } from "./premium";
+import { LOCKED_ROWS, MONEY_BACK, PREMIUM_CTA, PREMIUM_NAME, PREMIUM_TITLE, includesFor, includesLine } from "./premium";
 import { IntentSwitch } from "@/components/IntentSwitch";
 import { getIntent, saveAskingFor, saveIntentFor, useIntent } from "@/lib/intent";
 import { parseAsking } from "@/lib/buyerGuide";
@@ -72,6 +74,8 @@ export function TeslaFlow() {
   const [guestLimit, setGuestLimit] = useState<string | null>(null);
   const [lookup, setLookup] = useState<Lookup | null>(null);
   const [variant, setVariant] = useState("");
+  const variantRef = useRef(variant);
+  variantRef.current = variant;
   const [trimHint, setTrimHint] = useState<TrimHint | null>(null);
   const [trimAuto, setTrimAuto] = useState(false);
   const [mileage, setMileage] = useState("");
@@ -84,6 +88,8 @@ export function TeslaFlow() {
   const [band, setBand] = useState<Band | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [grade, setGrade] = useState<CarGrade | null>(null);
+  // "What moved your price" for the free result: real engine adjustments only (see lib/priceMovers).
+  const [movers, setMovers] = useState<PriceMover[]>([]);
   const [refineDone, setRefineDone] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   /** Premium path: the visitor tapped Premium Report on the landing page, so the details step shows one Pay button. */
@@ -273,7 +279,7 @@ export function TeslaFlow() {
     if (!isPlausibleUkReg(cleaned)) { setErr("Enter a valid UK number plate, e.g. AB12 CDE."); return; }
     closeKeyboard();
     setPremiumBusy(premium); setPremiumArmed(false); setLocked(false); setPayErr(null); setUnavailable(false);
-    setErr(null); setGuestLimit(null); setStage("looking"); setBand(null); setValuationId(null); setGrade(null); setNeedMileage(false);
+    setErr(null); setGuestLimit(null); setStage("looking"); setBand(null); setValuationId(null); setGrade(null); setMovers([]); setNeedMileage(false);
     if (turnstileEnabled()) setTsOn(true);
     const e0 = ++epoch.current;
     let l: Lookup;
@@ -345,7 +351,11 @@ export function TeslaFlow() {
     if (b) {
       setBand(b);
       setGrade(gradeFromReport(report, { mileage: miles, firstRegistered: car.firstRegistered, year: car.year }));
-    } else setGrade(null);
+      const v = variantRef.current.trim();
+      setMovers(priceMovers({ ...report, vehicle: { ...(report?.vehicle ?? {}), firstRegistered: report?.vehicle?.firstRegistered ?? car.firstRegistered } },
+        { year: car.year ?? 0, mileage: Number(miles) || 0, model: v ? `${car.model} · ${v}` : car.model, motExpiry: car.motExpiry ?? null,
+          hasPhotos: Array.isArray(report?.photoInsights) && report.photoInsights.length > 0, modelName: titleCase(car.model) }));
+    } else { setGrade(null); setMovers([]); }
     track("result_seen");
     track("valuation_completed");
     ev("valuation_result", { outcome: b ? "priced" : "unpriced", refined: !first });
@@ -354,7 +364,7 @@ export function TeslaFlow() {
 
   /** Price-locked valuation (guest past the free cap, Premium chosen): no price on screen until paid. */
   function applyLocked(id: string, priceable: boolean) {
-    setValuationId(id); setLocked(true); setBand(null); setGrade(null); setUnavailable(!priceable);
+    setValuationId(id); setLocked(true); setBand(null); setGrade(null); setMovers([]); setUnavailable(!priceable);
     track("valuation_completed");
     ev("valuation_result", { outcome: priceable ? "locked" : "unpriced" });
     posthog.capture?.("Valuation Report Generated", { valuation_id: id, guest: true, home_flow: true, price_locked: true, valuation_unavailable: !priceable });
@@ -463,7 +473,7 @@ export function TeslaFlow() {
   }
 
   function reset() {
-    setStage("idle"); setLookup(null); setBand(null); setValuationId(null); setGrade(null); setErr(null); setGuestLimit(null);
+    setStage("idle"); setLookup(null); setBand(null); setValuationId(null); setGrade(null); setMovers([]); setErr(null); setGuestLimit(null);
     setPhotos([]); setMods(""); setNotes(""); setReg(""); setCheckoutOpen(false); setPremiumBusy(false); setGearbox(""); setGearboxGuessed(false);
     setPremiumArmed(false); setLocked(false); setPayErr(null); setLimitKind("free"); setUnavailable(false);
     epoch.current++; refinedOnce.current = false; sheetCloseRef.current = null; saveFlowSnapshot(null);
@@ -550,7 +560,7 @@ export function TeslaFlow() {
     if (!snap?.lookup) { navigate(here(), { replace: true, state: { ...(locRef.current.state as object | null ?? {}), v8: "entry" } }); return; }
     setLookup(snap.lookup); setReg(snap.reg ?? ""); setVariant(snap.variant ?? ""); setMileage(snap.mileage ?? "");
     setGearbox(snap.gearbox ?? ""); setMods(snap.mods ?? ""); setNotes(snap.notes ?? "");
-    setValuationId(snap.valuationId ?? null); setBand(snap.band ?? null); setGrade(snap.grade ?? null);
+    setValuationId(snap.valuationId ?? null); setBand(snap.band ?? null); setGrade(snap.grade ?? null); setMovers(Array.isArray(snap.movers) ? snap.movers : []);
     setUnavailable(!!snap.unavailable); setLocked(!!snap.locked); setPremiumBusy(!!snap.premiumBusy); setNeedMileage(!!snap.needMileage);
     refinedOnce.current = !!(snap.refined && snap.valuationId && snap.band);
     const show: FlowView = target !== "details" && refinedOnce.current ? "result" : "details";
@@ -561,8 +571,8 @@ export function TeslaFlow() {
 
   useEffect(() => {
     if (!lookup || view === "entry") return;
-    saveFlowSnapshot({ reg, lookup, variant, mileage, gearbox, mods, notes, valuationId, band, grade, unavailable, locked, premiumBusy, needMileage, refined: refinedOnce.current });
-  }, [view, reg, lookup, variant, mileage, gearbox, mods, notes, valuationId, band, grade, unavailable, locked, premiumBusy, needMileage]);
+    saveFlowSnapshot({ reg, lookup, variant, mileage, gearbox, mods, notes, valuationId, band, grade, movers, unavailable, locked, premiumBusy, needMileage, refined: refinedOnce.current });
+  }, [view, reg, lookup, variant, mileage, gearbox, mods, notes, valuationId, band, grade, movers, unavailable, locked, premiumBusy, needMileage]);
 
   // The Valu8 logo and "Value a car" on the homepage: back to the start of the flow.
   const resetRef = useRef(reset);
@@ -683,6 +693,11 @@ export function TeslaFlow() {
           </button>
         )}
 
+        {band && movers.length > 0 && (refined || stage === "estimate") && (
+          <PriceMovers movers={movers} compact className="t8-movers"
+            more={refined && valuationId && movers.length > 4 ? <Link to={`/valuation/${valuationId}`} className="t8-link">All the reasons, MOT history and mileage check in your free report</Link> : undefined} />
+        )}
+
         {refined && valuationId && (
           <div className="t8-unlock" ref={unlockRef} id="report-checkout" data-testid="premium-card">
             <div className="t8-grab" aria-hidden />
@@ -698,7 +713,7 @@ export function TeslaFlow() {
               ))}
             </div>
             <button type="button" className="t8-btn" style={{ marginTop: 16 }} data-testid="offer-button" onClick={() => { track("offer_click"); saveIntentFor(valuationId, getIntent()); setCheckoutOpen(true); }}>{PREMIUM_CTA}</button>
-            <p className="bs-reass"><b>One-off payment.</b> No subscription.</p>
+            <p className="bs-reass"><b>One-off payment.</b> {MONEY_BACK}</p>
             <p className="t8-note"><Link to={`/valuation/${valuationId}`}>See my free report</Link> · <button type="button" className="t8-link" onClick={reset}>Value another car</button></p>
           </div>
         )}
