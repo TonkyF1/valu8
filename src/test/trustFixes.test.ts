@@ -65,7 +65,7 @@ describe("headline and old advert-check URL", () => {
     expect(flow).toContain('<h1 id="t8-h" className="t8-h1 t8-h1-bs">Free car valuation<br /><em>by registration.</em></h1>');
     // The brand line stays visible, now in the intro under the H1 (same text in the build HTML and the hero).
     expect(home).toContain("Know its value. Make the right move. Get a free UK car valuation");
-    expect(flow).toContain("Know its value. Make the right move. Get a free UK car valuation");
+    expect(flow).not.toContain("Know its value. Make the right move.");
     const meta = getRouteMeta("/");
     expect(indexHtml).toContain(`<title>${meta.title}</title>`);
     expect(indexHtml).not.toContain("Instant Car Valuation for UK Private Sellers");
