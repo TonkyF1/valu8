@@ -12,6 +12,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ReportErrorBoundary } from "@/components/ReportErrorBoundary";
 import { PostHogTracker } from "@/components/PostHogTracker";
 import { MetaPixelTracker } from "@/components/MetaPixelTracker";
+import { SiteAnalytics } from "@/components/SiteAnalytics";
 import { trackLanded } from "@/lib/funnel";
 
 trackLanded();
@@ -70,6 +71,7 @@ const App = () => (
           <RouteScrollTop />
           <PostHogTracker />
           <MetaPixelTracker />
+          <SiteAnalytics />
           <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<Landing />} />

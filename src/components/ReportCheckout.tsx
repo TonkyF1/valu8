@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { STRIPE_PUBLISHABLE_KEY } from "@/config/stripePublic";
 import { useAuth } from "@/contexts/AuthContext";
 import { funnelDevice, funnelSessionId, track } from "@/lib/funnel";
+import { ev } from "@/lib/analytics";
 import { metaPixelLoaded } from "@/lib/metaPixel";
 import { getIntent, useIntent, type Intent } from "@/lib/intent";
 import { PREMIUM_CTA, PREMIUM_TITLE } from "@/components/tesla/premium";
@@ -286,7 +287,7 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = 
       ) : null}
       <div className="overflow-hidden rounded-xl border border-white/10 p-3 sm:p-4" style={{ background: "#111111" }}>
         <CheckoutElementsProvider key={attempt} stripe={getStripe()} options={options}>
-          <CheckoutForm valuationId={valuationId} onError={(msg) => setError(msg || null)} startFailed={startFailed}
+          <CheckoutForm valuationId={valuationId} onError={(msg) => { if (msg) ev("checkout_error"); setError(msg || null); }} startFailed={startFailed}
             onRetry={() => { setError(null); setStartFailed(false); setAttempt((a) => a + 1); }} />
         </CheckoutElementsProvider>
       </div>

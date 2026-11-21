@@ -1,6 +1,7 @@
 import "@/styles/buyerSeller.css";
 import { useIntent, type Intent } from "@/lib/intent";
 import { posthog } from "@/lib/posthog";
+import { ev } from "@/lib/analytics";
 
 const BuyIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -27,6 +28,7 @@ export function IntentSwitch({ size = "lg", labels, where, value, onChange, clas
     if (i === v) return;
     onChange?.(i);
     setShared(i);
+    ev("intent_toggle", { intent: i, where });
     try { posthog.capture?.("Intent Selected", { intent: i, where }); } catch { /* optional */ }
   };
   const [b, s] = labels ?? (size === "xs" ? ["Buying", "Selling"] : ["I’m Buying", "I’m Selling"]);
