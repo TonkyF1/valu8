@@ -27,6 +27,14 @@ const FEATURES = [
 export default function Landing() {
   const { user, loading } = useAuth();
   useSeo(getRouteMeta("/"));
+  // Brand identity for Google (the build-time home HTML only carries the FAQ data). Same ids on every visit, so no duplicates.
+  useEffect(() => {
+    const offs = [
+      setJsonLd("homepage-website-jsonld", { "@context": "https://schema.org", "@type": "WebSite", name: "Valu8", url: "https://valu8.uk/" }),
+      setJsonLd("homepage-org-jsonld", { "@context": "https://schema.org", "@type": "Organization", name: "Valu8", url: "https://valu8.uk/" }),
+    ];
+    return () => offs.forEach((o) => o());
+  }, []);
   useEffect(() => setJsonLd("homepage-faq-jsonld", {
     "@context": "https://schema.org", "@type": "FAQPage",
     mainEntity: HOME_FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
@@ -74,6 +82,10 @@ export default function Landing() {
           <nav aria-label="More about Valu8" className="mt-2 pb-8 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm">
             <Link to="/example-report" className="text-primary hover:underline">See an example report</Link>
             <Link to="/how-it-works" className="text-primary hover:underline">How Valu8 works</Link>
+            <Link to="/faq" className="text-primary hover:underline">All FAQs</Link>
+            <Link to="/guides/what-is-my-car-worth" className="text-primary hover:underline">What is my car worth?</Link>
+            <Link to="/guides/part-exchange-vs-private-sale" className="text-primary hover:underline">Part-exchange vs private sale</Link>
+            <Link to="/check" className="text-primary hover:underline">Check an advert price</Link>
             <Link to="/guides" className="text-primary hover:underline">Guides</Link>
           </nav>
         </div>
