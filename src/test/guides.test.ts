@@ -16,10 +16,11 @@ const SLUGS = [
   "how-to-price-a-car-for-private-sale",
   "what-lowers-a-cars-value",
   "private-sale-vs-dealer-prices",
+  "electric-car-value",
 ];
 
 describe("guides", () => {
-  it("has the ten expected guides", () => {
+  it("has the eleven expected guides", () => {
     expect(GUIDES.map((g) => g.slug)).toEqual(SLUGS);
   });
 
@@ -33,7 +34,7 @@ describe("guides", () => {
   });
 
   it("uses the seo_title as route title", () => {
-    expect(getRouteMeta("/guides/what-is-my-car-worth").title).toBe("What Is My Car Worth? UK Car Values Explained");
+    expect(getRouteMeta("/guides/what-is-my-car-worth").title).toBe("How much is my car worth? UK car valuation guide | Valu8");
   });
 
   it("prerenders guide HTML with canonical, description, body and FAQ JSON-LD", () => {

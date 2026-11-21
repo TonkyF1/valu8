@@ -27,14 +27,16 @@ const built = (path: string) => buildRouteHtml(shell, ALL_ROUTES.find((r) => r.p
 
 describe("sitemap URLs unchanged by P1", () => {
   // Tony-approved URL additions only (20 Nov 2026: "Yes, add the 3 new pages to the sitemap").
-  const APPROVED_NEW_URLS = ["/how-it-works", "/faq", "/example-report"];
+  // Growth plan 21 Nov 2026: /guides/electric-car-value is added by its own commit and only merges if Tony OKs the
+  // new sitemap URL in the PR. If he says no, revert that commit (this line goes with it).
+  const APPROVED_NEW_URLS = ["/how-it-works", "/faq", "/example-report", "/guides/electric-car-value"];
   it("matches the pre-SEO-work sitemap (sha1 9762fe89…) once the <lastmod> dates (added 20 Nov 2026, Tony approved) and the Tony-approved new URLs are removed", () => {
     const xml = buildSitemap();
     for (const u of APPROVED_NEW_URLS) expect(xml).toContain(`<loc>https://valu8.uk${u}</loc>`);
     const original = xml.replace(/<lastmod>[^<]*<\/lastmod>/g, "")
       .split("\n").filter((l) => !APPROVED_NEW_URLS.some((u) => l.includes(`<loc>https://valu8.uk${u}</loc>`))).join("\n");
     expect(createHash("sha1").update(original).digest("hex")).toBe("9762fe89e1f910e3fbb9c9884859c377c9e607ba");
-    expect((xml.match(/<url>/g) ?? []).length).toBe(260);
+    expect((xml.match(/<url>/g) ?? []).length).toBe(261);
   });
 });
 

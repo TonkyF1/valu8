@@ -18,9 +18,9 @@ export const PAGE_LASTMOD: Record<string, string> = {
   "/terms": "2026-11-17",
   "/disclaimers": "2026-11-06",
   "/embed-info": "2026-11-10",
-  "/guides": "2026-11-10", // three guides added
-  "/guides/what-is-my-car-worth": "2026-11-18",
-  "/guides/part-exchange-vs-private-sale": "2026-11-18",
+  "/guides": "2026-11-21", // guide titles and descriptions updated (shown on the index)
+  "/guides/what-is-my-car-worth": "2026-11-21", // growth plan: deeper copy, "to sell" section, model price table
+  "/guides/part-exchange-vs-private-sale": "2026-11-21", // trade-in value section
   "/guides/how-to-tell-if-a-used-car-is-overpriced": "2026-11-17",
   "/guides/how-to-sell-a-car-privately-safely": "2026-11-18",
   "/guides/check-mot-and-mileage-history-before-buying": "2026-11-10",
@@ -28,7 +28,8 @@ export const PAGE_LASTMOD: Record<string, string> = {
   "/guides/mot-advisories-car-value": "2026-11-18",
   "/guides/how-to-price-a-car-for-private-sale": "2026-11-10",
   "/guides/what-lowers-a-cars-value": "2026-11-10",
-  "/guides/private-sale-vs-dealer-prices": "2026-11-10",
+  "/guides/private-sale-vs-dealer-prices": "2026-11-21", // part exchange value targeting, new FAQ
+  "/guides/electric-car-value": "2026-11-21", // new guide (needs Tony's OK: new sitemap URL)
 };
 
 /** /car-values/<make>/<model> pages with no /value match (indexable, in the sitemap). None today. */
