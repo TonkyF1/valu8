@@ -29,17 +29,18 @@ export const miles = (n: number) => n.toLocaleString("en-GB") + " miles";
 const TITLE_MAX = 60;
 const DESCRIPTION_MAX = 155;
 
-/** First title tier that fits 60 chars; if none does, retry without a leading "Land Rover " (title only). */
+/** First "How much is my X worth?" title that fits 60 chars: with "UK prices", full name before the name without a
+ *  leading "Land Rover ", then the bare question, so every model page title matches the searched question. */
 export function valueTitle(m: ValueRef): string {
   const tiers = (n: string) => [
     `How much is my ${n} worth? UK prices by year | Valu8`,
     `How much is my ${n} worth? UK prices | Valu8`,
-    `${n} value: UK prices by year | Valu8`,
+    `How much is my ${n} worth? | Valu8`,
   ];
-  const fit = (n: string) => tiers(n).find((t) => t.length <= TITLE_MAX);
   const name = valueName(m);
   const short = name.replace(/^Land Rover /, "");
-  return fit(name) ?? fit(short) ?? tiers(short)[2];
+  const order = [tiers(name)[0], tiers(name)[1], tiers(short)[0], tiers(short)[1], tiers(name)[2], tiers(short)[2]];
+  return order.find((t) => t.length <= TITLE_MAX) ?? `${short} value: UK prices by year | Valu8`;
 }
 
 export function valueMeta(m: ModelPrices) {
@@ -48,12 +49,11 @@ export function valueMeta(m: ModelPrices) {
   const lo = gbp(Math.min(...all)), hi = gbp(Math.max(...all));
   const range = lo === hi ? lo : `${lo}–${hi}`;
   const e = findEnrichedModel(m.slug);
-  if (e) return { path: valuePath(m), title: e.title, description: e.description(m) };
   const full = `A used ${name} is typically advertised for ${range} in the UK, by year (${m.listings.toLocaleString("en-GB")} adverts, ${PRICE_DATA_UPDATED}). Get a free valuation by reg.`;
   return {
     path: valuePath(m),
-    title: valueTitle(m),
-    description: full.length <= DESCRIPTION_MAX ? full : `A used ${name} is typically advertised for ${range} in the UK, by year. Get a free valuation by reg.`,
+    title: e?.title ?? valueTitle(m),
+    description: e?.description?.(m) ?? (full.length <= DESCRIPTION_MAX ? full : `A used ${name} is typically advertised for ${range} in the UK, by year. Get a free valuation by reg.`),
   };
 }
 

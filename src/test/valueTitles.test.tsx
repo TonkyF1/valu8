@@ -65,11 +65,14 @@ describe("/value model page titles, descriptions, H1 and answer line", () => {
   it("uses the agreed title tiers", () => {
     expect(valueTitle(by("toyota-yaris"))).toBe("How much is my Toyota Yaris worth? UK prices by year | Valu8");
     expect(valueTitle(by("toyota-yaris")).length).toBe(60);
-    expect(valueTitle(by("mercedes-benz-c-class"))).toBe("Mercedes-Benz C-Class value: UK prices by year | Valu8");
+    expect(valueTitle(by("mercedes-benz-c-class"))).toBe("How much is my Mercedes-Benz C-Class worth? | Valu8");
+    // Every model page title asks the searched question (Google growth plan, 21 Nov 2026).
+    for (const m of [...MODEL_PRICES, ...VALUE_SLUG_REGISTRY]) expect(getAnyRouteMeta(`/value/${m.slug}`).title.startsWith("How much is my "), m.slug).toBe(true);
     expect(valueTitle(by("land-rover-range-rover-evoque"))).toBe("How much is my Range Rover Evoque worth? UK prices | Valu8");
     expect(valueTitle(by("ford-kuga"))).toBe("How much is my Ford Kuga worth? UK prices by year | Valu8");
-    // The Kuga page itself carries its own hand-written title (enrichedModels.ts).
-    expect(valueMeta(by("ford-kuga")).title).toBe("Ford Kuga valuation: UK prices by year and mileage | Valu8");
+    // Hand-written titles (enrichedModels.ts): Kuga keeps "valuation" (its clicked query), Discovery Sport the full name.
+    expect(valueMeta(by("ford-kuga")).title).toBe("How much is my Ford Kuga worth? Free valuation | Valu8");
+    expect(valueMeta(by("land-rover-discovery-sport")).title).toBe("How much is my Land Rover Discovery Sport worth? | Valu8");
   });
   it("description uses the lowest/highest band medians and drops the bracket only when too long", () => {
     const yaris = by("toyota-yaris");
