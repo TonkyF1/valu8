@@ -71,10 +71,16 @@ const RULES: Rule[] = [
   // Engine sizes below were only fitted to the performance versions (checked against harvested listings).
   R(/audi/, /^a3/, [2480, 2485], [2011, 2030], ["RS3"], true, "2.5 TFSI petrol A3"),
   R(/audi/, /^a3/, [1984, 1984], [2013, 2030], ["S3", "Sport / S line"], false, "2.0 TFSI petrol A3"),
-  R(/audi/, /^a4/, [4163, 4163], [2003, 2016], ["RS4", "S4"], false, "4.2 V8 petrol A4", { allPerf: true }),
+  // 4.2 V8 A4: the B8 RS4 (2012-15) is the only A4 with this engine after 2011 (the B8 S4 is the 3.0 supercharged, 2995cc).
+  // The earlier B6/B7 S4 and B7 RS4 both used it, so 2003-2011 stays ambiguous.
+  R(/audi/, /^a4/, [4163, 4163], [2012, 2016], ["RS4"], true, "4.2 V8 petrol A4 (B8 RS4)"),
+  R(/audi/, /^a4/, [4163, 4163], [2003, 2011], ["RS4", "S4"], false, "4.2 V8 petrol A4", { allPerf: true }),
   R(/audi/, /^a4/, [2894, 2894], [2018, 2030], ["RS4"], true, "2.9 V6 biturbo petrol A4"),
   R(/audi/, /^a4/, [2995, 2995], [2009, 2030], ["S4"], true, "3.0 TFSI petrol A4"),
-  R(/audi/, /^a5/, [4163, 4163], [2007, 2016], ["S5", "RS5"], false, "4.2 V8 petrol A5", { allPerf: true }),
+  // A5 4.2 V8: only the S5 before the RS5 existed (2007-09); only the RS5 after the S5 went to the 3.0 supercharged (2012+).
+  R(/audi/, /^a5/, [4163, 4163], [2007, 2009], ["S5"], true, "4.2 V8 petrol A5 (S5)"),
+  R(/audi/, /^a5/, [4163, 4163], [2012, 2016], ["RS5"], true, "4.2 V8 petrol A5 (RS5)"),
+  R(/audi/, /^a5/, [4163, 4163], [2010, 2011], ["S5", "RS5"], false, "4.2 V8 petrol A5", { allPerf: true }),
   R(/audi/, /^a5/, [2894, 2894], [2017, 2030], ["RS5"], true, "2.9 V6 biturbo petrol A5"),
   R(/audi/, /^a5/, [2995, 2995], [2009, 2030], ["S5"], true, "3.0 TFSI petrol A5"),
   R(/audi/, /^a6/, [3993, 3996], [2012, 2018], ["RS6", "S6"], false, "4.0 V8 petrol A6", { allPerf: true }),
