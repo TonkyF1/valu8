@@ -64,4 +64,4 @@ Charging starts only when the readiness gate in `readiness.md` passes (≥200 re
 2. **Gumtree re-checks allowed** for adverts users enter themselves (robots.txt-compliant, slow, no personal data — same rules as our collector). Never fetched: AutoTrader, PistonHeads, Motors, CarGurus, Exchange & Mart, eBay, Facebook/Marketplace, Car & Classic, auction sites (plus Carwow, heycar, cinch, Cazoo, kept as a precaution). Outcomes for those come only from the user's follow-up.
 3. **No VAT line** — not VAT-registered. Prices are shown as-is, no "inc. VAT".
 4. **Refunds:** digital content — buyers consent at checkout to immediate delivery and acknowledge they lose the 14-day cancellation right once the report is delivered (Consumer Contracts Regulations 2013). Full refund if a report fails to load or is clearly broken (email support). Subscriptions: cancel any time, access until the end of the paid month, no partial refunds.
-5. **Legal name:** Tony Fisher trading as Valu8. Contact by email only (hello@valu8.uk).
+5. **Legal name:** none published (Tony asked 22 Nov 2026 for his name to be removed). The site says "Valu8 (valu8.uk)". Contact by email only (hello@valu8.uk).

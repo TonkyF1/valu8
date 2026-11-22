@@ -139,4 +139,4 @@ By card through Stripe. Valu8 never sees or stores your card details.
 
 **How do I contact you?**
 Email only: hello@valu8.uk. We aim to reply within two working days.
-Valu8 is Tony Fisher trading as Valu8. We're contactable by email only.
+Valu8 (valu8.uk). We're contactable by email only.
