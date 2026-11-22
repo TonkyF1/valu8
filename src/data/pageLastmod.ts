@@ -15,7 +15,7 @@ export const PAGE_LASTMOD: Record<string, string> = {
   "/about": "2026-11-06",
   "/contact": "2026-11-06",
   "/privacy": "2026-11-21", // anonymous usage analytics line
-  "/terms": "2026-11-17",
+  "/terms": "2026-11-21",
   "/disclaimers": "2026-11-06",
   "/embed-info": "2026-11-10",
   "/guides": "2026-11-21", // guide titles and descriptions updated (shown on the index)

@@ -280,3 +280,6 @@
 .t8-buyer svg{transition:transform .25s cubic-bezier(.22,1,.36,1)}
 .t8-buyer a:hover svg{transform:translateX(2px)}
 .t8-cap{margin:6px auto 0;max-width:300px;text-align:center;font-size:11px;line-height:1.4;color:var(--t8-dim);opacity:.85}
+/* "What moved your price" on the free result: same width as the unlock card */
+.t8-movers{position:relative;z-index:3;width:calc(100% - 24px);max-width:520px;margin:18px auto 0;text-align:left}
+@media (min-width:768px){.t8-movers{max-width:460px}}

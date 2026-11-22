@@ -14,6 +14,8 @@ interface Props {
   vehicle: { make: string; model: string; year: number; mileage: number; mot_expiry?: string | null; service_notes?: string | null };
   /** Seller-only sections (checklist) are hidden on shared links. */
   isShared?: boolean;
+  /** Free report: official records only (mileage, tax, ULEZ, recalls). Repair costs and the seller checklist are Premium. */
+  freeTier?: boolean;
 }
 
 const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
@@ -34,7 +36,7 @@ const EstimateTag = () => (
   <span className="text-[10px] uppercase tracking-wider rounded-full border border-border px-2 py-0.5 text-muted-foreground">Estimate</span>
 );
 
-export function VehicleInsights({ report, vehicle, isShared }: Props) {
+export function VehicleInsights({ report, vehicle, isShared, freeTier = false }: Props) {
   const r = report;
   const facts = r.vehicle ?? {};
   const baseModel = vehicle.model.split(" · ")[0];
@@ -145,7 +147,7 @@ export function VehicleInsights({ report, vehicle, isShared }: Props) {
       </Card>
 
       {/* Advisory repair costs */}
-      {latestAdvisories.length > 0 && (
+      {!freeTier && latestAdvisories.length > 0 && (
         <Card title="Advisory repair costs" icon={Wrench} tag={<EstimateTag />}>
           {costs.high > 0 && (
             <p className="text-sm mb-2">Indicative total: <span className="font-semibold">{gbp(costs.low)}–{gbp(costs.high)}</span></p>
@@ -163,7 +165,7 @@ export function VehicleInsights({ report, vehicle, isShared }: Props) {
       )}
 
       {/* Seller checklist */}
-      {!isShared && (
+      {!isShared && !freeTier && (
         <Card title="Seller checklist" icon={ListChecks}>
           <ul className="space-y-2">
             {checklist.map((c) => (
