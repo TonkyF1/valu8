@@ -6,7 +6,7 @@ import { fitFontSize } from "@/lib/pdfPremium";
 
 const flow = readFileSync("src/components/tesla/TeslaFlow.tsx", "utf8");
 const css = readFileSync("src/styles/tesla.css", "utf8");
-const premium = readFileSync("src/components/PremiumReport.tsx", "utf8");
+const premium = readFileSync("src/components/report/PremiumView.tsx", "utf8");
 const report = readFileSync("src/pages/Report.tsx", "utf8");
 
 afterEach(() => { vi.restoreAllMocks(); });
@@ -106,9 +106,9 @@ describe("wired into every big price", () => {
   });
   it("report and premium report headline prices fit", () => {
     expect(report).toMatch(/<FitPrice text=\{`£\$\{normaliseReportPricing\(r\)\.privateSale\.toLocaleString\(\)\}`\}/);
-    expect(premium.match(/<FitPrice /g)?.length ?? 0).toBeGreaterThanOrEqual(5);
-    // £1m+ tiers stack on phones rather than shrinking to a tiny size in three columns.
-    expect(premium).toMatch(/>= 1_000_000\) \? "grid-cols-1 sm:grid-cols-3" : "grid-cols-3"/);
+    // Premium Report: the hero figure and every plan tile fit their box (one FitPrice in the hero, one in Stat).
+    expect(premium.match(/<FitPrice /g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(premium).toMatch(/testId="premium-price"/);
   });
   it("PDF prices shrink to their box", () => {
     const sizes: number[] = [];

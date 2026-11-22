@@ -1,5 +1,6 @@
 import { type PointerEvent as RPointerEvent, type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
+import "@/styles/tesla.css";
 import { lockBodyScroll, prefersReducedMotion } from "@/lib/scrollTop";
 
 /**

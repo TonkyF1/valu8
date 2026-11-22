@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { setJsonLd } from "./newPageMeta";
 import { BadgePoundSterling, Camera, FileCheck2, Gauge, ShieldAlert, Wind } from "lucide-react";
@@ -16,7 +16,7 @@ import { Faq, FAQS, FreeVsPremium, HowItWorks } from "@/components/home/BuyerSel
 const HOME_FAQS = FAQS.slice(0, 4);
 
 const FEATURES = [
-  { icon: BadgePoundSterling, title: "Market-based pricing", body: "A private-sale estimate based on comparable UK adverts for the make, model, year and mileage, with part-exchange and dealer estimates in the £2.99 Full report." },
+  { icon: BadgePoundSterling, title: "Market-based pricing", body: "A private-sale estimate based on comparable UK adverts for the make, model, year and mileage, with part-exchange and dealer estimates in the £2.99 Premium Report." },
   { icon: Camera, title: "Photo condition check", body: "Upload a few photos and AI flags visible wear, damage and selling points that move the price." },
   { icon: FileCheck2, title: "Official DVSA MOT history", body: "Every test, advisory and failure, plus indicative repair-cost bands for current advisories." },
   { icon: Gauge, title: "Mileage consistency", body: "MOT mileage charted over time, with any drops flagged for a closer look." },
@@ -26,6 +26,8 @@ const FEATURES = [
 
 export default function Landing() {
   const { user, loading } = useAuth();
+  // Once a car is on screen (details form or result) the homepage marketing steps aside: the flow carries one clean upsell.
+  const [inFlow, setInFlow] = useState(false);
   useSeo(getRouteMeta("/"));
   // Brand identity for Google (the build-time home HTML only carries the FAQ data). Same ids on every visit, so no duplicates.
   useEffect(() => {
@@ -50,8 +52,9 @@ export default function Landing() {
       <TestModeBanner />
       <Header />
       <main id="main" className="flex-1">
-        <TeslaFlow />
+        <TeslaFlow onFlowChange={setInFlow} />
 
+        {!inFlow && (<>
         <div className="bs">
           <FreeVsPremium />
           <div className="bs-rule" />
@@ -101,6 +104,8 @@ export default function Landing() {
           </ul>
           <p className="mt-4 text-center text-sm"><Link to="/value" className="text-primary hover:underline">See typical prices for all models</Link></p>
         </section>
+
+        </>)}
 
         <section className="container max-w-3xl pb-28 sm:pb-8">
           <AccuracyDisclaimer />

@@ -40,8 +40,12 @@ describe("carVertical history check button", () => {
 describe("carVertical card placement in Report.tsx", () => {
   const src = require("fs").readFileSync("src/pages/Report.tsx", "utf8") as string;
   const uses = [...src.matchAll(/<HistoryCheckButton\b[^>]*\/>/g)];
-  it("has exactly two render sites: one for locked (free) views, one for unlocked", () => {
-    expect(uses.length).toBe(2);
+  it("has exactly three render sites: the Premium view, locked (free) views and the standard unlocked view", () => {
+    expect(uses.length).toBe(3);
+    // Premium site sits inside the premiumView branch (rendered instead of the standard page, never with it).
+    const premiumIdx = src.indexOf("<HistoryCheckButton registration={v.registration} />");
+    expect(src.lastIndexOf("{premiumView ? (", premiumIdx)).toBeGreaterThan(0);
+    expect(src.indexOf(") : (", premiumIdx)).toBeGreaterThan(premiumIdx);
     const lockedIdx = src.indexOf("{locked && !valuationUnavailable && <HistoryCheckButton");
     const unlockedIdx = src.indexOf("{!valuationUnavailable && <HistoryCheckButton");
     expect(lockedIdx).toBeGreaterThan(0);

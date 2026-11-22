@@ -11,9 +11,18 @@ export const tierText = (t: ConfidenceTier) => (t === "Very Low" ? "Very low" : 
 export const isLowTier = (t: ConfidenceTier | null) => t === "Low" || t === "Very Low";
 
 /** Confidence level and the data behind it (free and Premium, as promised on the homepage, /pricing and the FAQ). */
-export function ConfidenceCard({ tier, reason, sources, checksReason, className }: {
+export function ConfidenceCard({ tier, reason, sources, checksReason, className, collapseSources = false }: {
   tier: ConfidenceTier; reason?: string | null; sources?: string[] | null; checksReason?: string | null; className?: string;
+  /** Premium: the data list sits behind a tap to keep the page short. */
+  collapseSources?: boolean;
 }) {
+  const list = Array.isArray(sources) && sources.length > 0 ? (
+    <ul className="mt-1.5 space-y-1.5">
+      {sources.map((s) => (
+        <li key={s} className="flex gap-2 text-[13px] leading-snug text-[#D6D6D6]"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />{s}</li>
+      ))}
+    </ul>
+  ) : null;
   return (
     <section aria-labelledby="conf-h" data-testid="confidence-card" className={cn("rounded-2xl border border-white/10 bg-[#0d0d0d] px-4 py-4 sm:px-5", className)}>
       <div className="flex items-center justify-between gap-3">
@@ -27,16 +36,17 @@ export function ConfidenceCard({ tier, reason, sources, checksReason, className 
       </div>
       {reason && <p className="mt-2 text-[13px] leading-[1.55] text-[#C4C4C4]">{reason}</p>}
       {checksReason && !isLowTier(tier) && <p className="mt-2 text-[13px] leading-[1.55] text-[#C4C4C4]">{checksReason}</p>}
-      {Array.isArray(sources) && sources.length > 0 && (
+      {list && (collapseSources ? (
+        <details className="mt-3 group">
+          <summary className="cursor-pointer list-none text-xs font-semibold text-[#5EF2E6] min-h-[32px] inline-flex items-center">Data used ({sources!.length})</summary>
+          {list}
+        </details>
+      ) : (
         <>
           <p className="mt-3 text-xs font-semibold text-[#A8A8A8]">Data used</p>
-          <ul className="mt-1.5 space-y-1.5">
-            {sources.map((s) => (
-              <li key={s} className="flex gap-2 text-[13px] leading-snug text-[#D6D6D6]"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />{s}</li>
-            ))}
-          </ul>
+          {list}
         </>
-      )}
+      ))}
     </section>
   );
 }

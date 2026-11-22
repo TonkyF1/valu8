@@ -8,7 +8,7 @@ import { track } from "@/lib/funnel";
 import { posthog } from "@/lib/posthog";
 import { renderShareCard, shareFileName, type ShareCardData } from "@/lib/shareImage";
 
-export const REFERRAL_COPY = "Share with a friend. When they value their car, your full report is free.";
+export const REFERRAL_COPY = "Share with a friend. When they value their car, your Premium Report is free.";
 
 /** Public link for a shared valuation: the homepage (reg box first), tagged, with the share code. Never the report URL. */
 export function shareCardUrl(code?: string | null): string {
@@ -112,13 +112,13 @@ export function ShareCard({ valuationId, card, locked, onUnlocked }: {
       <div className="flex flex-col gap-5 md:flex-row md:items-start">
         <div className="min-w-0 flex-1">
           {locked && !unlocked ? (
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#00D6C8" }}><Gift className="mr-1 inline h-3.5 w-3.5" aria-hidden /> Free full report</p>
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#00D6C8" }}><Gift className="mr-1 inline h-3.5 w-3.5" aria-hidden /> Free Premium Report</p>
           ) : null}
-          <h2 id="share-valuation-h" className="mt-1 text-xl font-bold">{locked && !unlocked ? "Get your full report free" : "Share my valuation"}</h2>
+          <h2 id="share-valuation-h" className="mt-1 text-xl font-bold">{locked && !unlocked ? "Get your Premium Report free" : "Share my valuation"}</h2>
           {locked && !unlocked ? (
             <p className="mt-2 text-sm opacity-90">{REFERRAL_COPY}</p>
           ) : unlocked ? (
-            <p className="mt-2 text-sm" style={{ color: "#00D6C8" }}>A friend valued their car with your link, so your full report is unlocked. Thank you for sharing.</p>
+            <p className="mt-2 text-sm" style={{ color: "#00D6C8" }}>A friend valued their car with your link, so your Premium Report is unlocked. Thank you for sharing.</p>
           ) : (
             <p className="mt-2 text-sm opacity-90">Send your result as an image. Friends see the car and the price only, never your report.</p>
           )}

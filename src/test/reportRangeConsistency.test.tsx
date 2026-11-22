@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeAll } from "vitest";
 import { readFileSync } from "node:fs";
 import { render, screen, cleanup } from "@testing-library/react";
-import { PremiumReport } from "@/components/PremiumReport";
+import { MemoryRouter } from "react-router-dom";
+import { PremiumView } from "@/components/report/PremiumView";
 import { normaliseReportPricing, displayPrivateRange } from "@/lib/askingPrice";
 import { reportPriceRange } from "../../supabase/functions/_shared/cheapRange";
 import type { ValuationReport } from "@/lib/valuation";
@@ -60,19 +61,27 @@ describe("one private-sale range everywhere (£2,700 Fiesta, comps band £2,500�
     expect(displayPrivateRange(fiesta).text).toBe(reportPageText(fiesta));
   });
 
-  it("the Premium report (seller) headline is the same range, with no £2,500–£2,850 anywhere", () => {
-    render(<PremiumReport r={fiesta} registration="AB17CDE" intent="selling" />);
-    const section = screen.getByTestId("premium-report");
-    expect(screen.getByTestId("pr-headline").textContent).toContain(reportPageText(fiesta));
-    expect(screen.getByTestId("pr-headline").textContent).not.toContain("£2,700");
-    expect(screen.getByTestId("pr-range").textContent).toContain("Realistic private sale £2,700");
-    expect(section.textContent).not.toMatch(/£2,500|£2,850/);
+  const view = (intent: "selling" | "buying") => render(
+    <MemoryRouter>
+      <PremiumView v={{ id: "v-test", make: "Ford", model: "Fiesta", year: 2017, mileage: 60000, registration: "AB17CDE", photo_urls: [], created_at: "2026-11-18T10:00:00Z" }}
+        r={fiesta} title="2017 Ford Fiesta" intent={intent} onIntent={() => undefined} tier="Medium" motExpired={null}
+        movers={null} confidence={null} onPdf={() => undefined} onSelectPhoto={() => undefined} onOpenLightbox={() => undefined} />
+    </MemoryRouter>,
+  );
+
+  it("the Premium Report (seller) leads with the precise figure; the range is the same range, secondary", () => {
+    view("selling");
+    expect(screen.getByTestId("premium-price").textContent).toContain("£2,700");
+    expect(screen.getByTestId("premium-range").textContent).toContain(`Likely range ${reportPageText(fiesta)}`);
+    // The comps band never shows as a range.
+    expect(screen.getByTestId("premium-view").textContent).not.toMatch(/£2,500\s*[–-]\s*£2,850|£2,850/);
     cleanup();
   });
 
-  it("the Premium report (buyer) estimated range is the same range", () => {
-    render(<PremiumReport r={fiesta} registration="AB17CDE" intent="buying" valuationId="v-test" />);
-    expect(screen.getByTestId("pr-buy-range").textContent).toContain(`Estimated range ${reportPageText(fiesta)}`);
+  it("the Premium Report (buyer) uses the same figure and range", () => {
+    view("buying");
+    expect(screen.getByTestId("premium-price").textContent).toContain("£2,700");
+    expect(screen.getByTestId("premium-range").textContent).toContain(`Likely range ${reportPageText(fiesta)}`);
     cleanup();
   });
 
@@ -88,7 +97,8 @@ describe("one private-sale range everywhere (£2,700 Fiesta, comps band £2,500�
     pdfText.length = 0;
     await downloadPremiumPdf(car, fiesta, { intent: "selling" });
     expect(pdfText).toContain(reportPageText(fiesta));
-    expect(pdfText.join("\n")).not.toMatch(/£2,500|£2,850/);
+    // £2,500 is the lowest offer to accept; the comps band itself never prints as a range.
+    expect(pdfText.join("\n")).not.toMatch(/£2,500\s*[–-]\s*£2,850|£2,850/);
     pdfText.length = 0;
     await downloadPremiumPdf(car, fiesta, { intent: "buying", valuationId: "v-test" });
     expect(pdfText.some((t) => t.startsWith(`Estimated range ${reportPageText(fiesta)}`))).toBe(true);

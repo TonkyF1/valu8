@@ -20,7 +20,9 @@ import { funnelDevice, funnelSessionId, track } from "@/lib/funnel";
 import { ev } from "@/lib/analytics";
 import { metaPixelLoaded } from "@/lib/metaPixel";
 import { getIntent, useIntent, type Intent } from "@/lib/intent";
-import { DIGITAL_CONSENT, MONEY_BACK, PREMIUM_CTA, PREMIUM_TITLE } from "@/components/tesla/premium";
+import { DIGITAL_CONSENT, MONEY_BACK, PREMIUM_CTA, PREMIUM_NAME, PREMIUM_TITLE, includesFor } from "@/components/tesla/premium";
+import { CheckoutSheet } from "@/components/tesla/CheckoutSheet";
+import { IntentSwitch } from "@/components/IntentSwitch";
 
 const PK = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined) || STRIPE_PUBLISHABLE_KEY;
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
@@ -62,7 +64,7 @@ export const REPORT_ADDS = [
   "Strengths and watch points a buyer will spot, from your MOT record and photos",
   "Where to sell, what to highlight and which documents to have ready",
   "Ready-to-post advert text",
-  "A PDF of the full report to keep or send to buyers",
+  "A PDF of the Premium Report to keep or send to buyers",
 ];
 /** Buying view of the same report (src/lib/buyerGuide.ts). */
 export const REPORT_ADDS_BUYING = [
@@ -301,7 +303,33 @@ export function ElementsCheckout({ valuationId, email, onPaid, onClose, title = 
   );
 }
 
-export function ReportCheckout({ valuationId, verifying, onPaid, locked = false }: { valuationId: string; verifying?: boolean; onPaid?: () => void; locked?: boolean }) {
+/** The same rich intro the homepage checkout sheet shows: the car, who the report is for, and what's in it. */
+function CheckoutIntro({ car, intent }: { car?: { name: string; registration?: string | null }; intent: Intent }) {
+  return (
+    <>
+      {car && (
+        <div className="t8-co-car" style={{ paddingLeft: 14 }}>
+          <div className="t8-co-tx">
+            <div className="t8-co-n">{car.name}</div>
+            {car.registration && <span className="t8-mp"><img src="/uk-flag.svg" alt="" /><span>{car.registration.toUpperCase()}</span></span>}
+          </div>
+          <div className="t8-co-pr">£2.99</div>
+        </div>
+      )}
+      <div className="v8-forl"><span>This report is for</span><IntentSwitch size="xs" where="checkout" /></div>
+      <div className="t8-wi" data-testid="premium-includes" key={intent}>
+        <h3>What's in your {PREMIUM_NAME}</h3>
+        <ul>
+          {includesFor(intent).map((i) => (
+            <li key={i}><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="8.25" fill="rgba(0,214,200,.14)" stroke="#00D6C8" strokeWidth="1.2" /><path d="M5.6 9.2l2.2 2.2 4.6-4.7" stroke="#1AFFF0" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg><span>{i}</span></li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+}
+
+export function ReportCheckout({ valuationId, verifying, onPaid, locked = false, car }: { valuationId: string; verifying?: boolean; onPaid?: () => void; locked?: boolean; car?: { name: string; registration?: string | null } }) {
   const { user } = useAuth();
   const [intent] = useIntent();
   const [open, setOpen] = useState(false);
@@ -328,7 +356,7 @@ export function ReportCheckout({ valuationId, verifying, onPaid, locked = false 
     <section
       ref={sectionRef}
       id="report-checkout"
-      aria-label="Premium Valuation Report"
+      aria-label="Premium Report"
       className="mb-6 rounded-2xl border border-white/10 p-5 md:p-6"
       style={{ background: "#111111", color: "#F7F5F3", fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}
     >
@@ -337,11 +365,11 @@ export function ReportCheckout({ valuationId, verifying, onPaid, locked = false 
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#00D6C8] border-t-transparent" />
           <p className="text-sm">Unlocking your report…</p>
         </div>
-      ) : !open ? (
+      ) : (
         <div className="flex flex-col gap-4">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#FDE047" }}>
-              <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden /> Premium Valuation Report · £2.99
+              <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden /> Premium Report · £2.99
             </p>
             <h2 className="mt-1 text-xl font-bold md:text-2xl">{locked ? "Your valuation and the plan to go with it." : "Know what to do with that valuation."}</h2>
             <p className="mt-2 text-sm opacity-90">{intent === "buying"
@@ -374,15 +402,16 @@ export function ReportCheckout({ valuationId, verifying, onPaid, locked = false 
               <ReportPreview />
             </div>
           </details>
-          <a href="#share-valuation" className="text-center text-xs font-medium underline underline-offset-2" style={{ color: "#00D6C8" }}>Or share with a friend. When they value their car, your full report is free.</a>
+          <a href="#share-valuation" className="text-center text-xs font-medium underline underline-offset-2" style={{ color: "#00D6C8" }}>Or share with a friend. When they value their car, your Premium Report is free.</a>
         </div>
-      ) : (
-        <ElementsCheckout
-          valuationId={valuationId}
-          email={email}
-          onPaid={onPaid}
-          onClose={() => setOpen(false)}
-        />
+      )}
+      {open && !verifying && (
+        <CheckoutSheet title={PREMIUM_TITLE} label={`${PREMIUM_NAME} checkout`} onClose={() => setOpen(false)}>
+          {(close) => (
+            <ElementsCheckout valuationId={valuationId} email={email} onPaid={() => { close(); onPaid?.(); }} onClose={close}
+              title={PREMIUM_TITLE} hideHeader intro={<CheckoutIntro car={car} intent={intent} />} />
+          )}
+        </CheckoutSheet>
       )}
     </section>
   );

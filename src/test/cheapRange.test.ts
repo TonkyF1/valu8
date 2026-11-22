@@ -30,7 +30,7 @@ describe("range reason copy", () => {
     const files = [
       "src/pages/Report.tsx",
       "supabase/functions/_shared/emailTemplates.ts",
-      "src/components/PremiumReport.tsx",
+      "src/components/report/PremiumView.tsx",
       "src/lib/pdf.ts",
     ];
     for (const f of files) {

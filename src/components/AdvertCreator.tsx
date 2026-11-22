@@ -145,7 +145,7 @@ export function AdvertCreator({ valuationId, vehicle, report, initialAdvert, gue
           />
         </div>
         <Button variant="hero" size="lg" onClick={generate} disabled={loading} className="w-full sm:w-auto">
-          {loading ? <><RefreshCw className="h-4 w-4 animate-spin" /> Generating...</> : <>✍️ Create Selling Advert</>}
+          {loading ? <><RefreshCw className="h-4 w-4 animate-spin" /> Generating...</> : <>Write my advert</>}
         </Button>
       </section>
     );

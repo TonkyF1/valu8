@@ -16,7 +16,10 @@ interface Props {
   isShared?: boolean;
   /** Free report: official records only (mileage, tax, ULEZ, recalls). Repair costs and the seller checklist are Premium. */
   freeTier?: boolean;
+  /** Render only these parts, without the heading, spacing or disclaimer (Premium report sections). */
+  parts?: InsightPart[];
 }
+export type InsightPart = "mileage" | "running" | "advisories" | "checklist";
 
 const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
 
@@ -36,7 +39,8 @@ const EstimateTag = () => (
   <span className="text-[10px] uppercase tracking-wider rounded-full border border-border px-2 py-0.5 text-muted-foreground">Estimate</span>
 );
 
-export function VehicleInsights({ report, vehicle, isShared, freeTier = false }: Props) {
+export function VehicleInsights({ report, vehicle, isShared, freeTier = false, parts }: Props) {
+  const show = (k: InsightPart) => !parts || parts.includes(k);
   const r = report;
   const facts = r.vehicle ?? {};
   const baseModel = vehicle.model.split(" · ")[0];
@@ -61,11 +65,11 @@ export function VehicleInsights({ report, vehicle, isShared, freeTier = false }:
   const ulezLabel = ulez.status === "likely_compliant" ? "Likely compliant" : ulez.status === "likely_non_compliant" ? "Likely non-compliant" : "Check required";
 
   return (
-    <div className="space-y-4 my-8">
-      <h2 className="text-lg font-semibold tracking-tight">Ownership insights</h2>
+    <div className={parts ? "space-y-4" : "space-y-4 my-8"}>
+      {!parts && <h2 className="text-lg font-semibold tracking-tight">Ownership insights</h2>}
 
       {/* Mileage chart + clocking check */}
-      <Card
+      {show("mileage") && <Card
         title="MOT mileage history"
         icon={Gauge}
         tag={mileage.status === "warning"
@@ -76,7 +80,7 @@ export function VehicleInsights({ report, vehicle, isShared, freeTier = false }:
       >
         {mileage.points.length >= 2 ? (
           <>
-            <div className="h-48 w-full" role="img" aria-label={`Mileage at each MOT, ${mileage.points.length} readings`}>
+            <div className={parts ? "h-40 w-full" : "h-48 w-full"} role="img" aria-label={`Mileage at each MOT, ${mileage.points.length} readings`}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={mileage.points} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -106,11 +110,11 @@ export function VehicleInsights({ report, vehicle, isShared, freeTier = false }:
             {r.motSource === "dvsa" ? "Not enough MOT readings to chart (cars under 3 years old have none)." : "Live DVSA MOT history wasn't available for this report."}
           </p>
         )}
-      </Card>
+      </Card>}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      {show("running") && <div className={parts ? "grid gap-3 grid-cols-2" : "grid gap-4 sm:grid-cols-2"}>
         {/* VED */}
-        <Card title="Vehicle tax (VED)" icon={Receipt} tag={<EstimateTag />}>
+        <Card title={parts ? "Tax (VED)" : "Vehicle tax (VED)"} icon={Receipt} tag={parts ? undefined : <EstimateTag />}>
           {ved.annual != null ? (
             <p className="text-2xl font-semibold">{gbp(ved.annual)}<span className="text-sm text-muted-foreground font-normal"> /year</span></p>
           ) : (
@@ -126,7 +130,7 @@ export function VehicleInsights({ report, vehicle, isShared, freeTier = false }:
         </Card>
 
         {/* ULEZ / CAZ */}
-        <Card title="ULEZ & Clean Air Zones" icon={Wind} tag={<EstimateTag />}>
+        <Card title={parts ? "ULEZ" : "ULEZ & Clean Air Zones"} icon={Wind} tag={parts ? undefined : <EstimateTag />}>
           <p className={`text-base font-semibold ${ulezStyle}`}>{ulezLabel}</p>
           <p className="text-xs text-muted-foreground mt-1">{ulez.reason}</p>
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
@@ -134,20 +138,28 @@ export function VehicleInsights({ report, vehicle, isShared, freeTier = false }:
             <a href={CAZ_CHECKER_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-primary inline-flex items-center gap-1 hover:underline">Clean Air Zones (GOV.UK) <ExternalLink className="h-3 w-3" aria-hidden /></a>
           </div>
         </Card>
-      </div>
+      </div>}
+      {show("running") && parts && <p className="-mt-1 text-[11px] text-muted-foreground">Tax and ULEZ are estimates from the car's DVLA details. Check with GOV.UK and TfL before you rely on them.</p>}
 
       {/* Recalls */}
-      <Card title="Safety recalls" icon={ShieldAlert}>
+      {show("running") && parts && (
+        <a href="https://www.check-vehicle-recalls.service.gov.uk/" target="_blank" rel="noopener noreferrer"
+          className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card/60 px-4 py-3 min-h-[48px] text-sm hover:border-primary/40">
+          <span className="flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-primary" aria-hidden /> Safety recalls: check this car on GOV.UK</span>
+          <ExternalLink className="h-3.5 w-3.5 text-primary shrink-0" aria-hidden />
+        </a>
+      )}
+      {show("running") && !parts && <Card title="Safety recalls" icon={ShieldAlert}>
         <p className="text-xs text-muted-foreground">
           Recalls are issued against specific build batches, so the only reliable check is by this car's registration on the official DVSA service.
         </p>
         <a href="https://www.check-vehicle-recalls.service.gov.uk/" target="_blank" rel="noopener noreferrer" className="text-xs text-primary inline-flex items-center gap-1 mt-3 min-h-[44px] sm:min-h-0 hover:underline">
           Check your recalls on GOV.UK <ExternalLink className="h-3 w-3" aria-hidden />
         </a>
-      </Card>
+      </Card>}
 
       {/* Advisory repair costs */}
-      {!freeTier && latestAdvisories.length > 0 && (
+      {show("advisories") && !freeTier && latestAdvisories.length > 0 && (
         <Card title="Advisory repair costs" icon={Wrench} tag={<EstimateTag />}>
           {costs.high > 0 && (
             <p className="text-sm mb-2">Indicative total: <span className="font-semibold">{gbp(costs.low)}–{gbp(costs.high)}</span></p>
@@ -160,12 +172,12 @@ export function VehicleInsights({ report, vehicle, isShared, freeTier = false }:
               </li>
             ))}
           </ul>
-          <p className="text-[11px] text-muted-foreground/70 mt-2">Typical UK independent-garage ranges for parts and labour. Get a quote before you buy or sell.</p>
+          <p className="text-[11px] text-muted-foreground mt-2">Typical UK independent-garage ranges for parts and labour. Get a quote before you buy or sell.</p>
         </Card>
       )}
 
       {/* Seller checklist */}
-      {!isShared && !freeTier && (
+      {show("checklist") && !isShared && !freeTier && (
         <Card title="Seller checklist" icon={ListChecks}>
           <ul className="space-y-2">
             {checklist.map((c) => (
@@ -178,7 +190,7 @@ export function VehicleInsights({ report, vehicle, isShared, freeTier = false }:
         </Card>
       )}
 
-      <AccuracyDisclaimer />
+      {!parts && <AccuracyDisclaimer />}
     </div>
   );
 }

@@ -1,5 +1,4 @@
-import { PremiumReport } from "@/components/PremiumReport";
-import { IntentSwitch } from "@/components/IntentSwitch";
+import { PremiumView } from "@/components/report/PremiumView";
 import { initialReportIntent, saveIntentFor, type Intent } from "@/lib/intent";
 import { premiumEnforced, showPremiumReport } from "@/lib/entitlements";
 import { REPORT_CTA, ReportCheckout, fetchReportPaid, reportOfferLine } from "@/components/ReportCheckout";
@@ -316,7 +315,7 @@ export default function Report() {
           <h1 className="text-2xl font-bold mt-1">{[v.year, v.make, v.model].filter(Boolean).join(" ")}</h1>
           <p className="mt-2 mb-6 text-sm opacity-80">{(v.report as any)?.valuationUnavailable
             ? "We couldn't price this car, so there's nothing to pay for. Try another plate."
-            : verifyingPayment ? "Confirming your payment. Your report opens here in a moment." : "Your Premium Valuation Report is ready. It opens here as soon as it's paid for."}</p>
+            : verifyingPayment ? "Confirming your payment. Your report opens here in a moment." : "Your Premium Report is ready. It opens here as soon as it's paid for."}</p>
           {!(v.report as any)?.valuationUnavailable && <ReportCheckout locked valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />}
         </main>
         <Footer />
@@ -398,6 +397,8 @@ export default function Report() {
   const locked = (enforcedPremium || reportPaywallEnabled()) && !premium;
   // Buying view of a paid report: seller-only extras (where to sell, advert writer) step aside. Switch back any time.
   const sellerHidden = premium && reportIntent === "buying";
+  // Paid reports get the dedicated dark Premium layout (one price block, sticky nav). Unavailable valuations keep the standard page.
+  const premiumView = premium && !valuationUnavailable;
 
   // Free locked result with the £2.99 offer: price first, then the offer card, then the supporting detail.
   const offerFirst = enforcedPremium && !premium && !valuationUnavailable;
@@ -411,7 +412,7 @@ export default function Report() {
 <>
                 {/* Live data ticker */}
                 {liveCount != null && liveCount > 0 && (
-                  <div className="mt-2.5 inline-flex items-center gap-2 text-[11.5px] text-muted-foreground/90">
+                  <div className="mt-2.5 inline-flex items-center gap-2 text-[11.5px] text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
                       <span className="relative flex h-1.5 w-1.5">
                         <span className="absolute inset-0 rounded-full bg-primary opacity-75 animate-ping" />
@@ -462,7 +463,7 @@ export default function Report() {
   const valuedWith = (
 <>
             {!valuationUnavailable && liveCount == null && (
-              <p className="text-[11px] text-muted-foreground/70 mt-3">
+              <p className="text-[11px] text-muted-foreground mt-3">
                 Valued using AI market analysis and our UK advert database.
               </p>
             )}
@@ -509,10 +510,26 @@ export default function Report() {
           );
         })();
 
+  const advertCreator = (
+    <AdvertCreator
+      guestToken={isGuest ? peekGuestToken() : null}
+      valuationId={v.id}
+      vehicle={{ make: v.make, model: v.model, year: v.year, mileage: v.mileage, registration: v.registration, mot_expiry: v.mot_expiry }}
+      report={{
+        recommendations: { listingPrice: r.recommendations.listingPrice, highlights: r.recommendations.highlights },
+        conditionScore: r.conditionScore,
+        conditionLabel: r.conditionLabel,
+        honestAnalysis: r.honestAnalysis,
+        strengths: r.strengths,
+      }}
+      initialAdvert={(r as any).advert ?? null}
+    />
+  );
+
   const downloadPdf = async () => {
     const tid = toast.loading("Generating PDF…");
     try {
-      if (premium) await (await import("@/lib/pdfPremium")).downloadPremiumPdf(v, r, { intent: reportIntent, valuationId: v.id });
+      if (premium) await (await import("@/lib/pdfPremium")).downloadPremiumPdf({ ...v, make: makeDisplay, model: String(v.model).replace(/\s*·\s*/g, " ") }, r, { intent: reportIntent, valuationId: v.id, movers: movers.map((m) => ({ label: m.label, pct: m.pct })), confidence: tierText(tier) });
       else await (await import("@/lib/pdf")).downloadValuationPdf(v, r, { shareUrl: `${window.location.origin}/shared/${v.id}` });
       toast.success("Report downloaded successfully", { id: tid });
     } catch (err) {
@@ -526,13 +543,6 @@ export default function Report() {
       <TestModeBanner />
       <Header />
       <main id="main" className="flex-1 container py-6 md:py-8 pb-28 sm:pb-8 max-w-5xl lg:max-w-6xl">
-        {premium && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3" data-testid="report-intent">
-            <p className="text-sm text-muted-foreground">Show the report for</p>
-            <IntentSwitch size="xs" where="report" value={reportIntent} onChange={setReportIntent} />
-          </div>
-        )}
-        {premium && <PremiumReport r={r} registration={v.registration} intent={reportIntent} valuationId={v.id} />}
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           {isShared || isGuest ? (
             <Button asChild variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0">
@@ -589,6 +599,42 @@ export default function Report() {
         </div>
 
 
+        {premiumView ? (
+          <PremiumView
+            v={{ id: v.id, make: v.make, model: v.model, year: v.year, mileage: v.mileage, registration: v.registration, mot_expiry: v.mot_expiry, photo_urls: v.photo_urls, created_at: v.created_at, service_notes: (v as any).service_notes ?? null }}
+            r={r}
+            title={titleDisplay}
+            intent={reportIntent}
+            onIntent={setReportIntent}
+            tier={tier}
+            motExpired={motExpired}
+            motExpiredPct={motMover?.pct ?? null}
+            movers={<PriceMovers movers={movers} id="r-movers" expandable />}
+            confidence={<ConfidenceCard tier={tier} collapseSources
+              reason={(r as any).marketConfidenceReason || liveConfidenceLine}
+              sources={r.expertInsight?.sources ?? null}
+              checksReason={specialistExplanation} />}
+            isShared={isShared}
+            onPdf={downloadPdf}
+            onShare={isShared ? undefined : share}
+            onSelectPhoto={setActivePhoto}
+            onOpenLightbox={setLightboxIndex}
+            advert={advertCreator}
+            extras={<>
+              {!isShared && (isGuest || (user && (v as any).user_id === user.id)) && <SectionBoundary><ValuationFeedbackCard valuationId={v.id} isGuest={isGuest} /></SectionBoundary>}
+              {!isShared && user && (v as any).user_id === user.id && !getSaleFeedback(v.report) && <SoldItPrompt />}
+              {!isShared && user && (v as any).user_id === user.id && (
+                <SectionBoundary>
+                  <SaleFeedbackCard valuationId={v.id} report={v.report}
+                    estimate={normaliseReportPricing(v.report).privateSale || null}
+                    onSaved={(next) => setV((prev) => (prev ? { ...prev, report: next as unknown as ValuationReport } : prev))} />
+                </SectionBoundary>
+              )}
+              <HistoryCheckButton registration={v.registration} />
+              <p className="pt-6 text-xs leading-relaxed text-[#9A9A9A]">Sources: {marketSourceLabel}, DVSA MOT history, AI photo analysis. Estimates are for guidance only, not financial advice or a guaranteed sale price. Not a vehicle history check or inspection.</p>
+            </>}
+          />
+        ) : (
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_180px] lg:gap-10">
         <div className="min-w-0">
         {/* Title */}
@@ -613,7 +659,7 @@ export default function Report() {
               {(r as any).regenerationReason}
             </p>
           )}
-          <p className="mt-3 text-[11px] text-muted-foreground/60 max-w-[60ch]">
+          <p className="mt-3 text-[11px] text-muted-foreground max-w-[60ch]">
             AI-assisted estimate. See full disclaimers below.
           </p>
         </div>
@@ -889,13 +935,13 @@ export default function Report() {
                       <div
                         className="absolute top-1/2 h-3 -translate-y-1/2 rounded-full border border-dashed border-foreground/40"
                         style={{ left: `${band.ask.left}%`, width: `${band.ask.width}%` }}
-                        aria-label="Your suggested asking range"
+                        role="img" aria-label="Your suggested asking range"
                       />
                       {/* private-sale range: green pill that always contains the marker */}
                       <div
                         className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary/70 to-primary shadow-[0_0_12px_hsl(176_100%_42%_/_0.5)]"
                         style={{ left: `${band.pill.left}%`, width: `${band.pill.width}%` }}
-                        aria-label="Estimated private-sale range"
+                        role="img" aria-label="Estimated private-sale range"
                         data-testid="band-pill"
                       />
                       {/* realistic sale marker */}
@@ -907,7 +953,7 @@ export default function Report() {
                         <span className="h-3.5 w-3.5 rounded-full bg-background border-2 border-primary shadow-[0_0_0_3px_hsl(176_100%_42%_/_0.18)]" />
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-1.5 text-[11px] tabular-nums text-muted-foreground/80">
+                    <div className="flex items-center justify-between mt-1.5 text-[11px] tabular-nums text-muted-foreground">
                       <span>Trade-in £{trackLow.toLocaleString()}</span>
                       <span>Retail £{trackHigh.toLocaleString()}</span>
                     </div>
@@ -930,7 +976,7 @@ export default function Report() {
               <details className="mt-3 group">
                 <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-xs  font-semibold text-amber-300/90 hover:text-amber-300">
                   <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-                  💡 Pro tip — listing & offers
+                  Tip: listing and offers
                 </summary>
                 {(() => {
                   const cp = normaliseReportPricing(r);
@@ -989,7 +1035,7 @@ export default function Report() {
                   </>
                 ) : (
                   <>
-                    <Camera className="h-8 w-8 text-muted-foreground/60 mb-3" aria-hidden />
+                    <Camera className="h-8 w-8 text-muted-foreground mb-3" aria-hidden />
                     <p className="text-sm text-foreground/90 max-w-[220px] leading-relaxed">No photos uploaded, so we haven't scored condition.</p>
                     {!isShared && !isGuest && (
                       <Button asChild variant="outline" size="sm" className="mt-4 min-h-[44px]">
@@ -1004,7 +1050,7 @@ export default function Report() {
         </section>
 
         {enforcedPremium && !premium && !(r as any)?.valuationUnavailable && (
-          <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} />
+          <ReportCheckout valuationId={v.id} verifying={verifyingPayment} onPaid={() => { void checkPaid(); }} car={{ name: titleDisplay, registration: v.registration }} />
         )}
 
         {/* What moved your price + how sure we are: free and Premium (free: below the offer, so the offer follows the price). */}
@@ -1324,8 +1370,8 @@ export default function Report() {
         </>)}
 
         <footer className="mt-12 pt-6 border-t border-border/40">
-          <div className="text-xs text-muted-foreground/60 font-semibold mb-2">Legal</div>
-          <p className="text-xs leading-relaxed text-muted-foreground/70">
+          <div className="text-xs text-muted-foreground font-semibold mb-2">Legal</div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
             Sources: {marketSourceLabel}, DVSA MOT history, AI photo analysis. Estimates are for guidance only — not financial advice or a guaranteed sale price. Always verify vehicle history and MOT independently before transacting.
           </p>
         </footer>
@@ -1336,6 +1382,7 @@ export default function Report() {
         </aside>
         )}
         </div>
+        )}
       </main>
       {/* Sticky mobile CTA */}
       <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -1356,7 +1403,7 @@ export default function Report() {
             ) : sellerHidden ? (
               <Button variant="hero" size="lg" className="flex-1 min-h-[48px] px-3" onClick={downloadPdf}><Download className="h-4 w-4" aria-hidden /> Buyer PDF</Button>
             ) : !valuationUnavailable && (
-              <Button asChild variant="hero" size="lg" className="flex-1 min-h-[48px] px-3"><a href="#advert"><Megaphone className="h-4 w-4" aria-hidden /> Write advert</a></Button>
+              <Button asChild variant="hero" size="lg" className="flex-1 min-h-[48px] px-3"><a href={premiumView ? "#p-advert" : "#advert"}><Megaphone className="h-4 w-4" aria-hidden /> Write advert</a></Button>
             )}
           </div>
         )}

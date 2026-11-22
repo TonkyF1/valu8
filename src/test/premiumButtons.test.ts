@@ -13,7 +13,7 @@ function copyOk(t: string) {
 
 describe("two-button premium flow", () => {
   it("checkout title and includes list", () => {
-    expect(PREMIUM_TITLE).toBe("Premium Valuation Report · £2.99");
+    expect(PREMIUM_TITLE).toBe("Premium Report · £2.99");
     expect(PREMIUM_INCLUDES).toHaveLength(8);
     [PREMIUM_TITLE, ...PREMIUM_INCLUDES].forEach(copyOk);
     // Same 8 things the paid report already lists (REPORT_ADDS), so nothing is promised that isn't delivered.

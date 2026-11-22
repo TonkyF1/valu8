@@ -29,7 +29,10 @@ type Textish = {
   photoInsights?: Array<{ observation?: string; priceImpact?: number; fixable?: boolean; fixCost?: number; photoIndex?: number; severity?: string; slot?: string }>;
 };
 
-const GUMTREE_RE = /(?:\b[\w.]+(?:\s+[\w.]+)?\s*\/\s*)?\bgumtree(?:\.com)?\b(?:\s*\/\s*[\w.]+)?/gi;
+// A site name next to Gumtree in a "/" list. Multi-word names first so "Gumtree / Facebook Marketplace" is
+// replaced whole (it used to leave "major UK car sites Marketplace").
+const SITE = String.raw`(?:facebook\s+marketplace|ebay\s+motors|auto\s?trader(?:\s+private)?|motors\.co\.uk|[\w.]+)`;
+const GUMTREE_RE = new RegExp(String.raw`(?:\b${SITE}\s*\/\s*)*\bgumtree(?:\.com)?\b(?:\s*\/\s*${SITE}\b)*`, "gi");
 /** Replaces named classified sites we must not mention with neutral wording. */
 export function neutraliseSites(t: string): string {
   if (!/gumtree/i.test(t)) return t;

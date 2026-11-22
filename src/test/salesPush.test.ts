@@ -31,7 +31,7 @@ describe("share card + referral", () => {
     expect(new URL(shareCardUrl("BAD")).searchParams.get("ref")).toBeNull();
   });
   it("uses the agreed referral copy", () => {
-    expect(REFERRAL_COPY).toBe("Share with a friend. When they value their car, your full report is free.");
+    expect(REFERRAL_COPY).toBe("Share with a friend. When they value their car, your Premium Report is free.");
     assertCopyRules(shareCardText("2017 Volkswagen Golf", "£8,750"));
   });
   it("plate shows VALU8 unless the owner opts in", () => {
