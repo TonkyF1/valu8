@@ -54,6 +54,24 @@ export function coloursCompatible(a: ColourFamily | null, b: ColourFamily | null
 
 export const normalisePlate = (s: unknown) => String(s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
+/** Plate characters a photo read easily confuses (O/0, I/1, S/5, B/8, Z/2, G/6). */
+const PLATE_LOOKALIKE: Record<string, string> = { O: "0", Q: "0", D: "0", I: "1", L: "1", S: "5", B: "8", Z: "2", G: "6" };
+const plateShape = (p: string) => p.replace(/[A-Z]/g, (c) => PLATE_LOOKALIKE[c] ?? c);
+/**
+ * Two plate reads count as the same plate unless they clearly differ: equal after look-alike folding, at most one
+ * other character wrong (same length), or one read is a partial of the other (a corner or glare hides characters).
+ * A misread must never discard a genuine seller's photos.
+ */
+export function platesMatch(a: string, b: string): boolean {
+  if (!a || !b) return true;
+  const x = plateShape(a), y = plateShape(b);
+  if (x === y || x.includes(y) || y.includes(x)) return true;
+  if (x.length !== y.length) return false;
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) if (x[i] !== y[i] && ++diff > 1) return false;
+  return true;
+}
+
 export interface PhotoCar {
   photoIndex?: number;
   /** True when the photo shows the car's bodywork from outside (not interior, odometer or engine bay). */
@@ -130,10 +148,10 @@ export function checkPhotos(i: PhotoCheckInput): PhotoCheck {
   let differentCars = i.aiSameCar === false;
   for (let a = 0; a < fams.length && !differentCars; a++) for (let b = a + 1; b < fams.length; b++) if (!coloursCompatible(fams[a], fams[b])) { differentCars = true; break; }
   const plates = [...new Set(cars.map((c) => normalisePlate(c.plate)).filter((p) => p.length >= 4))];
-  if (plates.length > 1) differentCars = true;
+  if (plates.some((p, a) => plates.some((q, b) => b > a && !platesMatch(p, q)))) differentCars = true;
 
   const reg = normalisePlate(i.registration);
-  const plateMismatch = !!reg && plates.length > 0 && !plates.includes(reg);
+  const plateMismatch = !!reg && plates.length > 0 && !plates.some((p) => platesMatch(p, reg));
   const dvla = colourFamily(i.dvlaColour);
   // Only compare with DVLA when the photos agree among themselves (otherwise "different cars" says it all).
   const colourMismatch = !differentCars && !!dvla && !!photoColour && !coloursCompatible(dvla, photoColour);

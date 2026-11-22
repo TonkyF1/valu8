@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  colourFamily, coloursCompatible, declaredDamage, checkPhotos, applyPhotoCheck, checkedConditionScore,
+  platesMatch, colourFamily, coloursCompatible, declaredDamage, checkPhotos, applyPhotoCheck, checkedConditionScore,
 } from "../../supabase/functions/_shared/photoSanity";
 
 describe("colourFamily", () => {
@@ -68,6 +68,16 @@ describe("checkPhotos", () => {
       { exterior: true, colour: "grey", plate: "AB12CDE" }, { exterior: true, colour: "grey", plate: "XY65 ZZZ" },
     ] });
     expect(c.differentCars).toBe(true);
+  });
+
+  it("tolerates plate misreads: look-alikes, one wrong character, a partial read", () => {
+    for (const plate of ["AB12 CDE", "A812CDE", "AB12CDF", "B12CDE", "AB12C"]) {
+      const c = checkPhotos({ ...base, photoCars: [{ exterior: true, colour: "grey", plate }, { exterior: true, colour: "grey", plate: "AB12CDE" }] });
+      expect(c.plateMismatch, plate).toBe(false);
+      expect(c.differentCars, plate).toBe(false);
+      expect(c.trusted, plate).toBe(true);
+    }
+    expect(platesMatch("AB12CDE", "XY65ZZZ")).toBe(false);
   });
 
   it("flags a plate that isn't the entered registration", () => {
