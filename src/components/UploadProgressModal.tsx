@@ -136,17 +136,17 @@ export function UploadProgressModal({ open, phase, uploadProgress }: Props) {
                   <div className={cn("text-sm font-medium flex items-center gap-2", done || active ? "text-foreground" : "text-muted-foreground")}>
                     {s.label}
                     {active && s.key === "uploading" && (
-                      <span className="text-[11px] text-primary tabular-nums font-semibold">{Math.round(uploadProgress)}%</span>
+                      <span className="text-xs text-primary tabular-nums font-semibold">{Math.round(uploadProgress)}%</span>
                     )}
                   </div>
-                  <div className="text-[11px] text-muted-foreground/80">{active && s.key === "analysing" ? VALUATION_STAGES[tipIndex] : s.sublabel}</div>
+                  <div className="text-xs text-muted-foreground/80">{active && s.key === "analysing" ? VALUATION_STAGES[tipIndex] : s.sublabel}</div>
                 </div>
               </li>
             );
           })}
         </ul>
 
-        <p className="mt-6 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
+        <p className="mt-6 text-xs uppercase tracking-[0.18em] text-muted-foreground">
           Don't close this window
         </p>
       </div>

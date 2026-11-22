@@ -339,7 +339,7 @@ export default function Dashboard() {
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                           />
                         ) : (
-                          <div className="w-full h-full grid place-items-center text-muted-foreground/60 bg-gradient-to-br from-muted to-background">
+                          <div className="w-full h-full grid place-items-center text-muted-foreground bg-gradient-to-br from-muted to-background">
                             <Car className="h-6 w-6" />
                           </div>
                         )}
@@ -353,13 +353,13 @@ export default function Dashboard() {
                             {variant && <span className="text-muted-foreground font-medium"> · {variant}</span>}
                           </h3>
                           {r.report?.edited && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-semibold">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 text-primary px-2 py-0.5 text-xs font-semibold">
                               <Pencil className="h-2.5 w-2.5" /> Edited
                             </span>
                           )}
                         </div>
                         <p className="sm:hidden mt-1 text-xl font-bold tabular-nums text-primary">
-                          {valuationUnavailable ? <span className="text-sm font-semibold text-amber-300">Specialist valuation recommended</span> : <>{headlinePrivateText(Math.round((r.private_value || 0) / 50) * 50, r.report)} <span className="text-[11px] font-medium text-muted-foreground">private sale</span></>}
+                          {valuationUnavailable ? <span className="text-sm font-semibold text-amber-300">Specialist valuation recommended</span> : <>{headlinePrivateText(Math.round((r.private_value || 0) / 50) * 50, r.report)} <span className="text-xs font-medium text-muted-foreground">private sale</span></>}
                         </p>
                         <div className="flex items-center gap-x-2.5 gap-y-1 mt-1.5 text-xs text-muted-foreground flex-wrap">
                           <span className="tabular-nums">{r.mileage.toLocaleString()} mi</span>
@@ -372,7 +372,7 @@ export default function Dashboard() {
                           <span className="opacity-30">•</span>
                           <span>{format(new Date(r.created_at), "d MMM yyyy")}</span>
                           {r.condition_score != null && hasPhotos(r.photo_urls) && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-semibold tabular-nums ml-0.5">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-xs font-semibold tabular-nums ml-0.5">
                               <Activity className="h-2.5 w-2.5" />
                               {Number(r.condition_score).toFixed(1)}/10
                             </span>
@@ -383,7 +383,7 @@ export default function Dashboard() {
                             const Icon = flat ? Minus : up ? TrendingUp : TrendingDown;
                             return (
                               <span
-                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${flat ? "bg-muted text-muted-foreground" : up ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}
+                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${flat ? "bg-muted text-muted-foreground" : up ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}
                                 title={`Previous valuation £${t.previousValue.toLocaleString()} on ${format(new Date(t.previousDate), "d MMM yyyy")}`}
                               >
                                 <Icon className="h-2.5 w-2.5" aria-hidden />

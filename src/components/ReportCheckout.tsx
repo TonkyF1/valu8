@@ -4,7 +4,9 @@
  * webhook-written report_purchases row (report-entitlement), never from the return URL.
  */
 import { FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { loadStripe, type Appearance } from "@stripe/stripe-js";
+// "/pure" defers injecting js.stripe.com until loadStripe() is first called (checkout only), instead of on import on every page.
+import { loadStripe } from "@stripe/stripe-js/pure";
+import type { Appearance } from "@stripe/stripe-js";
 import {
   CheckoutElementsProvider,
   ContactDetailsElement,

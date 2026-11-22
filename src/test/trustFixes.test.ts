@@ -26,9 +26,8 @@ describe("trust details", () => {
     expect(terms).toContain("considering buying");
     expect(staticPageBodyHtml("/terms")).toContain("considering buying");
   });
-  it("footer drops the StartupBase and Fazier badges", () => {
-    expect(footer).not.toMatch(/startupbase|fazier/i);
-    expect(footer).toContain("twelve.tools");
+  it("footer has no directory badges (StartupBase, Fazier, Twelve Tools all gone)", () => {
+    expect(footer).not.toMatch(/startupbase|fazier|twelve\.tools/i);
   });
 });
 

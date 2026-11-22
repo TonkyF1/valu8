@@ -14,3 +14,14 @@ export function operatorSentence(name: string = LEGAL_NAME, address: string = LE
   if (!n) return "Valu8 (valu8.uk) is the data controller for the personal data described here.";
   return `Valu8 (valu8.uk) is operated by ${n}${a ? `, ${a}` : ""}, who is the data controller for the personal data described here.`;
 }
+
+/** ICO data protection registration (public register entry). Shown on About and Privacy. */
+export const ICO_REGISTRATION = "ZC283979";
+export const ICO_REGISTERED_ON = "4 November 2026";
+
+/**
+ * Optional founder photo for the About page: a path under /public (e.g. "/founder.jpg").
+ * Leave "" to show no photo; nothing placeholder-like is ever rendered.
+ */
+export const FOUNDER_PHOTO = "";
+export const FOUNDER_PHOTO_ALT = "Tony Fisher, who runs Valu8";

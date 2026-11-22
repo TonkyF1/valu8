@@ -52,6 +52,8 @@ export function browserFamily(ua: string): "chrome" | "safari" | "firefox" | "ed
   if (/Safari/i.test(ua)) return "safari";
   return "other";
 }
+/** Local builds (npm run dev/preview, QA runs) must never write into the live analytics tables. */
+export const isLocalHost = () => typeof window !== "undefined" && /^(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)$/.test(window.location.hostname);
 const isBot = (ua: string) => /bot|crawl|spider|headless|lighthouse|prerender|slurp|facebookexternalhit|preview/i.test(ua);
 
 /** Property values: short strings/numbers/booleans only; nothing that looks like an email or a plate. */
@@ -75,7 +77,7 @@ function init() {
   if (ctx.ready || typeof window === "undefined") return;
   ctx.ready = true;
   const ua = navigator.userAgent || "";
-  ctx.off = isBot(ua) || (navigator as any).webdriver === true;
+  ctx.off = isBot(ua) || (navigator as any).webdriver === true || isLocalHost();
   ctx.ref = referrerDomain(document.referrer || "", window.location.hostname);
   const q = new URLSearchParams(window.location.search);
   ctx.utm = { utm_source: cleanTag(q.get("utm_source")), utm_medium: cleanTag(q.get("utm_medium")), utm_campaign: cleanTag(q.get("utm_campaign")) };

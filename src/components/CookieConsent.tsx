@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { getConsent, onConsentChange, setConsent } from "@/lib/consent";
 import { metaPixelConfigured } from "@/lib/metaPixel";
@@ -28,6 +28,20 @@ export function CookieConsent() {
     return onConsentChange((v) => setOpen(v === null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // While the banner is up, publish its height (--cookie-h) and an html class so pages can keep their key buttons
+  // above it (the homepage hero shrinks its car on phones so the reg box and buttons stay visible).
+  const boxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!open) return;
+    const el = boxRef.current;
+    const set = () => root.style.setProperty("--cookie-h", `${el?.offsetHeight ?? 0}px`);
+    set();
+    root.classList.add("cookie-open");
+    const ro = typeof ResizeObserver !== "undefined" && el ? new ResizeObserver(set) : null;
+    if (ro && el) ro.observe(el);
+    return () => { ro?.disconnect(); root.classList.remove("cookie-open"); root.style.removeProperty("--cookie-h"); };
+  }, [open]);
   if (!open) return null;
   const what = tools.analytics && tools.ads
     ? "analytics (PostHog) to improve Valu8, and Meta's advertising pixel to measure our Facebook and Instagram ads"
@@ -41,10 +55,11 @@ export function CookieConsent() {
       aria-live="polite"
       aria-label="Cookie preferences"
       data-testid="cookie-consent"
-      className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+      ref={boxRef}
+      className="fixed inset-x-0 bottom-0 z-50 p-2 sm:p-4 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
     >
-      <div className="mx-auto max-w-2xl rounded-xl border border-border bg-card/95 backdrop-blur p-4 shadow-xl flex flex-col sm:flex-row gap-3 sm:items-center">
-        <p className="text-sm text-muted-foreground flex-1">
+      <div className="mx-auto max-w-2xl rounded-xl border border-border bg-card/95 backdrop-blur p-3 sm:p-4 shadow-xl flex flex-col sm:flex-row gap-2.5 sm:gap-3 sm:items-center">
+        <p className="text-[13px] leading-snug sm:text-sm text-muted-foreground flex-1">
           We use essential storage to make the site work. With your permission we'd also use {what}. Nothing optional loads unless you accept.{" "}
           <Link to="/privacy" className="underline hover:text-primary">Privacy policy</Link>
         </p>

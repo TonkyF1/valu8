@@ -1,0 +1,4 @@
+inter-latin-var.woff2 — Inter by Rasmus Andersson, SIL Open Font License 1.1 (https://github.com/rsms/inter)
+sora-latin-200.woff2 — Sora by Jonathan Barnbrook and Julián Moncada, SIL Open Font License 1.1 (https://github.com/sora-xor/sora-font)
+Both are the Google Fonts latin subsets, self-hosted so no third-party CSS blocks rendering.
+uk-number-plate.woff2 — UKNumberPlate by Gareth Attrill (2002), converted from the TTF previously embedded in src/styles/plate.css.

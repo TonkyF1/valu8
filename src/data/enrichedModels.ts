@@ -78,7 +78,7 @@ ${share ? `\n${share.trim()}` : ""}${jump}
 
 ## Valuing your own Kuga
 
-The tables on this page are asking prices for all Kugas of each year. For a figure for your own car, enter your reg: the free valuation gives an estimated private-sale value and your DVSA MOT history, and the optional £2.99 Full report adds part-exchange and dealer figures, a suggested asking price and a ready-to-post advert. If you're unsure which route to take, read [part-exchange vs private sale](/guides/part-exchange-vs-private-sale).`;
+The tables on this page are asking prices for all Kugas of each year. For a figure for your own car, enter your reg: the free valuation gives an estimated private-sale value and your DVSA MOT history, and the optional £2.99 Premium Report adds part-exchange and dealer figures, a suggested asking price and a ready-to-post advert. If you're unsure which route to take, read [part-exchange vs private sale](/guides/part-exchange-vs-private-sale).`;
   },
   faqs: (m) => {
     const out = [{
@@ -237,7 +237,7 @@ function enriched(c: ModelCopy): EnrichedModel {
         c.ev ? evMarkdown(m, c.ev) : "",
         rivalsMarkdown(m, c.rivals),
         `## Valuing your own ${c.short}`,
-        `The tables on this page are asking prices for every ${c.short} of each year, whatever its condition. For a figure for your own car, enter your reg: the free valuation gives an estimated private-sale value and your DVSA MOT history, and the optional £2.99 Full report adds part-exchange and dealer figures, a suggested asking price and a ready-to-post advert.`,
+        `The tables on this page are asking prices for every ${c.short} of each year, whatever its condition. For a figure for your own car, enter your reg: the free valuation gives an estimated private-sale value and your DVSA MOT history, and the optional £2.99 Premium Report adds part-exchange and dealer figures, a suggested asking price and a ready-to-post advert.`,
         guidesMarkdown(m),
       ].filter(Boolean).join("\n\n");
     },

@@ -45,7 +45,7 @@ Deno.test("emails: the free report email has no part-ex or dealer figures; an en
     assert(!part.includes("£7,000") && !part.includes("£11,000"), "no part-ex/dealer figures");
     assert(part.includes("Part-exchange and dealer prices come with the full £2.99 report"));
   }
-  assert(free.text.includes("Get the full report · £2.99: ") && free.text.includes("#report-checkout"), "text part carries the offer URL");
+  assert(free.text.includes("Get the Premium Report · £2.99: ") && free.text.includes("#report-checkout"), "text part carries the offer URL");
   const paid = buildReportEmail("valuation", item, "https://u", true);
   assert(paid.text.includes("Part-ex: £7,000") && paid.text.includes("Dealer: £11,000"));
   assert(paid.html.includes("£7,000") && paid.html.includes("£11,000"));

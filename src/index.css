@@ -123,11 +123,11 @@
   .glass-panel {
     @apply bg-card/60 backdrop-blur-xl border border-border/60;
   }
+  /* Heading colour system: every heading is solid warm white (--foreground). Teal is reserved for prices,
+     primary buttons and links, so it means "look here". The old white-to-beige gradient made headings change
+     colour page to page; the class is kept so existing markup simply renders solid. */
   .text-gradient {
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: hsl(var(--foreground));
   }
   .text-gradient-primary {
     background: var(--gradient-primary);

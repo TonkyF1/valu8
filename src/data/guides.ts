@@ -29,7 +29,7 @@ What the same car would typically be advertised for on a forecourt. Usually the 
 
 A lot of disappointment comes from mixing these up. If you see similar cars on dealer forecourts and then get a part-exchange offer, the gap can feel unfair, but you're comparing two different things. In the Valu8 advert data (more than 93,000 UK adverts, November 2026), private adverts were typically about **30% below** dealer adverts for the same model, year and mileage band. See [private sale vs dealer prices](/guides/private-sale-vs-dealer-prices) for the full figures.
 
-A free [Valu8 valuation](/valuation/new) gives you an estimated private-sale value for your reg and mileage, plus your MOT history. The optional £2.99 Full report adds part-exchange and dealer prices side by side, so you can see where your car sits.
+A free [Valu8 valuation](/valuation/new) gives you an estimated private-sale value for your reg and mileage, plus your MOT history. The optional £2.99 Premium Report adds part-exchange and dealer prices side by side, so you can see where your car sits.
 
 ## How much is my car worth to sell?
 
@@ -125,7 +125,7 @@ The valuation (Essentials) is free. The Full seller report is a one-off £2.99, 
 
 ---
 
-**Want to know what your car's worth?** [Get your free Valu8 valuation](/valuation/new): an estimated private-sale price from your reg, with part-exchange and dealer prices in the optional £2.99 Full report.`,
+**Want to know what your car's worth?** [Get your free Valu8 valuation](/valuation/new): an estimated private-sale price from your reg, with part-exchange and dealer prices in the optional £2.99 Premium Report.`,
   `---
 slug: /guides/part-exchange-vs-private-sale
 seo_title: "Part exchange vs private sale: which pays more? (UK)"
@@ -161,7 +161,7 @@ Every used car really has three prices at any moment:
 
 A common mistake is comparing a part-exchange offer against forecourt prices online and feeling short-changed. Those are different products. Compare your part-exchange offer with a realistic **private-sale** figure instead.
 
-A free [Valu8 valuation](/valuation/new) gives you an estimated private-sale value for your reg and mileage, plus your MOT history. The optional £2.99 Full report adds part-exchange and dealer prices side by side, so you can see the gap for your car before you decide. Like any valuation, they're estimates, not a guaranteed offer.
+A free [Valu8 valuation](/valuation/new) gives you an estimated private-sale value for your reg and mileage, plus your MOT history. The optional £2.99 Premium Report adds part-exchange and dealer prices side by side, so you can see the gap for your car before you decide. Like any valuation, they're estimates, not a guaranteed offer.
 
 ## How dealers work out your part-exchange (trade-in) value
 
@@ -214,7 +214,7 @@ However you sell, you'll need to tell DVLA you've sold the car. You can [tell DV
 
 ## How to decide in five minutes
 
-1. Get your free private-sale estimate on [Valu8](/valuation/new). The optional £2.99 Full report adds a part-exchange estimate alongside it.
+1. Get your free private-sale estimate on [Valu8](/valuation/new). The optional £2.99 Premium Report adds a part-exchange estimate alongside it.
 2. Get a written part-exchange offer from the dealer, plus the cash price of the car you're buying.
 3. Take a realistic amount off the private-sale estimate for prep, ads and your time.
 4. If what's left is still well ahead, consider selling privately. If not, part-exchange may be the easier win.
@@ -238,7 +238,7 @@ No. Valu8 gives you estimates based on comparable UK adverts and your car's deta
 
 ---
 
-**Ready to see the gap for your car?** [Get your free Valu8 valuation](/valuation/new) – a private-sale estimate from your reg and mileage, with part-exchange and dealer estimates in the optional £2.99 Full report.`,
+**Ready to see the gap for your car?** [Get your free Valu8 valuation](/valuation/new) – a private-sale estimate from your reg and mileage, with part-exchange and dealer estimates in the optional £2.99 Premium Report.`,
   `---
 slug: /guides/how-to-tell-if-a-used-car-is-overpriced
 seo_title: "How to Tell if a Used Car Advert Is Overpriced (UK)"
@@ -369,7 +369,7 @@ Selling your car yourself usually gets you more than trading it in, but it also 
 
 Price too high and the phone stays quiet. Price too low and you leave money on the table. Start with a realistic idea of what the car is worth to a private buyer, then leave a little room for haggling.
 
-A free [Valu8 valuation](/valuation/new) gives you an estimated private-sale price for your reg and mileage. The optional £2.99 Full report adds a suggested asking price and a negotiation buffer. It's an estimate, so also look at similar cars for sale near you and be honest about your car's condition.
+A free [Valu8 valuation](/valuation/new) gives you an estimated private-sale price for your reg and mileage. The optional £2.99 Premium Report adds a suggested asking price and a negotiation buffer. It's an estimate, so also look at similar cars for sale near you and be honest about your car's condition.
 
 Decide your lowest acceptable price before anyone gets in touch, and keep it to yourself.
 
@@ -461,11 +461,11 @@ No, but most will want to. Check their licence and insurance first, and always g
 The green new keeper slip from the V5C, the keys, the service history and a signed receipt. Then tell DVLA about the sale yourself.
 
 **How do I know what price to ask?**
-Start with an estimated private-sale value, check similar adverts near you, and adjust for condition and history. A [free Valu8 valuation](/valuation/new) gives you an estimated private-sale value as a starting point, and the optional £2.99 Full report adds a suggested asking price.
+Start with an estimated private-sale value, check similar adverts near you, and adjust for condition and history. A [free Valu8 valuation](/valuation/new) gives you an estimated private-sale value as a starting point, and the optional £2.99 Premium Report adds a suggested asking price.
 
 ---
 
-**Selling soon?** [Get your free Valu8 valuation](/valuation/new) for an estimated private-sale price. The optional £2.99 Full report adds a suggested asking price and a ready-to-post advert.`,
+**Selling soon?** [Get your free Valu8 valuation](/valuation/new) for an estimated private-sale price. The optional £2.99 Premium Report adds a suggested asking price and a ready-to-post advert.`,
   `---
 slug: /guides/check-mot-and-mileage-history-before-buying
 seo_title: "How to Check MOT and Mileage History Before Buying"
@@ -596,7 +596,7 @@ The dealer has to prepare the car, may fix faults, often adds a warranty, and ca
 
 Before you argue, get the facts. Look at what cars like yours (same model, year, engine and similar mileage) are being advertised for in UK adverts. Remember asking prices are not sale prices: buyers usually haggle.
 
-You can get a free private-sale estimate for your own car from your number plate at [valu8.uk](/valuation/new), along with your official DVSA MOT history, which is the first thing a dealer will look at. The optional £2.99 Full report adds part-exchange and dealer estimates.
+You can get a free private-sale estimate for your own car from your number plate at [valu8.uk](/valuation/new), along with your official DVSA MOT history, which is the first thing a dealer will look at. The optional £2.99 Premium Report adds part-exchange and dealer estimates.
 
 ## Step 2: Separate the two deals
 
@@ -640,7 +640,7 @@ These figures are an example, not a valuation for any real car.
 
 ## Quick checklist
 
-- Get your free private-sale estimate and MOT history (part-exchange and dealer estimates are in the £2.99 Full report)
+- Get your free private-sale estimate and MOT history (part-exchange and dealer estimates are in the £2.99 Premium Report)
 - Ask for the cash price and the part-exchange allowance separately
 - Note any advisories or history gaps that could be fixed cheaply
 - Bring the V5C, both keys and service records
@@ -663,7 +663,7 @@ No. Valu8 doesn't buy, sell or broker cars, so we have no reason to push your nu
 
 ---
 
-**Check what your car is worth before you accept.** Free private-sale estimate plus MOT history from your number plate, with part-exchange and dealer estimates in the optional £2.99 Full report. [Get my free valuation](/valuation/new)`,
+**Check what your car is worth before you accept.** Free private-sale estimate plus MOT history from your number plate, with part-exchange and dealer estimates in the optional £2.99 Premium Report. [Get my free valuation](/valuation/new)`,
   `---
 slug: /guides/mot-advisories-car-value
 seo_title: "Do MOT advisories affect my car's value? A UK seller's guide"
@@ -718,7 +718,7 @@ Dealers check MOT history too, and they price in the cost of fixing any advisori
 
 ## Check yours before a buyer does
 
-Valu8 pulls your official DVSA MOT history, including advisories and mileage records, alongside a free private-sale estimate. The optional £2.99 Full report adds part-exchange and dealer estimates. [Check my car free](/valuation/new)
+Valu8 pulls your official DVSA MOT history, including advisories and mileage records, alongside a free private-sale estimate. The optional £2.99 Premium Report adds part-exchange and dealer estimates. [Check my car free](/valuation/new)
 
 ## FAQs
 
@@ -798,7 +798,7 @@ If you get lots of views and no calls, the price is probably high for what buyer
 - A considered round number
 - Review after a week
 
-Want a starting figure for your own car? A free [Valu8 valuation](/valuation/new) gives you a private sale estimate from your number plate, with your DVSA MOT history. The optional £2.99 full report adds a suggested asking price and the lowest offer to accept.
+Want a starting figure for your own car? A free [Valu8 valuation](/valuation/new) gives you a private sale estimate from your number plate, with your DVSA MOT history. The optional £2.99 Premium Report adds a suggested asking price and the lowest offer to accept.
 
 ## FAQs
 
@@ -1046,7 +1046,7 @@ In our UK adverts (November 2026), 2021-or-newer Tesla Model 3s have a median as
 
 ---
 
-**Find out what your electric car is worth.** [Get your free Valu8 valuation](/valuation/new): an estimated private-sale price from your reg, with part-exchange and dealer prices in the optional £2.99 Full report.`
+**Find out what your electric car is worth.** [Get your free Valu8 valuation](/valuation/new): an estimated private-sale price from your reg, with part-exchange and dealer prices in the optional £2.99 Premium Report.`
 ];
 
 export type Guide = {
@@ -1186,6 +1186,22 @@ export function guidesIndexBodyHtml(): string {
   return `<main id="main"><h1>${esc(GUIDES_INDEX_H1)}</h1><ul>${items}</ul></main>`;
 }
 
+/** Article typography, shared by the React page (Guide.tsx) and the prerendered HTML so they lay out identically. */
+export const GUIDE_ARTICLE_CLASSES = [
+  "guide-body max-w-none text-foreground/85 leading-relaxed",
+  "[&_h1]:text-3xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h1]:text-foreground [&_h1]:mb-6",
+  "[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-10 [&_h2]:mb-3",
+  "[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2",
+  "[&_p]:my-4 [&_strong]:text-foreground [&_strong]:font-semibold",
+  "[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-4 [&_li]:my-1.5",
+  "[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2",
+  "[&_hr]:my-10 [&_hr]:border-border",
+  "[&_.guide-table]:my-6 [&_.guide-table]:overflow-x-auto [&_.guide-table]:rounded-xl [&_.guide-table]:border [&_.guide-table]:border-border",
+  "[&_table]:w-full [&_table]:text-sm [&_th]:text-left [&_th]:font-medium [&_th]:text-muted-foreground [&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3 [&_tr]:border-b [&_tr]:border-border [&_tbody_tr:last-child]:border-0",
+].join(" ");
+
 export function guideArticleHtml(guide: Guide): string {
-  return `<main id="main"><article>${guideBodyHtml(guide.markdown)}</article>${popularModelsHtml(GUIDE_POPULAR_MODELS)}</main>`;
+  // Same layout classes as Guide.tsx: the static page paints at its final size, so React's swap doesn't move it.
+  return `<main id="main" class="flex-1 container max-w-3xl lg:max-w-6xl py-10 md:py-14"><div class="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-14"><div class="min-w-0 lg:max-w-[720px]">`
+    + `<article class="${GUIDE_ARTICLE_CLASSES}">${guideBodyHtml(guide.markdown)}</article>${popularModelsHtml(GUIDE_POPULAR_MODELS)}</div></div></main>`;
 }

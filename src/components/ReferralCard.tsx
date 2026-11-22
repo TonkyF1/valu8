@@ -25,7 +25,7 @@ export function ReferralCard() {
           <div className="mt-4">
             <ShareButtons campaign="referral" path="/" text="I use Valu8 to check what cars are really worth. It's free and honest:" />
           </div>
-          <p className="text-[11px] text-muted-foreground mt-3">Friends only see the link. We count who joined with it; we never show you their details.</p>
+          <p className="text-xs text-muted-foreground mt-3">Friends only see the link. We count who joined with it; we never show you their details.</p>
         </>
       )}
     </section>

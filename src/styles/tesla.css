@@ -83,7 +83,7 @@
 .t8-title{font-weight:500;font-size:24px;letter-spacing:-.03em;margin:0 0 6px}
 .t8-lead{font-size:14px;line-height:1.45;color:var(--t8-mute);margin:0 0 22px}
 .t8-factgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 10px}
-.t8-k{font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--t8-dim);margin-bottom:4px}
+.t8-k{font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--t8-dim);margin-bottom:4px}
 .t8-v{font-size:14px;font-weight:500;letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .t8-row{display:flex;flex-direction:column;gap:14px;margin:20px 0}
 .t8-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -95,7 +95,7 @@
 .t8-field textarea{height:88px;padding:12px 14px;resize:none}
 .t8-field input:focus,.t8-field textarea:focus{border-color:rgba(0,214,200,.6);box-shadow:0 0 0 3px rgba(0,214,200,.12)}
 .t8-field input::placeholder,.t8-field textarea::placeholder{color:#5E5E5E}
-.t8-hint{font-size:11px;color:var(--t8-dim);line-height:1.4}
+.t8-hint{font-size:12px;color:var(--t8-mute);line-height:1.45}
 .t8-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px;color:var(--t8-mute)}
 .t8-chip{border-radius:999px;border:1px solid rgba(255,255,255,.14);background:none;color:var(--t8-mute);padding:6px 12px;min-height:34px;font:500 12px Inter,sans-serif;cursor:pointer;transition:transform .15s var(--t8-ease),border-color .2s,background .2s}
 .t8-pick{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin-top:14px;font-size:13px;color:var(--t8-mute)}
@@ -115,7 +115,7 @@
 .t8-box:hover{border-color:rgba(0,214,200,.4)}
 .t8-box img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .t8-x{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;border:0;cursor:pointer;font-size:13px;line-height:1}
-.t8-slot span{font-size:10px;line-height:1.25;text-align:center;color:var(--t8-dim)}
+.t8-slot span{font-size:11.5px;line-height:1.25;text-align:center;color:var(--t8-dim)}
 .t8-small{margin-top:14px;text-align:center;font-size:12px;color:var(--t8-dim);line-height:1.5}
 .t8-stagger>*{animation:t8rise .7s var(--t8-ease) both}
 .t8-stagger>*:nth-child(1){animation-delay:.04s}.t8-stagger>*:nth-child(2){animation-delay:.09s}.t8-stagger>*:nth-child(3){animation-delay:.14s}
@@ -148,7 +148,7 @@
 .t8-step{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;transition:background .4s ease,box-shadow .4s ease,opacity .4s ease}
 .t8-n{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:11px;font-weight:600;transition:background .35s ease,color .35s ease,transform .35s var(--t8-spring)}
 .t8-st{font-size:14px;font-weight:500;letter-spacing:-.01em}
-.t8-ss{font-size:11px;color:var(--t8-dim);margin-top:1px}
+.t8-ss{font-size:12px;color:var(--t8-dim);margin-top:1px}
 .t8-step.done .t8-n{background:var(--t8-teal);color:#0F0F0F;transform:scale(1)}
 .t8-step.active{background:rgba(0,214,200,.06);box-shadow:inset 0 0 0 1px rgba(0,214,200,.22)}
 .t8-step.active .t8-n{border:1px solid var(--t8-teal);color:var(--t8-teal)}
@@ -279,7 +279,32 @@
 .t8-buyer a:hover,.t8-buyer a:focus-visible{color:var(--t8-glow)}
 .t8-buyer svg{transition:transform .25s cubic-bezier(.22,1,.36,1)}
 .t8-buyer a:hover svg{transform:translateX(2px)}
-.t8-cap{margin:6px auto 0;max-width:300px;text-align:center;font-size:11px;line-height:1.4;color:var(--t8-dim);opacity:.85}
+.t8-cap{margin:6px auto 0;max-width:320px;text-align:center;font-size:12px;line-height:1.45;color:var(--t8-mute)}
 /* "What moved your price" on the free result: same width as the unlock card */
 .t8-movers{position:relative;z-index:3;width:calc(100% - 24px);max-width:520px;margin:18px auto 0;text-align:left}
 @media (min-width:768px){.t8-movers{max-width:460px}}
+
+/* Checkout chunk loading state (the Stripe form is a lazy chunk). */
+.t8-co-wait{padding:28px 0;text-align:center;font-size:14px;color:#ADADAD}
+
+/* Laptop/tablet: the flow Back pill lines up with the flow's centred column instead of hugging the screen edge. */
+@media (min-width:768px){.t8-back{left:max(24px,calc(50% - 290px));top:18px}}
+
+/* Tablet portrait (iPad 768-1024 wide): the hero used phone sizes and floated in a tall screen with big empty bands.
+   Use laptop-like sizes and sit the hero in the upper part of the screen. */
+@media (min-width:700px) and (max-width:1100px) and (orientation:portrait){
+  .t8-hero.t8-idle{min-height:auto;justify-content:flex-start;padding:min(7vh,72px) 0 min(7vh,72px)}
+  .t8-idle .t8-h1{font-size:50px;letter-spacing:-.04em}
+  .t8-idle .t8-viz{width:600px;height:350px;margin-top:18px}
+  .t8-idle .t8-car{width:580px}
+  .t8-idle .t8-arc{width:600px;height:170px}
+  .t8-sheet.t8-float{max-width:520px;padding:22px 26px}
+}
+
+/* Cookie banner open on a phone: keep the reg box and both buttons above it (the car shrinks instead). */
+@media (max-width:699px){
+  html.cookie-open .t8-hero.t8-idle{padding-bottom:calc(var(--cookie-h,0px) + 8px)}
+  html.cookie-open .t8-idle .t8-viz{height:170px;margin-top:8px}
+  html.cookie-open .t8-idle .t8-car{width:min(280px,76vw)}
+  html.cookie-open .t8-idle .t8-arc{transform:translateX(-50%) scale(.72);transform-origin:50% 0}
+}

@@ -27,11 +27,12 @@ export function Disclosure({ summary, children, open, chrome, className = "" }: 
   );
 }
 
-export function StatTile({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
+/** Only the headline figure (accent) is teal; supporting figures are white so the eye goes to one number. */
+export function StatTile({ label, value, wide, accent }: { label: string; value: string; wide?: boolean; accent?: boolean }) {
   return (
     <div className={`${wide ? "col-span-2" : ""} rounded-xl border border-border bg-background/60 px-4 py-3`}>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-xl md:text-2xl font-semibold tabular-nums text-primary">{value}</div>
+      <div className={`mt-1 text-xl md:text-2xl font-semibold tabular-nums ${accent ? "text-primary" : "text-foreground"}`}>{value}</div>
     </div>
   );
 }
@@ -42,19 +43,20 @@ type Row = { label: string; value: number; sub?: string };
 export function HBars({ rows, ariaLabel }: { rows: Row[]; ariaLabel: string }) {
   const max = Math.max(...rows.map((r) => r.value), 1);
   return (
-    <ul className="space-y-3" role="img" aria-label={ariaLabel} data-decor="">
+    // role="img" makes this one image to assistive tech, so it must not be a list (axe: list children of an img).
+    <div className="space-y-3" role="img" aria-label={ariaLabel} data-decor="">
       {rows.map((r) => (
-        <li key={r.label}>
+        <div key={r.label}>
           <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
             <span className="text-foreground/85">{r.label}</span>
-            <span className="font-semibold tabular-nums text-primary">{gbp(r.value)}</span>
+            <span className="font-semibold tabular-nums text-foreground">{gbp(r.value)}</span>
           </div>
           <div className="h-2.5 w-full overflow-hidden rounded-full bg-border/60">
             <div className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary" style={{ width: `${Math.max((r.value / max) * 100, 3)}%` }} />
           </div>
-        </li>
+        </div>
       ))}
-    </ul>
+    </div>
   );
 }
 
@@ -73,12 +75,12 @@ export function YearChart({ years, ariaLabel }: { years: YearPoint[]; ariaLabel:
       <div className="flex items-end gap-1 sm:gap-1.5" style={{ height: H + 22 }}>
         {ys.map((y) => (
           <div key={y.year} className="relative flex min-w-0 flex-1 flex-col items-center justify-end" style={{ height: "100%" }} title={`${y.year}: ${gbp(y.median)} (${gbp(y.low)} – ${gbp(y.high)})`}>
-            {show.has(y.year) && <span className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold tabular-nums text-primary" style={{ bottom: (y.high / max) * H + 24 }}>{gbp(y.median)}</span>}
+            {show.has(y.year) && <span className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-semibold tabular-nums text-primary" style={{ bottom: (y.high / max) * H + 24 }}>{gbp(y.median)}</span>}
             <div className="relative w-full" style={{ height: H }}>
               <div className="absolute bottom-0 w-full rounded-t-md bg-primary/15" style={{ height: (y.high / max) * H }} />
               <div className="absolute bottom-0 w-full rounded-t-md bg-gradient-to-t from-primary/60 to-primary" style={{ height: (y.median / max) * H }} />
             </div>
-            <span className="mt-1.5 h-4 text-[10px] tabular-nums text-muted-foreground">{String(y.year).slice(2)}</span>
+            <span className="mt-1.5 h-4 text-xs tabular-nums text-muted-foreground">{String(y.year).slice(2)}</span>
           </div>
         ))}
       </div>

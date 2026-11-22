@@ -1,6 +1,6 @@
 import "@/styles/plate.css";
 import "@/styles/tesla.css";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,7 +15,9 @@ import { functionErrorBody, getGuestToken, photoToDataUrl, rememberGuestValuatio
 import { PHOTO_SLOTS, fillEmptySlots, type PhotoSlotKey } from "@/lib/cars";
 import { normaliseReportPricing } from "@/lib/askingPrice";
 import { reportPriceRange } from "../../../supabase/functions/_shared/cheapRange";
-import { ElementsCheckout } from "@/components/ReportCheckout";
+// Checkout (Stripe Elements) is a separate chunk: downloaded once a car is on screen, never on a bare page view.
+const loadCheckout = () => import("@/components/ReportCheckout");
+const ElementsCheckout = lazy(() => loadCheckout().then((m) => ({ default: m.ElementsCheckout })));
 import { CheckoutSheet } from "./CheckoutSheet";
 import { closeKeyboard, scrollPageTop } from "@/lib/scrollTop";
 import { priceMovers, type PriceMover } from "@/lib/priceMovers";
@@ -486,6 +488,8 @@ export function TeslaFlow({ onFlowChange }: { onFlowChange?: (active: boolean) =
 
   const busyLookup = stage === "looking" || stage === "estimating";
   const hasCar = !!lookup && stage !== "idle" && stage !== "looking";
+  // Warm the checkout chunk (not Stripe.js itself) once a car is showing, so opening checkout is instant.
+  useEffect(() => { if (hasCar) void loadCheckout().catch(() => undefined); }, [hasCar]);
   const fr = band && grade ? gradeArc(grade.index) : null;
   const name = lookup ? [lookup.year, titleCase(lookup.make), titleCase(lookup.model), variant && !(lookup.model ?? "").toLowerCase().includes(variant.toLowerCase()) ? (variant.toLowerCase().startsWith(`${(lookup.model ?? "").toLowerCase().split(" ")[0]} `) ? variant.slice((lookup.model ?? "").split(" ")[0].length).trim() : variant) : ""].filter(Boolean).join(" ") : "";
   const facts = lookup ? [lookup.engineCapacity ? `${lookup.engineCapacity.toLocaleString("en-GB")} cc` : "", titleCase(lookup.fuelType), titleCase(lookup.colour)].filter(Boolean).join(" · ") : "";
@@ -679,7 +683,7 @@ export function TeslaFlow({ onFlowChange }: { onFlowChange?: (active: boolean) =
                 {busyLookup && premiumBusy ? <span className="t8-one"><span className="t8-spin" aria-hidden /> Checking</span> : <>Premium Report<small>£2.99 one-off</small></>}
               </button>
             </div>
-            <p className="t8-inc" aria-live="polite">{busyLookup ? "Checking DVLA and MOT records" : premiumArmed ? "Premium Report selected. Enter the reg to continue." : "Buying or Selling, Know the right price"}</p>
+            <p className="t8-inc" aria-live="polite">{busyLookup ? "Checking DVLA and MOT records" : premiumArmed ? "Premium Report selected. Enter the reg to continue." : "Buying or selling? Know the right price."}</p>
             {err && <p className="t8-err" role="alert">{err} <Link className="t8-link" to="/valuation/new?manual=1">Enter details by hand</Link></p>}
             {guestLimit && <GuestLimit message={guestLimit} premium={false} />}
             <p className="t8-buyer"><Link to="/check" data-testid="buyer-check-link">Buying? Check an advert<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg></Link></p>
@@ -865,6 +869,7 @@ export function TeslaFlow({ onFlowChange }: { onFlowChange?: (active: boolean) =
           if (viewOf(locRef.current.state) === "checkout") navigate(-1);
         }}>
           {(close) => { sheetCloseRef.current = close; return (
+            <Suspense fallback={<div className="t8-co-wait" role="status" aria-live="polite">Loading secure checkout…</div>}>
             <ElementsCheckout valuationId={valuationId} email={user?.email || undefined} onPaid={() => navigate(`/valuation/${valuationId}?intent=${getIntent()}`, { replace: viewOf(locRef.current.state) === "checkout" })} onClose={close}
               title={PREMIUM_TITLE} hideHeader
               intro={
@@ -890,6 +895,7 @@ export function TeslaFlow({ onFlowChange }: { onFlowChange?: (active: boolean) =
                   </div>
                 </>
               } />
+            </Suspense>
           ); }}
         </CheckoutSheet>
       )}

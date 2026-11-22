@@ -20,7 +20,7 @@ export type RouteMeta = {
 };
 
 export const STATIC_ROUTES: RouteMeta[] = [
-  { path: "/", title: "Free Car Valuation Online by Reg | Value My Car UK | Valu8", description: "Value your car free by registration: an instant UK private-sale estimate with official DVSA MOT history. Buying? Check any advert. Full report £2.99.", priority: "1.0", inSitemap: true },
+  { path: "/", title: "Free Car Valuation Online by Reg | Value My Car UK | Valu8", description: "Value your car free by registration: an instant UK private-sale estimate with official DVSA MOT history. Buying? Check any advert. Premium Report £2.99.", priority: "1.0", inSitemap: true },
   { path: "/valuation/new", title: "New valuation | Valu8", description: "Enter a UK registration to get a free private sale valuation in minutes.", inSitemap: false, canonicalPath: "/" },
   { path: "/check", title: "Car price check: is this used car a fair price? | Valu8", description: "Free used car price checker. Enter any UK advert's make, model, year, mileage and asking price to see if it's overpriced, fair or a bargain.", priority: "0.8", inSitemap: true },
   { path: "/accuracy", title: "How accurate is Valu8? Predicted vs real sale prices", description: "We compare our car valuations with the prices people actually sell for, and will publish the results once enough owners report a sale.", noindex: true, inSitemap: false },

@@ -163,7 +163,7 @@ export default function Check() {
                 <p className="text-xs font-medium text-muted-foreground">Verdict</p>
                 <p className={`text-2xl font-semibold ${V.cls}`}>{V.label}</p>
                 {res.source !== "marketcheck" && (
-                  <span className="inline-block mt-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Estimate</span>
+                  <span className="inline-block mt-1 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">Estimate</span>
                 )}
               </div>
             </div>
@@ -204,7 +204,7 @@ export default function Check() {
             </div>
             {!user && <div className="mt-5"><GuestMarketingConsent /></div>}
             <div className="mt-5 flex flex-col sm:flex-row gap-2">
-              <Button asChild variant="outline" className="min-h-[44px]"><Link to="/">Get a full report with MOT history</Link></Button>
+              <Button asChild variant="outline" className="min-h-[44px]"><Link to="/">Get a Premium Report with MOT history</Link></Button>
               <Button variant="ghost" className="min-h-[44px]" onClick={() => { setRes(null); setF(EMPTY); }}>Check another advert</Button>
             </div>
           </section>
