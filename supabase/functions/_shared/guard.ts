@@ -7,6 +7,7 @@
 //  - Premium enforcement: only when PREMIUM_ENFORCED === "true".
 //  - Cloudflare Turnstile verification: only when TURNSTILE_SECRET_KEY is set.
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+import { turnstileRequired } from "./guestCap.ts";
 import { corsHeaders as baseCors } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 
 /** Supabase default CORS headers plus the optional Turnstile token header. */
@@ -121,7 +122,7 @@ export interface GuardOptions {
   requireUser?: boolean;
   /** Only enforced when PREMIUM_ENFORCED=true. */
   requirePremium?: boolean;
-  /** Only enforced when TURNSTILE_SECRET_KEY is set. */
+  /** Only enforced when TURNSTILE_SECRET_KEY is set (and, by default, only for signed-out callers; see guestCap.ts). */
   turnstile?: boolean;
   perMinute?: number;
   perDay?: number;
@@ -150,7 +151,8 @@ export async function guard(req: Request, o: GuardOptions): Promise<{ userId: st
     return { userId, response: json({ error: "You've hit the usage limit for now — please try again later." }, 429, { "Retry-After": "60" }) };
   }
 
-  if (o.turnstile && !(await verifyTurnstile(req))) {
+  // Turnstile: only once TURNSTILE_SECRET_KEY is set; TURNSTILE_MODE = guests (default) | all | off.
+  if (o.turnstile && turnstileRequired((k) => Deno.env.get(k), !!userId) && !(await verifyTurnstile(req))) {
     return { userId, response: json({ error: "Human verification failed — please refresh and try again." }, 403) };
   }
 

@@ -83,3 +83,26 @@ Deno.test("DVLA truncated Land Rover model names resolve to the advert model", a
     if (a.level !== "model" || a.nComps !== b.nComps) throw new Error(`${m}: ${a.level} ${a.nComps} vs ${b.nComps}`);
   }
 });
+
+Deno.test("conf-1: trim-laden DVLA model strings resolve to the advert model (query side only)", async () => {
+  const { baseModelGuess, advertMake } = await import("./ownComps.ts");
+  const eq = (a: unknown, b: unknown, m: string) => { if (a !== b) throw new Error(`${m}: ${a} !== ${b}`); };
+  eq(baseModelGuess("bmw", "218i m sport auto"), "2 series", "bmw 218i");
+  eq(baseModelGuess("bmw", "330e m sport auto"), "3 series", "bmw 330e");
+  eq(baseModelGuess("bmw", "x3"), null, "bmw x3 untouched");
+  eq(baseModelGuess("mercedes-benz", "c220 sport cdi a"), "c class", "c220");
+  eq(baseModelGuess("mercedes-benz", "a 180 amg line executive d a"), "a class", "a 180");
+  eq(baseModelGuess("mercedes-benz", "clk270 cdi elegance a"), "clk", "clk270");
+  eq(baseModelGuess("mini", "cooper auto"), "hatch", "mini cooper");
+  eq(baseModelGuess("mini", "countryman cooper sd all4"), null, "countryman untouched");
+  eq(baseModelGuess("mg", "3 trophy hev auto"), "mg3", "mg 3");
+  eq(advertMake("smart (mcc)"), "smart", "smart (mcc)");
+});
+
+Deno.test("conf-1: BMW 218i M Sport Auto prices at model level, not the make-wide pool", async () => {
+  const { valueWithOwnComps } = await import("./ownCompsAdjust.ts");
+  const r = valueWithOwnComps({ make: "BMW", model: "218i M Sport Auto", year: 2024, mileage: 27000, fuel: "petrol", gearbox: "automatic", currentYear: 2026 } as any);
+  if (r.level !== "model") throw new Error(`level ${r.level}`);
+  const s = valueWithOwnComps({ make: "SMART (MCC)", model: "Fortwo Coupe", year: 2012, mileage: 27500, fuel: "petrol", currentYear: 2026 } as any);
+  if (s.level !== "model") throw new Error(`smart level ${s.level}`);
+});

@@ -5,6 +5,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import ts from "typescript";
 import { reportForViewer } from "../../supabase/functions/_shared/sharedReport";
+import * as guestCap from "../../supabase/functions/_shared/guestCap";
+import * as photoSanity from "../../supabase/functions/_shared/photoSanity";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 const token = "a".repeat(64);
@@ -22,6 +24,8 @@ function load(name: string, overrides: Record<string, unknown> = {}, shared = tr
       corsHeaders: {}, json, guard: async () => ({ userId: null }),
       checkLimit: async () => true, clientIp: () => "test-ip", envInt: (_: string, fallback: number) => fallback,
       adminClient: () => null,
+      // B2: pure helpers the edge function imports (real implementations, so the cap numbers are tested end to end).
+      ...guestCap, ...photoSanity,
     } : {}),
     ...overrides,
   };
@@ -51,9 +55,10 @@ describe("analyse-vehicle guest cap and the premium path", () => {
     // Gets past the cap to vehicle validation (no make/model in this request).
     expect(res.status).toBe(400);
     const h = await hashOf(token);
+    // B2: the device token is checked first; a used-up device doesn't burn a slot of the shared IP ceiling.
     expect(calls).toEqual([
-      ["analyse:guest:ip:test-ip:d", 86400, 3], [`analyse:guest:t:${h}:d`, 86400, 3],
-      ["analyse:guest:p:ip:test-ip:d", 86400, 16], [`analyse:guest:p:t:${h}:d`, 86400, 8],
+      [`analyse:guest:t:${h}:d`, 86400, 3],
+      [`analyse:guest:p:t:${h}:d`, 86400, 8], ["analyse:guest:p:ip:test-ip:d", 86400, 16],
     ]);
   });
 
@@ -62,6 +67,20 @@ describe("analyse-vehicle guest cap and the premium path", () => {
     const res = await handler(request({ guestToken: token, premiumIntent: true }));
     expect(res.status).toBe(429);
     expect((await res.json()).code).toBe("guest_limit");
+  });
+
+  it("free path: 3 per device token, and the shared IP gets a 15 a day ceiling (not 3)", async () => {
+    const calls: unknown[][] = [];
+    const handler = load("analyse-vehicle", { checkLimit: async (...a: unknown[]) => { calls.push(a); return true; } });
+    const res = await handler(request({ guestToken: token }));
+    expect(res.status).toBe(400); // under both caps, into vehicle validation
+    const h = await hashOf(token);
+    expect(calls).toEqual([[`analyse:guest:t:${h}:d`, 86400, 3], ["analyse:guest:ip:test-ip:d", 86400, 15]]);
+  });
+
+  it("a busy shared IP still blocks the free path", async () => {
+    const handler = load("analyse-vehicle", { checkLimit: async (k: unknown) => !String(k).includes(":ip:") });
+    expect((await handler(request({ guestToken: token }))).status).toBe(429);
   });
 
   it("premiumIntent must be exactly true", async () => {
@@ -80,7 +99,7 @@ describe("analyse-vehicle guest cap and the premium path", () => {
   it("engine and guard settings are untouched", () => {
     const src = read("supabase/functions/analyse-vehicle/index.ts");
     expect(src).toContain("v2.2-ledger");
-    expect(src).toContain('const cap = envInt("GUEST_DAILY_CAP", 3);');
+    expect(src).toContain('const caps = guestCaps((k) => Deno.env.get(k));');
   });
 });
 
