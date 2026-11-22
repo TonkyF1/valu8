@@ -35,6 +35,8 @@ import { resolveVariant, perfCompReference, variantToken, reconcileProsePrices, 
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
 import { photoConditionScore, neutralConditionScore, expertInsightFromCondition } from "../_shared/photoCondition.ts";
+import { guestCaps, guestDecision } from "../_shared/guestCap.ts";
+import { checkPhotos, applyPhotoCheck, checkedConditionScore, PHOTO_IDENTITY_PROMPT, PHOTO_IDENTITY_SCHEMA, type PhotoCar } from "../_shared/photoSanity.ts";
 
 const PHOTO_BUCKET = "vehicle-photos";
 // 1h is plenty — the AI vision call completes in seconds.
@@ -707,6 +709,7 @@ const TOOL = {
             additionalProperties: false,
           },
         },
+        ...PHOTO_IDENTITY_SCHEMA,
         headline: { type: "string", description: "One short sentence summarising whether this price is fair/strong and roughly how quickly the car should sell." },
         marketContext: { type: "string", description: "One short sentence on current UK demand for this make/model/spec." },
         factorsUp: { type: "array", items: { type: "string" }, minItems: 0, maxItems: 4, description: "Short bullet phrases that raise the value." },
@@ -774,7 +777,8 @@ Deno.serve(async (req) => {
       if (typeof body?.guestToken !== "string" || !/^[a-f0-9]{64}$/.test(body.guestToken)) {
         return json({ error: "Please refresh the page and try again." }, 400);
       }
-      const cap = envInt("GUEST_DAILY_CAP", 3);
+      // Per device token first; the IP only gets a shared-connection ceiling (see _shared/guestCap.ts).
+      const caps = guestCaps((k) => Deno.env.get(k));
       const ip = clientIp(req);
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body.guestToken));
       tokenHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
@@ -796,21 +800,21 @@ Deno.serve(async (req) => {
         }
       }
       if (!refineExisting) {
-        const okIp = await checkLimit(`analyse:guest:ip:${ip}:d`, 86400, cap);
-        const okTok = await checkLimit(`analyse:guest:t:${tokenHash}:d`, 86400, cap);
+        // Token first: a device that's used its free valuations doesn't also burn a slot of the shared IP ceiling.
+        const okTok = await checkLimit(`analyse:guest:t:${tokenHash}:d`, 86400, caps.token);
+        const okIp = okTok ? await checkLimit(`analyse:guest:ip:${ip}:d`, 86400, caps.ip) : true;
         if (!okIp || !okTok) {
           // Paid path: never blocked by the free cap, but held to its own daily cap and the price stays hidden until paid.
-          if (body.premiumIntent === true) {
-            const pcap = envInt("GUEST_PREMIUM_CAP", 8);
-            const okPIp = await checkLimit(`analyse:guest:p:ip:${ip}:d`, 86400, pcap * 2);
-            const okPTok = await checkLimit(`analyse:guest:p:t:${tokenHash}:d`, 86400, pcap);
-            if (!okPIp || !okPTok) {
-              return json({ error: "You've reached today's limit for guest reports. Create a free account to keep going. It takes 30 seconds and your reports are saved.", code: "guest_limit" }, 429);
-            }
-            priceLocked = true;
-          } else {
-            return json({ error: "You've used today's free guest valuations. Create a free account to keep going. It takes 30 seconds and your reports are saved.", code: "guest_limit" }, 429);
+          const premiumIntent = body.premiumIntent === true;
+          const okPTok = premiumIntent ? await checkLimit(`analyse:guest:p:t:${tokenHash}:d`, 86400, caps.premiumToken) : false;
+          const okPIp = premiumIntent && okPTok ? await checkLimit(`analyse:guest:p:ip:${ip}:d`, 86400, caps.premiumIp) : false;
+          const decision = guestDecision({ okToken: okTok, okIp, premiumIntent, okPremiumToken: okPTok, okPremiumIp: okPIp });
+          if (decision === "blocked") {
+            return json(premiumIntent
+              ? { error: "You've reached today's limit for guest reports. Create a free account to keep going. It takes 30 seconds and your reports are saved.", code: "guest_limit" }
+              : { error: "You've used today's free guest valuations. Create a free account to keep going. It takes 30 seconds and your reports are saved.", code: "guest_limit" }, 429);
           }
+          priceLocked = true;
         }
         guestValuationId = crypto.randomUUID();
       }
@@ -1078,7 +1082,8 @@ ONLY consider advisories and failures from the LATEST test when pricing and writ
 - NO PHOTOS: You cannot assess visible condition. Set conditionScore to 7.0 (neutral, not a visual grade), conditionLabel to "Not scored (no photos)", photoObservations to "", and photoInsights to []. Do NOT invent damage, wear, or photo-based deductions, and do not mention photos in honestAnalysis/valueReasoning/factorsDown.` : ""}
 ${labeledPhotos.length > 0 ? `
 PHOTO LIST — the images below are sent in this exact order. Use the Photo N number as photoIndex in every photoInsight. There are NO slot labels — look at each image and set the slot purely from what you actually see:
-${labeledPhotos.map((_, i) => `  Photo ${i + 1} — determine what this image shows by looking at it.`).join("\n")}` : ""}
+${labeledPhotos.map((_, i) => `  Photo ${i + 1} — determine what this image shows by looking at it.`).join("\n")}
+${PHOTO_IDENTITY_PROMPT}` : ""}
 
 ${marketBlock}
 
@@ -1181,6 +1186,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         photoIndex?: number;
       }>;
       headline?: string;
+      photosSameCar?: boolean;
+      photoCars?: PhotoCar[];
       marketContext?: string;
       factorsUp?: string[];
       factorsDown?: string[];
@@ -1210,7 +1217,28 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
 
     // ----- Pricing engine: MarketCheck-anchored, with strong deterministic deductions -----
     // Without photos the AI still invents a conditionScore — treat as unscored.
-    const photoScore = photoConditionScore(ai.conditionScore, photoUrls.length);
+    // Photo sanity: same car in every photo, matches the DVLA colour/plate, honours declared damage.
+    // Untrusted photos don't move the price at all; declared damage blocks any photo uplift.
+    const photoCheck = checkPhotos({
+      photoCount: photoUrls.length,
+      registration: body.registration,
+      dvlaColour: body.colour,
+      photoCars: Array.isArray(ai.photoCars) ? ai.photoCars : [],
+      aiSameCar: typeof ai.photosSameCar === "boolean" ? ai.photosSameCar : undefined,
+      declaredText: `${body.serviceNotes ?? ""}\n${body.modifications ?? ""}`,
+    });
+    if (photoUrls.length > 0) {
+      ai.photoInsights = applyPhotoCheck(ai.photoInsights ?? [], photoCheck);
+      if (!photoCheck.trusted) {
+        const photoPraise = /\b(photo|pictured|paint|bodywork|condition|clean|tidy|immaculate|pristine|well[- ]kept|interior)\b/i;
+        ai.strengths = (ai.strengths ?? []).filter((x) => !photoPraise.test(String(x)));
+        ai.factorsUp = Array.isArray(ai.factorsUp) ? ai.factorsUp.filter((x) => !photoPraise.test(String(x))) : ai.factorsUp;
+        ai.photoObservations = photoCheck.notes[0] ?? "";
+      }
+      debugInfo.photoCheck = { ...photoCheck, aiSameCar: ai.photosSameCar, cars: (ai.photoCars ?? []).length };
+    }
+    const photoScore = checkedConditionScore(photoConditionScore(ai.conditionScore, photoUrls.length), photoCheck);
+    const photosUntrusted = photoUrls.length > 0 && !photoCheck.trusted;
     const score = photoScore ?? neutralConditionScore();
     const aiPrivate = Math.max(500, Number(ai.privateSaleValue) || 0);
 
@@ -1946,8 +1974,18 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     }
 
     const report = {
-      conditionScore: photoScore, // null when no photos — UI already gates on hasPhotos
-      conditionLabel: photoScore == null ? "Not scored (no photos)" : ai.conditionLabel,
+      // null when no photos (UI gates on hasPhotos). Photos that fail the same-car/DVLA check get a neutral
+      // 7.0 with a "Not scored" label so existing UI/PDF never renders null, and photoCheck says why.
+      conditionScore: photosUntrusted ? neutralConditionScore() : photoScore,
+      conditionLabel: photosUntrusted ? "Not scored (photos didn't match)" : photoScore == null ? "Not scored (no photos)" : ai.conditionLabel,
+      photoCheck: photoUrls.length > 0 ? {
+        trusted: photoCheck.trusted,
+        differentCars: photoCheck.differentCars,
+        colourMismatch: photoCheck.colourMismatch,
+        plateMismatch: photoCheck.plateMismatch,
+        declaredDamage: photoCheck.declaredDamage,
+        notes: photoCheck.notes,
+      } : undefined,
       values,
       valueRange: valuationUnavailable ? undefined : { privateSaleLow: rangeLow, privateSaleHigh: rangeHigh },
       // Below £5,000 (our estimate) the headline is a measured ~70% range; values.privateSale stays the midpoint (see _shared/cheapRange.ts).
@@ -1973,7 +2011,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
           sources.push(`Priced from the ${mc.count.toLocaleString()} closest-matching UK listings (MarketCheck)`);
         }
         if (engineShown && ownForCap) sources.push(`Priced from ${(ownForCap.nComps ?? 0).toLocaleString("en-GB")} comparable UK adverts collected by Valu8, plus our trained pricing model`);
-        if (photoUrls.length > 0) sources.push(`${photoUrls.length}-photo Vision AI condition scan (${(ai.conditionScore ?? 0).toFixed(1)}/10)`);
+        if (photoUrls.length > 0 && !photosUntrusted && photoScore != null) sources.push(`${photoUrls.length}-photo Vision AI condition scan (${photoScore.toFixed(1)}/10)`);
         if (motEntries.length > 0) sources.push(`${motEntries.length} DVSA MOT record${motEntries.length === 1 ? "" : "s"}`);
 
         const isRare = ultraRare || (mc && mc.count < 15);
@@ -2010,7 +2048,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       strengths: motConsistentBullets(sanitizeNarrativeList(ai.strengths, body.year, CURRENT_YEAR, allowedNarrativeYears), motExpiryForText),
       watchPoints: (() => {
         const w = sanitizeNarrativeList(ai.watchPoints, body.year, CURRENT_YEAR, allowedNarrativeYears) ?? [];
-        return mileageNote ? [mileageNote, ...w] : w;
+        const lead = [...(photoCheck.notes ?? []), ...(mileageNote ? [mileageNote] : [])];
+        return [...lead, ...w].slice(0, 7);
       })(),
       recommendations: {
         listingPrice,

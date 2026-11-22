@@ -241,14 +241,39 @@ function resolveModel(rows: Row[], mk: string, md: string): string {
   let best = "", bn = 0;
   for (const [k, n] of known) if ((md.startsWith(k + " ") || md.replace(/[\s-]/g, "") === k.replace(/[\s-]/g, "")) && k.length > best.length) { best = k; bn = n; }
   if (best && bn >= 2) return best;
+  // conf-1 (21 Nov 2026 replay): DVLA/VDG model strings that carry the trim ("218i M Sport Auto", "C220 Sport CDI A",
+  // "Cooper Auto", "3 Trophy HEV Auto") fell to the make-wide pool (Low confidence). Map them to the advert model name.
+  const base = baseModelGuess(mk, md);
+  if (base && base !== md && (known.get(base) ?? 0) >= 20) return base; // only well-populated models (thin ones read as Very Low)
   for (const [k, n] of known) if (k.startsWith(md + " ") && n > bn) { best = k; bn = n; }
   return bn >= 2 ? best : md;
 }
 
+const MB_CLASS: Record<string, string> = { a: "a class", b: "b class", c: "c class", e: "e class", s: "s class", v: "v class", g: "g class", ml: "m class", m: "m class", gl: "gl class", sl: "sl class" };
+/** Advert model name for a trim-laden DVLA model string, or null. Query-side only (training rows are untouched). */
+export function baseModelGuess(mk: string, md: string): string | null {
+  const m = md.trim();
+  if (mk === "bmw") { const x = m.match(/^([1-8])\d{2}[a-z]{0,2}\b/); if (x) return `${x[1]} series`; }
+  if (mk === "mercedes-benz") {
+    const x = m.match(/^([a-z]{1,3})\s?\d{2,3}[a-z]{0,2}\b/);
+    if (x) return MB_CLASS[x[1]] ?? x[1];
+  }
+  if (mk === "mini" && /^(cooper|one|hatch|hatchback)\b/.test(m) && !/\b(clubman|countryman|convertible|cabrio|paceman|coupe|roadster)\b/.test(m)) return "hatch";
+  if (mk === "mg") { const x = m.match(/^(?:mg\s?)?([3-6])\b/); if (x) return `mg${x[1]}`; }
+  return null;
+}
+/** "smart (mcc)" -> "smart": the make as the adverts spell it, when the DVLA make carries a bracketed suffix. */
+export const advertMake = (mk: string) => mk.replace(/\s*\([^)]*\)\s*$/, "").trim();
+
 export function priceOwnComps(model: OwnCompsModel, q: CompQuery): OwnCompsResult {
   const p = model.params, r = toRow(q, q.currentYear ?? p.refYear, 0, "private");
+  if (r.mk !== advertMake(r.mk) && !model.rows.some((c) => c.mk === r.mk)) r.mk = advertMake(r.mk);
   const rmd = resolveModel(model.rows, r.mk, r.md);
-  if (rmd !== r.md) { r.md = rmd; r.fam = family(rmd); }
+  if (rmd !== r.md) {
+    // Keep the trim words the DVLA model string carried ("m sport", "amg line") for the trim uplift.
+    if (!rmd.length || !r.md.startsWith(rmd)) r.toks = Array.from(new Set([...r.toks, ...trimTokens(r.md.replace(/^\S+\s*/, ""))]));
+    r.md = rmd; r.fam = family(rmd);
+  }
   const samePerf = (c: Row) => (r.perf ? c.perf?.split(":")[0] === r.perf.split(":")[0] : !c.perf);
   // Make+segment pool only holds the same kind of car (no pooling an Octavia vRS with random perf cars,
   // or a plain hatch with hot hatches); if that is empty we fall back to the segment depreciation curve.
