@@ -34,7 +34,8 @@ export default function About() {
   const { pathname } = useLocation();
   const isContact = pathname.startsWith("/contact");
   useSeo(getRouteMeta(isContact ? "/contact" : "/about"));
-  const operator = LEGAL_NAME.trim() || "Valu8";
+  const named = LEGAL_NAME.trim();
+  const operator = named || "Valu8 (valu8.uk)";
   return (
     <div className="min-h-screen flex flex-col">
       <TestModeBanner /><Header />
@@ -43,7 +44,7 @@ export default function About() {
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground mb-4">{isContact ? "Contact" : "About"}</p>
           <h1 className="text-4xl md:text-6xl font-semibold tracking-tight text-foreground">{isContact ? "Get in touch" : "About Valu8"}</h1>
           <p className="mt-6 text-lg md:text-xl leading-relaxed text-foreground/85">
-            Valu8 (valu8.uk) is run by {operator}. It is an independent car valuation tool for UK private sellers and buyers.
+            {named ? <>Valu8 (valu8.uk) is run by {named}. It is an</> : <>Valu8 (valu8.uk) is an</>} independent car valuation tool for UK private sellers and buyers.
           </p>
         </header>
 
