@@ -86,7 +86,7 @@ export function PriceAlertOptIn({ valuationId, isGuest }: { valuationId: string;
         <Bell className="h-3.5 w-3.5 text-primary" aria-hidden />
         {busy ? "Saving…" : "Email me if this price changes"}
       </button>
-      {needEmail && <p className="w-full text-[11px] text-muted-foreground/80">Only for updates on this valuation. Unsubscribe any time.</p>}
+      {needEmail && <p className="w-full text-xs text-muted-foreground/80">Only for updates on this valuation. Unsubscribe any time.</p>}
     </form>
   );
 }

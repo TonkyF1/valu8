@@ -523,7 +523,7 @@ export default function NewValuation() {
           )}
 
           {/* Trust micro-strip */}
-          <div className="mt-5 grid grid-cols-3 gap-2 text-[10px] text-muted-foreground/70">
+          <div className="mt-5 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
             <div className="flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-border/40 bg-card/30">
               <Database className="h-3.5 w-3.5 text-primary/70" />
               <span className="font-medium text-foreground/80">DVSA data</span>
@@ -532,7 +532,7 @@ export default function NewValuation() {
             <div className="flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-border/40 bg-card/30">
               <Clock className="h-3.5 w-3.5 text-primary/70" />
               <span className="font-medium text-foreground/80">~30 sec</span>
-              <span className="text-[9px] uppercase tracking-wider">Full report</span>
+              <span className="text-[9px] uppercase tracking-wider">Free valuation</span>
             </div>
             <div className="flex flex-col items-center gap-1 px-2 py-2 rounded-lg border border-border/40 bg-card/30">
               <ShieldCheck className="h-3.5 w-3.5 text-primary/70" />
@@ -544,7 +544,7 @@ export default function NewValuation() {
           <div className="mt-3 text-center">
             <button
               type="button"
-              className="text-[11px] text-muted-foreground/60 hover:text-primary transition-colors hover:underline underline-offset-4"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors hover:underline underline-offset-4"
               onClick={handleManualEntry}
             >
               Don't have your reg? Enter details manually
@@ -564,7 +564,7 @@ export default function NewValuation() {
                     <Car className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{isFoundVehicle(lookup) ? "Vehicle found" : "Your vehicle"}</p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">{isFoundVehicle(lookup) ? "Vehicle found" : "Your vehicle"}</p>
                     <h2 className="text-lg font-semibold">
                       {make || "—"} {model} {variant && <span className="text-muted-foreground font-normal">· {variant}</span>}
                     </h2>
@@ -644,9 +644,9 @@ export default function NewValuation() {
                       })}
                     </div>
                   ) : (
-                    <p className="text-[11px] text-muted-foreground">DVLA records don't include the trim. Performance versions (RS, ST, GTI, R, AMG, M, vRS, Type R…) are worth much more, so add yours.</p>
+                    <p className="text-xs text-muted-foreground">DVLA records don't include the trim. Performance versions (RS, ST, GTI, R, AMG, M, vRS, Type R…) are worth much more, so add yours.</p>
                   )}
-                  {trimAuto && <p className="text-[11px] text-muted-foreground">Filled in from the engine size. Change it if it's wrong.</p>}
+                  {trimAuto && <p className="text-xs text-muted-foreground">Filled in from the engine size. Change it if it's wrong.</p>}
                 </div>
               )}
 
@@ -683,7 +683,7 @@ export default function NewValuation() {
                     />
                     {errors.mileage && <p className="text-xs text-destructive">{errors.mileage}</p>}
                     {lookup ? (
-                      <p className="text-[11px] text-muted-foreground">{mileageHint(lookup)}</p>
+                      <p className="text-xs text-muted-foreground">{mileageHint(lookup)}</p>
                     ) : null}
                   </div>
                   <div className="space-y-2">
@@ -717,7 +717,7 @@ export default function NewValuation() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
                 <p className="text-xs text-muted-foreground max-w-md">
                   We'll combine your reg lookup, details and photos to generate a realistic private sale price.
-                  {!user && <span className="block mt-1 text-muted-foreground/70">Free guest valuations are limited to {GUEST_DAILY_CAP} a day. A free account gives you more.</span>}
+                  {!user && <span className="block mt-1 text-muted-foreground">Free guest valuations are limited to {GUEST_DAILY_CAP} a day. A free account gives you more.</span>}
                 </p>
                 <Button type="submit" variant="hero" size="xl" disabled={busy || (turnstileEnabled() && !tsToken)}>
                   {busy ? "Working…" : <>Get my valuation <ArrowRight className="h-4 w-4" /></>}
@@ -758,7 +758,7 @@ function GuestLimitCard({ message, reg }: { message: string; reg?: string }) {
 function SummaryItem({ label, value, statusColor }: { label: string; value: string; statusColor?: string }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+      <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
       <p className={cn("text-sm font-medium", statusColor)}>{value}</p>
     </div>
   );

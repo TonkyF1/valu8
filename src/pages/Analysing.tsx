@@ -10,7 +10,7 @@ const STEPS = [
   { label: "Reading MOT history…", sub: "DVSA test results and advisories" },
   { label: "Analysing photos…", sub: "Condition of panels, wheels and interior" },
   { label: "Pricing…", sub: "Private sale, part-exchange and dealer" },
-  { label: "Generating your full report", sub: "Building the data buyers can't argue with" },
+  { label: "Generating your valuation", sub: "Building the data buyers can't argue with" },
 ];
 
 const REASSURANCES = [
@@ -109,7 +109,7 @@ export default function Analysing() {
                     <div className={cn("text-sm font-medium", done || active ? "text-foreground" : "text-muted-foreground")}>
                       {s.label}
                     </div>
-                    <div className="text-[11px] text-muted-foreground/80">{s.sub}</div>
+                    <div className="text-xs text-muted-foreground/80">{s.sub}</div>
                   </div>
                 </li>
               );

@@ -21,17 +21,24 @@ export function PostHogTracker() {
     if (v !== "granted" && posthog.__loaded) posthog.opt_out_capturing();
   }), []);
 
+  // The library itself is downloaded only now (after consent, and only when a key is configured).
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     if (!consented) return;
-    initPostHog();
-    if (posthog.__loaded && posthog.has_opted_out_capturing?.()) posthog.opt_in_capturing();
-    if (!openedRef.current && posthog.__loaded) {
-      posthog.capture("App Opened", {
-        path: window.location.pathname,
-        referrer: document.referrer || undefined,
-      });
-      openedRef.current = true;
-    }
+    let live = true;
+    void initPostHog().then(() => {
+      if (!live) return;
+      if (posthog.__loaded && posthog.has_opted_out_capturing()) posthog.opt_in_capturing();
+      if (!openedRef.current && posthog.__loaded) {
+        posthog.capture("App Opened", {
+          path: window.location.pathname,
+          referrer: document.referrer || undefined,
+        });
+        openedRef.current = true;
+      }
+      setReady(posthog.__loaded);
+    });
+    return () => { live = false; };
   }, [consented]);
 
 
@@ -45,7 +52,7 @@ export function PostHogTracker() {
       posthog.reset();
       identifiedRef.current = null;
     }
-  }, [user, consented]);
+  }, [user, consented, ready]);
 
   // SPA pageviews
   useEffect(() => {
@@ -54,7 +61,7 @@ export function PostHogTracker() {
       $current_url: window.location.href,
       path: location.pathname,
     });
-  }, [location.pathname, location.search, consented]);
+  }, [location.pathname, location.search, consented, ready]);
 
   return null;
 }

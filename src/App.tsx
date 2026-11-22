@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { lazyWithPreload } from "@/lib/lazyPreload";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { RouteScrollTop } from "@/components/RouteScrollTop";
@@ -26,30 +27,46 @@ const Analysing = lazy(() => import("./pages/Analysing"));
 const Report = lazy(() => import("./pages/Report"));
 const EditValuation = lazy(() => import("./pages/EditValuation"));
 const Profile = lazy(() => import("./pages/Profile"));
-const Privacy = lazy(() => import("./pages/Privacy"));
-const Bot = lazy(() => import("./pages/Bot"));
-const Terms = lazy(() => import("./pages/Terms"));
-const Disclaimers = lazy(() => import("./pages/Disclaimers"));
-const About = lazy(() => import("./pages/About"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const Privacy = lazyWithPreload(() => import("./pages/Privacy"));
+const Bot = lazyWithPreload(() => import("./pages/Bot"));
+const Terms = lazyWithPreload(() => import("./pages/Terms"));
+const Disclaimers = lazyWithPreload(() => import("./pages/Disclaimers"));
+const About = lazyWithPreload(() => import("./pages/About"));
+const NotFound = lazyWithPreload(() => import("./pages/NotFound"));
 import Landing from "./pages/Landing";
 const Compare = lazy(() => import("./pages/Compare"));
 const Admin = lazy(() => import("./pages/Admin"));
-const Pricing = lazy(() => import("./pages/Pricing"));
+const Pricing = lazyWithPreload(() => import("./pages/Pricing"));
 import { CookieConsent } from "@/components/CookieConsent";
-const Check = lazy(() => import("./pages/Check"));
-const Accuracy = lazy(() => import("./pages/Accuracy"));
-const CarValue = lazy(() => import("./pages/CarValue"));
-const CarValuesIndex = lazy(() => import("./pages/CarValuesIndex"));
-const ModelValue = lazy(() => import("./pages/ModelValue"));
-const ValueIndex = lazy(() => import("./pages/ModelValue").then((m) => ({ default: m.ValueIndex })));
-const ModelYearValue = lazy(() => import("./pages/ModelValue").then((m) => ({ default: m.ModelYearValue })));
-const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage"));
-const FaqPage = lazy(() => import("./pages/FaqPage"));
-const ExampleReportPage = lazy(() => import("./pages/ExampleReportPage"));
-const GuidesIndex = lazy(() => import("./pages/GuidesIndex"));
-const Guide = lazy(() => import("./pages/Guide"));
-const EmbedInfo = lazy(() => import("./pages/EmbedInfo"));
+const Check = lazyWithPreload(() => import("./pages/Check"));
+const Accuracy = lazyWithPreload(() => import("./pages/Accuracy"));
+const CarValue = lazyWithPreload(() => import("./pages/CarValue"));
+const CarValuesIndex = lazyWithPreload(() => import("./pages/CarValuesIndex"));
+const ModelValue = lazyWithPreload(() => import("./pages/ModelValue"));
+const ValueIndex = lazyWithPreload(() => import("./pages/ModelValue").then((m) => ({ default: m.ValueIndex })));
+const ModelYearValue = lazyWithPreload(() => import("./pages/ModelValue").then((m) => ({ default: m.ModelYearValue })));
+const HowItWorksPage = lazyWithPreload(() => import("./pages/HowItWorksPage"));
+const FaqPage = lazyWithPreload(() => import("./pages/FaqPage"));
+const ExampleReportPage = lazyWithPreload(() => import("./pages/ExampleReportPage"));
+const GuidesIndex = lazyWithPreload(() => import("./pages/GuidesIndex"));
+const Guide = lazyWithPreload(() => import("./pages/Guide"));
+const EmbedInfo = lazyWithPreload(() => import("./pages/EmbedInfo"));
+
+/** Fetch the code for a prerendered public page before React mounts (main.tsx), so the static HTML stays on screen
+ * until identical React content replaces it: no blank loading shell, and the largest text is measured once (LCP). */
+export function preloadRoute(path: string): Promise<unknown> {
+  const p = path.replace(/\/+$/, "") || "/";
+  const table: [RegExp, { preload: () => Promise<void> }][] = [
+    [/^\/value$/, ValueIndex], [/^\/value\/[^/]+$/, ModelValue], [/^\/value\/[^/]+\/\d{4}$/, ModelYearValue],
+    [/^\/car-values$/, CarValuesIndex], [/^\/car-values\/[^/]+\/[^/]+$/, CarValue],
+    [/^\/guides$/, GuidesIndex], [/^\/guides\/[^/]+$/, Guide], [/^\/(about|contact)$/, About],
+    [/^\/how-it-works$/, HowItWorksPage], [/^\/faq$/, FaqPage], [/^\/pricing$/, Pricing], [/^\/check$/, Check],
+    [/^\/accuracy$/, Accuracy], [/^\/example-report$/, ExampleReportPage], [/^\/embed-info$/, EmbedInfo],
+    [/^\/privacy$/, Privacy], [/^\/terms$/, Terms], [/^\/disclaimers$/, Disclaimers], [/^\/bot$/, Bot],
+  ];
+  const hit = table.find(([re]) => re.test(p));
+  return hit ? hit[1].preload() : Promise.resolve();
+}
 
 const PageFallback = () => (
   <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite">

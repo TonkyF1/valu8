@@ -23,7 +23,7 @@ export function FlowSteps({ current, className }: { current: number; className?:
               >
                 {done ? <Check className="h-3.5 w-3.5" aria-hidden /> : i + 1}
               </span>
-              <span className={cn("text-[11px] font-medium", active ? "text-foreground" : "text-muted-foreground")}>{label}</span>
+              <span className={cn("text-xs font-medium", active ? "text-foreground" : "text-muted-foreground")}>{label}</span>
             </div>
             {i < FLOW_STEPS.length - 1 && (
               <span aria-hidden className={cn("mx-2 mb-5 h-px flex-1", done ? "bg-primary" : "bg-border")} />

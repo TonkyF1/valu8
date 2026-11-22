@@ -35,7 +35,7 @@ export function ConditionGauge({ score, label }: Props) {
           </div>
         </div>
         <div
-          className="text-[10px] font-semibold uppercase tracking-[0.16em] px-2.5 py-1 rounded-full border"
+          className="text-xs font-semibold uppercase tracking-[0.16em] px-2.5 py-1 rounded-full border"
           style={{
             color: barColor,
             borderColor: `${barColor.replace(')', ' / 0.35)')}`,
@@ -69,7 +69,7 @@ export function ConditionGauge({ score, label }: Props) {
       </div>
 
       {/* Scale labels */}
-      <div className="flex justify-between mt-1.5 text-[9px] text-muted-foreground/60 uppercase tracking-wider">
+      <div className="flex justify-between mt-1.5 text-[9px] text-muted-foreground uppercase tracking-wider">
         <span>Poor</span>
         <span>Fair</span>
         <span>Good</span>

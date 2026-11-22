@@ -102,11 +102,11 @@ export function PhotoUploader({ photos, onChange }: Props) {
                   </>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Plus className="h-5 w-5 text-muted-foreground/30" strokeWidth={1.5} />
+                    <Plus className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
                   </div>
                 )}
               </button>
-              <span className="text-[10px] text-muted-foreground text-center leading-tight max-w-[95%]">
+              <span className="text-xs text-muted-foreground text-center leading-tight max-w-[95%]">
                 {slot.label}
               </span>
             </div>

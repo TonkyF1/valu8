@@ -70,7 +70,7 @@ export default function Pricing() {
                 <li key={i} className="flex gap-2.5 text-sm"><Check className="h-4 w-4 text-primary shrink-0 mt-0.5" aria-hidden />{i}</li>
               ))}
             </ul>
-            <Button asChild variant="hero" size="lg" className="mt-6 w-full"><Link to="/">Get my full report · £2.99</Link></Button>
+            <Button asChild variant="hero" size="lg" className="mt-6 w-full"><Link to="/">Get my Premium Report · £2.99</Link></Button>
           </section>
         </div>
 

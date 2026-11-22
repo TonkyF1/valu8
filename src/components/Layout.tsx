@@ -14,12 +14,21 @@ export function TestModeBanner() {
   return null;
 }
 
-type Item = { to: string; label: string; icon: typeof Car };
+type Item = { to: string; label: string; icon: typeof Car; wide?: boolean };
 
 const PUBLIC_NAV: Item[] = [
   { to: START_PATH, label: "Value a car", icon: Car },
   { to: "/check", label: "Check an advert", icon: SearchCheck },
   { to: "/pricing", label: "Pricing", icon: Tag },
+];
+
+/** Laptop header for visitors: the key pages one click away. `wide` links only show from 1024px so tablets don't crowd. */
+const DESKTOP_NAV: Item[] = [
+  { to: "/how-it-works", label: "How it works", icon: ListChecks, wide: true },
+  { to: "/value", label: "Car values", icon: Car, wide: true },
+  { to: "/guides", label: "Guides", icon: BookOpen, wide: true },
+  { to: "/pricing", label: "Pricing", icon: Tag },
+  { to: "/check", label: "Check an advert", icon: SearchCheck },
 ];
 
 const MORE_NAV: Item[] = [
@@ -59,9 +68,9 @@ export function Header() {
             <Logo />
           </HomeLink>
 
-          <nav aria-label="Main" className="hidden md:flex items-center gap-1 ml-4">
-            {items.filter((i) => user || i.to !== START_PATH).map((i) => (
-              <RouterNavLink key={i.to} to={i.to} className={linkCls}>{i.label}</RouterNavLink>
+          <nav aria-label="Main" className="hidden md:flex items-center gap-0.5 ml-2 lg:ml-4">
+            {(user ? items : DESKTOP_NAV).map((i) => (
+              <RouterNavLink key={i.to} to={i.to} className={({ isActive }) => cn(linkCls({ isActive }), i.wide && "hidden lg:inline-flex")}>{i.label}</RouterNavLink>
             ))}
           </nav>
 

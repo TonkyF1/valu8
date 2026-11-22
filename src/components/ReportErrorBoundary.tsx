@@ -44,7 +44,7 @@ export class ReportErrorBoundary extends Component<Props, State> {
               </Button>
             </div>
             {import.meta.env.DEV && this.state.error && (
-              <pre className="mt-6 text-left text-[10px] text-muted-foreground/60 overflow-auto max-h-40 p-2 bg-muted/30 rounded">
+              <pre className="mt-6 text-left text-xs text-muted-foreground overflow-auto max-h-40 p-2 bg-muted/30 rounded">
                 {this.state.error.message}
               </pre>
             )}

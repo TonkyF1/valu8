@@ -25,7 +25,7 @@ export const EMBED_INFO = {
     ["What your visitors get", [
       "They type their reg and Valu8 opens in a new tab with it filled in.",
       "A free private sale estimate, plus the car's official DVSA MOT history.",
-      "Free for your visitors, with a daily limit for guests. An optional full report is available on valu8.uk for a one-off £2.99.",
+      "Free for your visitors, with a daily limit for guests. An optional Premium Report is available on valu8.uk for a one-off £2.99.",
     ]],
     ["What it doesn't do", [
       "No advertising or analytics cookies and no tracking inside the box. Your site name is only passed along in the link so we can see which sites send visitors.",

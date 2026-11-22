@@ -12,14 +12,13 @@ import { VALUE_BREADCRUMB_JSONLD_ID, VALUE_FAQ_JSONLD_ID, VALUE_NO_DATA_COPY, fi
 import { HUB_BREADCRUMB_JSONLD_ID, PRICE_TYPES_COPY, PRICE_TYPES_H2, PRICE_TYPES_LINKS, VALUE_DEPRECIATION_H2, VALUE_MILEAGE_H2, VALUE_MILEAGE_INTRO, VALUE_PAGES_MODIFIED_ISO, VALUE_UPDATED_TEXT, VALUE_WEBPAGE_JSONLD_ID, hubBreadcrumbJsonLd, valueDepreciationText, valueMileageYear, valueWebPageJsonLd } from "@/data/valuePages";
 import { VALUE_INDEX_H1, VALUE_INDEX_INTRO, sameMakeModels, VALUE_TABLE_NOTE, VALUE_YEARS_INTRO, YEAR_NOTE, gbp, miles, neighbourYears, valueIntro, valueName, valuePath, yearIntro, yearPath } from "@/data/valuePages";
 import { Card, Disclosure, HBars, StatTile, YearChart } from "@/components/value/ValueVisuals";
+import { VALUE_GRID_CLASS, VALUE_RAIL_CLASS, valueHeadlineBand } from "@/data/valuePages";
 import NotFound from "./NotFound";
 import { useEffect, type MouseEvent } from "react";
 import { enrichedYearFaqJsonLd, enrichedYearHtml, findEnrichedYear } from "@/data/enrichedYears";
 import { enrichedModelHtml, findEnrichedModel } from "@/data/enrichedModels";
 
 const ARTICLE_CLASS = "mt-8 text-foreground/85 leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-10 [&_h2]:mb-3 [&_p]:my-4 [&_strong]:text-foreground [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-4 [&_li]:my-1.5 [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_.guide-table]:my-6 [&_.guide-table]:overflow-x-auto [&_.guide-table]:rounded-xl [&_.guide-table]:border [&_.guide-table]:border-border [&_table]:w-full [&_table]:text-sm [&_th]:text-left [&_th]:font-medium [&_th]:text-muted-foreground [&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3 [&_tr]:border-b [&_tr]:border-border [&_tbody_tr:last-child]:border-0";
-
-const bandStartNum = (label: string) => parseInt(label, 10);
 
 /** Client-side navigation for internal links inside prerendered article HTML. */
 function useArticleClick() {
@@ -32,12 +31,12 @@ function useArticleClick() {
   };
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
   return (
     <div className="min-h-screen flex flex-col">
       <TestModeBanner />
       <Header />
-      <main id="main" className="flex-1 container max-w-3xl py-8 md:py-14 pb-28 md:pb-14">{children}</main>
+      <main id="main" className={`flex-1 container ${wide ? "max-w-3xl lg:max-w-6xl" : "max-w-3xl"} py-8 md:py-14 pb-28 md:pb-14`}>{children}</main>
       <Footer />
     </div>
   );
@@ -108,6 +107,42 @@ function Guidance({ m }: { m: ValueRef }) {
   );
 }
 
+/** Laptop layout: content column plus a sticky summary rail (the rail only exists from 1024px). Same classes as the prerender. */
+const VALUE_GRID = VALUE_GRID_CLASS;
+
+/**
+ * Laptop-only sticky rail: the headline figures and the CTA stay in view while the reader scrolls the charts and
+ * tables. Purely a repeat of figures already on the page (data-decor, excluded from the copy check); on phones and
+ * tablets the same figures and CTA sit in the hero instead.
+ */
+function SummaryRail({ name, median, range, adverts, band, jump }: { name: string; median: string; range: string; adverts: string; band: string; jump: [string, string][] }) {
+  return (
+    <aside className={VALUE_RAIL_CLASS} data-decor="" aria-label={`${name} price summary`}>
+      <div className="rounded-3xl border border-border bg-card/70 p-6 backdrop-blur">
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{name} · {band}</p>
+        <p className="mt-3 text-4xl font-semibold tabular-nums tracking-tight text-primary">{median}</p>
+        <p className="mt-1 text-sm text-muted-foreground">Median asking price</p>
+        <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-5 text-sm">
+          <div><dt className="text-muted-foreground">Typical range</dt><dd className="mt-1 font-semibold tabular-nums text-foreground">{range}</dd></div>
+          <div><dt className="text-muted-foreground">Adverts</dt><dd className="mt-1 font-semibold tabular-nums text-foreground">{adverts}</dd></div>
+        </dl>
+        <Button asChild variant="hero" size="lg" className="mt-6 w-full whitespace-normal text-center h-auto min-h-12 py-3"><Link to="/">Value my {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">Your reg, mileage and official DVSA MOT history give a figure for your own car.</p>
+      </div>
+      {jump.length > 1 && (
+        <nav aria-label="On this page" className="mt-4 rounded-2xl border border-border p-4">
+          <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">On this page</p>
+          <ul className="space-y-0.5 text-sm">
+            {jump.map(([id, label]) => (
+              <li key={id}><a href={`#${id}`} className="flex min-h-[36px] items-center rounded-lg px-2 text-foreground/80 hover:bg-muted/50 hover:text-foreground">{label}</a></li>
+            ))}
+          </ul>
+        </nav>
+      )}
+    </aside>
+  );
+}
+
 function Crumbs({ name }: { name: string }) {
   return (
     <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground mb-4">
@@ -153,13 +188,13 @@ export function ValueIndex() {
   useSeo(getValueRouteMeta("/value"));
   useHeadJsonLd(HUB_BREADCRUMB_JSONLD_ID, hubBreadcrumbJsonLd("Car values", "/value"));
   return (
-    <Shell>
+    <Shell wide>
       <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{VALUE_INDEX_H1}</h1>
-      <p className="text-muted-foreground mt-4 leading-relaxed">{VALUE_INDEX_INTRO}</p>
+      <p className="text-muted-foreground mt-4 leading-relaxed max-w-3xl">{VALUE_INDEX_INTRO}</p>
       {valueModelsByMake().map((g) => (
         <section key={g.make} className="mt-8" aria-labelledby={`make-${g.make}`}>
           <h2 id={`make-${g.make}`} className="text-lg font-semibold mb-2">{g.make}</h2>
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {g.models.map((v) => (
               <li key={v.slug}>
                 <Link to={valueModelPath(v)} className="flex min-h-[44px] items-center justify-between rounded-xl border border-border px-4 py-3 hover:border-primary/50">
@@ -192,25 +227,34 @@ export default function ModelValue() {
   const mileageYear = valueMileageYear(m);
   const enrichedModel = findEnrichedModel(m.slug);
   const depn = valueDepreciation(m);
-  const headline = m.bands.length ? [...m.bands].sort((x, y) => bandStartNum(y.band) - bandStartNum(x.band))[0] : null;
+  const headline = valueHeadlineBand(m);
+  const jump: [string, string][] = [
+    ["prices", "Prices by year group"],
+    ...(m.years.length > 0 ? [["years", "Prices by year"] as [string, string]] : []),
+    ...(depreciation ? [["depreciation", "Depreciation"] as [string, string]] : []),
+    ...(mileageYear ? [["mileage-model", "Mileage"] as [string, string]] : []),
+    ["faq", "FAQ"],
+  ];
   return (
-    <Shell>
+    <Shell wide>
       <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground mb-4">
         <Link to="/" className="hover:text-foreground">Home</Link> <span aria-hidden>/</span>{" "}
         <Link to="/value" className="hover:text-foreground">Car values</Link> <span aria-hidden>/</span>{" "}
         <span aria-current="page">{name}</span>
       </nav>
+      <div className={VALUE_GRID}>
+      <div className="min-w-0">
       <div className="rounded-3xl border border-border bg-gradient-to-b from-card to-background p-5 md:p-9">
         <h1 className="text-4xl md:text-5xl font-semibold tracking-tight">{valueH1(m)}</h1>
         <p className="mt-5 text-lg md:text-xl leading-relaxed text-foreground">{valueAnswer(m)}</p>
         {headline && (
-          <div className="mt-6 grid grid-cols-2 gap-3" data-decor="">
-            <StatTile label="Median asking price" value={gbp(headline.median)} />
+          <div className="mt-6 grid grid-cols-2 gap-3 lg:hidden" data-decor="">
+            <StatTile accent label="Median asking price" value={gbp(headline.median)} />
             <StatTile label="Adverts" value={m.listings.toLocaleString("en-GB")} />
             <StatTile wide label="Typical range" value={`${gbp(headline.low)} – ${gbp(headline.high)}`} />
           </div>
         )}
-        <div className="mt-6 rounded-2xl border border-primary/30 bg-background/70 p-5">
+        <div className={`cta mt-6 rounded-2xl border border-primary/30 bg-background/70 p-5${headline ? " lg:hidden" : ""}`}>
           <h2 className="text-lg font-semibold">Get a figure for your {name}</h2>
           <p className="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p>
           <Button asChild variant="hero" size="xl" className="mt-4 w-full max-w-full whitespace-normal text-center h-auto min-h-14 py-3"><Link to="/">Value my {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
@@ -231,7 +275,7 @@ export default function ModelValue() {
                   {m.bands.map((b) => (
                     <tr key={b.band} className="border-b border-border last:border-0">
                       <td className="px-4 py-3">{b.band}</td>
-                      <td className="px-4 py-3 font-semibold text-primary tabular-nums">{gbp(b.median)}</td>
+                      <td className="px-4 py-3 font-semibold text-foreground tabular-nums">{gbp(b.median)}</td>
                       <td className="px-4 py-3 text-muted-foreground tabular-nums">{gbp(b.low)} – {gbp(b.high)}</td>
                     </tr>
                   ))}
@@ -260,7 +304,7 @@ export default function ModelValue() {
                     {m.years.map((y) => (
                       <tr key={y.year} className="border-b border-border last:border-0">
                         <td className="px-4 py-3"><Link to={yearPath(m, y)} className="inline-flex min-h-[44px] items-center text-primary hover:underline tabular-nums">{y.year}</Link></td>
-                        <td className="px-4 py-3 font-semibold text-primary tabular-nums">{gbp(y.median)}</td>
+                        <td className="px-4 py-3 font-semibold text-foreground tabular-nums">{gbp(y.median)}</td>
                         <td className="px-4 py-3 text-muted-foreground tabular-nums whitespace-nowrap">{gbp(y.low)} – {gbp(y.high)}</td>
                         <td className="px-4 py-3 text-muted-foreground tabular-nums whitespace-nowrap">{y.mileage ? miles(y.mileage) : "–"}</td>
                         <td className="px-4 py-3 text-muted-foreground tabular-nums">{y.count}</td>
@@ -306,7 +350,7 @@ export default function ModelValue() {
                         {mileageYear.byMileage.map((r) => (
                           <tr key={r.label} className="border-b border-border last:border-0">
                             <td className="px-4 py-3">{r.label}</td>
-                            <td className="px-4 py-3 font-semibold text-primary tabular-nums">{gbp(r.median)}</td>
+                            <td className="px-4 py-3 font-semibold text-foreground tabular-nums">{gbp(r.median)}</td>
                             <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.count}</td>
                           </tr>
                         ))}
@@ -339,6 +383,9 @@ export default function ModelValue() {
       <Guidance m={m} />
       <MoreFromMake slug={m.slug} make={m.make} />
       <p className="mt-10 text-sm"><Link to="/value" className="text-primary hover:underline">See all models</Link></p>
+      </div>
+      {headline && <SummaryRail name={name} median={gbp(headline.median)} range={`${gbp(headline.low)} – ${gbp(headline.high)}`} adverts={m.listings.toLocaleString("en-GB")} band={headline.band} jump={jump} />}
+      </div>
       <div data-decor="" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 p-3 backdrop-blur md:hidden">
         <Button asChild variant="hero" size="lg" className="w-full"><Link to="/">Value my {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
       </div>
@@ -398,7 +445,7 @@ export function ModelYearValue() {
                 {y.byMileage.map((r) => (
                   <tr key={r.label} className="border-b border-border last:border-0">
                     <td className="px-4 py-3">{r.label}</td>
-                    <td className="px-4 py-3 font-semibold text-primary tabular-nums">{gbp(r.median)}</td>
+                    <td className="px-4 py-3 font-semibold text-foreground tabular-nums">{gbp(r.median)}</td>
                     <td className="px-4 py-3 text-muted-foreground tabular-nums">{r.count}</td>
                   </tr>
                 ))}

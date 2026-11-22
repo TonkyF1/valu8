@@ -20,7 +20,7 @@ describe("two-button premium flow", () => {
     expect(REPORT_ADDS).toHaveLength(PREMIUM_INCLUDES.length);
   });
   it("landing and details show both buttons with the approved wording", () => {
-    for (const s of ["Free Valuation", "Finish Valuation", "Premium Report<small>£2.99 one-off</small>", "Buying or Selling, Know the right price", "We don't buy cars", "Check another plate"]) expect(flow).toContain(s);
+    for (const s of ["Free Valuation", "Finish Valuation", "Premium Report<small>£2.99 one-off</small>", "Buying or selling? Know the right price.", "We don't buy cars", "Check another plate"]) expect(flow).toContain(s);
     expect(flow).not.toContain("Update with my details");
     expect(flow).not.toContain("No account needed");
     expect(flow.match(/data-testid="premium-(landing|details)"/g)).toHaveLength(2);

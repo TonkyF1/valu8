@@ -131,7 +131,7 @@ export const PRICE_TYPES_H2 = "Private sale, part-exchange or dealer: which pric
 export const PRICE_TYPES_COPY = (m: ValueRef): string[] => [
   `The figures on this page are asking prices from UK used-car adverts. They show what sellers are hoping to get for a ${valueName(m)}, so the price a car actually sells for is often a little lower after negotiation.`,
   `Selling privately usually gets you closest to these figures, once you leave some room to haggle. A part-exchange offer from a dealer is usually lower, because the dealer has to prepare and resell the car at a profit.`,
-  `Buying from a dealer usually costs more than buying privately, but can include preparation and a warranty. A free Valu8 valuation gives you a private-sale estimate for your own car, and the optional £2.99 Full report adds part-exchange and dealer figures.`,
+  `Buying from a dealer usually costs more than buying privately, but can include preparation and a warranty. A free Valu8 valuation gives you a private-sale estimate for your own car, and the optional £2.99 Premium Report adds part-exchange and dealer figures.`,
 ];
 export const PRICE_TYPES_LINKS: [string, string][] = [
   ["/guides/part-exchange-vs-private-sale", "Part-exchange vs private sale"],
@@ -356,19 +356,41 @@ function guidanceHtml(m: ValueRef): string {
     + (g.related.length ? `<section class="mt-8"><h2>Related valuations</h2>${chips(g.related.map((v) => `<li><a class="${CHIP}" href="${valueModelPath(v)}">${esc(modelDisplayName(v))}</a></li>`).join(""))}</section>` : "");
 }
 
+/** Laptop (1024px+) layout for model pages: content column plus a sticky 340px summary rail. Shared with ModelValue.tsx. */
+export const VALUE_GRID_CLASS = "lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-10";
+export const VALUE_RAIL_CLASS = "hidden lg:block lg:sticky lg:top-24";
+
+/** The newest year group: the figures in the hero tiles and the laptop summary rail. */
+export function valueHeadlineBand(m: ModelPrices): ModelPrices["bands"][number] | null {
+  return m.bands.length ? [...m.bands].sort((x, y) => parseInt(y.band, 10) - parseInt(x.band, 10))[0] : null;
+}
+
+const STAT = (label: string, value: string, wide = false, accent = false) => `<div class="${wide ? "col-span-2 " : ""}rounded-xl border border-border bg-background/60 px-4 py-3"><div class="text-xs text-muted-foreground">${label}</div><div class="mt-1 text-xl md:text-2xl font-semibold tabular-nums ${accent ? "text-primary" : "text-foreground"}">${value}</div></div>`;
+/** Decorative repeat of on-page figures (data-decor): hero tiles on phones/tablets, sticky rail on laptops. */
+function railHtml(m: ModelPrices, name: string): string {
+  const h = valueHeadlineBand(m);
+  if (!h) return "";
+  return `<aside class="${VALUE_RAIL_CLASS}" data-decor><div class="rounded-3xl border border-border bg-card/70 p-6"><p class="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">${name} · ${esc(h.band)}</p>`
+    + `<p class="mt-3 text-4xl font-semibold tabular-nums tracking-tight text-primary">${gbp(h.median)}</p><p class="mt-1 text-sm text-muted-foreground">Median asking price</p>`
+    + `<div class="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-5 text-sm"><div><div class="text-muted-foreground">Typical range</div><div class="mt-1 font-semibold tabular-nums">${gbp(h.low)} – ${gbp(h.high)}</div></div><div><div class="text-muted-foreground">Adverts</div><div class="mt-1 font-semibold tabular-nums">${m.listings.toLocaleString("en-GB")}</div></div></div>`
+    + `<a class="mt-6 inline-flex w-full min-h-12 items-center justify-center rounded-md bg-primary px-6 py-3 font-semibold text-primary-foreground" href="/valuation/new">Value my ${name} free</a></div></aside>`;
+}
+
 const MAIN_CLASS = "container max-w-3xl py-8 md:py-14 pb-28 md:pb-14 [&_h1]:text-4xl md:[&_h1]:text-5xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:font-medium [&_h3]:py-1 [&_nav]:text-xs [&_nav]:text-muted-foreground [&_nav]:mb-4 [&_section>h2]:mb-3 [&_.cta_h2]:text-lg";
 const MAIN_OPEN = `<main id="main" class="${MAIN_CLASS}">`;
 const CRUMBS = (name: string) => `<nav aria-label="Breadcrumb"><a href="/">Home</a> / <a href="${VALUE_INDEX_PATH}">Car values</a> / <span aria-current="page">${name}</span></nav>`;
 const HERO = "rounded-3xl border border-border bg-gradient-to-b from-card to-background p-5 md:p-9";
-const CTA_BOX = (name: string) => `<div class="cta mt-6 rounded-2xl border border-primary/30 bg-background/70 p-5"><h2>Get a figure for your ${name}</h2><p class="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p><p class="mt-4"><a class="inline-flex w-full min-h-14 items-center justify-center rounded-md bg-primary px-6 py-3 font-semibold text-primary-foreground" href="/valuation/new">Value my ${name} free</a></p></div>`;
+const CTA_BOX = (name: string, railed = false) => `<div class="cta mt-6 rounded-2xl border border-primary/30 bg-background/70 p-5${railed ? " lg:hidden" : ""}"><h2>Get a figure for your ${name}</h2><p class="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p><p class="mt-4"><a class="inline-flex w-full min-h-14 items-center justify-center rounded-md bg-primary px-6 py-3 font-semibold text-primary-foreground" href="/valuation/new">Value my ${name} free</a></p></div>`;
 
 export function valueBodyHtml(m: ModelPrices): string {
   const name = esc(valueName(m));
   const hasDep = !!valueDepreciationText(m), hasMil = !!valueMileageYear(m);
   const dm = depreciationHtml(m) + mileageHtml(m);
-  return `${MAIN_OPEN}${CRUMBS(name)}<div class="${HERO} [&_h1+p]:mt-5 [&_h1+p]:text-lg md:[&_h1+p]:text-xl [&_h1+p]:leading-relaxed">`
+  const h = valueHeadlineBand(m);
+  const tiles = h ? `<div class="mt-6 grid grid-cols-2 gap-3 lg:hidden" data-decor>${STAT("Median asking price", gbp(h.median), false, true)}${STAT("Adverts", m.listings.toLocaleString("en-GB"))}${STAT("Typical range", `${gbp(h.low)} – ${gbp(h.high)}`, true)}</div>` : "";
+  return `${MAIN_OPEN.replace("max-w-3xl", "max-w-3xl lg:max-w-6xl")}${CRUMBS(name)}<div class="${VALUE_GRID_CLASS}"><div class="min-w-0"><div class="${HERO} [&_h1+p]:mt-5 [&_h1+p]:text-lg md:[&_h1+p]:text-xl [&_h1+p]:leading-relaxed">`
     + `<h1>${esc(valueH1(m))}</h1><p>${esc(valueAnswer(m) ?? "")}</p>`
-    + CTA_BOX(name) + `<p class="text-muted-foreground mt-6 text-sm leading-relaxed">${esc(valueIntro(m))}</p></div>`
+    + tiles + CTA_BOX(name, !!h) + `<p class="text-muted-foreground mt-6 text-sm leading-relaxed">${esc(valueIntro(m))}</p></div>`
     + card(`<section><h2>Typical ${name} asking prices by year group</h2>`
       + tableDisclosure(`<table><caption>Typical ${name} asking prices by year group</caption><thead><tr><th>Years</th><th>Median asking price</th><th>Typical range</th></tr></thead><tbody>`
       + m.bands.map((b) => `<tr><td>${esc(b.band)}</td><td>${gbp(b.median)}</td><td>${gbp(b.low)} – ${gbp(b.high)}</td></tr>`).join("")
@@ -380,7 +402,7 @@ export function valueBodyHtml(m: ModelPrices): string {
     + priceTypesHtml(m)
     + guidanceHtml(m)
     + moreFromMakeHtml(m)
-    + `<p class="mt-10 text-sm"><a class="text-primary" href="/value">All models</a></p></main>`;
+    + `<p class="mt-10 text-sm"><a class="text-primary" href="/value">All models</a></p></div>${railHtml(m, name)}</div></main>`;
 }
 
 export function yearBodyHtml(m: ModelPrices, y: YearPrices): string {

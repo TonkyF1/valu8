@@ -116,7 +116,7 @@ export default function Compare() {
                     ))}
                   </tbody>
                 </table>
-                <p className="text-[11px] text-muted-foreground mt-3">Tax, ULEZ and repair figures are estimates. Valuations reflect the date each report was generated.</p>
+                <p className="text-xs text-muted-foreground mt-3">Tax, ULEZ and repair figures are estimates. Valuations reflect the date each report was generated.</p>
               </div>
             )}
           </>

@@ -90,7 +90,7 @@ Owner decisions:
 - Anonymised records (no name, email, registration or photos) kept indefinitely to build the pricing database; anonymised data is not personal data.
 - Registration, photos and reports linked to an account kept only while needed for the account; users can request deletion of account data.
 - Personal data is never sold.
-- Controller: Tony Fisher trading as Valu8 (src/lib/legal.ts); contact by email only, no postal address published.
+- Controller: Valu8 (valu8.uk), no personal name published (src/lib/legal.ts); contact by email only, no postal address published.
 Wording added to section 3 ("Improving our valuations") and section 5 (Retention); "Last updated" set to 23 October 2026.
 
 ## 2026-10-24 — diagnosis and fixes (commit 3e38643)
