@@ -88,13 +88,13 @@ describe("intent carried through the flow", () => {
     expect(flow).toContain('data-testid="asking-price"');
     const rep = read("src/pages/Report.tsx");
     expect(rep).toContain("intent={reportIntent}");
-    expect(rep).toContain("downloadPremiumPdf(v, r, { intent: reportIntent, valuationId: v.id })");
+    expect(rep).toMatch(/downloadPremiumPdf\(\{ ...v, [^}]*\}, r, \{ intent: reportIntent, valuationId: v.id,/);
   });
 });
 
 describe("buyer and seller copy", () => {
   it("names, CTA and lists", () => {
-    expect(PREMIUM_TITLE).toBe("Premium Valuation Report · £2.99");
+    expect(PREMIUM_TITLE).toBe("Premium Report · £2.99");
     expect(PREMIUM_CTA).toBe("Unlock Premium Report · £2.99");
     expect(PREMIUM_INCLUDES_BUYING).toHaveLength(8);
     expect(includesFor("selling")).toBe(PREMIUM_INCLUDES);
@@ -119,7 +119,7 @@ describe("buyer and seller copy", () => {
     const secs = read("src/components/home/BuyerSellerSections.tsx");
     expect(secs).not.toMatch(/coming soon/i);
     expect(secs).toContain("Illustrative example only, not a real vehicle or valuation.");
-    [flow, secs, read("src/components/PremiumReport.tsx"), read("src/styles/buyerSeller.css")].forEach((t) => expect(t).not.toContain("—"));
+    [flow, secs, read("src/components/report/PremiumView.tsx"), read("src/styles/buyerSeller.css")].forEach((t) => expect(t).not.toContain("—"));
     expect(read("src/components/Layout.tsx")).toContain("Value a car");
     expect(read("src/components/Layout.tsx")).not.toContain("Value my car");
     const m = getRouteMeta("/");

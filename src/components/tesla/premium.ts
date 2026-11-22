@@ -1,8 +1,8 @@
-/** Premium Valuation Report (£2.99) copy. Only things the paid report really contains. */
+/** Premium Report (£2.99) copy. Only things the paid report really contains. */
 import type { Intent } from "@/lib/intent";
 
-export const PREMIUM_NAME = "Premium Valuation Report";
-export const PREMIUM_TITLE = "Premium Valuation Report · £2.99";
+export const PREMIUM_NAME = "Premium Report";
+export const PREMIUM_TITLE = "Premium Report · £2.99";
 export const PREMIUM_CTA = "Unlock Premium Report · £2.99";
 export const PREMIUM_REASSURE = "One-off payment. No subscription.";
 /** Money-back promise (wording approved by Tony, 21 Nov 2026). Shown wherever someone can pay. */

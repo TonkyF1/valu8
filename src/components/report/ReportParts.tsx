@@ -48,7 +48,7 @@ export function MiniTier({ label, tag, tip, value }: { label: string; tag: strin
     <div className="rounded-lg bg-muted/30 border border-border/50 px-3 py-2.5 transition-colors hover:border-border">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs  text-muted-foreground">{label}</span>
-        <span className="text-xs  text-muted-foreground/70">{tag}</span>
+        <span className="text-xs  text-muted-foreground">{tag}</span>
       </div>
       <div className="text-lg font-medium tabular-nums mt-0.5">£{value.toLocaleString()}</div>
     </div>
@@ -133,7 +133,7 @@ export function CollapsibleSection({
               {badge}
             </div>
             {preview && !open && (
-              <p className="text-xs text-muted-foreground/80 mt-1 line-clamp-1">{preview}</p>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{preview}</p>
             )}
           </div>
           {right && <div className="mr-2">{right}</div>}
@@ -241,13 +241,10 @@ export function PhotoFeedback({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg sm:text-xl font-semibold text-foreground tracking-tight">Vision AI Analysis</h2>
-                  <span className="text-xs  px-2 py-0.5 rounded-full border text-primary bg-primary/10 border-primary/30 font-semibold">
-                    Valu8 exclusive
-                  </span>
+                  <h2 className="text-lg sm:text-xl font-semibold text-foreground tracking-tight">Photo check</h2>
                 </div>
-                <div className="text-xs  text-muted-foreground/80 mt-0.5">
-                  Powered by multimodal vision · {insights.length * 12}+ datapoints scanned
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  What our photo check spotted, and what it means for the price
                 </div>
               </div>
             </div>
@@ -420,12 +417,12 @@ export function PhotoFeedback({
             </div>
           )}
 
-          <div className="mt-4 flex items-center justify-between gap-3 flex-wrap text-[11px] text-muted-foreground/80">
+          <div className="mt-4 flex items-center justify-between gap-3 flex-wrap text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="h-3 w-3 text-primary/70" />
               AI-generated from visible evidence · always verify in person
             </span>
-            <span className="text-muted-foreground/60">Tap any photo to view full size</span>
+            <span className="text-muted-foreground">Tap any photo to view full size</span>
           </div>
         </div>
       </div>

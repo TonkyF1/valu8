@@ -65,7 +65,8 @@ const waitFor = (get: () => string | null, ms: number) => new Promise<string | n
   tick();
 });
 
-export function TeslaFlow() {
+/** onFlowChange: true once a car is on screen (details form, result), so the page can drop its marketing below. */
+export function TeslaFlow({ onFlowChange }: { onFlowChange?: (active: boolean) => void } = {}) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stage, setStage] = useState<Stage>("idle");
@@ -496,6 +497,7 @@ export function TeslaFlow() {
   // bring the visitor back to the top so they see the change. The result view handles its own instant scroll.
   const view = !hasCar ? "entry" : refined ? "result" : "details";
   const lastView = useRef(view);
+  useEffect(() => { onFlowChange?.(hasCar); }, [hasCar, onFlowChange]);
   useEffect(() => {
     if (lastView.current === view) return;
     const from = lastView.current; lastView.current = view;
