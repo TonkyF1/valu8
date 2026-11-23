@@ -31,6 +31,7 @@ import { displayMake } from "../_shared/vehicle-text.ts";
 import { ccPlausibility } from "../_shared/ccPlausibility.ts";
 import { canonicalVariantName, variantLikePatterns, tieredVariantReference, rareEvidence, rareAiPrompt, parseRareAi, rareAiFigures, rareNote, sameGeneration, type RareAiEstimate, type RareText } from "../_shared/rareVariant.ts";
 import { assessImport, importNote } from "../_shared/importCheck.ts";
+import { confidenceMode, askAiConfidence, guardConfidence, confidenceFields, nearestSummary, type ConfEvidence, type AiConfidence } from "../_shared/aiConfidence.ts";
 import { resolveVariant, perfCompReference, variantToken, reconcileProsePrices, stripPriceSentences, proseRatio, sanityVerdict, aiTextVariant, optionRegex, MIN_VARIANT_COMPS, type ShownPrices, type PerfCompRow } from "../_shared/variantGuard.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
@@ -1702,6 +1703,8 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     // ----- eng-4 guards: performance variant comps + cross-source sanity -----
     let detectedModel: string | undefined = variantRes.displayModel;
     let guardNote: string | null = null;
+    let sanityOut: { verdict: "ok" | "lessCertain" | "unavailable"; reasons: string[] } | null = null;
+    let ccImplausible = false;
     let rareVariantInfo: { tier: string; n: number; name: string } | null = null;
     const markUnavailable = (why: string) => {
       valuationUnavailable = true;
@@ -1806,6 +1809,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
         const sv = sanityVerdict({ shown: values.privateSale, aiPrivate: Number(ai.privateSaleValue) || null,
           disagreement: Number((ensembleShadow as any)?.disagreement) || null, proseRatio: pr });
         debugInfo.sanity = { ...sv, proseRatio: pr };
+        sanityOut = sv as any;
         if (sv.verdict === "unavailable" && !rareVariantInfo) {
           markUnavailable("We can’t value this one accurately yet — our data sources disagree too much on this car (it may be a rare or performance version). We'd rather not show a number that could mislead you; a specialist will give you a proper figure.");
         } else if (sv.verdict === "lessCertain" || (sv.verdict === "unavailable" && rareVariantInfo)) {
@@ -1821,6 +1825,7 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       // Implausible engine size for the model (advisory: lowers certainty, never moves the price).
       const ccChk = ccPlausibility(body.make, body.model, Number(body.engineCapacity ?? (body.guestSave?.vehicle as any)?.engineCapacity) || null);
       debugInfo.ccCheck = ccChk;
+      ccImplausible = !!ccChk.implausible;
       if (ccChk.implausible && !valuationUnavailable && values.privateSale > 0) {
         confidence = "Very Low";
         guardNote = guardNote ? `${guardNote} ${ccChk.note}` : ccChk.note;
@@ -1973,6 +1978,46 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       motSource = "unavailable";
     }
 
+    // conf-ai-1 (trial): AI-assisted confidence rating. Runs after every price, range and valuationUnavailable
+    // decision is final, and only ever sets the confidence keys (see _shared/aiConfidence.ts). AI_CONFIDENCE=off|shadow|on.
+    const confMode = confidenceMode(Deno.env.get("AI_CONFIDENCE"));
+    const dataLevel = confidence, dataReason = confidenceReason;
+    let confAi: AiConfidence | null = null, confGuard: ReturnType<typeof guardConfidence> | null = null, confMs: number | undefined;
+    if (confMode !== "off" && !valuationUnavailable && values.privateSale > 0) {
+      try {
+        const ageY = CURRENT_YEAR - Number(body.year);
+        const shownSrc = engineShown && !engineRepriced ? "valu8_comps" : dataSource;
+        const relevantComps = shownSrc === "marketcheck" ? (mc?.count ?? 0)
+          : ownForCap && (ownForCap.level === "model" || ownForCap.level === "family") ? (ownForCap.nComps ?? 0) : 0;
+        const figs = [Number((pmShadow as any)?.pmWithMot ?? (pmShadow as any)?.private) || 0, ownForCap && !ownForCap.unavailable ? ownForCap.privatePrice : 0,
+          dataSource === "ai_estimate" ? 0 : Number(ai.privateSaleValue) || 0].filter((x) => x > 0);
+        const sig = preAi?.motAdj?.signals ?? null;
+        const ev: ConfEvidence = {
+          make: displayMake(body.make), model: body.model, variant: body.variant ?? null, year: Number(body.year), ageYears: ageY, mileage: pricedMiles,
+          fuel: body.fuelType ?? null, gearbox: body.transmission ?? null, pricingSource: shownSrc, dataLevel, dataReason,
+          ownComps: ownForCap ? { level: ownForCap.level ?? null, nComps: ownForCap.nComps ?? 0, score: ownForCap.confidenceScore ?? null } : null,
+          nearest: nearestSummary(ownNearest, Number(body.year), pricedMiles),
+          marketListings: mc?.count ?? null, pmModelExamples: preAi?.pm.private.n_model ?? null,
+          rangeWidthPct: rangeHigh > rangeLow ? Math.round((rangeHigh - rangeLow) / values.privateSale * 100) : null,
+          disagreement: Number((ensembleShadow as any)?.disagreement) || 0,
+          sourcesAgreeWithinPct: figs.length >= 2 ? Math.round((Math.max(...figs) - Math.min(...figs)) / values.privateSale * 100) : null,
+          sanity: sanityOut?.verdict ?? "unknown", sanityReasons: sanityOut?.reasons ?? [],
+          importStatus: importInfo.status, perf: !!perf || !!ownForCap?.perf, rareVariant: rareVariantInfo ? (rareVariantInfo as any).tier : null,
+          ccImplausible,
+          mot: sig ? { tests: sig.tests, cleanHistory: sig.cleanHistory, mileageAnomaly: sig.mileageAnomaly, advisoriesLatest: sig.advisoriesLatest, noValidMot: sig.noValidMot } : null,
+          mileageCheck: mileageCheck.status ?? null,
+          photos: photoUrls.length ? { count: photoUrls.length, trusted: !photosUntrusted } : null,
+        };
+        const t0 = Date.now();
+        confAi = await askAiConfidence(ev, { url: AI_GATEWAY_URL, key: AI_API_KEY ?? "", model: Deno.env.get("AI_CONFIDENCE_MODEL") || "google/gemini-2.5-flash-lite",
+          timeoutMs: Number(Deno.env.get("AI_CONFIDENCE_TIMEOUT_MS")) || 6000 });
+        confMs = Date.now() - t0;
+        confGuard = guardConfidence({ dataLevel, dataReason, ai: confAi, sanity: ultraRare ? "unavailable" : ev.sanity, nComps: relevantComps,
+          isImport: importInfo.status !== "no", ageYears: ageY });
+      } catch (e) { console.warn("ai confidence failed; keeping data level", e); }
+    }
+    const confOut = confidenceFields(confMode, dataLevel, dataReason, confGuard, confAi, confMs);
+
     const report = {
       // null when no photos (UI gates on hasPhotos). Photos that fail the same-car/DVLA check get a neutral
       // 7.0 with a "Not scored" label so existing UI/PDF never renders null, and photoCheck says why.
@@ -1992,8 +2037,11 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
       priceRange: valuationUnavailable ? undefined : (cheapPriceRange(values.privateSale, Number(body.year) > 1900 ? new Date().getFullYear() - Number(body.year) : undefined) ?? undefined),
       askRange: askRangeOut,
       valueReasoning: sanitizeNarrativeYears(valuationUnavailable || engineShown ? pricingReasoning : ai.valueReasoning, body.year, CURRENT_YEAR, allowedNarrativeYears),
-      marketConfidence: confidence,
-      marketConfidenceReason: confidenceReason,
+      marketConfidence: confOut.marketConfidence,
+      marketConfidenceReason: confOut.marketConfidenceReason,
+      // conf-ai-1 audit: the rule-based level and the AI's (guarded) call, so the trial can be reviewed.
+      confidenceData: confOut.confidenceData,
+      ...(confOut.confidenceAi ? { confidenceAi: confOut.confidenceAi } : {}),
       // eng-6: the own-comps engine is the shown price whenever it was confident; label it honestly.
       pricingSource: engineShown && !engineRepriced && !valuationUnavailable ? "valu8_comps" : dataSource,
       // gb-1: which gearbox priced the car and where it came from (provided by the user/lookup, inferred from our adverts, unknown).
