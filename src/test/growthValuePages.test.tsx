@@ -10,7 +10,7 @@ import { MODEL_PRICES } from "@/data/modelPriceBands";
 import { VALUE_MODELS } from "@/data/valueModels";
 import { GUIDES } from "@/data/guides";
 import { ENRICHED_MODELS, findEnrichedModel, rivalsMarkdown } from "@/data/enrichedModels";
-import { VALUE_PAGES_MODIFIED_ISO, valueGuidance, valuePageModifiedIso } from "@/data/valuePages";
+import { VALUE_COPY_MODIFIED_ISO, VALUE_PAGES_MODIFIED_ISO, valueGuidance, valuePageModifiedIso } from "@/data/valuePages";
 import { buildRouteHtml } from "../../scripts/routePages";
 import { buildSitemap } from "../../scripts/sitemap";
 
@@ -30,7 +30,7 @@ describe("enriched /value model pages", () => {
     expect(ENRICHED_MODELS.map((e) => e.slug).sort()).toEqual(["ford-kuga", ...NEW].sort());
   });
 
-  it.each(NEW)("%s: generations, price factors, rivals and guides in the build HTML, dated 2026-11-21", (slug) => {
+  it.each(NEW)("%s: generations, price factors, rivals and guides in the build HTML, dated 2026-11-23", (slug) => {
     const m = by(slug), html = built(slug);
     expect(html).toMatch(/<h2>[^<]+ generations and what they mean for the price<\/h2>/);
     expect(html).toMatch(/<h2>What moves the price of a used [^<]+<\/h2>/);
@@ -38,8 +38,8 @@ describe("enriched /value model pages", () => {
     expect(html).toContain('href="/guides/part-exchange-vs-private-sale"');
     expect(html.match(/<h1\b/g)).toHaveLength(1);
     expect(words(html)).toBeGreaterThan(1200);
-    expect(valuePageModifiedIso(slug)).toBe("2026-11-21");
-    expect(buildSitemap()).toContain(`<loc>https://valu8.uk/value/${slug}</loc><lastmod>2026-11-21</lastmod>`);
+    expect(valuePageModifiedIso(slug)).toBe(VALUE_COPY_MODIFIED_ISO);
+    expect(buildSitemap()).toContain(`<loc>https://valu8.uk/value/${slug}</loc><lastmod>2026-11-23</lastmod>`);
     // FAQPage JSON-LD = visible FAQ, including the new model FAQs.
     const ld = JSON.parse(html.match(/<script type="application\/ld\+json" id="value-faq-jsonld">([\s\S]*?)<\/script>/)![1]);
     const qs = valueGuidance(m).faqs.map((f) => f.q);
@@ -94,7 +94,7 @@ describe("enriched /value model pages", () => {
   });
 
   it("other model pages keep the shared date and copy", () => {
-    expect(valuePageModifiedIso("ford-fiesta")).toBe(VALUE_PAGES_MODIFIED_ISO);
+    expect(valuePageModifiedIso("ford-fiesta")).toBe(VALUE_COPY_MODIFIED_ISO);
     expect(built("ford-fiesta")).not.toContain("vs rivals: typical asking prices");
   });
 

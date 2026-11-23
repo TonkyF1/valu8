@@ -47,8 +47,8 @@ const fordKuga: EnrichedModel = {
     const span = yearSpan(m);
     const years = span ? ` for every year from ${span.first} to ${span.last}` : "";
     return fit(
-      `Free Ford Kuga valuation by reg, plus typical UK asking prices${years} and by mileage, from ${m.listings.toLocaleString("en-GB")} adverts (${PRICE_DATA_UPDATED}).`,
-      `Free Ford Kuga valuation by reg, plus typical UK asking prices${years} and by mileage.`,
+      `How much is your Ford Kuga worth? Free instant Ford Kuga valuation by reg, plus UK asking prices${years} and by mileage (${PRICE_DATA_UPDATED}).`,
+      `How much is your Ford Kuga worth? Free instant Ford Kuga valuation by reg, plus UK asking prices by year and mileage (${PRICE_DATA_UPDATED}).`,
     );
   },
   markdown: (m) => {
@@ -184,7 +184,7 @@ Our advert data doesn't record battery health or range, so the tables above mix 
 - **Charging.** Include the charging cables that came with the car. Buyers also look at the rapid-charging connector and how fast the car can charge.
 ${extra.map((x) => `- ${x}`).join("\n")}
 
-Electric car prices have moved more than most in the last few years, so check today's adverts as well as the tables before you set a price.`;
+Electric car prices have moved more than most in the last few years, so check today's adverts as well as the tables before you set a price. For more on what moves a used EV's price, read our [electric car value guide](/guides/electric-car-value).`;
 }
 
 /** The highest-count year that has an over-80,000 and a 40,000–80,000-mile row, or an under-40,000 and 40,000–80,000 row. */
@@ -313,7 +313,7 @@ const hyundaiKona = enriched({
     return `The Kona arrived in the UK in late 2017 as a petrol small SUV, with the Kona Electric following in 2018 and a hybrid in 2019. A new, larger Kona replaced it in 2023.${step ? ` In our adverts ${step}.` : ""}`;
   },
   factors: [
-    "**Petrol, hybrid or electric:** the three are advertised at quite different prices, so compare like with like. For a Kona Electric, battery health and range matter most.",
+    "**Petrol, hybrid or electric:** the three are advertised at quite different prices, so compare like with like. For a Kona Electric, battery health and range matter most: see our [electric car value guide](/guides/electric-car-value).",
     MILEAGE_FACTOR,
     "**Warranty left:** Hyundai's five-year, unlimited-mileage new-car warranty passes to the next owner, so a recent Kona may still be covered. Check the dates in the service book.",
     "**Trim:** higher trims such as Premium and Ultimate tend to be advertised above entry-level SE cars of the same age.",

@@ -11,7 +11,7 @@ import { MODEL_PRICES } from "@/data/modelPriceBands";
 import { GUIDES } from "@/data/guides";
 import { POPULAR_VALUE_SLUGS, popularValueModels } from "@/data/popularModels";
 import { VALUE_SLUGS } from "@/data/valueModels";
-import { valuePageModifiedIso, valueDepreciation, valueMileageYear, valuePath, yearPath } from "@/data/valuePages";
+import { valueName, valuePageModifiedIso, valueDepreciation, valueMileageYear, valuePath, yearPath } from "@/data/valuePages";
 import { staticPageBodyHtml } from "@/data/staticPageContent";
 import { buildRouteHtml } from "../../scripts/routePages";
 import { buildSitemap } from "../../scripts/sitemap";
@@ -58,7 +58,7 @@ describe("/value model pages: year-by-year data", () => {
       expect(page.dateModified).toBe(valuePageModifiedIso(m.slug));
       expect(page.url).toBe(`https://valu8.uk${valuePath(m)}`);
       expect(page.inLanguage).toBe("en-GB");
-      expect(html).toContain("Private sale, part-exchange or dealer: which price is this?");
+      expect(html).toContain(`Selling your ${valueName(m)}: private sale, part-exchange or dealer price?`);
       expect(html).not.toContain('content="noindex');
     }
   });
@@ -86,7 +86,7 @@ describe("/value model pages: year-by-year data", () => {
     for (const y of kuga.years) expect(container.querySelector(`a[href="${yearPath(kuga, y)}"]`), String(y.year)).not.toBeNull();
     expect(text).toContain("How much a Ford Kuga loses per year");
     expect(text).toContain("How mileage changes the price of a Ford Kuga");
-    expect(text).toContain("Private sale, part-exchange or dealer: which price is this?");
+    expect(text).toContain("Selling your Ford Kuga: private sale, part-exchange or dealer price?");
     expect(document.querySelectorAll("#value-webpage-jsonld").length).toBe(1);
     expect(container.querySelectorAll("h1").length).toBe(1);
     unmount();

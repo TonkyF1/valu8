@@ -49,11 +49,16 @@ export function valueMeta(m: ModelPrices) {
   const lo = gbp(Math.min(...all)), hi = gbp(Math.max(...all));
   const range = lo === hi ? lo : `${lo}–${hi}`;
   const e = findEnrichedModel(m.slug);
-  const full = `A used ${name} is typically advertised for ${range} in the UK, by year (${m.listings.toLocaleString("en-GB")} adverts, ${PRICE_DATA_UPDATED}). Get a free valuation by reg.`;
+  // Click-through: answer the searched question, show the price range and data month, offer the free instant valuation.
+  const options = [
+    `How much is your ${name} worth? UK asking prices ${range} by year (${PRICE_DATA_UPDATED}). Get a free instant valuation by reg.`,
+    `How much is your ${name} worth? UK asking prices ${range} by year. Get a free instant valuation by reg.`,
+    `How much is your ${name} worth? UK prices ${range}. Free instant valuation by reg.`,
+  ];
   return {
     path: valuePath(m),
     title: e?.title ?? valueTitle(m),
-    description: e?.description?.(m) ?? (full.length <= DESCRIPTION_MAX ? full : `A used ${name} is typically advertised for ${range} in the UK, by year. Get a free valuation by reg.`),
+    description: e?.description?.(m) ?? options.find((d) => d.length <= DESCRIPTION_MAX) ?? options[options.length - 1],
   };
 }
 
@@ -72,7 +77,7 @@ export function valueAnswer(m: ModelPrices): string | null {
 
 export function valueIntro(m: ModelPrices): string {
   const name = valueName(m);
-  return `Here's what the ${name} is typically advertised for in the UK, grouped by year. It's a guide to asking prices from UK adverts, not a valuation: mileage, condition, trim and history all move the price of an individual car. For a figure for your own ${valueName(m)}, get a free valuation.`;
+  return `How much is my ${name} worth? Age and mileage matter most, so here's what a used ${name} is typically advertised for in the UK, grouped by year. It's a guide to ${name} values from UK adverts, not a valuation: condition, trim and history move the price of an individual car too. For your own ${name}'s value, get a free instant valuation by reg.`;
 }
 
 export const VALUE_TABLE_NOTE = (m: ModelPrices) =>
@@ -85,10 +90,13 @@ export const VALUE_YEARS_INTRO = (m: ModelPrices) =>
 
 /** ISO date the /value page content last changed (WebPage dateModified). Bump it with every price-data refresh. */
 export const VALUE_PAGES_MODIFIED_ISO = "2026-11-18";
+/** Last change to the copy shared by every /value/:slug page (intro, headings, meta). Feeds lastmod/dateModified,
+ *  not the "prices last updated" date. */
+export const VALUE_COPY_MODIFIED_ISO = "2026-11-23";
 /** dateModified / sitemap lastmod for one /value/:slug page: a hand-enriched model's own date when it's later. */
 export function valuePageModifiedIso(slug: string): string {
   const e = findEnrichedModel(slug);
-  return e && e.modifiedIso > VALUE_PAGES_MODIFIED_ISO ? e.modifiedIso : VALUE_PAGES_MODIFIED_ISO;
+  return [VALUE_PAGES_MODIFIED_ISO, VALUE_COPY_MODIFIED_ISO, e?.modifiedIso ?? ""].sort().pop()!;
 }
 export const VALUE_UPDATED_TEXT = `Prices last updated: ${PRICE_DATA_UPDATED}.`;
 
@@ -127,7 +135,8 @@ export const VALUE_MILEAGE_H2 = (m: ValueRef) => `How mileage changes the price 
 export const VALUE_MILEAGE_INTRO = (m: ModelPrices, y: YearPrices) =>
   `Median asking prices by mileage for the ${y.year} ${valueName(m)}, the year with the most adverts (${y.count}).`;
 
-export const PRICE_TYPES_H2 = "Private sale, part-exchange or dealer: which price is this?";
+/** Model-specific so the heading matches "sell my X" searches. */
+export const PRICE_TYPES_H2 = (m: ValueRef) => `Selling your ${valueName(m)}: private sale, part-exchange or dealer price?`;
 export const PRICE_TYPES_COPY = (m: ValueRef): string[] => [
   `The figures on this page are asking prices from UK used-car adverts. They show what sellers are hoping to get for a ${valueName(m)}, so the price a car actually sells for is often a little lower after negotiation.`,
   `Selling privately usually gets you closest to these figures, once you leave some room to haggle. A part-exchange offer from a dealer is usually lower, because the dealer has to prepare and resell the car at a profit.`,
@@ -138,6 +147,10 @@ export const PRICE_TYPES_LINKS: [string, string][] = [
   ["/guides/private-sale-vs-dealer-prices", "Private sale vs dealer prices"],
   ["/guides/what-is-my-car-worth", "What is my car worth?"],
 ];
+/** Models sold only or mainly as electric (or with a big EV share), whose pages link to the EV value guide. */
+export const EV_VALUE_SLUGS = new Set(["tesla-model-3", "tesla-model-y", "nissan-leaf", "cupra-born", "skoda-enyaq", "hyundai-ioniq", "kia-niro", "hyundai-kona"]);
+export const priceTypesLinks = (m: ValueRef & { slug: string }): [string, string][] =>
+  EV_VALUE_SLUGS.has(m.slug) ? [...PRICE_TYPES_LINKS, ["/guides/electric-car-value", "Electric car values"]] : PRICE_TYPES_LINKS;
 
 /** Other /value pages for the same make (internal links), A–Z. */
 export function sameMakeModels(slug: string, make: string): ValueModel[] {
@@ -316,7 +329,7 @@ const CHIP = "inline-flex min-h-[44px] items-center rounded-full border border-b
 function yearTableHtml(m: ModelPrices): string {
   if (!m.years.length) return "";
   const name = esc(valueName(m));
-  return card(`<section><h2>${name} prices by year</h2><p class="text-sm text-muted-foreground mb-5">${esc(VALUE_YEARS_INTRO(m))}</p>`
+  return card(`<section><h2>${name} value by year</h2><p class="text-sm text-muted-foreground mb-5">${esc(VALUE_YEARS_INTRO(m))}</p>`
     + tableDisclosure(`<table><caption>${name} asking prices for every year</caption><thead><tr><th>Year</th><th>Median asking price</th><th>Typical range</th><th>Typical mileage</th><th>Adverts</th></tr></thead><tbody>`
     + m.years.map((y) => `<tr><td><a href="${yearPath(m, y)}">${y.year}</a></td><td>${gbp(y.median)}</td><td>${gbp(y.low)} – ${gbp(y.high)}</td><td>${y.mileage ? miles(y.mileage) : "–"}</td><td>${y.count}</td></tr>`).join("")
     + `</tbody></table>`) + `</section>`);
@@ -336,9 +349,9 @@ function mileageHtml(m: ModelPrices): string {
 }
 
 function priceTypesHtml(m: ValueRef): string {
-  return card(disclosure(`<h2>${esc(PRICE_TYPES_H2)}</h2>`,
+  return card(disclosure(`<h2>${esc(PRICE_TYPES_H2(m))}</h2>`,
     PRICE_TYPES_COPY(m).map((p) => `<p class="text-sm text-muted-foreground leading-relaxed mt-3">${esc(p)}</p>`).join("")
-    + `<ul class="mt-4 flex flex-wrap gap-2 text-sm">${PRICE_TYPES_LINKS.map(([href, label]) => `<li><a class="${CHIP} text-primary" href="${href}">${esc(label)}</a></li>`).join("")}</ul>`));
+    + `<ul class="mt-4 flex flex-wrap gap-2 text-sm">${priceTypesLinks(m).map(([href, label]) => `<li><a class="${CHIP} text-primary" href="${href}">${esc(label)}</a></li>`).join("")}</ul>`));
 }
 
 function moreFromMakeHtml(m: ValueRef): string {
