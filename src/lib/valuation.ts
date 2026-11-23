@@ -45,6 +45,9 @@ export interface ValuationReport {
   valueReasoning?: string;
   marketConfidence?: "High" | "Medium" | "Low" | "Very Low";
   marketConfidenceReason?: string;
+  /** conf-ai-1 audit (not shown): the rule-based level and the AI's guarded call. */
+  confidenceData?: { level: "High" | "Medium" | "Low" | "Very Low"; reason: string };
+  confidenceAi?: { version: string; mode: "shadow" | "on"; level: "High" | "Medium" | "Low" | "Very Low" | null; reason: string | null; guarded: "High" | "Medium" | "Low" | "Very Low"; capped: string[]; ms?: number } | null;
   pricingSource?: "marketcheck" | "ai_estimate" | "valu8_comps";
   marketSampleSize?: number;
   priceAdjustments?: { label: string; impactPct: number }[];
