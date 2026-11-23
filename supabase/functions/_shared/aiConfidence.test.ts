@@ -1,12 +1,48 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { confidenceMode, guardConfidence, parseAiConfidence, confidenceFields, withConfidence, askAiConfidence, nearestSummary, confidencePrompt, type ConfEvidence } from "./aiConfidence.ts";
+import { confidenceMode, confidenceSetting, confidenceTesters, confidenceModeFor, DEFAULT_CONF_TESTERS, guardConfidence, parseAiConfidence, confidenceFields, withConfidence, askAiConfidence, nearestSummary, confidencePrompt, type ConfEvidence } from "./aiConfidence.ts";
 
 const base = { dataReason: "Rule reason.", sanity: "ok" as const, nComps: 200, isImport: false, ageYears: 3 };
 const ai = (level: any, reason = "Lots of similar cars are for sale and they agree closely.") => ({ level, reason });
 
-Deno.test("mode flag: default on, off/shadow switch", () => {
-  assertEquals(confidenceMode(undefined), "on"); assertEquals(confidenceMode("off"), "off"); assertEquals(confidenceMode("0"), "off");
-  assertEquals(confidenceMode("SHADOW"), "shadow"); assertEquals(confidenceMode("on"), "on");
+Deno.test("setting: default testers; off/shadow/on switch", () => {
+  assertEquals(confidenceSetting(undefined), "testers"); assertEquals(confidenceSetting(""), "testers"); assertEquals(confidenceSetting("bogus"), "testers");
+  assertEquals(confidenceSetting("off"), "off"); assertEquals(confidenceSetting("0"), "off");
+  assertEquals(confidenceSetting("SHADOW"), "shadow"); assertEquals(confidenceSetting("on"), "on"); assertEquals(confidenceSetting("all"), "on");
+  assertEquals(confidenceMode(undefined), "shadow"); // anonymous default = shadow
+});
+
+const TONY = "143decbf-1de0-445c-a610-e8375b2a771b";
+Deno.test("testers: only allowlisted signed-in users see it; guests and other users get shadow", () => {
+  const t = confidenceTesters(undefined);
+  assertEquals(t, DEFAULT_CONF_TESTERS); assert(t.includes(TONY));
+  assertEquals(confidenceModeFor("testers", TONY, t), "on");
+  assertEquals(confidenceModeFor("testers", TONY.toUpperCase(), t), "on");
+  assertEquals(confidenceModeFor("testers", null, t), "shadow");
+  assertEquals(confidenceModeFor("testers", undefined, t), "shadow");
+  assertEquals(confidenceModeFor("testers", "", t), "shadow");
+  assertEquals(confidenceModeFor("testers", "00000000-0000-0000-0000-000000000000", t), "shadow");
+  // explicit settings apply to everyone
+  assertEquals(confidenceModeFor("off", TONY, t), "off"); assertEquals(confidenceModeFor("shadow", TONY, t), "shadow");
+  assertEquals(confidenceModeFor("on", null, t), "on");
+});
+
+Deno.test("AI_CONFIDENCE_TESTERS env replaces the default list; junk falls back to default", () => {
+  const other = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+  assertEquals(confidenceTesters(`${other}, ${TONY}`), [other, TONY]);
+  assertEquals(confidenceModeFor("testers", TONY, confidenceTesters(other)), "shadow");
+  assertEquals(confidenceTesters("not-an-id"), DEFAULT_CONF_TESTERS);
+});
+
+Deno.test("non-tester customers see exactly the rule level/reason while the AI call is still stored", () => {
+  const g = guardConfidence({ ...base, dataLevel: "Medium", ai: ai("High") });
+  for (const uid of [null, "00000000-0000-0000-0000-000000000000"]) {
+    const mode = confidenceModeFor("testers", uid, confidenceTesters(undefined));
+    const f = confidenceFields(mode, "Medium", "Rule reason.", g, ai("High"));
+    assertEquals(f.marketConfidence, "Medium"); assertEquals(f.marketConfidenceReason, "Rule reason.");
+    assertEquals(f.confidenceAi?.mode, "shadow"); assertEquals(f.confidenceAi?.level, "High"); assertEquals(f.confidenceAi?.guarded, "High");
+  }
+  const t = confidenceFields(confidenceModeFor("testers", TONY, confidenceTesters(undefined)), "Medium", "Rule reason.", g, ai("High"));
+  assertEquals(t.marketConfidence, "High"); assertEquals(t.confidenceAi?.mode, "on");
 });
 
 Deno.test("moves at most one step either way", () => {

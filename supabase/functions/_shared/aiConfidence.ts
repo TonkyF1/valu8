@@ -3,6 +3,7 @@
 // The rule-based level worked out by analyse-vehicle is kept as the DATA LEVEL. A small AI call then looks at all the
 // evidence (comps, how close they are, dispersion, source disagreement, sanity verdict, model popularity, age, mileage,
 // MOT history, import/performance flags) plus its own UK market knowledge and proposes {level, reason}.
+// Default rollout: visible only to tester accounts, shadow (stored, not shown) for everyone else.
 // Guardrails here, in code, decide what is shown:
 //   * the final level moves at most ONE step from the data level;
 //   * never "High" when the sanity verdict is lessCertain/unavailable, fewer than 10 comps, an import, or 20+ years old;
@@ -13,13 +14,37 @@ import type { ConfidenceLevel } from "./valuation-math.ts";
 export const CONF_LEVELS: ConfidenceLevel[] = ["Very Low", "Low", "Medium", "High"];
 export const CONF_AI_VERSION = "conf-ai-1";
 export type ConfMode = "off" | "shadow" | "on";
+/** AI_CONFIDENCE setting. "testers" (default) = shown only to allowlisted signed-in users, shadow for everyone else. */
+export type ConfSetting = ConfMode | "testers";
 
-/** AI_CONFIDENCE env: "off" (no call), "shadow" (call + store, show the data level), "on" (default: show the guarded AI level). */
-export function confidenceMode(raw: string | undefined | null): ConfMode {
+/** Default tester allowlist (Valu8 user ids). AI_CONFIDENCE_TESTERS (comma-separated ids) replaces it when set. */
+export const DEFAULT_CONF_TESTERS = ["143decbf-1de0-445c-a610-e8375b2a771b"]; // tonky89 (Tony)
+
+/** AI_CONFIDENCE env: "off" (no call), "shadow" (call + store, show the rule level to all), "on" (show to all),
+ *  "testers" (default: show only to AI_CONFIDENCE_TESTERS, shadow for everyone else). Unknown values -> "testers". */
+export function confidenceSetting(raw: string | undefined | null): ConfSetting {
   const v = String(raw ?? "").trim().toLowerCase();
   if (v === "off" || v === "0" || v === "false" || v === "no") return "off";
   if (v === "shadow") return "shadow";
-  return "on";
+  if (v === "on" || v === "all") return "on";
+  return "testers";
+}
+
+export function confidenceTesters(raw: string | undefined | null): string[] {
+  const ids = String(raw ?? "").split(/[\s,]+/).map((x) => x.trim().toLowerCase()).filter((x) => /^[0-9a-f-]{36}$/.test(x));
+  return ids.length ? ids : DEFAULT_CONF_TESTERS;
+}
+
+/** Mode for THIS request. userId must be the JWT-verified id from guard() (never a body field); guests get null -> shadow. */
+export function confidenceModeFor(setting: ConfSetting, userId: string | null | undefined, testers: string[]): ConfMode {
+  if (setting !== "testers") return setting;
+  const id = String(userId ?? "").trim().toLowerCase();
+  return id && testers.includes(id) ? "on" : "shadow";
+}
+
+/** Back-compat helper: the effective mode for an anonymous request. */
+export function confidenceMode(raw: string | undefined | null): ConfMode {
+  return confidenceModeFor(confidenceSetting(raw), null, []);
 }
 
 export interface ConfEvidence {

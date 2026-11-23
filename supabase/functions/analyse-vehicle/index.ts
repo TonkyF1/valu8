@@ -31,7 +31,7 @@ import { displayMake } from "../_shared/vehicle-text.ts";
 import { ccPlausibility } from "../_shared/ccPlausibility.ts";
 import { canonicalVariantName, variantLikePatterns, tieredVariantReference, rareEvidence, rareAiPrompt, parseRareAi, rareAiFigures, rareNote, sameGeneration, type RareAiEstimate, type RareText } from "../_shared/rareVariant.ts";
 import { assessImport, importNote } from "../_shared/importCheck.ts";
-import { confidenceMode, askAiConfidence, guardConfidence, confidenceFields, nearestSummary, type ConfEvidence, type AiConfidence } from "../_shared/aiConfidence.ts";
+import { confidenceSetting, confidenceTesters, confidenceModeFor, askAiConfidence, guardConfidence, confidenceFields, nearestSummary, type ConfEvidence, type AiConfidence } from "../_shared/aiConfidence.ts";
 import { resolveVariant, perfCompReference, variantToken, reconcileProsePrices, stripPriceSentences, proseRatio, sanityVerdict, aiTextVariant, optionRegex, MIN_VARIANT_COMPS, type ShownPrices, type PerfCompRow } from "../_shared/variantGuard.ts";
 import { compAdjustedAnchor, privateFromRetail, tradeFrom, calibrateAiPrivate, privateRange, highMileagePenalty, sumPhotoImpacts, dedupeReportText, finalisePricing, reconcileMileage, mileageNoteText, marketConfidenceTier, filterCompsBySpec, dealerToPrivate, motPenaltyItems, retailFromPrivate, declaredStatusItems, applyCheapCarRules, aiPathAdjustments, type LedgerItem } from "../_shared/pricing.ts";
 import { validatePhotoInsights, fixableUpside } from "../_shared/photo-insights.ts";
@@ -1979,8 +1979,10 @@ Be honest and conservative. Lean lower if there are negatives. Call out high mil
     }
 
     // conf-ai-1 (trial): AI-assisted confidence rating. Runs after every price, range and valuationUnavailable
-    // decision is final, and only ever sets the confidence keys (see _shared/aiConfidence.ts). AI_CONFIDENCE=off|shadow|on.
-    const confMode = confidenceMode(Deno.env.get("AI_CONFIDENCE"));
+    // decision is final, and only ever sets the confidence keys (see _shared/aiConfidence.ts). AI_CONFIDENCE=off|shadow|on|testers (default testers).
+    // Who sees it: g.userId is the id Supabase Auth verified from the request's JWT in guard() (never a body field);
+    // guests have none, so they always get shadow. Default: only AI_CONFIDENCE_TESTERS see the AI level.
+    const confMode = confidenceModeFor(confidenceSetting(Deno.env.get("AI_CONFIDENCE")), g.userId, confidenceTesters(Deno.env.get("AI_CONFIDENCE_TESTERS")));
     const dataLevel = confidence, dataReason = confidenceReason;
     let confAi: AiConfidence | null = null, confGuard: ReturnType<typeof guardConfidence> | null = null, confMs: number | undefined;
     if (confMode !== "off" && !valuationUnavailable && values.privateSale > 0) {

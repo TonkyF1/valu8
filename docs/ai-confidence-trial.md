@@ -12,7 +12,7 @@ matches the level shown (rule reason if unchanged, the AI's sentence if the AI's
 guard clipped the AI's level). `confidenceFields` only returns marketConfidence, marketConfidenceReason, confidenceData and
 confidenceAi, so prices and ranges are identical with the feature on, shadow or off (tested).
 
-**Switch.** `AI_CONFIDENCE` secret: `off` (no call), `shadow` (call and store `confidenceAi`, show the rule level), `on` (default).
+**Switch.** `AI_CONFIDENCE` secret: `off` (no call), `shadow` (call and store `confidenceAi`, show the rule level), `on` (everyone), `testers` (default: shown only to user ids in `AI_CONFIDENCE_TESTERS`, default Tony; the id comes from the JWT verified in guard(), never the body; guests always shadow).
 
 **Backtest (23 Nov 2026).** 30 days of real valuations (24 Oct–23 Nov; excluding v8qa, qaAuditTest, unpriced and agent tests):
 274 valuations, 171 distinct cars. The gateway key is not available outside the edge function, so the AI decision in the
