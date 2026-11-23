@@ -29,7 +29,7 @@ describe("Ford Kuga value page", () => {
     const meta = valueMeta(kuga);
     expect(meta.title).toBe("How much is my Ford Kuga worth? Free valuation | Valu8");
     expect(meta.title.length).toBeLessThanOrEqual(60);
-    expect(meta.description.startsWith("Free Ford Kuga valuation by reg")).toBe(true);
+    expect(meta.description.startsWith("How much is your Ford Kuga worth? Free instant Ford Kuga valuation by reg")).toBe(true);
     expect(meta.description.length).toBeLessThanOrEqual(155);
     expect(html).toContain(`<meta property="og:title" content="${meta.title}" />`);
   });
@@ -51,10 +51,11 @@ describe("Ford Kuga value page", () => {
     expect(container.textContent).toContain("Which Ford Kuga generation do I have?");
   });
 
-  it("dates only the Kuga page from its own change (2026-11-21)", () => {
-    expect(valuePageModifiedIso("ford-kuga")).toBe("2026-11-21");
-    expect(buildSitemap()).toContain("<loc>https://valu8.uk/value/ford-kuga</loc><lastmod>2026-11-21</lastmod>");
-    expect(valuePageModifiedIso("ford-fiesta")).toBe(VALUE_PAGES_MODIFIED_ISO);
+  it("dates the Kuga page from the latest shared copy change (2026-11-23)", () => {
+    expect(valuePageModifiedIso("ford-kuga")).toBe("2026-11-23");
+    expect(buildSitemap()).toContain("<loc>https://valu8.uk/value/ford-kuga</loc><lastmod>2026-11-23</lastmod>");
+    expect(valuePageModifiedIso("ford-fiesta")).toBe("2026-11-23");
+    expect(VALUE_PAGES_MODIFIED_ISO).toBe("2026-11-18");
   });
 
   it("new copy uses no em dashes", () => {

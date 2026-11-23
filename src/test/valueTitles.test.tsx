@@ -77,8 +77,9 @@ describe("/value model page titles, descriptions, H1 and answer line", () => {
   it("description uses the lowest/highest band medians and drops the bracket only when too long", () => {
     const yaris = by("toyota-yaris");
     const meds = yaris.bands.map((b) => b.median);
-    expect(valueMeta(yaris).description).toBe(`A used Toyota Yaris is typically advertised for £${Math.min(...meds).toLocaleString("en-GB")}–£${Math.max(...meds).toLocaleString("en-GB")} in the UK, by year (${yaris.listings} adverts, ${PRICE_DATA_UPDATED}). Get a free valuation by reg.`);
-    expect(valueMeta(by("land-rover-range-rover-evoque")).description).not.toContain("(");
+    expect(valueMeta(yaris).description).toBe(`How much is your Toyota Yaris worth? UK asking prices £${Math.min(...meds).toLocaleString("en-GB")}–£${Math.max(...meds).toLocaleString("en-GB")} by year (${PRICE_DATA_UPDATED}). Get a free instant valuation by reg.`);
+    expect(valueMeta(by("land-rover-range-rover-evoque")).description).toContain(`(${PRICE_DATA_UPDATED})`);
+    for (const m of MODEL_PRICES) expect(valueMeta(m).description.length, m.slug).toBeLessThanOrEqual(155);
     expect(valueFallbackMeta({ slug: "x-y", make: "X", model: "Y" }).description).toBe("See what a used X Y is worth in the UK and get a free valuation by registration from Valu8.");
   });
   it("answer line comes from the newest band, directly under the H1, in build HTML and React", () => {

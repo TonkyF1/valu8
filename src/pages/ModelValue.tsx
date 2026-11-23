@@ -9,7 +9,7 @@ import { valueModelPath, valueModelsByMake } from "@/data/valueModels";
 import { modelDisplayName } from "@/data/modelDisplayName";
 import { findModelPrices, findYearPrices } from "@/data/modelPriceBands";
 import { VALUE_BREADCRUMB_JSONLD_ID, VALUE_FAQ_JSONLD_ID, VALUE_NO_DATA_COPY, findRegistryOnly, valueAnswer, valueH1, valueBreadcrumbJsonLd, valueDepreciation, valueFaqJsonLd, valueGuidance, type ValueRef } from "@/data/valuePages";
-import { HUB_BREADCRUMB_JSONLD_ID, PRICE_TYPES_COPY, PRICE_TYPES_H2, PRICE_TYPES_LINKS, VALUE_DEPRECIATION_H2, VALUE_MILEAGE_H2, VALUE_MILEAGE_INTRO, VALUE_PAGES_MODIFIED_ISO, VALUE_UPDATED_TEXT, VALUE_WEBPAGE_JSONLD_ID, hubBreadcrumbJsonLd, valueDepreciationText, valueMileageYear, valueWebPageJsonLd } from "@/data/valuePages";
+import { HUB_BREADCRUMB_JSONLD_ID, PRICE_TYPES_COPY, PRICE_TYPES_H2, priceTypesLinks, VALUE_DEPRECIATION_H2, VALUE_MILEAGE_H2, VALUE_MILEAGE_INTRO, VALUE_PAGES_MODIFIED_ISO, VALUE_UPDATED_TEXT, VALUE_WEBPAGE_JSONLD_ID, hubBreadcrumbJsonLd, valueDepreciationText, valueMileageYear, valueWebPageJsonLd } from "@/data/valuePages";
 import { VALUE_INDEX_H1, VALUE_INDEX_INTRO, sameMakeModels, VALUE_TABLE_NOTE, VALUE_YEARS_INTRO, YEAR_NOTE, gbp, miles, neighbourYears, valueIntro, valueName, valuePath, yearIntro, yearPath } from "@/data/valuePages";
 import { Card, Disclosure, HBars, StatTile, YearChart } from "@/components/value/ValueVisuals";
 import { VALUE_GRID_CLASS, VALUE_RAIL_CLASS, valueHeadlineBand } from "@/data/valuePages";
@@ -290,7 +290,7 @@ export default function ModelValue() {
       {m.years.length > 0 && (
         <Card className="mt-6">
           <section aria-labelledby="years">
-            <h2 id="years" className="text-xl font-semibold mb-1">{name} prices by year</h2>
+            <h2 id="years" className="text-xl font-semibold mb-1">{name} value by year</h2>
             <p className="text-sm text-muted-foreground mb-5">{VALUE_YEARS_INTRO(m)}</p>
             {m.years.length > 1 && <YearChart years={m.years} ariaLabel="Median asking price by year, with typical range" />}
             <Disclosure chrome className="mt-5 border-t border-border pt-2" summary={<span className="text-sm font-medium text-primary">View table</span>}>
@@ -371,10 +371,10 @@ export default function ModelValue() {
         </Card>
       )}
       <Card className="mt-6">
-        <Disclosure summary={<h2 id="price-types" className="text-xl font-semibold">{PRICE_TYPES_H2}</h2>}>
+        <Disclosure summary={<h2 id="price-types" className="text-xl font-semibold">{PRICE_TYPES_H2(m)}</h2>}>
           {PRICE_TYPES_COPY(m).map((p) => <p key={p} className="text-sm text-muted-foreground leading-relaxed mt-3">{p}</p>)}
           <ul className="mt-4 flex flex-wrap gap-2 text-sm">
-            {PRICE_TYPES_LINKS.map(([href, label]) => (
+            {priceTypesLinks(m).map(([href, label]) => (
               <li key={href}><Link to={href} className="inline-flex min-h-[44px] items-center rounded-full border border-border px-4 text-primary hover:border-primary/60">{label}</Link></li>
             ))}
           </ul>
