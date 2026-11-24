@@ -57,22 +57,23 @@ describe("/check head", () => {
 });
 
 describe("/car-values rule", () => {
-  it("the hub stays indexable, self-canonical and in the sitemap (it ranks top 10 for 'car valuation online')", () => {
+  it("the old hub is a redirect stub to /value (fix leaks, 24 Nov 2026): canonical + refresh, no noindex, out of the sitemap", () => {
     const m = getRouteMeta("/car-values");
     expect(m.noindex).toBeFalsy();
-    expect(m.inSitemap).toBe(true);
-    expect(m.description.length).toBeLessThanOrEqual(160);
+    expect(m.inSitemap).toBe(false);
+    expect(m.canonicalPath).toBe("/value");
     const html = built("/car-values");
-    expect(html).toContain('<link rel="canonical" href="https://valu8.uk/car-values"');
-    expect(html).not.toMatch(/<meta name="robots" content="noindex/);
-    expect(buildSitemap()).toContain("<loc>https://valu8.uk/car-values</loc>");
+    expect(html).toContain('<link rel="canonical" href="https://valu8.uk/value"');
+    expect(html).toContain('<meta http-equiv="refresh" content="0; url=https://valu8.uk/value">');
+    expect(html).not.toMatch(/<meta name="robots"/);
+    expect(buildSitemap()).not.toContain("<loc>https://valu8.uk/car-values</loc>");
   });
 
   it("every matched /car-values model URL is a redirect stub to its /value page, out of the sitemap", () => {
     const xml = buildSitemap();
     for (const r of CAR_MODEL_ROUTES.filter((x) => x.canonicalPath)) {
       expect(r.canonicalPath!.startsWith("/value/"), r.path).toBe(true);
-      expect(r.noindex, r.path).toBe(true);
+      expect(r.noindex, r.path).toBeFalsy();
       expect(xml).not.toContain(`<loc>https://valu8.uk${r.path}</loc>`);
       expect(built(r.path)).toContain(`<meta http-equiv="refresh" content="0; url=https://valu8.uk${r.canonicalPath}">`);
     }

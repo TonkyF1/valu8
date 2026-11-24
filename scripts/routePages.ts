@@ -8,7 +8,7 @@ import { CAR_MODELS } from "../src/data/carModels";
 import { MODEL_PRICES } from "../src/data/modelPriceBands";
 import { hubHeadHtml, registryOnlyModels, valueBodyHtml, valueFallbackBodyHtml, valueHeadHtml, valueIndexBodyHtml, valuePath, yearBodyHtml, yearPath, type ValueRef } from "../src/data/valuePages";
 import { VALUE_SLUG_REGISTRY } from "../src/data/valueSlugRegistry";
-import { carModelBodyHtml, carModelJsonLd, carPath, carRedirectBodyHtml, carRedirectHeadHtml, carValueMatch, carValuesIndexBodyHtml } from "../src/data/carValueContent";
+import { carModelBodyHtml, carModelJsonLd, carPath, carRedirectBodyHtml, carRedirectHeadHtml, carValueMatch, carValuesHubBodyHtml, carValuesHubHeadHtml } from "../src/data/carValueContent";
 import { faqPageHeadHtml, homepageFaqHeadHtml, staticPageBodyHtml } from "../src/data/staticPageContent";
 import { enrichedYearFaqJsonLd, findEnrichedYear } from "../src/data/enrichedYears";
 
@@ -36,7 +36,8 @@ export function routeExtra(meta: RouteMeta): Extra | undefined {
   const guide = GUIDES.find((g) => g.path === meta.path);
   if (guide) return { bodyHtml: guideArticleHtml(guide), headHtml: '<script type="application/ld+json" id="guide-faq-jsonld">' + guideFaqJsonLd(guide) + '</script>\n'
     + `<script type="application/ld+json" id="${GUIDE_ARTICLE_JSONLD_ID}">${guideArticleJsonLd(guide)}</script>` };
-  if (meta.path === "/car-values") return { bodyHtml: carValuesIndexBodyHtml(), headHtml: hubHeadHtml("Car values by make and model", "/car-values") };
+  // Old hub: redirect stub to /value (Lovable hosting has no server-side 301; see redirectHeadHtml).
+  if (meta.path === "/car-values") return { bodyHtml: carValuesHubBodyHtml(), headHtml: carValuesHubHeadHtml() };
   const car = CAR_MODELS.find((m) => carPath(m) === meta.path);
   if (car) {
     // Matched models permanently redirect to /value/<slug> (noindex + canonical come from carModelMeta).

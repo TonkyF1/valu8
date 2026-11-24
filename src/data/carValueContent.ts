@@ -4,15 +4,13 @@
 import { CAR_MODELS, SEGMENT_LABEL, SEGMENT_TIPS, type CarModelPage } from "./carModels";
 import { SITE_URL } from "./routeMeta";
 import { VALUE_SLUG_REGISTRY } from "./valueSlugRegistry";
-import { VALUE_MODELS, joinMakeModel, valueModelPath, valueModelsByMake, type ValueModel } from "./valueModels";
+import { joinMakeModel, valueModelPath, type ValueModel } from "./valueModels";
 import { modelDisplayName } from "./modelDisplayName";
 
 /** The matching /value/<make-model> page, when one has been published (registry: it stays served even if
  *  its price data drops out, so a matched /car-values page never flips back to a competing live page). */
 export const carValueMatch = (m: CarModelPage): ValueModel | undefined => VALUE_SLUG_REGISTRY.find((p) => p.slug === `${m.makeSlug}-${m.slug}`);
 
-export const VALUE_HUB_H2 = "Typical asking prices for every model";
-export const VALUE_HUB_INTRO = (n: number) => `Typical asking prices from UK adverts, by year, for ${n} makes and models. Each page shows the middle asking price and typical range for each year group.`;
 export const carValueLinkText = (m: CarModelPage) => `Typical ${carName(m)} asking prices by year`;
 
 export const carName = (m: CarModelPage) => joinMakeModel(m.make, m.model);
@@ -51,11 +49,25 @@ export const carFaqs = (m: CarModelPage): { q: string; a: string }[] => modelFaq
  *  model page), otherwise the /car-values page. */
 export const carHref = (m: CarModelPage): string => { const v = carValueMatch(m); return v ? valueModelPath(v) : carPath(m); };
 
+/** Lovable hosting can't send a server-side 301, so old URLs use the strongest client-side equivalent Google
+ *  documents: an instant meta refresh (read as a permanent redirect), a JS location.replace for browsers and
+ *  renderers, and a canonical to the target (from routeMeta.ts). Deliberately no noindex: noindex alongside a
+ *  canonical/redirect is a mixed signal and can stop ranking signals passing to the target. */
+export function redirectHeadHtml(path: string): string {
+  return `<meta http-equiv="refresh" content="0; url=${SITE_URL}${path}">\n`
+    + `<script>location.replace(${JSON.stringify(path)}+location.search+location.hash)</script>`;
+}
+
 /** Matched /car-values pages are permanent redirects to /value: refresh tag and a one-link body
- *  (title, canonical and noindex come from carModelMeta in routeMeta.ts). */
+ *  (title and canonical come from carModelMeta in routeMeta.ts). */
 export const carRedirectName = (v: ValueModel) => modelDisplayName(v);
-export const carRedirectHeadHtml = (v: ValueModel) => `<meta http-equiv="refresh" content="0; url=${SITE_URL}${valueModelPath(v)}">`;
+export const carRedirectHeadHtml = (v: ValueModel) => redirectHeadHtml(valueModelPath(v));
 export const carRedirectBodyHtml = (v: ValueModel) => `<p><a href="${valueModelPath(v)}">This page has moved to ${esc(carRedirectName(v))} prices and valuation</a></p>`;
+
+/** The old /car-values hub redirects to /value, the hub of every model page (same job: pick a model). */
+export const CAR_VALUES_HUB_TARGET = "/value";
+export const carValuesHubHeadHtml = () => redirectHeadHtml(CAR_VALUES_HUB_TARGET);
+export const carValuesHubBodyHtml = () => `<p><a href="${CAR_VALUES_HUB_TARGET}">This page has moved to car values by make and model</a></p>`;
 
 export function carRelated(m: CarModelPage): CarModelPage[] {
   const sameMake = CAR_MODELS.filter((x) => x.make === m.make && x !== m);
@@ -72,7 +84,7 @@ export function carModelBodyHtml(m: CarModelPage): string {
   const name = esc(carName(m));
   const seg = esc(SEGMENT_LABEL[m.segment]);
   return `<main id="main"><article>`
-    + `<nav aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/car-values">Car values</a> / <span aria-current="page">${name}</span></nav>`
+    + `<nav aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/value">Car values</a> / <span aria-current="page">${name}</span></nav>`
     + `<h1>What's my ${name} worth?</h1>`
     + `<p>${esc(carIntro(m))}</p>`
     + `<p><a href="/valuation/new">Value my ${esc(carName(m))} free</a> · <a href="/check">Check a ${esc(carName(m))} asking price</a></p>`
@@ -80,7 +92,7 @@ export function carModelBodyHtml(m: CarModelPage): string {
     + `<h2>How we value a ${name}</h2><ol>${carSteps(m).map((s) => `<li>${esc(s)}</li>`).join("")}</ol>`
     + `<h2>What moves the value of a ${seg}</h2><ul>${SEGMENT_TIPS[m.segment].map((t) => `<li>${esc(t)}</li>`).join("")}</ul>`
     + `<h2>${name} valuation FAQ</h2>${carFaqs(m).map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join("")}`
-    + `<h2>Related valuations</h2><ul>${carRelated(m).map((x) => `<li><a href="${carHref(x)}">${esc(carName(x))}</a></li>`).join("")}<li><a href="/car-values">All models</a></li></ul>`
+    + `<h2>Related valuations</h2><ul>${carRelated(m).map((x) => `<li><a href="${carHref(x)}">${esc(carName(x))}</a></li>`).join("")}<li><a href="/value">All models</a></li></ul>`
     + `</article></main>`;
 }
 
@@ -95,22 +107,10 @@ export function carModelJsonLd(m: CarModelPage): string {
       "@context": "https://schema.org", "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
-        { "@type": "ListItem", position: 2, name: "Car values", item: `${SITE_URL}/car-values` },
+        { "@type": "ListItem", position: 2, name: "Car values", item: `${SITE_URL}/value` },
         { "@type": "ListItem", position: 3, name: carName(m), item: SITE_URL + carPath(m) },
       ],
     },
   ]).replace(/</g, "\\u003c");
 }
 
-export const CAR_VALUES_H1 = "Car values by make and model";
-
-export function carValuesIndexBodyHtml(): string {
-  const makes = [...new Set(CAR_MODELS.map((m) => m.make))].sort();
-  return `<main id="main"><h1>${CAR_VALUES_H1}</h1>`
-    + `<p>Free, honest valuations for the UK's most popular used cars. Pick your model to see how we value it, or <a href="/valuation/new">value your car now</a>.</p>`
-    + makes.map((make) => `<section><h2>${esc(make)}</h2><ul>${CAR_MODELS.filter((m) => m.make === make).map((m) => `<li><a href="${carHref(m)}">${esc(carName(m))} value</a></li>`).join("")}</ul></section>`).join("")
-    + `<section><h2>${VALUE_HUB_H2}</h2><p>${esc(VALUE_HUB_INTRO(VALUE_MODELS.length))}</p>`
-    + valueModelsByMake().map((g) => `<h3>${esc(g.make)}</h3><ul>${g.models.map((v) => `<li><a href="${valueModelPath(v)}">${esc(modelDisplayName(v))} asking prices</a></li>`).join("")}</ul>`).join("")
-    + `<p><a href="/value">All models</a></p></section>`
-    + `</main>`;
-}
