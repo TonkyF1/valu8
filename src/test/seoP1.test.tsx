@@ -33,10 +33,15 @@ describe("sitemap URLs unchanged by P1", () => {
   it("matches the pre-SEO-work sitemap (sha1 9762fe89…) once the <lastmod> dates (added 20 Nov 2026, Tony approved) and the Tony-approved new URLs are removed", () => {
     const xml = buildSitemap();
     for (const u of APPROVED_NEW_URLS) expect(xml).toContain(`<loc>https://valu8.uk${u}</loc>`);
-    const original = xml.replace(/<lastmod>[^<]*<\/lastmod>/g, "")
-      .split("\n").filter((l) => !APPROVED_NEW_URLS.some((u) => l.includes(`<loc>https://valu8.uk${u}</loc>`))).join("\n");
-    expect(createHash("sha1").update(original).digest("hex")).toBe("9762fe89e1f910e3fbb9c9884859c377c9e607ba");
-    expect((xml.match(/<url>/g) ?? []).length).toBe(261);
+    // Fix leaks (24 Nov 2026, Tony: "fix leaks"): the old /car-values hub became a redirect stub to /value and left
+    // the sitemap. Put its original line back (after /check) to compare with the pre-SEO-work sitemap.
+    const REMOVED = { after: "  <url><loc>https://valu8.uk/check</loc><priority>0.8</priority></url>", line: "  <url><loc>https://valu8.uk/car-values</loc><priority>0.8</priority></url>" };
+    expect(xml).not.toContain("<loc>https://valu8.uk/car-values</loc>");
+    const lines = xml.replace(/<lastmod>[^<]*<\/lastmod>/g, "")
+      .split("\n").filter((l) => !APPROVED_NEW_URLS.some((u) => l.includes(`<loc>https://valu8.uk${u}</loc>`)));
+    lines.splice(lines.indexOf(REMOVED.after) + 1, 0, REMOVED.line);
+    expect(createHash("sha1").update(lines.join("\n")).digest("hex")).toBe("9762fe89e1f910e3fbb9c9884859c377c9e607ba");
+    expect((xml.match(/<url>/g) ?? []).length).toBe(260);
   });
 });
 
@@ -94,8 +99,9 @@ describe("/value model pages: year-by-year data", () => {
 });
 
 describe("structured data on hubs and guides", () => {
-  it("/value and /car-values hubs have BreadcrumbList", () => {
-    for (const p of ["/value", "/car-values"]) expect(types(jsonLd(built(p))), p).toContain("BreadcrumbList");
+  it("/value hub has BreadcrumbList (the old /car-values hub is a redirect stub with none)", () => {
+    expect(types(jsonLd(built("/value")))).toContain("BreadcrumbList");
+    expect(types(jsonLd(built("/car-values")))).not.toContain("BreadcrumbList");
   });
   it("every guide has Article + FAQPage JSON-LD, and its content is unchanged", () => {
     for (const g of GUIDES) {

@@ -4,7 +4,7 @@ import { VALUE_MODELS, valueModelsByMake } from "@/data/valueModels";
 import { ALL_ROUTES, getAnyRouteMeta } from "@/data/allRoutes";
 import { getValueRouteMeta } from "@/data/valueRoutes";
 import { valueBodyHtml, valueIndexBodyHtml, sameMakeModels } from "@/data/valuePages";
-import { carValuesIndexBodyHtml } from "@/data/carValueContent";
+import { carValuesHubBodyHtml } from "@/data/carValueContent";
 import { buildSitemap } from "../../scripts/sitemap";
 import { indexNowBody, newUrls, sitemapUrls, INDEXNOW_KEY } from "../../scripts/indexnow";
 import { FREE_SUMMARY, REPORT_ADDS, REPORT_CTA, reportOfferLine } from "@/components/ReportCheckout";
@@ -38,12 +38,11 @@ describe("programmatic /value pages", () => {
     expect(xml).not.toContain("/value/ford-transit/2018<");
     expect(getValueRouteMeta("/value/ford-transit").noindex).toBeFalsy();
   });
-  it("every model page is linked from /value, from /car-values and from its make's other pages", () => {
+  it("every model page is linked from /value and from its make's other pages (the old /car-values hub now points to /value)", () => {
     const idx = valueIndexBodyHtml();
-    const hub = carValuesIndexBodyHtml();
+    expect(carValuesHubBodyHtml()).toContain('href="/value"');
     for (const m of MODEL_PRICES) {
       expect(idx).toContain(`href="/value/${m.slug}"`);
-      expect(hub).toContain(`href="/value/${m.slug}"`);
     }
     expect(valueModelsByMake().reduce((n, g) => n + g.models.length, 0)).toBe(MODEL_PRICES.length);
     const transit = MODEL_PRICES.find((m) => m.slug === "ford-transit")!;

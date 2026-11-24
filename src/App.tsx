@@ -41,7 +41,6 @@ import { CookieConsent } from "@/components/CookieConsent";
 const Check = lazyWithPreload(() => import("./pages/Check"));
 const Accuracy = lazyWithPreload(() => import("./pages/Accuracy"));
 const CarValue = lazyWithPreload(() => import("./pages/CarValue"));
-const CarValuesIndex = lazyWithPreload(() => import("./pages/CarValuesIndex"));
 const ModelValue = lazyWithPreload(() => import("./pages/ModelValue"));
 const ValueIndex = lazyWithPreload(() => import("./pages/ModelValue").then((m) => ({ default: m.ValueIndex })));
 const ModelYearValue = lazyWithPreload(() => import("./pages/ModelValue").then((m) => ({ default: m.ModelYearValue })));
@@ -58,7 +57,7 @@ export function preloadRoute(path: string): Promise<unknown> {
   const p = path.replace(/\/+$/, "") || "/";
   const table: [RegExp, { preload: () => Promise<void> }][] = [
     [/^\/value$/, ValueIndex], [/^\/value\/[^/]+$/, ModelValue], [/^\/value\/[^/]+\/\d{4}$/, ModelYearValue],
-    [/^\/car-values$/, CarValuesIndex], [/^\/car-values\/[^/]+\/[^/]+$/, CarValue],
+    [/^\/car-values\/[^/]+\/[^/]+$/, CarValue],
     [/^\/guides$/, GuidesIndex], [/^\/guides\/[^/]+$/, Guide], [/^\/(about|contact)$/, About],
     [/^\/how-it-works$/, HowItWorksPage], [/^\/faq$/, FaqPage], [/^\/pricing$/, Pricing], [/^\/check$/, Check],
     [/^\/accuracy$/, Accuracy], [/^\/example-report$/, ExampleReportPage], [/^\/embed-info$/, EmbedInfo],
@@ -113,7 +112,7 @@ const App = () => (
             <Route path="/value" element={<ValueIndex />} />
             <Route path="/value/:slug" element={<ModelValue />} />
             <Route path="/value/:slug/:year" element={<ModelYearValue />} />
-            <Route path="/car-values" element={<CarValuesIndex />} />
+            <Route path="/car-values" element={<Navigate to="/value" replace />} />
             <Route path="/car-values/:make/:model" element={<CarValue />} />
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/faq" element={<FaqPage />} />

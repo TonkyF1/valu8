@@ -24,7 +24,8 @@ export const STATIC_ROUTES: RouteMeta[] = [
   { path: "/valuation/new", title: "New valuation | Valu8", description: "Enter a UK registration to get a free private sale valuation in minutes.", inSitemap: false, canonicalPath: "/" },
   { path: "/check", title: "Car price check: is this used car a fair price? | Valu8", description: "Free used car price checker. Enter any UK advert's make, model, year, mileage and asking price to see if it's overpriced, fair or a bargain.", priority: "0.8", inSitemap: true },
   { path: "/accuracy", title: "How accurate is Valu8? Predicted vs real sale prices", description: "We compare our car valuations with the prices people actually sell for, and will publish the results once enough owners report a sale.", noindex: true, inSitemap: false },
-  { path: "/car-values", title: "Car values by make and model | Valu8", description: "Free online car valuation by registration, plus typical UK asking prices by year for the most popular models. See what your car is worth to sell.", priority: "0.8", inSitemap: true },
+  // Old hub: a redirect stub to /value (canonical + instant refresh + JS; no noindex), out of the sitemap.
+  { path: "/car-values", title: "Car values by make and model | Valu8", description: "Free online car valuation by registration, plus typical UK asking prices by year for the most popular models. See what your car is worth to sell.", inSitemap: false, canonicalPath: "/value" },
   { path: "/pricing", title: "Pricing | Valu8", description: "Essentials valuations are free. The Full seller report is a one-off £2.99, no subscription. Pay by card, Apple Pay or Google Pay.", priority: "0.6", inSitemap: true },
   { path: "/how-it-works", title: "How Valu8 works: free car valuation by reg | Valu8", description: "How Valu8 turns a UK number plate into a free car valuation: comparable adverts, age and mileage, official MOT history and optional photos.", priority: "0.6", inSitemap: true },
   { path: "/faq", title: "Car valuation FAQs: your questions answered | Valu8", description: "Straight answers on Valu8 car valuations: what's free, what the £2.99 report adds, how prices are worked out and who can see your valuation.", priority: "0.5", inSitemap: true },
@@ -51,7 +52,7 @@ export const STATIC_ROUTES: RouteMeta[] = [
 export function carModelMeta(m: CarModelPage): RouteMeta {
   const name = joinMakeModel(m.make, m.model);
   // /value/<make-model> is the only indexable model page. A /car-values/* page with a /value match is a
-  // permanent redirect there (noindex, canonical + refresh to /value; built in scripts/routePages.ts).
+  // permanent redirect there (canonical + instant refresh + JS to /value, no noindex; built in scripts/routePages.ts).
   const valueSlug = `${m.makeSlug}-${m.slug}`;
   const valueMatch = VALUE_SLUG_REGISTRY.find((v) => v.slug === valueSlug);
   return {
@@ -60,7 +61,7 @@ export function carModelMeta(m: CarModelPage): RouteMeta {
     description: `Free ${name} valuation using real UK adverts in our database, your MOT history and photos. See an estimated private-sale value for your ${name}.`,
     priority: "0.7",
     inSitemap: !valueMatch,
-    ...(valueMatch ? { canonicalPath: `/value/${valueSlug}`, noindex: true } : {}),
+    ...(valueMatch ? { canonicalPath: `/value/${valueSlug}` } : {}),
   };
 }
 

@@ -43,7 +43,7 @@ describe("model display names", () => {
     const redirect = buildRouteHtml(shell, getRouteMeta("/car-values/mercedes-benz/c-class"));
     expect(redirect).toContain("<title>Mercedes-Benz C-Class prices and valuation | Valu8</title>");
     expect(redirect).toContain('<meta http-equiv="refresh" content="0; url=https://valu8.uk/value/mercedes-benz-c-class">');
-    expect(redirect).toContain('<meta name="robots" content="noindex, follow" />');
+    expect(redirect).not.toContain('<meta name="robots"');
     expect(built("/value/mercedes-benz-a-class")).toContain('href="/value/mercedes-benz-c-class">Mercedes-Benz C-Class</a>');
   });
 });

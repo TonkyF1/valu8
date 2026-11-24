@@ -44,7 +44,7 @@ export default function CarValue() {
       <main id="main" className="flex-1 container max-w-3xl py-10 md:py-14">
         <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground mb-4">
           <Link to="/" className="hover:text-foreground">Home</Link> <span aria-hidden>/</span>{" "}
-          <Link to="/car-values" className="hover:text-foreground">Car values</Link> <span aria-hidden>/</span>{" "}
+          <Link to="/value" className="hover:text-foreground">Car values</Link> <span aria-hidden>/</span>{" "}
           <span aria-current="page">{name}</span>
         </nav>
         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">What's my {name} worth?</h1>
@@ -99,7 +99,7 @@ export default function CarValue() {
                 </Link>
               </li>
             ))}
-            <li><Link to="/car-values" className="inline-flex min-h-[44px] items-center px-4 text-primary">All models</Link></li>
+            <li><Link to="/value" className="inline-flex min-h-[44px] items-center px-4 text-primary">All models</Link></li>
           </ul>
         </section>
       </main>

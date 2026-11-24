@@ -26,13 +26,14 @@ describe("/car-values model pages redirect to /value", () => {
   it("every /car-values model has a /value match today", () => {
     expect(matched.length).toBe(CAR_MODELS.length);
   });
-  it("built HTML: refresh + canonical to /value, noindex follow, one moved-link paragraph, no FAQ/JSON-LD", () => {
+  it("built HTML: refresh + JS redirect + canonical to /value, no noindex, one moved-link paragraph, no FAQ/JSON-LD", () => {
     for (const m of matched) {
       const slug = carValueMatch(m)!.slug;
       const html = buildRouteHtml(shell, getRouteMeta(carPath(m)));
       expect(html, slug).toContain(`<meta http-equiv="refresh" content="0; url=https://valu8.uk/value/${slug}">`);
       expect(html).toContain(`<link rel="canonical" href="https://valu8.uk/value/${slug}" />`);
-      expect(html).toContain('<meta name="robots" content="noindex, follow" />');
+      expect(html).toContain(`<script>location.replace("/value/${slug}"+location.search+location.hash)</script>`);
+      expect(html).not.toContain('<meta name="robots"');
       expect(html).toMatch(/<title>[^<]+ prices and valuation \| Valu8<\/title>/);
       const root = html.match(/<div id="root">([\s\S]*?)<\/div>/)![1];
       expect(root).toMatch(new RegExp(`^<p><a href="/value/${slug}">This page has moved to [^<]+ prices and valuation</a></p>$`));
@@ -41,11 +42,10 @@ describe("/car-values model pages redirect to /value", () => {
     }
     expect(buildRouteHtml(shell, getRouteMeta("/car-values/ford/fiesta"))).toContain("<title>Ford Fiesta prices and valuation | Valu8</title>");
   });
-  it("matched pages stay out of the sitemap; the /car-values hub stays in", () => {
+  it("matched pages and the /car-values hub stay out of the sitemap", () => {
     const xml = buildSitemap();
     for (const p of matchedPaths) expect(xml).not.toContain(`<loc>https://valu8.uk${p}</loc>`);
-    expect(xml).toContain("<loc>https://valu8.uk/car-values</loc>");
-    expect(getRouteMeta("/car-values").noindex).toBeFalsy();
+    expect(xml).not.toContain("/car-values");
   });
   it("React: a matched /car-values route navigates to /value", () => {
     function Where() { return <p data-testid="where">{useLocation().pathname}</p>; }
@@ -120,7 +120,7 @@ describe("no links to matched /car-values model pages", () => {
     }
   });
   it("app source links go through carHref, not hand-built /car-values model URLs", () => {
-    for (const f of ["src/pages/Landing.tsx", "src/pages/CarValuesIndex.tsx", "src/pages/CarValue.tsx", "src/components/ShareResult.tsx", "src/components/Footer.tsx"]) {
+    for (const f of ["src/pages/Landing.tsx", "src/pages/CarValue.tsx", "src/components/ShareResult.tsx", "src/components/Footer.tsx"]) {
       expect(readFileSync(f, "utf8"), f).not.toMatch(/\/car-values\/\$\{|\/car-values\/[a-z0-9-]+\/[a-z0-9-]+/);
     }
   });
