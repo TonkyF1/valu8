@@ -19,6 +19,7 @@ import { CheckOutcomePrompt } from "@/components/OutcomePrompt";
 import { ShareButtons } from "@/components/ShareResult";
 import { GuestMarketingConsent } from "@/components/MarketingConsent";
 import { checkAdvert, parseMoney, type AdvertCheck, type AdvertVerdict } from "@/lib/advertCheck";
+import { HistoryCheckButton } from "@/components/report/HistoryCheckButton";
 
 const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
 const DRAFT_KEY = "valu8_check_draft";
@@ -202,6 +203,7 @@ export default function Check() {
                 text={`Valu8 says this ${res.car.year ? `${res.car.year} ` : ""}${res.car.make} ${res.car.model} is ${V.label.toLowerCase()}: private sale range ${gbp(res.privateLow)}–${gbp(res.privateHigh)}. Check any used car advert free:`}
               />
             </div>
+            <HistoryCheckButton placement="check" title="Like the price? Check the car's history before you pay." />
             {!user && <div className="mt-5"><GuestMarketingConsent /></div>}
             <div className="mt-5 flex flex-col sm:flex-row gap-2">
               <Button asChild variant="outline" className="min-h-[44px]"><Link to="/">Get a Premium Report with MOT history</Link></Button>

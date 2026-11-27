@@ -10,6 +10,7 @@ export const PAGE_LASTMOD: Record<string, string> = {
   "/pricing": "2026-11-18", // part-ex and dealer figures moved to the £2.99 Full report
   "/how-it-works": "2026-11-20", // new page (Tony approved the sitemap URL 20 Nov)
   "/faq": "2026-11-20", // new page
+  "/car-history-check": "2026-11-27", // new carVertical history check page
   "/example-report": "2026-11-20", // new page
   "/about": "2026-11-06",
   "/contact": "2026-11-06",

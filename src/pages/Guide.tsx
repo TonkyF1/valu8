@@ -10,8 +10,20 @@ import { valueModelPath } from "@/data/valueModels";
 import { useSeo } from "@/lib/seo";
 import { getRouteMeta } from "@/data/routeMeta";
 import NotFound from "./NotFound";
+import { HistoryCheckButton } from "@/components/report/HistoryCheckButton";
 
 const ARTICLE_CLASSES = GUIDE_ARTICLE_CLASSES;
+
+/** Guides where a paid history check is genuinely the next step (buying, checking or selling with proof). */
+const HISTORY_GUIDES = new Set([
+  "how-to-tell-if-a-used-car-is-overpriced",
+  "check-mot-and-mileage-history-before-buying",
+  "mot-advisories-car-value",
+  "what-lowers-a-cars-value",
+  "private-sale-vs-dealer-prices",
+  "how-to-sell-a-car-privately-safely",
+  "electric-car-value",
+]);
 
 function GuideArticle({ guide }: { guide: GuideData }) {
   useSeo(getRouteMeta(guide.path));
@@ -68,6 +80,7 @@ function GuideArticle({ guide }: { guide: GuideData }) {
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-14">
         <div className="min-w-0 lg:max-w-[720px]">
         <article ref={articleRef} className={ARTICLE_CLASSES} onClick={onClick} dangerouslySetInnerHTML={{ __html: guideBodyHtml(guide.markdown) }} />
+        {HISTORY_GUIDES.has(guide.slug) && <HistoryCheckButton placement="guide" className="mt-10" />}
         <section className="mt-12 border-t border-border pt-8" aria-labelledby="popular-models">
           <h2 id="popular-models" className="text-xl font-semibold mb-3">{POPULAR_MODELS_H2}</h2>
           <ul className="flex flex-wrap gap-2 text-sm">

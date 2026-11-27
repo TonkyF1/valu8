@@ -46,6 +46,7 @@ const ValueIndex = lazyWithPreload(() => import("./pages/ModelValue").then((m) =
 const ModelYearValue = lazyWithPreload(() => import("./pages/ModelValue").then((m) => ({ default: m.ModelYearValue })));
 const HowItWorksPage = lazyWithPreload(() => import("./pages/HowItWorksPage"));
 const FaqPage = lazyWithPreload(() => import("./pages/FaqPage"));
+const CarHistoryCheck = lazyWithPreload(() => import("./pages/CarHistoryCheck"));
 const ExampleReportPage = lazyWithPreload(() => import("./pages/ExampleReportPage"));
 const GuidesIndex = lazyWithPreload(() => import("./pages/GuidesIndex"));
 const Guide = lazyWithPreload(() => import("./pages/Guide"));
@@ -59,7 +60,7 @@ export function preloadRoute(path: string): Promise<unknown> {
     [/^\/value$/, ValueIndex], [/^\/value\/[^/]+$/, ModelValue], [/^\/value\/[^/]+\/\d{4}$/, ModelYearValue],
     [/^\/car-values\/[^/]+\/[^/]+$/, CarValue],
     [/^\/guides$/, GuidesIndex], [/^\/guides\/[^/]+$/, Guide], [/^\/(about|contact)$/, About],
-    [/^\/how-it-works$/, HowItWorksPage], [/^\/faq$/, FaqPage], [/^\/pricing$/, Pricing], [/^\/check$/, Check],
+    [/^\/how-it-works$/, HowItWorksPage], [/^\/faq$/, FaqPage], [/^\/car-history-check$/, CarHistoryCheck], [/^\/pricing$/, Pricing], [/^\/check$/, Check],
     [/^\/accuracy$/, Accuracy], [/^\/example-report$/, ExampleReportPage], [/^\/embed-info$/, EmbedInfo],
     [/^\/privacy$/, Privacy], [/^\/terms$/, Terms], [/^\/disclaimers$/, Disclaimers], [/^\/bot$/, Bot],
   ];
@@ -116,6 +117,7 @@ const App = () => (
             <Route path="/car-values/:make/:model" element={<CarValue />} />
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/faq" element={<FaqPage />} />
+            <Route path="/car-history-check" element={<CarHistoryCheck />} />
             <Route path="/example-report" element={<ExampleReportPage />} />
             <Route path="/guides" element={<GuidesIndex />} />
             <Route path="/guides/:slug" element={<Guide />} />

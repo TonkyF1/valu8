@@ -17,6 +17,7 @@ import NotFound from "./NotFound";
 import { useEffect, type MouseEvent } from "react";
 import { enrichedYearFaqJsonLd, enrichedYearHtml, findEnrichedYear } from "@/data/enrichedYears";
 import { enrichedModelHtml, findEnrichedModel } from "@/data/enrichedModels";
+import { HistoryCheckButton } from "@/components/report/HistoryCheckButton";
 
 const ARTICLE_CLASS = "mt-8 text-foreground/85 leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-10 [&_h2]:mb-3 [&_p]:my-4 [&_strong]:text-foreground [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-4 [&_li]:my-1.5 [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_.guide-table]:my-6 [&_.guide-table]:overflow-x-auto [&_.guide-table]:rounded-xl [&_.guide-table]:border [&_.guide-table]:border-border [&_table]:w-full [&_table]:text-sm [&_th]:text-left [&_th]:font-medium [&_th]:text-muted-foreground [&_th]:px-4 [&_th]:py-3 [&_td]:px-4 [&_td]:py-3 [&_tr]:border-b [&_tr]:border-border [&_tbody_tr:last-child]:border-0";
 
@@ -162,6 +163,7 @@ function NoPriceModel({ m }: { m: ValueRef }) {
       <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{valueH1(m)}</h1>
       <p className="text-muted-foreground mt-4 leading-relaxed">{VALUE_NO_DATA_COPY(m)}</p>
       <div className="mt-6"><Button asChild variant="hero" size="xl" className="max-w-full whitespace-normal text-center h-auto min-h-14 py-3"><Link to="/">Value my {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button></div>
+      <HistoryCheckButton placement="value_model" title={`Buying a used ${name}? Check its history first.`} />
       <Guidance m={m} />
       <MoreFromMake slug={m.slug} make={m.make} />
       <p className="mt-10 text-sm"><Link to="/value" className="text-primary hover:underline">See all models</Link></p>
@@ -380,6 +382,7 @@ export default function ModelValue() {
           </ul>
         </Disclosure>
       </Card>
+      <HistoryCheckButton placement="value_model" title={`Buying a used ${name}? Check its history first.`} />
       <Guidance m={m} />
       <MoreFromMake slug={m.slug} make={m.make} />
       <p className="mt-10 text-sm"><Link to="/value" className="text-primary hover:underline">See all models</Link></p>
@@ -467,6 +470,7 @@ export function ModelYearValue() {
         <p className="text-sm text-muted-foreground mt-1">Enter your reg for a free valuation based on your car's year, mileage and MOT history.</p>
         <Button asChild variant="hero" size="xl" className="mt-4 max-w-full whitespace-normal text-center h-auto min-h-14 py-3"><Link to="/">Value my {y.year} {name} free <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
       </div>
+      <HistoryCheckButton placement="value_year" title={`Buying a ${y.year} ${name}? Check its history first.`} />
       <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm">
         {neighbourYears(m, y).map((n) => (
           <Link key={n.year} to={yearPath(m, n)} className="text-primary hover:underline">{n.year} {name} prices</Link>

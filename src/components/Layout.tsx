@@ -3,7 +3,7 @@ import { Link, NavLink as RouterNavLink, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeftRight, BookOpen, HelpCircle, Info, LayoutDashboard, ListChecks, Menu, Plus, SearchCheck, UserCircle2, Tag, Car } from "lucide-react";
+import { ArrowLeftRight, BookOpen, HelpCircle, Info, LayoutDashboard, ListChecks, Menu, Plus, SearchCheck, UserCircle2, Tag, Car, FileSearch } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { HomeLink, START_PATH } from "@/components/HomeLink";
 import { cn } from "@/lib/utils";
@@ -29,12 +29,14 @@ const DESKTOP_NAV: Item[] = [
   { to: "/guides", label: "Guides", icon: BookOpen, wide: true },
   { to: "/pricing", label: "Pricing", icon: Tag },
   { to: "/check", label: "Check an advert", icon: SearchCheck },
+  { to: "/car-history-check", label: "History check", icon: FileSearch },
 ];
 
 const MORE_NAV: Item[] = [
   { to: "/how-it-works", label: "How it works", icon: ListChecks },
   { to: "/value", label: "Car values", icon: Car },
   { to: "/guides", label: "Guides", icon: BookOpen },
+  { to: "/car-history-check", label: "History check", icon: FileSearch },
   { to: "/faq", label: "FAQ", icon: HelpCircle },
   { to: "/about", label: "About", icon: Info },
 ];
@@ -43,6 +45,7 @@ const USER_NAV: Item[] = [
   { to: "/dashboard", label: "My valuations", icon: LayoutDashboard },
   { to: "/check", label: "Check an advert", icon: SearchCheck },
   { to: "/compare", label: "Compare", icon: ArrowLeftRight },
+  { to: "/car-history-check", label: "History check", icon: FileSearch },
   { to: "/pricing", label: "Pricing", icon: Tag },
 ];
 

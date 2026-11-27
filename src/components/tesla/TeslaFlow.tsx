@@ -33,6 +33,7 @@ import { mileageHint } from "@/lib/mileageHint";
 import { gradeArc, gradeFromReport, type CarGrade } from "@/lib/carGrade";
 import { PriceArc, RingLoader, RollingPrice, useEasedProgress } from "./parts";
 import { FitPrice } from "@/components/FitPrice";
+import { HistoryCheckButton, HISTORY_TITLE_BUYING } from "@/components/report/HistoryCheckButton";
 
 interface Lookup {
   registration: string; make?: string; model?: string; variant?: string; year?: number; fuelType?: string; transmission?: string; transmissionGuess?: Gearbox;
@@ -704,6 +705,13 @@ export function TeslaFlow({ onFlowChange }: { onFlowChange?: (active: boolean) =
             more={refined && valuationId && movers.length > 4 ? <Link to={`/valuation/${valuationId}`} className="t8-link">All the reasons, MOT history and mileage check in your free report</Link> : undefined} />
         )}
 
+        {/* Buying: "check before you buy" nudge (carVertical) sits above the Premium card, with this car's reg. */}
+        {refined && valuationId && band && intent === "buying" && (
+          <div className="mx-auto w-full max-w-[520px] px-4 text-left" data-testid="result-history-buying">
+            <HistoryCheckButton registration={lookup?.registration} placement="home_result_buying" title={HISTORY_TITLE_BUYING} />
+          </div>
+        )}
+
         {refined && valuationId && (
           <div className="t8-unlock" ref={unlockRef} id="report-checkout" data-testid="premium-card">
             <div className="t8-grab" aria-hidden />
@@ -724,6 +732,13 @@ export function TeslaFlow({ onFlowChange }: { onFlowChange?: (active: boolean) =
           </div>
         )}
       </section>
+
+      {/* Selling (or no intent yet): a slim carVertical line under the Premium card. */}
+      {refined && valuationId && band && intent !== "buying" && (
+        <div className="relative z-[3] mx-auto w-full max-w-[520px] bg-[#1A1A1A] pb-6" data-testid="result-history-line">
+          <HistoryCheckButton variant="line" registration={lookup?.registration} placement="home_result" />
+        </div>
+      )}
 
       {hasCar && lookup && !refined && (
         <section className="t8-details" ref={detailsRef} aria-labelledby="t8-det">
