@@ -1,6 +1,11 @@
 // Valu8 — Resend email helpers: sending, signed tokens (unsubscribe + one-tap answers), premium table-based layout.
 // Layout rules: tables + inline styles only (Gmail/Outlook/Apple Mail), dark header band so the wordmark works in light
 // and dark mode, colour-scheme meta + prefers-color-scheme overrides, and a plain-text part for every email.
+// Type-only: this module runs in Deno, but the frontend's typecheck also reads it because
+// src/test/carverticalEverywhere.test.tsx imports renderEmail from here. `declare` emits no code,
+// so the real Deno global is still what runs in the edge function.
+declare const Deno: { env: { get(name: string): string | undefined } };
+
 export const FROM = "Valu8 <reports@notify.valu8.uk>";
 export const REPLY_TO = "hello@valu8.uk";
 export const SITE = "https://valu8.uk";
