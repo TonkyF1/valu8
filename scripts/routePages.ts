@@ -11,6 +11,7 @@ import { VALUE_SLUG_REGISTRY } from "../src/data/valueSlugRegistry";
 import { carModelBodyHtml, carModelJsonLd, carPath, carRedirectBodyHtml, carRedirectHeadHtml, carValueMatch, carValuesHubBodyHtml, carValuesHubHeadHtml } from "../src/data/carValueContent";
 import { faqPageHeadHtml, homepageFaqHeadHtml, staticPageBodyHtml } from "../src/data/staticPageContent";
 import { enrichedYearFaqJsonLd, findEnrichedYear } from "../src/data/enrichedYears";
+import { HISTORY_PAGE_PATH, historyCheckBodyHtml, historyCheckHeadHtml } from "../src/data/historyCheckContent";
 
 type Extra = { bodyHtml?: string; headHtml?: string };
 
@@ -22,6 +23,7 @@ export function routeExtra(meta: RouteMeta): Extra | undefined {
   if (meta.path === "/") return { bodyHtml: staticPageBodyHtml("/"), headHtml: homepageFaqHeadHtml };
   const pageBody = staticPageBodyHtml(meta.path);
   if (pageBody) return meta.path === "/faq" ? { bodyHtml: pageBody, headHtml: faqPageHeadHtml } : { bodyHtml: pageBody };
+  if (meta.path === HISTORY_PAGE_PATH) return { bodyHtml: historyCheckBodyHtml(), headHtml: historyCheckHeadHtml() };
   if (meta.path === "/value") return { bodyHtml: valueIndexBodyHtml(), headHtml: hubHeadHtml("Car values", "/value") };
   const vm = MODEL_PRICES.find((m) => valuePath(m) === meta.path);
   if (vm) return { bodyHtml: valueBodyHtml(vm), headHtml: valueHeadHtml(vm) };

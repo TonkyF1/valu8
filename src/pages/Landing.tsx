@@ -12,6 +12,7 @@ import { useSeo } from "@/lib/seo";
 import { TeslaFlow } from "@/components/tesla/TeslaFlow";
 import { getRouteMeta } from "@/data/routeMeta";
 import { Faq, FAQS, FreeVsPremium, HowItWorks } from "@/components/home/BuyerSellerSections";
+import { HistoryCheckButton } from "@/components/report/HistoryCheckButton";
 
 const HOME_FAQS = FAQS.slice(0, 4);
 
@@ -80,6 +81,7 @@ export default function Landing() {
           {/* TODO(social-proof): add a customer quotes section here once we have REAL, consented
               customer quotes or a review-platform widget. Never add invented testimonials. */}
 
+          <HistoryCheckButton variant="line" placement="home" className="py-6" />
           <div className="bs-rule" />
           <Faq items={HOME_FAQS} more />
           <nav aria-label="More about Valu8" className="mt-2 pb-8 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm">

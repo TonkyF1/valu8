@@ -60,6 +60,21 @@ export const FULL_REPORT_PRICES_LINE = "Part-exchange and dealer prices come wit
 
 /** `entitled` = the £2.99 Full Report is unlocked for this valuation (paid or redeemed referral). Part-ex and dealer
  *  figures are paid-only, so they appear only when entitled. */
+/** carVertical affiliate link (same format as the site: sub2 = placement, sub3 = reg). Keep in step with HistoryCheckButton.tsx. */
+export const HISTORY_CHECK_URL = "https://www.carvertical.deal/4BZC6ZM/5DKLH2/?uid=22&source_id=AFF&sub1=valu8";
+export function historyCheckEmailUrl(registration?: string | null): string {
+  const reg = String(registration ?? "").toUpperCase().replace(/\s+/g, "");
+  return `${HISTORY_CHECK_URL}&sub2=email${reg ? `&sub3=${encodeURIComponent(reg)}` : ""}`;
+}
+export function historyCheckAside(registration?: string | null) {
+  return {
+    text: "Buying? Check its finance, write-off and mileage history first.",
+    linkLabel: "Full history check via carVertical",
+    url: historyCheckEmailUrl(registration),
+    small: "Code valu8 is applied automatically. Affiliate link: Valu8 earns a commission if you buy.",
+  };
+}
+
 export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubscribe: string, entitled = false) {
   const name = carTitle(item);
   const subject = `Your Valu8 report for ${name} is ready`;
@@ -93,6 +108,7 @@ export function buildReportEmail(kind: "valuation" | "advert", item: any, unsubs
         { label: REPORT_OFFER_LABEL, url: reportOfferUrl(item.id, "report_ready") },
       ],
       note: "The Premium Report adds a suggested asking price, the lowest offer to accept, the UK adverts we compared, MOT repair cost bands and ready-to-post advert text. One-off £2.99, no subscription.",
+      aside: historyCheckAside(item.registration),
       unsubscribe,
     });
     return { subject, html, text };

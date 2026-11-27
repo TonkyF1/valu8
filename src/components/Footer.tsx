@@ -7,6 +7,7 @@ const COLS: { title: string; links: { to: string; label: string }[] }[] = [
   { title: "Product", links: [
     { to: START_PATH, label: "Value a car" },
     { to: "/check", label: "Check an advert" },
+    { to: "/car-history-check", label: "History check" },
     { to: "/pricing", label: "Pricing" },
     { to: "/how-it-works", label: "How it works" },
   ] },

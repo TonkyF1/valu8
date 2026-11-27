@@ -94,6 +94,8 @@ export interface EmailContent {
   buttons: EmailButton[];
   buttonsIntro?: string | null;
   note?: string | null;               // small grey text under the buttons
+  /** Optional partner line under the buttons (e.g. the carVertical history check): text, one link, small print. */
+  aside?: { text: string; linkLabel: string; url: string; small?: string | null } | null;
   unsubscribe: string;
 }
 
@@ -134,6 +136,12 @@ ${o.buttonsIntro ? p(o.buttonsIntro, "font-weight:600;") : ""}
 ${o.note ? `<p class="muted" style="margin:4px 0 0 0;font-family:${FONT};font-size:13px;line-height:19px;color:${C.muted}">${esc(o.note)}</p>` : ""}
 </td></tr>`;
 
+  const asideBlock = o.aside ? `<tr><td class="px" style="padding:18px 32px 0 32px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="rule" style="border-top:1px solid ${C.line}"><tr><td style="padding:16px 0 0 0">
+<p class="ink" style="margin:0 0 6px 0;font-family:${FONT};font-size:15px;line-height:22px;color:${C.ink}">${esc(o.aside.text)} <a href="${esc(o.aside.url)}" style="color:${C.tealDeep};font-weight:700;text-decoration:underline">${esc(o.aside.linkLabel)}</a></p>
+${o.aside.small ? `<p class="muted" style="margin:0;font-family:${FONT};font-size:12px;line-height:18px;color:${C.muted}">${esc(o.aside.small)}</p>` : ""}
+</td></tr></table></td></tr>` : "";
+
   const html = `<!doctype html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -170,6 +178,7 @@ ${priceBlock}
 ${factsBlock}
 ${lines}
 ${btns}
+${asideBlock}
 </table></td></tr>
 <tr><td class="foot" style="padding:22px 28px 8px 28px;font-family:${FONT};font-size:12px;line-height:19px;color:${C.muted}" align="center">
 <p class="muted" style="margin:0 0 6px 0;color:${C.muted}">You're getting this because you used Valu8. Questions? Just reply.</p>
@@ -190,6 +199,7 @@ ${btns}
   if (o.buttonsIntro) t.push(o.buttonsIntro);
   for (const b of o.buttons) t.push(`${b.label}: ${b.url}`);
   if (o.note) t.push("", o.note);
+  if (o.aside) { t.push("", `${o.aside.text} ${o.aside.linkLabel}: ${o.aside.url}`); if (o.aside.small) t.push(o.aside.small); }
   t.push("", "--", "You're getting this because you used Valu8. Questions? Just reply.", "Valu8 · valu8.uk", `Unsubscribe: ${o.unsubscribe}`);
   return { html, text: t.join("\n") };
 }

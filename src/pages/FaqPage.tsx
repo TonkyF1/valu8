@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Faq, FAQS } from "@/components/home/BuyerSellerSections";
+import { HistoryCheckButton } from "@/components/report/HistoryCheckButton";
 
 const META = newPageMeta("/faq", { title: "Car valuation FAQs: your questions answered | Valu8", description: "Straight answers on Valu8 car valuations: what's free, what the £2.99 report adds, how prices are worked out and who can see your valuation." });
 
@@ -29,6 +30,7 @@ export default function FaqPage() {
         <div className="bs">
           <Faq cta={false} />
         </div>
+        <HistoryCheckButton variant="line" placement="faq" className="pb-10" />
         <section className="container max-w-3xl pb-16 pt-2 text-center">
           <h2 className="text-xl font-semibold tracking-tight mb-3">Ready to value your car?</h2>
           <HomeLink focusReg className={cn(buttonVariants({ variant: "hero", size: "lg" }))}>Value a car · Free</HomeLink>

@@ -60,7 +60,7 @@ import { ReportNav, SoldItPrompt, useReportSections } from "@/components/report/
 import { ShareCard, completeReferral } from "@/components/ShareCard";
 import { clearShareRef, getShareRef } from "@/lib/attribution";
 import { MotHistoryByYear } from "@/components/report/MotHistoryByYear";
-import { HistoryCheckButton } from "@/components/report/HistoryCheckButton";
+import { HistoryCheckButton, HISTORY_TITLE_BUYING } from "@/components/report/HistoryCheckButton";
 import { FREE_TEASER_COMPS, reportPaywallEnabled } from "@/lib/reportPaywall";
 import { MiniTier, Section, CollapsibleSection, RecBlock, SLOT_LABELS, PhotoFeedback, InsightRow } from "@/components/report/ReportParts";
 import { PriceMovers } from "@/components/report/PriceMovers";
@@ -630,7 +630,7 @@ export default function Report() {
                     onSaved={(next) => setV((prev) => (prev ? { ...prev, report: next as unknown as ValuationReport } : prev))} />
                 </SectionBoundary>
               )}
-              <HistoryCheckButton registration={v.registration} />
+              <HistoryCheckButton registration={v.registration} placement={isShared ? "shared" : "report_premium"} title={reportIntent === "buying" ? HISTORY_TITLE_BUYING : undefined} />
               <p className="pt-6 text-xs leading-relaxed text-[#9A9A9A]">Sources: {marketSourceLabel}, DVSA MOT history, AI photo analysis. Estimates are for guidance only, not financial advice or a guaranteed sale price. Not a vehicle history check or inspection.</p>
             </>}
           />
@@ -1074,7 +1074,7 @@ export default function Report() {
         )}
 
         {/* Affiliate (free/locked view): after "Why this price", below the price and the unlock offer. Unlocked reports show it once under MOT History. Only the reg is passed; no locked report data. */}
-        {locked && !valuationUnavailable && <HistoryCheckButton registration={v.registration} />}
+        {locked && !valuationUnavailable && <HistoryCheckButton registration={v.registration} placement={isShared ? "shared" : "report_free"} title={reportIntent === "buying" ? HISTORY_TITLE_BUYING : undefined} />}
 
         {/* Share my valuation (image card + native share sheet). While the report is locked it also carries the
             referral offer: a friend who values their car through the link unlocks this report free. Owners only. */}
@@ -1312,7 +1312,7 @@ export default function Report() {
         {motHistorySection}
 
         {/* Affiliate: full vehicle history check via carVertical (plain link, disclosure beside it). Free, paid and shared views. */}
-        {!valuationUnavailable && <HistoryCheckButton registration={v.registration} />}
+        {!valuationUnavailable && <HistoryCheckButton registration={v.registration} placement={isShared ? "shared" : "report"} title={reportIntent === "buying" ? HISTORY_TITLE_BUYING : undefined} />}
 
         {/* Sale feedback: placed after the detail sections (end of the reading flow) so it does not interrupt the report; real sale prices power /accuracy */}
         {!isShared && user && (v as any).user_id === user.id && (
